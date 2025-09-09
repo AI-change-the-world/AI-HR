@@ -1,0 +1,15 @@
+张三
+zhangsan@email.com
+13812345678
+
+教育背景：
+北京大学 计算机科学与技术 本科
+
+工作经验：
+5年Python开发经验
+
+技能：
+Python, JavaScript, React, SQL, 机器学习
+
+应聘职位：
+高级软件工程师
