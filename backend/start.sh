@@ -23,4 +23,4 @@ pip install fastapi uvicorn
 
 # 启动服务
 echo "启动服务..."
-python main.py
+python app.py

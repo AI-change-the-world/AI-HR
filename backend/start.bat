@@ -25,6 +25,6 @@ pip install fastapi uvicorn
 
 REM 启动服务
 echo 启动服务...
-python main.py
+python app.py
 
 pause

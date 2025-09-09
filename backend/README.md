@@ -1,20 +1,48 @@
 # AI HR 后端服务
 
-这是一个基于FastAPI的简单后端服务，为AI HR系统提供API接口。
+这是一个基于FastAPI的模块化后端服务，为AI HR系统提供API接口。
 
 ## 项目结构
 
 ```
 backend/
-├── main.py          # 主应用文件，包含简历上传接口
-├── employee.py      # 员工管理模块
-├── department.py    # 部门管理模块
-├── jd.py           # JD管理模块
-├── okr.py          # OKR/KPI管理模块
-├── test_resume.txt # 测试简历文件
-├── start.bat       # Windows启动脚本
-├── start.sh        # Linux/Mac启动脚本
-└── test_api.py     # API测试脚本
+├── app.py                    # 主应用文件
+├── data/                     # 数据存储目录
+│   ├── resumes.json          # 简历数据
+│   ├── employees.json        # 员工数据
+│   ├── departments.json      # 部门数据
+│   ├── job_descriptions.json # JD数据
+│   └── okrs.json             # OKR数据
+├── modules/                  # 业务模块目录
+│   ├── resume/               # 简历管理模块
+│   │   ├── __init__.py
+│   │   ├── models.py         # 数据模型
+│   │   ├── service.py        # 业务逻辑
+│   │   └── router.py         # 路由定义
+│   ├── employee/             # 员工管理模块
+│   │   ├── __init__.py
+│   │   ├── models.py
+│   │   ├── service.py
+│   │   └── router.py
+│   ├── department/           # 部门管理模块
+│   │   ├── __init__.py
+│   │   ├── models.py
+│   │   ├── service.py
+│   │   └── router.py
+│   ├── jd/                   # JD管理模块
+│   │   ├── __init__.py
+│   │   ├── models.py
+│   │   ├── service.py
+│   │   └── router.py
+│   └── okr/                  # OKR/KPI管理模块
+│       ├── __init__.py
+│       ├── models.py
+│       ├── service.py
+│       └── router.py
+├── test_resume.txt           # 测试简历文件
+├── start.bat                 # Windows启动脚本
+├── start.sh                  # Linux/Mac启动脚本
+└── test_api.py               # API测试脚本
 ```
 
 ## 功能模块
@@ -48,7 +76,7 @@ chmod +x start.sh
 
 或者直接运行:
 ```bash
-python main.py
+python app.py
 ```
 
 服务将在 `http://localhost:8000` 启动。
@@ -59,6 +87,8 @@ python main.py
 - `POST /api/resumes/upload` - 上传简历
 - `GET /api/resumes` - 获取简历列表
 - `GET /api/resumes/{id}` - 获取简历详情
+- `PUT /api/resumes/{id}` - 更新简历信息
+- `DELETE /api/resumes/{id}` - 删除简历
 
 ### 员工管理
 - `GET /api/employees` - 获取员工列表
@@ -96,11 +126,11 @@ python main.py
 python test_api.py
 ```
 
-## 数据存储
+## 模块化设计
 
-数据以JSON文件形式存储在本地：
-- `resumes.json` - 简历数据
-- `employees.json` - 员工数据
-- `departments.json` - 部门数据
-- `job_descriptions.json` - JD数据
-- `okrs.json` - OKR数据
+每个业务模块都遵循以下结构：
+- `models.py` - 定义数据模型
+- `service.py` - 实现业务逻辑
+- `router.py` - 定义API路由
+
+这种设计使得代码更易于维护和扩展。
