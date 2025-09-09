@@ -2,51 +2,31 @@ import os
 import json
 from typing import List, Optional
 from datetime import datetime
-from .models import ResumeCreate, ResumeUpdate, ResumeInDB
+import asyncio
+from fastapi import UploadFile
+from fastapi.responses import StreamingResponse
+from sqlalchemy.orm import Session
+from sqlalchemy import create_engine
+from config.database import SessionLocal, engine
+from models.resume import Resume
+from utils.document_parser import parse_document
+from utils.llm_mock import mock_llm_analysis
+from utils.jd_matcher import find_best_match
 
-# 简历数据文件路径
-RESUME_DB_FILE = "data/resumes.json"
+# 创建数据库表
+from models import resume, employee, department, jd, okr
+resume.Base.metadata.create_all(bind=engine)
 
-def init_data_dir():
-    """初始化数据目录"""
-    data_dir = "data"
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-        # 初始化空的JSON文件
-        init_files = [
-            "data/resumes.json",
-            "data/employees.json", 
-            "data/departments.json",
-            "data/job_descriptions.json",
-            "data/okrs.json"
-        ]
-        
-        for file_path in init_files:
-            if not os.path.exists(file_path):
-                with open(file_path, 'w', encoding='utf-8') as f:
-                    json.dump([], f)
-
-def load_resumes() -> List[dict]:
-    """加载所有简历"""
-    init_data_dir()
-    with open(RESUME_DB_FILE, 'r', encoding='utf-8') as f:
-        return json.load(f)
-
-def save_resumes(resumes: List[dict]):
-    """保存简历列表"""
-    init_data_dir()
-    with open(RESUME_DB_FILE, 'w', encoding='utf-8') as f:
-        json.dump(resumes, f, ensure_ascii=False, indent=2)
-
-def get_next_id() -> int:
-    """获取下一个可用ID"""
-    resumes = load_resumes()
-    if not resumes:
-        return 1
-    return max(resume['id'] for resume in resumes) + 1
+def get_db():
+    """获取数据库会话"""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 def extract_resume_info(content: str) -> dict:
-    """从文件内容中提取简历信息"""
+    """从文件内容中提取简历信息（模拟实现）"""
     # 简单的信息提取逻辑
     info = {
         "name": None,
@@ -72,72 +52,102 @@ def extract_resume_info(content: str) -> dict:
     
     return info
 
-def create_resume(resume_create: ResumeCreate, file_content: str) -> ResumeInDB:
-    """创建新简历"""
-    # 提取简历信息
-    extracted_info = extract_resume_info(file_content)
+async def process_resume_stream(file: UploadFile) -> StreamingResponse:
+    """流式处理简历上传"""
+    async def event_generator():
+        try:
+            # 步骤1: 读取内容
+            yield f"data: {json.dumps({'status': 'reading', 'message': '正在读取文件内容...'})}\n\n"
+            
+            # 读取文件内容
+            file_content = await file.read()
+            file_extension = os.path.splitext(file.filename)[1]
+            
+            # 解析文档内容
+            try:
+                content = parse_document(file_content, file_extension)
+                yield f"data: {json.dumps({'status': 'parsed', 'message': '文件解析完成'})}\n\n"
+            except Exception as e:
+                yield f"data: {json.dumps({'status': 'error', 'message': f'文件解析失败: {str(e)}'})}\n\n"
+                return
+            
+            # 步骤2: 用大模型分析要点
+            yield f"data: {json.dumps({'status': 'analyzing', 'message': '正在使用AI分析简历...'})}\n\n"
+            
+            # 使用模拟的大模型分析
+            async for chunk in mock_llm_analysis(content):
+                yield chunk
+            
+            # 步骤3: 与JD匹配
+            yield f"data: {json.dumps({'status': 'matching', 'message': '正在匹配职位描述...'})}\n\n"
+            
+            # 查找最佳匹配的JD
+            best_jd, match_score = find_best_match(content)
+            
+            # 保存到数据库
+            db = SessionLocal()
+            try:
+                # 创建简历记录
+                now = datetime.now()
+                resume_dict = {
+                    "filename": file.filename,
+                    "content": content,
+                    "status": "已处理",
+                    "score": match_score if match_score > 0 else 0.0,
+                    "matched_jd_id": best_jd.id if best_jd else None,
+                    "match_score": match_score,
+                    "created_at": now,
+                    "updated_at": now,
+                    **extract_resume_info(content)
+                }
+                
+                db_resume = Resume(**resume_dict)
+                db.add(db_resume)
+                db.commit()
+                db.refresh(db_resume)
+                
+                yield f"data: {json.dumps({'status': 'saved', 'message': '简历已保存到数据库', 'resume_id': db_resume.id})}\n\n"
+            except Exception as e:
+                db.rollback()
+                yield f"data: {json.dumps({'status': 'error', 'message': f'数据库保存失败: {str(e)}'})}\n\n"
+            finally:
+                db.close()
+            
+            # 完成
+            yield f"data: {json.dumps({'status': 'completed', 'message': '简历处理完成'})}\n\n"
+            
+        except Exception as e:
+            yield f"data: {json.dumps({'status': 'error', 'message': f'处理过程中发生错误: {str(e)}'})}\n\n"
+        finally:
+            yield "data: [DONE]\n\n"
     
-    # 创建简历记录
-    now = datetime.now().isoformat()
-    resume_dict = {
-        "id": get_next_id(),
-        "filename": resume_create.filename,
-        "status": "待筛选",
-        "score": 0.0,
-        "created_at": now,
-        "updated_at": now,
-        **extracted_info
-    }
-    
-    # 保存到数据库
-    resumes = load_resumes()
-    resumes.append(resume_dict)
-    save_resumes(resumes)
-    
-    return ResumeInDB(**resume_dict)
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
-def get_resume(resume_id: int) -> Optional[ResumeInDB]:
+def get_resume(resume_id: int, db: Session) -> Optional[Resume]:
     """获取指定ID的简历"""
-    resumes = load_resumes()
-    for resume in resumes:
-        if resume["id"] == resume_id:
-            return ResumeInDB(**resume)
-    return None
+    return db.query(Resume).filter(Resume.id == resume_id).first()
 
-def get_resumes(skip: int = 0, limit: int = 100) -> List[ResumeInDB]:
+def get_resumes(skip: int = 0, limit: int = 100, db: Session) -> List[Resume]:
     """获取简历列表"""
-    resumes = load_resumes()
-    # 分页处理
-    paginated = resumes[skip:skip + limit]
-    return [ResumeInDB(**resume) for resume in paginated]
+    return db.query(Resume).offset(skip).limit(limit).all()
 
-def update_resume(resume_id: int, resume_update: ResumeUpdate) -> Optional[ResumeInDB]:
+def update_resume(resume_id: int, resume_update: dict, db: Session) -> Optional[Resume]:
     """更新简历"""
-    resumes = load_resumes()
-    for i, resume in enumerate(resumes):
-        if resume["id"] == resume_id:
-            # 更新时间戳
-            resume["updated_at"] = datetime.now().isoformat()
-            
-            # 更新字段
-            update_data = resume_update.dict(exclude_unset=True)
-            for key, value in update_data.items():
-                if value is not None:
-                    resume[key] = value
-            
-            # 保存更新
-            resumes[i] = resume
-            save_resumes(resumes)
-            
-            return ResumeInDB(**resume)
+    db_resume = db.query(Resume).filter(Resume.id == resume_id).first()
+    if db_resume:
+        for key, value in resume_update.items():
+            setattr(db_resume, key, value)
+        db_resume.updated_at = datetime.now()
+        db.commit()
+        db.refresh(db_resume)
+        return db_resume
     return None
 
-def delete_resume(resume_id: int) -> bool:
+def delete_resume(resume_id: int, db: Session) -> bool:
     """删除简历"""
-    resumes = load_resumes()
-    for i, resume in enumerate(resumes):
-        if resume["id"] == resume_id:
-            resumes.pop(i)
-            save_resumes(resumes)
-            return True
+    db_resume = db.query(Resume).filter(Resume.id == resume_id).first()
+    if db_resume:
+        db.delete(db_resume)
+        db.commit()
+        return True
     return False

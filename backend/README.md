@@ -7,12 +7,17 @@
 ```
 backend/
 ├── app.py                    # 主应用文件
-├── data/                     # 数据存储目录
-│   ├── resumes.json          # 简历数据
-│   ├── employees.json        # 员工数据
-│   ├── departments.json      # 部门数据
-│   ├── job_descriptions.json # JD数据
-│   └── okrs.json             # OKR数据
+├── .env.example              # 环境变量示例文件
+├── config/                   # 配置文件目录
+│   ├── database.py           # 数据库配置
+│   └── settings.py           # 应用设置
+├── models/                   # 数据库模型目录
+│   ├── __init__.py
+│   ├── resume.py             # 简历模型
+│   ├── employee.py            # 员工模型
+│   ├── department.py          # 部门模型
+│   ├── jd.py                 # JD模型
+│   └── okr.py                # OKR模型
 ├── modules/                  # 业务模块目录
 │   ├── resume/               # 简历管理模块
 │   │   ├── __init__.py
@@ -39,6 +44,10 @@ backend/
 │       ├── models.py
 │       ├── service.py
 │       └── router.py
+├── utils/                    # 工具类目录
+│   ├── document_parser.py    # 文档解析工具
+│   ├── llm_mock.py           # 大模型模拟工具
+│   └── jd_matcher.py         # JD匹配工具
 ├── test_resume.txt           # 测试简历文件
 ├── start.bat                 # Windows启动脚本
 ├── start.sh                  # Linux/Mac启动脚本
@@ -53,12 +62,35 @@ backend/
 4. **JD管理** - 职位描述的增删改查
 5. **OKR/KPI管理** - 目标管理的增删改查
 
+## 环境配置
+
+1. 复制 `.env.example` 文件为 `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. 修改 `.env` 文件中的配置参数:
+   ```
+   DATABASE_URL=mysql+pymysql://username:password@localhost:3306/database_name
+   ```
+
+## 数据库设置
+
+本项目使用SQLAlchemy作为ORM，支持MySQL数据库。
+
+### 创建数据库表
+
+运行应用时会自动创建数据库表：
+```bash
+python app.py
+```
+
 ## 快速开始
 
 ### 安装依赖
 
 ```bash
-pip install fastapi uvicorn
+pip install fastapi uvicorn sqlalchemy pymysql python-dotenv pydantic-settings PyPDF2 python-docx
 ```
 
 ### 启动服务
@@ -84,7 +116,7 @@ python app.py
 ## API接口
 
 ### 简历管理
-- `POST /api/resumes/upload` - 上传简历
+- `POST /api/resumes/upload-stream` - 流式上传和处理简历
 - `GET /api/resumes` - 获取简历列表
 - `GET /api/resumes/{id}` - 获取简历详情
 - `PUT /api/resumes/{id}` - 更新简历信息
@@ -117,6 +149,15 @@ python app.py
 - `GET /api/okr/{id}` - 获取OKR详情
 - `PUT /api/okr/{id}` - 更新OKR信息
 - `DELETE /api/okr/{id}` - 删除OKR
+
+## 流式处理简历上传
+
+简历上传接口支持流式处理，包含以下阶段：
+
+1. 读取内容（支持PDF和DOCX格式）
+2. 用大模型分析要点
+3. 与未关闭的JD进行匹配度计算
+4. 给用户返回处理报告
 
 ## 测试API
 
