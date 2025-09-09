@@ -10,7 +10,13 @@ import OKRManagement from './pages/OKRManagement';
 import HomePage from './pages/HomePage';
 
 // 侧边栏菜单项组件
-const SidebarItem = ({ to, icon, children }) => {
+interface SidebarItemProps {
+  to: string;
+  icon: string;
+  children: React.ReactNode;
+}
+
+const SidebarItem = ({ to, icon, children }: SidebarItemProps) => {
   const location = useLocation();
   const isActive = location.pathname === to;
 
@@ -57,11 +63,11 @@ const AppBar = () => {
   return (
     <header className="appbar">
       <div className="appbar-title">
-        <span>AI HR 管理系统</span>
+        <span>AI人事干人事</span>
       </div>
       <div className="appbar-actions">
         <div className="user-info">
-          <span>管理员</span>
+          <span>演示账户</span>
         </div>
       </div>
     </header>
