@@ -1,11 +1,15 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, Date, ForeignKey
-from sqlalchemy.sql import func
-from config.database import Base
 from datetime import datetime
+
+from sqlalchemy import (Column, Date, DateTime, ForeignKey, Integer, String,
+                        Text)
+from sqlalchemy.sql import func
+
+from config.database import Base
+
 
 class OKR(Base):
     __tablename__ = "okrs"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     employee_id = Column(Integer, ForeignKey("employees.id"), nullable=False)
     objective = Column(Text, nullable=False)
@@ -16,7 +20,7 @@ class OKR(Base):
     progress = Column(Integer, default=0)  # 0-100
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
-    
+
     def to_dict(self):
         """转换为字典"""
         return {

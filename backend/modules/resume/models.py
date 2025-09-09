@@ -1,6 +1,8 @@
-from pydantic import BaseModel
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel
+
 
 class ResumeBase(BaseModel):
     name: Optional[str] = None
@@ -11,12 +13,15 @@ class ResumeBase(BaseModel):
     skills: Optional[str] = None
     position: Optional[str] = None
 
+
 class ResumeCreate(ResumeBase):
     filename: str
+
 
 class ResumeUpdate(ResumeBase):
     status: Optional[str] = None
     score: Optional[float] = None
+
 
 class ResumeInDB(ResumeBase):
     id: int

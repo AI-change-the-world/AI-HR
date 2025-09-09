@@ -1,5 +1,7 @@
-from pydantic import BaseModel
 from typing import Optional
+
+from pydantic import BaseModel
+
 
 class JDBase(BaseModel):
     title: str
@@ -8,8 +10,10 @@ class JDBase(BaseModel):
     description: Optional[str] = None
     status: str = "草稿"
 
+
 class JDCreate(JDBase):
     pass
+
 
 class JDUpdate(JDBase):
     title: Optional[str] = None
@@ -17,6 +21,7 @@ class JDUpdate(JDBase):
     location: Optional[str] = None
     description: Optional[str] = None
     status: Optional[str] = None
+
 
 class JDInDB(JDBase):
     id: int

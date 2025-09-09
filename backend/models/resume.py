@@ -1,12 +1,15 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, Float, Boolean
-from sqlalchemy.sql import func
-from config.database import Base
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
+from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, Text
+from sqlalchemy.sql import func
+
+from config.database import Base
+
 
 class Resume(Base):
     __tablename__ = "resumes"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     filename = Column(String(255), nullable=False)
     content = Column(Text, nullable=True)
@@ -23,7 +26,7 @@ class Resume(Base):
     match_score = Column(Float, default=0.0)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
-    
+
     def to_dict(self):
         """转换为字典"""
         return {

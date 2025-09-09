@@ -1,12 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from modules.resume.router import router as resume_router
-from modules.employee.router import router as employee_router
+
+from config.database import engine
+from models import department, employee, jd, okr, resume
 from modules.department.router import router as department_router
+from modules.employee.router import router as employee_router
 from modules.jd.router import router as jd_router
 from modules.okr.router import router as okr_router
-from config.database import engine
-from models import resume, employee, department, jd, okr
+from modules.resume.router import router as resume_router
 
 # 创建数据库表
 resume.Base.metadata.create_all(bind=engine)
@@ -16,9 +17,7 @@ jd.Base.metadata.create_all(bind=engine)
 okr.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="AI HR 后端服务",
-    description="AI HR 简历管理系统后端API",
-    version="1.0.0"
+    title="AI HR 后端服务", description="AI HR 简历管理系统后端API", version="1.0.0"
 )
 
 # 添加CORS中间件，允许前端访问
@@ -37,10 +36,13 @@ app.include_router(department_router)
 app.include_router(jd_router)
 app.include_router(okr_router)
 
+
 @app.get("/")
 async def root():
     return {"message": "AI HR 后端服务已启动"}
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

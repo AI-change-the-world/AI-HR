@@ -1,7 +1,9 @@
-import PyPDF2
-import docx
 from io import BytesIO
 from typing import Optional
+
+import docx
+import PyPDF2
+
 
 def parse_pdf(content: bytes) -> str:
     """解析PDF文件内容"""
@@ -14,6 +16,7 @@ def parse_pdf(content: bytes) -> str:
     except Exception as e:
         raise ValueError(f"PDF解析失败: {str(e)}")
 
+
 def parse_docx(content: bytes) -> str:
     """解析DOCX文件内容"""
     try:
@@ -25,11 +28,12 @@ def parse_docx(content: bytes) -> str:
     except Exception as e:
         raise ValueError(f"DOCX解析失败: {str(e)}")
 
+
 def parse_document(file_content: bytes, file_extension: str) -> str:
     """根据文件扩展名解析文档内容"""
-    if file_extension.lower() == '.pdf':
+    if file_extension.lower() == ".pdf":
         return parse_pdf(file_content)
-    elif file_extension.lower() == '.docx':
+    elif file_extension.lower() == ".docx":
         return parse_docx(file_content)
     else:
         raise ValueError(f"不支持的文件格式: {file_extension}")

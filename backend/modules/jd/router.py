@@ -1,17 +1,17 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from .models import JDCreation, JDUpdate, JDInDB
-from .service import create_jd, get_jd, get_jds, update_jd, delete_jd, get_db
 
-router = APIRouter(
-    prefix="/api/jd",
-    tags=["JD管理"]
-)
+from .models import JDCreation, JDInDB, JDUpdate
+from .service import create_jd, delete_jd, get_db, get_jd, get_jds, update_jd
+
+router = APIRouter(prefix="/api/jd", tags=["JD管理"])
+
 
 @router.post("/", response_model=JDInDB)
 async def create_jd_info(jd: JDCreation, db: Session = Depends(get_db)):
     """创建JD"""
     return create_jd(jd, db)
+
 
 @router.get("/{jd_id}", response_model=JDInDB)
 async def read_jd(jd_id: int, db: Session = Depends(get_db)):
@@ -21,18 +21,23 @@ async def read_jd(jd_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="JD未找到")
     return jd
 
+
 @router.get("/", response_model=list[JDInDB])
 async def read_jds(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """获取JD列表"""
     return get_jds(skip=skip, limit=limit, db=db)
 
+
 @router.put("/{jd_id}", response_model=JDInDB)
-async def update_jd_info(jd_id: int, jd_update: JDUpdate, db: Session = Depends(get_db)):
+async def update_jd_info(
+    jd_id: int, jd_update: JDUpdate, db: Session = Depends(get_db)
+):
     """更新JD信息"""
     jd = update_jd(jd_id, jd_update, db)
     if jd is None:
         raise HTTPException(status_code=404, detail="JD未找到")
     return jd
+
 
 @router.delete("/{jd_id}")
 async def delete_jd_info(jd_id: int, db: Session = Depends(get_db)):
