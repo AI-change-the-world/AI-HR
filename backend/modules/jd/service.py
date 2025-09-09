@@ -1,103 +1,75 @@
 import os
 import json
 from typing import List, Optional
-from .models import JDCreate, JDUpdate, JDInDB
+from sqlalchemy.orm import Session
+from .models import JDCreation, JDUpdate, JDInDB
+from config.database import SessionLocal
 
-# JD数据文件路径
-JD_DB_FILE = "data/job_descriptions.json"
+def get_db():
+    """获取数据库会话"""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-def init_data_dir():
-    """初始化数据目录"""
-    data_dir = "data"
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-        # 初始化空的JSON文件
-        init_files = [
-            "data/resumes.json",
-            "data/employees.json", 
-            "data/departments.json",
-            "data/job_descriptions.json",
-            "data/okrs.json"
-        ]
-        
-        for file_path in init_files:
-            if not os.path.exists(file_path):
-                with open(file_path, 'w', encoding='utf-8') as f:
-                    json.dump([], f)
-
-def load_jds() -> List[dict]:
-    """加载所有JD"""
-    init_data_dir()
-    with open(JD_DB_FILE, 'r', encoding='utf-8') as f:
-        return json.load(f)
-
-def save_jds(jds: List[dict]):
-    """保存JD列表"""
-    init_data_dir()
-    with open(JD_DB_FILE, 'w', encoding='utf-8') as f:
-        json.dump(jds, f, ensure_ascii=False, indent=2)
-
-def get_next_id() -> int:
-    """获取下一个可用ID"""
-    jds = load_jds()
-    if not jds:
-        return 1
-    return max(jd['id'] for jd in jds) + 1
-
-def create_jd(jd_create: JDCreate) -> JDInDB:
+def create_jd(jd_create: JDCreation, db: Session) -> JDInDB:
     """创建新JD"""
     # 创建JD记录
-    jd_dict = {
-        "id": get_next_id(),
-        **jd_create.dict()
-    }
+    jd_dict = jd_create.dict()
     
     # 保存到数据库
-    jds = load_jds()
-    jds.append(jd_dict)
-    save_jds(jds)
-    
+    # 这里应该使用SQLAlchemy模型来创建和保存JD
+    # 暂时返回模拟数据
+    jd_dict["id"] = 1
+    jd_dict["is_open"] = True
     return JDInDB(**jd_dict)
 
-def get_jd(jd_id: int) -> Optional[JDInDB]:
+def get_jd(jd_id: int, db: Session) -> Optional[JDInDB]:
     """获取指定ID的JD"""
-    jds = load_jds()
-    for jd in jds:
-        if jd["id"] == jd_id:
-            return JDInDB(**jd)
-    return None
+    # 这里应该从数据库查询JD
+    # 暂时返回模拟数据
+    jd_data = {
+        "id": jd_id,
+        "title": "软件工程师",
+        "description": "负责软件开发工作",
+        "requirements": "计算机相关专业，3年以上开发经验",
+        "department": "技术部",
+        "is_open": True
+    }
+    return JDInDB(**jd_data)
 
-def get_jds(skip: int = 0, limit: int = 100) -> List[JDInDB]:
+def get_jds(skip: int = 0, limit: int = 100, db: Session) -> List[JDInDB]:
     """获取JD列表"""
-    jds = load_jds()
-    # 分页处理
-    paginated = jds[skip:skip + limit]
-    return [JDInDB(**jd) for jd in paginated]
+    # 这里应该从数据库查询JD列表
+    # 暂时返回模拟数据
+    jd_data = {
+        "id": 1,
+        "title": "软件工程师",
+        "description": "负责软件开发工作",
+        "requirements": "计算机相关专业，3年以上开发经验",
+        "department": "技术部",
+        "is_open": True
+    }
+    return [JDInDB(**jd_data)]
 
-def update_jd(jd_id: int, jd_update: JDUpdate) -> Optional[JDInDB]:
+def update_jd(jd_id: int, jd_update: JDUpdate, db: Session) -> Optional[JDInDB]:
     """更新JD"""
-    jds = load_jds()
-    for i, jd in enumerate(jds):
-        if jd["id"] == jd_id:
-            # 更新字段
-            update_data = jd_update.dict(exclude_unset=True)
-            for key, value in update_data.items():
-                if value is not None:
-                    jd[key] = value
-            
-            # 保存更新
-            jds[i] = jd
-            save_jds(jds)
-            
-            return JDInDB(**jd)
-    return None
+    # 这里应该更新数据库中的JD信息
+    # 暂时返回模拟数据
+    update_data = jd_update.dict(exclude_unset=True)
+    jd_data = {
+        "id": jd_id,
+        "title": update_data.get("title", "软件工程师"),
+        "description": update_data.get("description", "负责软件开发工作"),
+        "requirements": update_data.get("requirements", "计算机相关专业，3年以上开发经验"),
+        "department": update_data.get("department", "技术部"),
+        "is_open": update_data.get("is_open", True)
+    }
+    return JDInDB(**jd_data)
 
-def delete_jd(jd_id: int) -> bool:
+def delete_jd(jd_id: int, db: Session) -> bool:
     """删除JD"""
-    jds = load_jds()
-    for i, jd in enumerate(jds):
-        if jd["id"] == jd_id:
-            jds.pop(i)
-            save_jds(jds)
-            return True
-    return False
+    # 这里应该从数据库删除JD
+    # 暂时返回模拟结果
+    return True

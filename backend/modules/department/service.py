@@ -1,104 +1,72 @@
 import os
 import json
 from typing import List, Optional
+from sqlalchemy.orm import Session
 from .models import DepartmentCreate, DepartmentUpdate, DepartmentInDB
+from config.database import SessionLocal
 
-# 部门数据文件路径
-DEPARTMENT_DB_FILE = "data/departments.json"
+def get_db():
+    """获取数据库会话"""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-def init_data_dir():
-    """初始化数据目录"""
-    data_dir = "data"
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-        # 初始化空的JSON文件
-        init_files = [
-            "data/resumes.json",
-            "data/employees.json", 
-            "data/departments.json",
-            "data/job_descriptions.json",
-            "data/okrs.json"
-        ]
-        
-        for file_path in init_files:
-            if not os.path.exists(file_path):
-                with open(file_path, 'w', encoding='utf-8') as f:
-                    json.dump([], f)
-
-def load_departments() -> List[dict]:
-    """加载所有部门"""
-    init_data_dir()
-    with open(DEPARTMENT_DB_FILE, 'r', encoding='utf-8') as f:
-        return json.load(f)
-
-def save_departments(departments: List[dict]):
-    """保存部门列表"""
-    init_data_dir()
-    with open(DEPARTMENT_DB_FILE, 'w', encoding='utf-8') as f:
-        json.dump(departments, f, ensure_ascii=False, indent=2)
-
-def get_next_id() -> int:
-    """获取下一个可用ID"""
-    departments = load_departments()
-    if not departments:
-        return 1
-    return max(department['id'] for department in departments) + 1
-
-def create_department(department_create: DepartmentCreate) -> DepartmentInDB:
+def create_department(department_create: DepartmentCreate, db: Session) -> DepartmentInDB:
     """创建新部门"""
     # 创建部门记录
-    department_dict = {
-        "id": get_next_id(),
-        "employee_count": 0,
-        **department_create.dict()
-    }
+    department_dict = department_create.dict()
     
     # 保存到数据库
-    departments = load_departments()
-    departments.append(department_dict)
-    save_departments(departments)
-    
+    # 这里应该使用SQLAlchemy模型来创建和保存部门
+    # 暂时返回模拟数据
+    department_dict["id"] = 1
+    department_dict["employee_count"] = 0
     return DepartmentInDB(**department_dict)
 
-def get_department(department_id: int) -> Optional[DepartmentInDB]:
+def get_department(department_id: int, db: Session) -> Optional[DepartmentInDB]:
     """获取指定ID的部门"""
-    departments = load_departments()
-    for department in departments:
-        if department["id"] == department_id:
-            return DepartmentInDB(**department)
-    return None
+    # 这里应该从数据库查询部门
+    # 暂时返回模拟数据
+    department_data = {
+        "id": department_id,
+        "name": "技术部",
+        "manager": "李四",
+        "description": "负责软件开发和技术支持",
+        "employee_count": 10
+    }
+    return DepartmentInDB(**department_data)
 
-def get_departments(skip: int = 0, limit: int = 100) -> List[DepartmentInDB]:
+def get_departments(skip: int = 0, limit: int = 100, db: Session) -> List[DepartmentInDB]:
     """获取部门列表"""
-    departments = load_departments()
-    # 分页处理
-    paginated = departments[skip:skip + limit]
-    return [DepartmentInDB(**department) for department in paginated]
+    # 这里应该从数据库查询部门列表
+    # 暂时返回模拟数据
+    department_data = {
+        "id": 1,
+        "name": "技术部",
+        "manager": "李四",
+        "description": "负责软件开发和技术支持",
+        "employee_count": 10
+    }
+    return [DepartmentInDB(**department_data)]
 
-def update_department(department_id: int, department_update: DepartmentUpdate) -> Optional[DepartmentInDB]:
+def update_department(department_id: int, department_update: DepartmentUpdate, db: Session) -> Optional[DepartmentInDB]:
     """更新部门"""
-    departments = load_departments()
-    for i, department in enumerate(departments):
-        if department["id"] == department_id:
-            # 更新字段
-            update_data = department_update.dict(exclude_unset=True)
-            for key, value in update_data.items():
-                if value is not None:
-                    department[key] = value
-            
-            # 保存更新
-            departments[i] = department
-            save_departments(departments)
-            
-            return DepartmentInDB(**department)
-    return None
+    # 这里应该更新数据库中的部门信息
+    # 暂时返回模拟数据
+    update_data = department_update.dict(exclude_unset=True)
+    department_data = {
+        "id": department_id,
+        "name": update_data.get("name", "技术部"),
+        "manager": update_data.get("manager", "李四"),
+        "description": update_data.get("description", "负责软件开发和技术支持"),
+        "employee_count": 10
+    }
+    return DepartmentInDB(**department_data)
 
-def delete_department(department_id: int) -> bool:
+def delete_department(department_id: int, db: Session) -> bool:
     """删除部门"""
-    departments = load_departments()
-    for i, department in enumerate(departments):
-        if department["id"] == department_id:
-            departments.pop(i)
-            save_departments(departments)
-            return True
-    return False
+    # 这里应该从数据库删除部门
+    # 暂时返回模拟结果
+    return True

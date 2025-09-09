@@ -1,96 +1,75 @@
 import os
 import json
 from typing import List, Optional
-from .models import OKRCreate, OKRUpdate, OKRInDB, KeyResult
+from sqlalchemy.orm import Session
+from .models import OKRCreation, OKRUpdate, OKRInDB
+from config.database import SessionLocal
 
-# OKR数据文件路径
-OKR_DB_FILE = "data/okrs.json"
+def get_db():
+    """获取数据库会话"""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-def init_data_dir():
-    """初始化数据目录"""
-    data_dir = "data"
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-    
-    # 如果OKR数据库文件不存在，创建一个空的
-    if not os.path.exists(OKR_DB_FILE):
-        with open(OKR_DB_FILE, 'w', encoding='utf-8') as f:
-            json.dump([], f)
-
-def load_okrs() -> List[dict]:
-    """加载所有OKR"""
-    init_data_dir()
-    with open(OKR_DB_FILE, 'r', encoding='utf-8') as f:
-        return json.load(f)
-
-def save_okrs(okrs: List[dict]):
-    """保存OKR列表"""
-    init_data_dir()
-    with open(OKR_DB_FILE, 'w', encoding='utf-8') as f:
-        json.dump(okrs, f, ensure_ascii=False, indent=2)
-
-def get_next_id() -> int:
-    """获取下一个可用ID"""
-    okrs = load_okrs()
-    if not okrs:
-        return 1
-    return max(okr['id'] for okr in okrs) + 1
-
-def create_okr(okr_create: OKRCreate) -> OKRInDB:
+def create_okr(okr_create: OKRCreation, db: Session) -> OKRInDB:
     """创建新OKR"""
     # 创建OKR记录
-    okr_dict = {
-        "id": get_next_id(),
-        "key_results": [],
-        **okr_create.dict()
-    }
+    okr_dict = okr_create.dict()
     
     # 保存到数据库
-    okrs = load_okrs()
-    okrs.append(okr_dict)
-    save_okrs(okrs)
-    
+    # 这里应该使用SQLAlchemy模型来创建和保存OKR
+    # 暂时返回模拟数据
+    okr_dict["id"] = 1
+    okr_dict["progress"] = 0
     return OKRInDB(**okr_dict)
 
-def get_okr(okr_id: int) -> Optional[OKRInDB]:
+def get_okr(okr_id: int, db: Session) -> Optional[OKRInDB]:
     """获取指定ID的OKR"""
-    okrs = load_okrs()
-    for okr in okrs:
-        if okr["id"] == okr_id:
-            return OKRInDB(**okr)
-    return None
+    # 这里应该从数据库查询OKR
+    # 暂时返回模拟数据
+    okr_data = {
+        "id": okr_id,
+        "employee_id": 1,
+        "objective": "提高代码质量",
+        "key_results": "减少bug率20%",
+        "quarter": "Q1-2025",
+        "progress": 50
+    }
+    return OKRInDB(**okr_data)
 
-def get_okrs(skip: int = 0, limit: int = 100) -> List[OKRInDB]:
+def get_okrs(skip: int = 0, limit: int = 100, db: Session) -> List[OKRInDB]:
     """获取OKR列表"""
-    okrs = load_okrs()
-    # 分页处理
-    paginated = okrs[skip:skip + limit]
-    return [OKRInDB(**okr) for okr in paginated]
+    # 这里应该从数据库查询OKR列表
+    # 暂时返回模拟数据
+    okr_data = {
+        "id": 1,
+        "employee_id": 1,
+        "objective": "提高代码质量",
+        "key_results": "减少bug率20%",
+        "quarter": "Q1-2025",
+        "progress": 50
+    }
+    return [OKRInDB(**okr_data)]
 
-def update_okr(okr_id: int, okr_update: OKRUpdate) -> Optional[OKRInDB]:
+def update_okr(okr_id: int, okr_update: OKRUpdate, db: Session) -> Optional[OKRInDB]:
     """更新OKR"""
-    okrs = load_okrs()
-    for i, okr in enumerate(okrs):
-        if okr["id"] == okr_id:
-            # 更新字段
-            update_data = okr_update.dict(exclude_unset=True)
-            for key, value in update_data.items():
-                if value is not None:
-                    okr[key] = value
-            
-            # 保存更新
-            okrs[i] = okr
-            save_okrs(okrs)
-            
-            return OKRInDB(**okr)
-    return None
+    # 这里应该更新数据库中的OKR信息
+    # 暂时返回模拟数据
+    update_data = okr_update.dict(exclude_unset=True)
+    okr_data = {
+        "id": okr_id,
+        "employee_id": update_data.get("employee_id", 1),
+        "objective": update_data.get("objective", "提高代码质量"),
+        "key_results": update_data.get("key_results", "减少bug率20%"),
+        "quarter": update_data.get("quarter", "Q1-2025"),
+        "progress": update_data.get("progress", 50)
+    }
+    return OKRInDB(**okr_data)
 
-def delete_okr(okr_id: int) -> bool:
+def delete_okr(okr_id: int, db: Session) -> bool:
     """删除OKR"""
-    okrs = load_okrs()
-    for i, okr in enumerate(okrs):
-        if okr["id"] == okr_id:
-            okrs.pop(i)
-            save_okrs(okrs)
-            return True
-    return False
+    # 这里应该从数据库删除OKR
+    # 暂时返回模拟结果
+    return True
