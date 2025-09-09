@@ -1,6 +1,0 @@
-pydantic_settings
-pydantic
-fastapi
-uvicorn
-GPUtil
-torch==2.7.1
