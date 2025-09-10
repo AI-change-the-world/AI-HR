@@ -6,10 +6,9 @@ const { Title, Paragraph } = Typography;
 
 const HomePage: React.FC = () => {
     const notices = [
-        "系统升级通知：新版AI模型已上线，简历分析准确率提升15%",
-        "功能更新：OKR模块新增季度目标对比功能",
-        "维护提醒：今晚00:00-02:00系统维护，期间服务可能中断",
-        "新功能上线：员工绩效分析报告功能现已开放"
+        "AI 人事办人事",
+        "做有温度的人工智能系统",
+        "客观，公平"
     ];
 
     const [currentNotice, setCurrentNotice] = useState(0);

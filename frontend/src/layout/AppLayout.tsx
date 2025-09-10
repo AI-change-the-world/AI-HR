@@ -2,7 +2,7 @@ import { Layout, Menu, Button, Input, Typography, Avatar } from 'antd';
 import { useState, useRef, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import defaultThumbnail from "../assets/react.svg";
-import { AppstoreOutlined, ClusterOutlined, DashboardOutlined, MonitorOutlined, PythonOutlined, MessageOutlined } from '@ant-design/icons';
+import { AppstoreOutlined, ToolOutlined, TagOutlined, DashboardOutlined, GroupOutlined, PaperClipOutlined, MessageOutlined } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
 const { TextArea } = Input;
@@ -194,7 +194,7 @@ export default function AppLayout() {
                                 key: 'employee-management',
                                 label: <span className="font-medium">员工管理</span>,
                                 onClick: () => navigate('/employee-management'),
-                                icon: <MonitorOutlined className="text-primary-600" />,
+                                icon: <GroupOutlined className="text-primary-600" />,
                                 className: 'mx-2 mb-1 rounded-lg hover:bg-primary-50 transition-all duration-200'
                             },
                             {
@@ -208,21 +208,21 @@ export default function AppLayout() {
                                 key: 'resume-management',
                                 label: <span className="font-medium">简历库</span>,
                                 onClick: () => navigate('/resume-management'),
-                                icon: <PythonOutlined className="text-primary-600" />,
+                                icon: <PaperClipOutlined className="text-primary-600" />,
                                 className: 'mx-2 mb-1 rounded-lg hover:bg-primary-50 transition-all duration-200'
                             },
                             {
                                 key: 'jd-management',
                                 label: <span className="font-medium">JD管理</span>,
                                 onClick: () => navigate('/jd-management'),
-                                icon: <ClusterOutlined className="text-primary-600" />,
+                                icon: <ToolOutlined className="text-primary-600" />,
                                 className: 'mx-2 mb-1 rounded-lg hover:bg-primary-50 transition-all duration-200'
                             },
                             {
                                 key: 'okr',
                                 label: <span className="font-medium">OKR/KPI管理</span>,
                                 onClick: () => navigate('/okr'),
-                                icon: <ClusterOutlined className="text-primary-600" />,
+                                icon: <TagOutlined className="text-primary-600" />,
                                 className: 'mx-2 mb-1 rounded-lg hover:bg-primary-50 transition-all duration-200'
                             },
                         ]}
