@@ -164,7 +164,7 @@ export default function AppLayout() {
     );
 
     return (
-        <Layout style={{ minHeight: '100vh' }}>
+        <Layout style={{ minHeight: '100vh', paddingTop: '48px' }}>
             <Header
                 style={{
                     display: 'flex',
@@ -172,6 +172,11 @@ export default function AppLayout() {
                     padding: '0 16px',
                     background: '#fff', // 浅蓝色背景
                     height: '48px',  // 修改Header高度为48px
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    zIndex: 1000,
                 }}
             >
                 <img
@@ -192,10 +197,14 @@ export default function AppLayout() {
                     style={{
                         background: '#fff', // 浅蓝色背景
                         overflowY: 'auto',
-                        position: 'sticky',
+                        position: 'fixed',
+                        left: 0,
+                        top: '48px',
                         height: 'calc(100vh - 48px)',  // 调整Sider高度计算
-                        top: 0,
+                        zIndex: 100,
+                        width: '200px',
                     }}
+                    width={200}
                 >
                     <Menu
                         mode="inline"
@@ -219,7 +228,7 @@ export default function AppLayout() {
                         padding: '24px',
                         minHeight: 'calc(100vh - 48px)',  // 调整Content最小高度计算
                         background: '#fafafa', // 浅灰色背景
-                        overflowY: 'auto',
+                        marginLeft: '200px', // 为固定的sidebar留出空间
                     }}
                 >
                     <div
@@ -227,7 +236,8 @@ export default function AppLayout() {
                             background: '#fff',
                             padding: '24px',
                             minHeight: 'calc(100vh - 96px)',  // 调整内部div最小高度计算
-                            position: 'relative'
+                            position: 'relative',
+                            overflowY: 'auto',
                         }}
                     >
                         <Outlet />
