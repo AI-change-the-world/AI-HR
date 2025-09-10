@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import './App.css';
 
 // 导入各个模块的页面组件
@@ -74,8 +75,33 @@ const AppBar = () => {
   );
 };
 
+// AI问答抽屉组件
+const AIChatDrawer = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  return (
+    <div className={`ai-chat-drawer ${isOpen ? 'open' : ''}`}>
+      <div className="drawer-header">
+        <h3>AI助手</h3>
+        <button className="close-btn" onClick={onClose}>×</button>
+      </div>
+      <div className="drawer-content">
+        <div className="chat-messages">
+          <div className="message ai-message">
+            您好！我是AI人事助手，有什么可以帮助您的吗？
+          </div>
+        </div>
+        <div className="chat-input">
+          <input type="text" placeholder="请输入您的问题..." />
+          <button className="btn btn-primary">发送</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // 主应用组件
 function App() {
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
   return (
     <Router>
       <div className="App">
@@ -91,6 +117,12 @@ function App() {
             <Route path="/okr" element={<OKRManagement />} />
           </Routes>
         </div>
+        {/* 全局AI助手按钮 */}
+        <button className="ai-assistant-button" onClick={() => setIsChatOpen(true)}>
+          AI助手
+        </button>
+        {/* AI问答抽屉 */}
+        <AIChatDrawer isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
       </div>
     </Router>
   );
