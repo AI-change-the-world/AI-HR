@@ -120,7 +120,7 @@ const JDManagement: React.FC = () => {
     return (
         <div className="animate-fade-in">
             <div className="mb-6">
-                <Title level={2} className="bg-gradient-to-r from-primary-600 to-primary-900 bg-clip-text text-transparent mb-2">
+                <Title level={5} className="bg-gradient-to-r from-primary-600 to-primary-900 bg-clip-text text-transparent mb-2 text-left">
                     JD管理
                 </Title>
                 <div className="w-24 h-1 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full mb-4"></div>

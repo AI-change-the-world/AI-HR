@@ -1,3 +1,8 @@
+<div style="text-align: center;">
+  <img src="aihr-icon.png" width="300" />
+</div>
+
+
 # AI-HR
 **This is a prototype of AI-HR.**
 
