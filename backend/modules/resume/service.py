@@ -1,24 +1,20 @@
-import asyncio
 import json
 import os
 from datetime import datetime
 from typing import List, Optional
 
 from fastapi import UploadFile
-from fastapi.responses import StreamingResponse
-from sqlalchemy import create_engine
+from sse_starlette import EventSourceResponse
 from sqlalchemy.orm import Session
 
-from config.database import SessionLocal, engine
+from config.database import SessionLocal
 
 # 创建数据库表
-from models import department, employee, jd, okr, resume
 from models.resume import Resume
 from utils.document_parser import parse_document
 from utils.jd_matcher import find_best_match
 from utils.llm_mock import mock_llm_analysis
 
-resume.Base.metadata.create_all(bind=engine)
 
 
 def extract_resume_info(content: str) -> dict:
@@ -49,7 +45,7 @@ def extract_resume_info(content: str) -> dict:
     return info
 
 
-async def process_resume_stream(file: UploadFile) -> StreamingResponse:
+async def process_resume_stream(file: UploadFile) -> EventSourceResponse:
     """流式处理简历上传"""
 
     async def event_generator():
@@ -119,7 +115,7 @@ async def process_resume_stream(file: UploadFile) -> StreamingResponse:
         finally:
             yield "data: [DONE]\n\n"
 
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+    return EventSourceResponse(event_generator(), media_type="text/event-stream")
 
 
 def get_resume(resume_id: int, db: Session) -> Optional[Resume]:

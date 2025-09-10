@@ -1,20 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from config.database import engine
-from models import department, employee, jd, okr, resume
 from modules.department.router import router as department_router
 from modules.employee.router import router as employee_router
 from modules.jd.router import router as jd_router
 from modules.okr.router import router as okr_router
 from modules.resume.router import router as resume_router
 
-# 创建数据库表
-resume.Base.metadata.create_all(bind=engine)
-employee.Base.metadata.create_all(bind=engine)
-department.Base.metadata.create_all(bind=engine)
-jd.Base.metadata.create_all(bind=engine)
-okr.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="AI HR 后端服务", description="AI HR 简历管理系统后端API", version="1.0.0"

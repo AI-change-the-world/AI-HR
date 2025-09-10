@@ -6,7 +6,8 @@ import xlrd
 from openpyxl import load_workbook
 from sqlalchemy.orm import Session
 
-from backend.models.employee import Employee as EmployeeModel
+from models.employee import Employee as EmployeeModel
+from models.department import Department as DepartmentModel
 
 from ..department.models import DepartmentCreate
 from ..department.service import create_department, get_department_by_name
@@ -36,23 +37,26 @@ async def process_file(file):
         for emp_data in employees_data:
             # 检查部门是否存在，如果不存在则创建
             department_name = emp_data["部门"]
-            department = get_department_by_name(department_name, db)
-            if not department:
+            db_department = db.query(DepartmentModel).filter(DepartmentModel.name == department_name).first()
+            if not db_department:
                 # 创建新部门（使用默认值）
                 dept_create = DepartmentCreate(
                     name=department_name,
                     manager="待定",
                     description=f"自动创建的部门: {department_name}",
                 )
-                department = create_department(dept_create, db)
+                db_department = DepartmentModel(**dept_create.dict())
+                db.add(db_department)
+                db.commit()
+                db.refresh(db_department)
 
             # 创建员工记录
             employee_create = EmployeeCreate(
                 name=emp_data["姓名"],
-                department=emp_data["部门"],
+                department_id=db_department.id,
                 position=emp_data["职位"],
-                email=f"{emp_data['姓名'].replace(' ', '')}@example.com",  # 简单处理邮箱
-                phone="",
+                status=0,  # 默认在职
+                comment="通过文件导入"
             )
 
             # 保存到数据库
@@ -66,17 +70,7 @@ async def process_file(file):
             db.refresh(emp)
 
         # 转换为返回格式
-        result = [
-            EmployeeInDB(
-                id=emp.id,
-                name=emp.name,
-                department=emp.department,
-                position=emp.position,
-                email=emp.email,
-                phone=emp.phone,
-            )
-            for emp in created_employees
-        ]
+        result = [EmployeeInDB(**emp.to_dict()) for emp in created_employees]
 
         return result
     except Exception as e:
@@ -151,28 +145,15 @@ def create_employee(employee_create: EmployeeCreate, db: Session) -> EmployeeInD
     db.commit()
     db.refresh(db_employee)
 
-    return EmployeeInDB(
-        id=db_employee.id,
-        name=db_employee.name,
-        department=db_employee.department,
-        position=db_employee.position,
-        email=db_employee.email,
-        phone=db_employee.phone,
-    )
+    return EmployeeInDB(**db_employee.to_dict())
 
 
 def get_employee(employee_id: int, db: Session) -> Optional[EmployeeInDB]:
     """获取指定ID的员工"""
-    # 这里应该从数据库查询员工
-    # 暂时返回模拟数据
-    employee_data = {
-        "id": employee_id,
-        "name": "张三",
-        "department": "技术部",
-        "position": "软件工程师",
-        "email": "zhangsan@example.com",
-    }
-    return EmployeeInDB(**employee_data)
+    db_employee = db.query(EmployeeModel).filter(EmployeeModel.id == employee_id).first()
+    if db_employee:
+        return EmployeeInDB(**db_employee.to_dict())
+    return None
 
 
 def get_employees(
@@ -181,37 +162,30 @@ def get_employees(
     limit: int = 100,
 ) -> List[EmployeeInDB]:
     """获取员工列表"""
-    # 这里应该从数据库查询员工列表
-    # 暂时返回模拟数据
-    employee_data = {
-        "id": 1,
-        "name": "张三",
-        "department": "技术部",
-        "position": "软件工程师",
-        "email": "zhangsan@example.com",
-    }
-    return [EmployeeInDB(**employee_data)]
+    db_employees = db.query(EmployeeModel).offset(skip).limit(limit).all()
+    return [EmployeeInDB(**emp.to_dict()) for emp in db_employees]
 
 
 def update_employee(
     employee_id: int, employee_update: EmployeeUpdate, db: Session
 ) -> Optional[EmployeeInDB]:
     """更新员工"""
-    # 这里应该更新数据库中的员工信息
-    # 暂时返回模拟数据
-    update_data = employee_update.dict(exclude_unset=True)
-    employee_data = {
-        "id": employee_id,
-        "name": update_data.get("name", "张三"),
-        "department": update_data.get("department", "技术部"),
-        "position": update_data.get("position", "软件工程师"),
-        "email": update_data.get("email", "zhangsan@example.com"),
-    }
-    return EmployeeInDB(**employee_data)
+    db_employee = db.query(EmployeeModel).filter(EmployeeModel.id == employee_id).first()
+    if db_employee:
+        update_data = employee_update.dict(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(db_employee, key, value)
+        db.commit()
+        db.refresh(db_employee)
+        return EmployeeInDB(**db_employee.to_dict())
+    return None
 
 
 def delete_employee(employee_id: int, db: Session) -> bool:
     """删除员工"""
-    # 这里应该从数据库删除员工
-    # 暂时返回模拟结果
-    return True
+    db_employee = db.query(EmployeeModel).filter(EmployeeModel.id == employee_id).first()
+    if db_employee:
+        db.delete(db_employee)
+        db.commit()
+        return True
+    return False

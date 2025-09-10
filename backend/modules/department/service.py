@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
-from backend.models.department import Department as DepartmentModel  # 导入数据库模型
+from models.department import Department as DepartmentModel  # 导入数据库模型
 
 from .models import DepartmentCreate, DepartmentInDB, DepartmentUpdate
 
