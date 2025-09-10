@@ -10,6 +10,8 @@ const { Title, Text } = Typography;
 
 export default function AppLayout() {
     const [isChatOpen, setIsChatOpen] = useState(false);
+    const [isChatVisible, setIsChatVisible] = useState(false);
+    const [animationState, setAnimationState] = useState<'open' | 'close'>('close');
     const [messages, setMessages] = useState<Array<{ id: number, text: string, isUser: boolean }>>([
         { id: 1, text: "您好！我是AI人事助手，有什么可以帮助您的吗？", isUser: false }
     ]);
@@ -39,6 +41,20 @@ export default function AppLayout() {
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
+
+    // 处理聊天面板打开/关闭的动画
+    useEffect(() => {
+        if (isChatOpen) {
+            setIsChatVisible(true);
+            setAnimationState('open');
+        } else {
+            setAnimationState('close');
+            const timer = setTimeout(() => {
+                setIsChatVisible(false);
+            }, 300); // 动画持续时间
+            return () => clearTimeout(timer);
+        }
+    }, [isChatOpen]);
 
     // 发送消息
     const handleSend = () => {
@@ -154,7 +170,7 @@ export default function AppLayout() {
                     display: 'flex',
                     alignItems: 'center',
                     padding: '0 16px',
-                    background: '#e3f2fd', // 浅蓝色背景
+                    background: '#fff', // 浅蓝色背景
                 }}
             >
                 <img
@@ -173,14 +189,14 @@ export default function AppLayout() {
             <Layout>
                 <Sider
                     style={{
-                        background: '#f5f9ff', // 浅蓝色背景
+                        background: '#fff', // 浅蓝色背景
                     }}
                 >
                     <Menu
                         mode="inline"
                         selectedKeys={[getSelectedKey()]}
                         style={{
-                            background: '#f5f9ff', // 浅蓝色背景
+                            background: '#fff', // 浅蓝色背景
                         }}
                         items={[
                             { key: 'dashboard', label: '仪表盘', onClick: () => navigate('/dashboard'), icon: <DashboardOutlined /> },
@@ -230,17 +246,18 @@ export default function AppLayout() {
                         zIndex: 1000,
                         width: '40px',
                         height: '40px',
+                        transition: 'all 0.3s ease',
                     }}
                 />
             )}
 
             {/* AI问答面板 */}
-            {isChatOpen && (
+            {isChatVisible && (
                 <div
                     style={{
                         position: 'fixed',
-                        bottom: '30px',
-                        right: '30px',
+                        bottom: animationState === 'open' ? '30px' : '0px',
+                        right: animationState === 'open' ? '30px' : '0px',
                         width: '400px',
                         height: '600px',
                         background: '#fff',
@@ -248,7 +265,10 @@ export default function AppLayout() {
                         boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                         zIndex: 1000,
                         display: 'flex',
-                        flexDirection: 'column'
+                        flexDirection: 'column',
+                        opacity: animationState === 'open' ? 1 : 0,
+                        transform: animationState === 'open' ? 'scale(1)' : 'scale(0.8)',
+                        transition: 'all 0.3s ease',
                     }}
                 >
                     <div
@@ -272,6 +292,15 @@ export default function AppLayout() {
                     </div>
                 </div>
             )}
+
+            <style>
+                {`
+                /* 为AI面板添加额外的动画效果 */
+                .ai-chat-panel {
+                    transition: all 0.3s cubic-bezier(0.2, 0, 0.2, 1);
+                }
+                `}
+            </style>
         </Layout>
     );
 }
