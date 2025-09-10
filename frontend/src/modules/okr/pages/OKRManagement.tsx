@@ -1,16 +1,8 @@
 import React, { useState } from 'react';
 import { Button, Card, Progress, Typography, Space, List } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
-
-// OKR数据接口
-interface OKR {
-    id: number;
-    employeeName: string;
-    objective: string;
-    keyResults: string[];
-    quarter: string;
-    progress: number;
-}
+import { OKR } from '../types';
+import { getOKRs } from '../api';
 
 const { Title, Text } = Typography;
 
@@ -18,27 +10,77 @@ const OKRManagement: React.FC = () => {
     const [okrs, setOkrs] = useState<OKR[]>([
         {
             id: 1,
+            employeeId: 1,
             employeeName: '张三',
             objective: '提升前端性能',
             keyResults: [
-                '将页面加载时间减少30%',
-                '优化核心组件渲染性能',
-                '提升用户交互响应速度'
+                {
+                    id: 1,
+                    description: '将页面加载时间减少30%',
+                    progress: 80,
+                    target: 100,
+                    unit: '%',
+                    status: 'in_progress'
+                },
+                {
+                    id: 2,
+                    description: '优化核心组件渲染性能',
+                    progress: 70,
+                    target: 100,
+                    unit: '%',
+                    status: 'in_progress'
+                },
+                {
+                    id: 3,
+                    description: '提升用户交互响应速度',
+                    progress: 75,
+                    target: 100,
+                    unit: '%',
+                    status: 'in_progress'
+                }
             ],
             quarter: 'Q2-2023',
-            progress: 75
+            year: 2023,
+            progress: 75,
+            status: 'active',
+            createdAt: '2023-05-01'
         },
         {
             id: 2,
+            employeeId: 2,
             employeeName: '李四',
             objective: '完善后端架构',
             keyResults: [
-                '完成微服务拆分',
-                '实现服务监控告警',
-                '提升系统稳定性'
+                {
+                    id: 4,
+                    description: '完成微服务拆分',
+                    progress: 60,
+                    target: 100,
+                    unit: '%',
+                    status: 'in_progress'
+                },
+                {
+                    id: 5,
+                    description: '实现服务监控告警',
+                    progress: 50,
+                    target: 100,
+                    unit: '%',
+                    status: 'in_progress'
+                },
+                {
+                    id: 6,
+                    description: '提升系统稳定性',
+                    progress: 70,
+                    target: 100,
+                    unit: '%',
+                    status: 'in_progress'
+                }
             ],
             quarter: 'Q2-2023',
-            progress: 60
+            year: 2023,
+            progress: 60,
+            status: 'active',
+            createdAt: '2023-05-01'
         }
     ]);
 
@@ -131,7 +173,22 @@ const OKRManagement: React.FC = () => {
                                                 <div className="flex items-start space-x-3">
                                                     <div className={`w-2 h-2 rounded-full mt-2 animate-pulse`}
                                                         style={{ backgroundColor: `hsl(${210 + itemIndex * 30}, 70%, 60%)`, animationDelay: `${itemIndex * 200}ms` }}></div>
-                                                    <span className="text-gray-700">{item}</span>
+                                                    <div className="flex-1">
+                                                        <div className="text-gray-700">{item.description}</div>
+                                                        <div className="flex items-center mt-1 space-x-2">
+                                                            <Progress
+                                                                size="small"
+                                                                percent={item.progress}
+                                                                strokeColor={{
+                                                                    '0%': '#22d3ee',
+                                                                    '50%': '#3b82f6',
+                                                                    '100%': '#1d4ed8',
+                                                                }}
+                                                                className="flex-1"
+                                                            />
+                                                            <span className="text-xs text-gray-500">{item.progress}%</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </List.Item>
                                         )}

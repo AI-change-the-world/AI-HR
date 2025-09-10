@@ -1,16 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Table, Space, Typography } from 'antd';
 import { PlusOutlined, UploadOutlined } from '@ant-design/icons';
-
-// 员工数据接口
-interface Employee {
-    id: number;
-    name: string;
-    department: string;
-    position: string;
-    email: string;
-    phone: string;
-}
+import { Employee } from '../types';
+import { getEmployees } from '../api';
 
 const { Title } = Typography;
 

@@ -1,16 +1,8 @@
 import React, { useState } from 'react';
 import { Button, Table, Space, Typography, Upload } from 'antd';
 import { PlusOutlined, UploadOutlined } from '@ant-design/icons';
-
-// 简历数据接口
-interface Resume {
-    id: number;
-    name: string;
-    position: string;
-    score: number;
-    status: string;
-    createdAt: string;
-}
+import { Resume } from '../types';
+import { getResumes, uploadResumeFile } from '../api';
 
 const { Title } = Typography;
 
@@ -21,7 +13,7 @@ const ResumeLibrary: React.FC = () => {
             name: '张三',
             position: '前端工程师',
             score: 8.5,
-            status: '已筛选',
+            status: 'reviewed',
             createdAt: '2023-05-15'
         },
         {
@@ -29,7 +21,7 @@ const ResumeLibrary: React.FC = () => {
             name: '李四',
             position: '后端工程师',
             score: 9.2,
-            status: '待筛选',
+            status: 'pending',
             createdAt: '2023-05-16'
         },
         {
@@ -37,7 +29,7 @@ const ResumeLibrary: React.FC = () => {
             name: '王五',
             position: '产品经理',
             score: 7.8,
-            status: '已筛选',
+            status: 'reviewed',
             createdAt: '2023-05-17'
         }
     ]);
