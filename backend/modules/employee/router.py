@@ -26,7 +26,7 @@ async def upload_resume(file: UploadFile = File(...)):
         3. 如果部门不存在，则需要先创建部门
     """
     if not file.filename.endswith(('.xls', '.xlsx')):
-        raise HTTPException(status_code=400, detail="只支持xls和xlsx格式的文件")
+        raise BaseResponse(code=400, message="只支持xls和xlsx格式的文件")
     
     return await process_file(file)
 
