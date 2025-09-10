@@ -11,6 +11,7 @@ from .service import (
     get_employee,
     get_employees,
     update_employee,
+    process_file,
 )
 
 router = APIRouter(prefix="/api/employees", tags=["员工管理"])

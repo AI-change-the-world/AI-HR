@@ -4,7 +4,22 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
+from backend.models.department import Department as DepartmentModel  # 导入数据库模型
 from .models import DepartmentCreate, DepartmentInDB, DepartmentUpdate
+
+
+def get_department_by_name(name: str, db: Session) -> Optional[DepartmentInDB]:
+    """根据名称获取部门"""
+    db_department = db.query(DepartmentModel).filter(DepartmentModel.name == name).first()
+    if db_department:
+        return DepartmentInDB(
+            id=db_department.id,
+            name=db_department.name,
+            manager=db_department.manager,
+            description=db_department.description,
+            employee_count=db_department.employee_count
+        )
+    return None
 
 
 def create_department(
@@ -12,14 +27,20 @@ def create_department(
 ) -> DepartmentInDB:
     """创建新部门"""
     # 创建部门记录
-    department_dict = department_create.dict()
-
+    db_department = DepartmentModel(**department_create.dict())
+    
     # 保存到数据库
-    # 这里应该使用SQLAlchemy模型来创建和保存部门
-    # 暂时返回模拟数据
-    department_dict["id"] = 1
-    department_dict["employee_count"] = 0
-    return DepartmentInDB(**department_dict)
+    db.add(db_department)
+    db.commit()
+    db.refresh(db_department)
+    
+    return DepartmentInDB(
+        id=db_department.id,
+        name=db_department.name,
+        manager=db_department.manager,
+        description=db_department.description,
+        employee_count=db_department.employee_count
+    )
 
 
 def get_department(department_id: int, db: Session) -> Optional[DepartmentInDB]:

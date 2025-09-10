@@ -1,24 +1,16 @@
-from sqlalchemy import Column, Integer, String, Text
+from sqlalchemy import Column, DateTime, Integer, String, Text
 from sqlalchemy.sql import func
 
 from config.database import Base
+from models._mixin import ToDictMixin
 
 
-class Department(Base):
+class Department(Base, ToDictMixin):
     __tablename__ = "departments"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), nullable=False, unique=True)
-    manager = Column(String(100), nullable=False)
-    description = Column(Text, nullable=True)
-    employee_count = Column(Integer, default=0)
+    id = Column(Integer, primary_key=True, index=True, comment="部门ID")
+    name = Column(String(100), nullable=False, unique=True, comment="部门名称")
+    description = Column(Text, nullable=True, comment="部门描述")
 
-    def to_dict(self):
-        """转换为字典"""
-        return {
-            "id": self.id,
-            "name": self.name,
-            "manager": self.manager,
-            "description": self.description,
-            "employee_count": self.employee_count,
-        }
+    created_at = Column(DateTime, default=func.now(), comment="创建时间")
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), comment="更新时间")
