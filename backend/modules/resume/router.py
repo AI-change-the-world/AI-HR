@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from config.database import get_db
@@ -16,13 +15,13 @@ from .service import (
 router = APIRouter(prefix="/api/resumes", tags=["简历管理"])
 
 
-@router.post("/upload-stream", response_class=StreamingResponse)
+@router.post("/upload-stream")
 async def upload_resume_stream(file: UploadFile = File(...)):
     """流式上传和处理简历"""
     if not file.filename.endswith((".pdf", ".docx")):
-        raise HTTPException(status_code=400, detail="只支持PDF和DOCX格式的文件")
+        yield {"message": "只支持PDF和DOCX格式的文件"}
 
-    return await process_resume_stream(file)
+    return process_resume_stream(file)
 
 
 @router.get("/{resume_id}", response_model=ResumeInDB)
