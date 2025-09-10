@@ -83,52 +83,34 @@ export default function AppLayout() {
 
     // AI对话组件
     const AIChatPanel = () => (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <div style={{
-                background: '#e3f2fd',
-                padding: '16px',
-                borderRadius: '8px',
-                marginBottom: '16px'
-            }}>
-                <Title level={4} style={{ color: '#0d47a1', margin: 0 }}>AI助手</Title>
-                <Text style={{ color: '#0d47a1' }}>您好！我是AI人事助手，有什么可以帮助您的吗？</Text>
+        <div className="h-full flex flex-col">
+            <div className="bg-gradient-to-r from-primary-50 to-blue-50 p-4 rounded-xl mb-4 border border-primary-100">
+                <Title level={4} className="text-primary-700 m-0 mb-1">AI助手</Title>
+                <Text className="text-primary-600 text-sm">您好！我是AI人事助手，有什么可以帮助您的吗？</Text>
             </div>
-            <div style={{
-                flex: 1,
-                overflowY: 'auto',
-                marginBottom: '16px',
-                padding: '8px'
-            }}>
+            <div className="flex-1 overflow-y-auto mb-4 p-2 space-y-4">
                 {messages.map(message => (
                     <div
                         key={message.id}
-                        style={{
-                            display: 'flex',
-                            justifyContent: message.isUser ? 'flex-end' : 'flex-start',
-                            marginBottom: '16px'
-                        }}
+                        className={`flex ${message.isUser ? 'justify-end' : 'justify-start'} mb-4`}
                     >
                         {!message.isUser && (
                             <Avatar
-                                style={{ backgroundColor: '#2196f3', marginRight: '8px', flexShrink: 0 }}
+                                className="bg-primary-500 mr-2 flex-shrink-0"
                                 icon={<MessageOutlined />}
                             />
                         )}
                         <div
-                            style={{
-                                maxWidth: '80%',
-                                padding: '8px 12px',
-                                borderRadius: '16px',
-                                background: message.isUser ? '#2196f3' : '#f0f0f0',
-                                color: message.isUser ? '#fff' : '#000',
-                                wordBreak: 'break-word'
-                            }}
+                            className={`max-w-[80%] px-3 py-2 rounded-2xl break-words ${message.isUser
+                                ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white'
+                                : 'bg-gray-100 text-gray-800'
+                                }`}
                         >
                             {message.text}
                         </div>
                         {message.isUser && (
                             <Avatar
-                                style={{ backgroundColor: '#4caf50', marginLeft: '8px', flexShrink: 0 }}
+                                className="bg-success-500 ml-2 flex-shrink-0"
                                 icon={<span>U</span>}
                             />
                         )}
@@ -136,9 +118,7 @@ export default function AppLayout() {
                 ))}
                 <div ref={messagesEndRef} />
             </div>
-            <div style={{
-                position: 'relative'
-            }}>
+            <div className="relative">
                 <TextArea
                     placeholder="请输入您的问题..."
                     autoSize={{ minRows: 2, maxRows: 4 }}
@@ -149,13 +129,13 @@ export default function AppLayout() {
                         e.preventDefault();
                         handleSend();
                     }}
-                    style={{ marginBottom: '8px' }}
+                    className="mb-2 border-gray-200 rounded-xl resize-none focus:border-primary-400 focus:shadow-soft transition-all duration-200"
                 />
                 <Button
                     type="primary"
-                    style={{ background: '#2196f3', borderColor: '#2196f3' }}
                     onClick={handleSend}
                     block
+                    className="bg-gradient-to-r from-primary-500 to-primary-600 border-none rounded-xl h-10 font-medium hover:shadow-medium transition-all duration-200"
                 >
                     发送
                 </Button>
@@ -164,82 +144,100 @@ export default function AppLayout() {
     );
 
     return (
-        <Layout style={{ minHeight: '100vh', paddingTop: '48px' }}>
+        <Layout className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
             <Header
-                style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '0 16px',
-                    background: '#fff', // 浅蓝色背景
-                    height: '48px',  // 修改Header高度为48px
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    zIndex: 1000,
-                }}
+                className="flex items-center px-4 md:px-6 bg-white/80 backdrop-blur-md border-b border-gray-200/50 h-16 fixed top-0 left-0 right-0 z-50 shadow-soft"
             >
-                <img
-                    src={defaultThumbnail}
-                    alt="Logo"
-                    style={{ height: '32px', marginRight: '12px' }}
-                />
-                <div >
-                    <span style={{ fontWeight: 'bold', fontSize: '20px', color: '#0d47a1' }}>AI人事干人事</span>
+                <div className="flex items-center">
+                    <img
+                        src={defaultThumbnail}
+                        alt="Logo"
+                        className="h-8 w-8 mr-3 animate-bounce-gentle"
+                    />
+                    <div className="hidden sm:block">
+                        <span className="font-bold text-xl bg-gradient-to-r from-primary-600 to-primary-900 bg-clip-text text-transparent">
+                            AI人事干人事
+                        </span>
+                    </div>
                 </div>
-                <div style={{ flex: 1 }}></div>
-                <div>
-                    <Text style={{ color: '#0d47a1' }}>演示账户</Text>
+                <div className="flex-1"></div>
+                <div className="flex items-center space-x-4">
+                    <div className="hidden md:flex items-center space-x-2 bg-primary-50 px-3 py-1 rounded-full">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="text-primary-700 text-sm font-medium">演示账户</span>
+                    </div>
                 </div>
             </Header>
             <Layout>
                 <Sider
+                    className="bg-white/90 backdrop-blur-md border-r border-gray-200/50 overflow-y-auto fixed left-0 h-screen z-40 shadow-soft"
                     style={{
-                        background: '#fff', // 浅蓝色背景
-                        overflowY: 'auto',
-                        position: 'fixed',
-                        left: 0,
-                        top: '48px',
-                        height: 'calc(100vh - 48px)',  // 调整Sider高度计算
-                        zIndex: 100,
-                        width: '200px',
+                        top: '64px',
+                        height: 'calc(100vh - 64px)',
+                        width: '240px',
                     }}
-                    width={200}
+                    width={240}
                 >
                     <Menu
                         mode="inline"
                         selectedKeys={[getSelectedKey()]}
-                        style={{
-                            background: '#fff', // 浅蓝色背景
-                        }}
+                        className="bg-transparent border-none pt-4"
                         items={[
-                            { key: 'dashboard', label: '仪表盘', onClick: () => navigate('/dashboard'), icon: <DashboardOutlined /> },
-                            { key: 'employee-management', label: '员工管理', onClick: () => navigate('/employee-management'), icon: <MonitorOutlined /> },
-                            { key: 'department-management', label: '部门管理', onClick: () => navigate('/department-management'), icon: <AppstoreOutlined /> },
-                            { key: 'resume-management', label: '简历库', onClick: () => navigate('/resume-management'), icon: <PythonOutlined /> },
-                            { key: 'jd-management', label: 'JD管理', onClick: () => navigate('/jd-management'), icon: <ClusterOutlined /> },
-                            { key: 'okr', label: 'OKR/KPI管理', onClick: () => navigate('/okr'), icon: <ClusterOutlined /> },
+                            {
+                                key: 'dashboard',
+                                label: <span className="font-medium">仪表盘</span>,
+                                onClick: () => navigate('/dashboard'),
+                                icon: <DashboardOutlined className="text-primary-600" />,
+                                className: 'mx-2 mb-1 rounded-lg hover:bg-primary-50 transition-all duration-200'
+                            },
+                            {
+                                key: 'employee-management',
+                                label: <span className="font-medium">员工管理</span>,
+                                onClick: () => navigate('/employee-management'),
+                                icon: <MonitorOutlined className="text-primary-600" />,
+                                className: 'mx-2 mb-1 rounded-lg hover:bg-primary-50 transition-all duration-200'
+                            },
+                            {
+                                key: 'department-management',
+                                label: <span className="font-medium">部门管理</span>,
+                                onClick: () => navigate('/department-management'),
+                                icon: <AppstoreOutlined className="text-primary-600" />,
+                                className: 'mx-2 mb-1 rounded-lg hover:bg-primary-50 transition-all duration-200'
+                            },
+                            {
+                                key: 'resume-management',
+                                label: <span className="font-medium">简历库</span>,
+                                onClick: () => navigate('/resume-management'),
+                                icon: <PythonOutlined className="text-primary-600" />,
+                                className: 'mx-2 mb-1 rounded-lg hover:bg-primary-50 transition-all duration-200'
+                            },
+                            {
+                                key: 'jd-management',
+                                label: <span className="font-medium">JD管理</span>,
+                                onClick: () => navigate('/jd-management'),
+                                icon: <ClusterOutlined className="text-primary-600" />,
+                                className: 'mx-2 mb-1 rounded-lg hover:bg-primary-50 transition-all duration-200'
+                            },
+                            {
+                                key: 'okr',
+                                label: <span className="font-medium">OKR/KPI管理</span>,
+                                onClick: () => navigate('/okr'),
+                                icon: <ClusterOutlined className="text-primary-600" />,
+                                className: 'mx-2 mb-1 rounded-lg hover:bg-primary-50 transition-all duration-200'
+                            },
                         ]}
                     />
                 </Sider>
 
                 <Content
+                    className="min-h-screen bg-transparent transition-all duration-300"
                     style={{
                         padding: '24px',
-                        minHeight: 'calc(100vh - 48px)',  // 调整Content最小高度计算
-                        background: '#fafafa', // 浅灰色背景
-                        marginLeft: '200px', // 为固定的sidebar留出空间
+                        marginLeft: '240px',
+                        marginTop: '64px',
                     }}
                 >
-                    <div
-                        style={{
-                            background: '#fff',
-                            padding: '24px',
-                            minHeight: 'calc(100vh - 96px)',  // 调整内部div最小高度计算
-                            position: 'relative',
-                            overflowY: 'auto',
-                        }}
-                    >
+                    <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-soft border border-white/50 p-6 min-h-[calc(100vh-152px)] transition-all duration-300 hover:shadow-medium">
                         <Outlet />
                     </div>
                 </Content>
@@ -270,53 +268,26 @@ export default function AppLayout() {
             {/* AI问答面板 */}
             {isChatVisible && (
                 <div
-                    style={{
-                        position: 'fixed',
-                        bottom: animationState === 'open' ? '30px' : '0px',
-                        right: animationState === 'open' ? '30px' : '0px',
-                        width: '400px',
-                        height: '600px',
-                        background: '#fff',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                        zIndex: 1000,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        opacity: animationState === 'open' ? 1 : 0,
-                        transform: animationState === 'open' ? 'scale(1)' : 'scale(0.8)',
-                        transition: 'all 0.3s ease',
-                    }}
+                    className={`fixed bottom-6 right-6 w-96 h-[600px] bg-white/95 backdrop-blur-md rounded-2xl shadow-hard z-50 flex flex-col border border-white/50 transition-all duration-300 ${animationState === 'open' ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
+                        }`}
                 >
-                    <div
-                        style={{
-                            padding: '12px 16px',
-                            borderBottom: '1px solid #f0f0f0',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center'
-                        }}
-                    >
-                        <Title level={4} style={{ margin: 0, color: '#0d47a1' }}>AI助手</Title>
+                    <div className="flex justify-between items-center p-4 border-b border-gray-200/50 bg-gradient-to-r from-primary-50 to-primary-100 rounded-t-2xl">
+                        <Title level={4} className="m-0 bg-gradient-to-r from-primary-600 to-primary-900 bg-clip-text text-transparent">
+                            AI助手
+                        </Title>
                         <Button
                             type="text"
-                            icon={<span style={{ fontSize: '20px' }}>×</span>}
+                            icon={<span className="text-xl text-gray-400 hover:text-gray-600">×</span>}
                             onClick={() => setIsChatOpen(false)}
+                            className="hover:bg-white/50 rounded-full transition-all duration-200"
                         />
                     </div>
-                    <div style={{ flex: 1, padding: '24px', overflow: 'hidden' }}>
+                    <div className="flex-1 p-6 overflow-hidden">
                         <AIChatPanel />
                     </div>
                 </div>
             )}
 
-            <style>
-                {`
-                /* 为AI面板添加额外的动画效果 */
-                .ai-chat-panel {
-                    transition: all 0.3s cubic-bezier(0.2, 0, 0.2, 1);
-                }
-                `}
-            </style>
         </Layout>
     );
 }

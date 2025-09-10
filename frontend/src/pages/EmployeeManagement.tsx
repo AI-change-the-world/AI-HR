@@ -101,47 +101,88 @@ const EmployeeManagement: React.FC = () => {
             title: '操作',
             key: 'action',
             render: (_: any, record: Employee) => (
-                <Space size="middle">
-                    <Button type="link" style={{ color: '#2196f3' }}>编辑</Button>
-                    <Button type="link" danger>删除</Button>
+                <Space size="small">
+                    <Button
+                        type="link"
+                        className="text-primary-600 hover:text-primary-700 p-0 h-auto font-medium"
+                    >
+                        编辑
+                    </Button>
+                    <Button
+                        type="link"
+                        danger
+                        className="text-danger-500 hover:text-danger-600 p-0 h-auto font-medium"
+                    >
+                        删除
+                    </Button>
                 </Space>
             ),
         },
     ];
 
     if (loading) {
-        return <div style={{ padding: '24px' }}>加载中...</div>;
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mb-4"></div>
+                    <p className="text-gray-600">加载中...</p>
+                </div>
+            </div>
+        );
     }
 
     if (error) {
-        return <div style={{ padding: '24px' }}>错误: {error}</div>;
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                    <div className="text-danger-500 text-xl mb-2">⚠️</div>
+                    <p className="text-danger-600">错误: {error}</p>
+                </div>
+            </div>
+        );
     }
 
     return (
-        <div>
-            <Title level={2} style={{ color: '#0d47a1' }}>员工管理</Title>
+        <div className="animate-fade-in">
+            <div className="mb-6">
+                <Title level={2} className="bg-gradient-to-r from-primary-600 to-primary-900 bg-clip-text text-transparent mb-2">
+                    员工管理
+                </Title>
+                <div className="w-24 h-1 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full mb-4"></div>
+            </div>
 
-            <div style={{ marginBottom: '24px' }}>
-                <Space>
-                    <Button type="primary" icon={<PlusOutlined />} style={{ background: '#2196f3', borderColor: '#2196f3' }}>
+            <div className="mb-6">
+                <Space size="middle">
+                    <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        className="bg-gradient-to-r from-primary-500 to-primary-600 border-none shadow-soft hover:shadow-medium hover:scale-105 transition-all duration-200 h-10 px-6 font-medium"
+                    >
                         添加员工
                     </Button>
-                    <Button icon={<UploadOutlined />} style={{ borderColor: '#2196f3', color: '#2196f3' }}>
+                    <Button
+                        icon={<UploadOutlined />}
+                        className="border-primary-300 text-primary-600 hover:bg-primary-50 hover:border-primary-400 transition-all duration-200 h-10 px-6 font-medium"
+                    >
                         导入员工
                     </Button>
                 </Space>
             </div>
 
-            <Table
-                dataSource={employees}
-                columns={columns}
-                pagination={{ pageSize: 10 }}
-                style={{
-                    background: '#fff',
-                    borderRadius: '8px',
-                    overflow: 'hidden',
-                }}
-            />
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-soft border border-white/50 overflow-hidden hover:shadow-medium transition-all duration-300">
+                <Table
+                    dataSource={employees}
+                    columns={columns}
+                    pagination={{
+                        pageSize: 10,
+                        showSizeChanger: true,
+                        showQuickJumper: true,
+                        showTotal: (total, range) => `第 ${range[0]}-${range[1]} 条，共 ${total} 条数据`,
+                        className: 'px-4 py-2'
+                    }}
+                    className="[&_.ant-table-thead>tr>th]:bg-gray-50/80 [&_.ant-table-thead>tr>th]:border-gray-200/50 [&_.ant-table-tbody>tr:hover>td]:bg-primary-50/30 [&_.ant-table-tbody>tr>td]:border-gray-200/30"
+                />
+            </div>
         </div>
     );
 };

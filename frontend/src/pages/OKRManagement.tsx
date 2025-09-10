@@ -43,51 +43,101 @@ const OKRManagement: React.FC = () => {
     ]);
 
     return (
-        <div>
-            <Title level={2}>OKR/KPI管理</Title>
+        <div className="animate-fade-in">
+            <div className="mb-6">
+                <Title level={2} className="bg-gradient-to-r from-primary-600 to-primary-900 bg-clip-text text-transparent mb-2">
+                    OKR/KPI管理
+                </Title>
+                <div className="w-24 h-1 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full mb-4"></div>
+            </div>
 
-            <div style={{ marginBottom: '24px' }}>
+            <div className="mb-6">
                 <Space>
-                    <Button type="primary" icon={<PlusOutlined />}>
+                    <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        className="bg-gradient-to-r from-primary-500 to-primary-600 border-none shadow-soft hover:shadow-medium hover:scale-105 transition-all duration-200 h-10 px-6 font-medium"
+                    >
                         添加OKR
                     </Button>
                 </Space>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                {okrs.map((okr) => (
+            <div className="flex flex-col gap-6">
+                {okrs.map((okr, index) => (
                     <Card
                         key={okr.id}
+                        className={`bg-white/70 backdrop-blur-sm border-gray-200/50 shadow-soft hover:shadow-medium transition-all duration-300 hover:-translate-y-1 animate-slide-up`}
+                        style={{ animationDelay: `${index * 100}ms` }}
                         title={
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Text strong>{okr.objective}</Text>
-                                <Text type="secondary">{okr.quarter}</Text>
+                            <div className="flex justify-between items-center">
+                                <Text strong className="text-primary-700 text-lg">{okr.objective}</Text>
+                                <div className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium">
+                                    {okr.quarter}
+                                </div>
                             </div>
                         }
                         extra={
                             <Space>
-                                <Button type="link" icon={<EditOutlined />}>编辑</Button>
-                                <Button type="link" danger icon={<DeleteOutlined />}>删除</Button>
+                                <Button
+                                    type="link"
+                                    icon={<EditOutlined />}
+                                    className="text-primary-600 hover:text-primary-700 p-0 h-auto font-medium"
+                                >
+                                    编辑
+                                </Button>
+                                <Button
+                                    type="link"
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                    className="text-danger-500 hover:text-danger-600 p-0 h-auto font-medium"
+                                >
+                                    删除
+                                </Button>
                             </Space>
                         }
                     >
-                        <div style={{ marginBottom: '16px' }}>
-                            <Text strong>负责人: </Text>
-                            <Text>{okr.employeeName}</Text>
-                        </div>
+                        <div className="space-y-4">
+                            <div className="flex items-center space-x-2">
+                                <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
+                                <Text strong className="text-gray-700">负责人: </Text>
+                                <Text className="text-gray-600">{okr.employeeName}</Text>
+                            </div>
 
-                        <div style={{ marginBottom: '16px' }}>
-                            <Text strong>进度: </Text>
-                            <Progress percent={okr.progress} />
-                        </div>
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <Text strong className="text-gray-700">进度: </Text>
+                                    <Text className="text-primary-600 font-semibold">{okr.progress}%</Text>
+                                </div>
+                                <Progress
+                                    percent={okr.progress}
+                                    strokeColor={{
+                                        '0%': '#22d3ee',
+                                        '50%': '#3b82f6',
+                                        '100%': '#1d4ed8',
+                                    }}
+                                    className="[&_.ant-progress-bg]:rounded-full"
+                                />
+                            </div>
 
-                        <div>
-                            <Text strong>关键结果:</Text>
-                            <List
-                                size="small"
-                                dataSource={okr.keyResults}
-                                renderItem={item => <List.Item>{item}</List.Item>}
-                            />
+                            <div>
+                                <Text strong className="text-gray-700 block mb-3">关键结果:</Text>
+                                <div className="bg-gray-50/80 rounded-xl p-4">
+                                    <List
+                                        size="small"
+                                        dataSource={okr.keyResults}
+                                        renderItem={(item, itemIndex) => (
+                                            <List.Item className="border-none py-2">
+                                                <div className="flex items-start space-x-3">
+                                                    <div className={`w-2 h-2 rounded-full mt-2 animate-pulse`}
+                                                        style={{ backgroundColor: `hsl(${210 + itemIndex * 30}, 70%, 60%)`, animationDelay: `${itemIndex * 200}ms` }}></div>
+                                                    <span className="text-gray-700">{item}</span>
+                                                </div>
+                                            </List.Item>
+                                        )}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </Card>
                 ))}
