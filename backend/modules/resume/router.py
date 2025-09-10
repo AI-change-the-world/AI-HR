@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
+from sse_starlette import EventSourceResponse
 
 from config.database import get_db
 
@@ -21,7 +22,9 @@ async def upload_resume_stream(file: UploadFile = File(...)):
     if not file.filename.endswith((".pdf", ".docx")):
         yield {"message": "只支持PDF和DOCX格式的文件"}
 
-    return process_resume_stream(file)
+    return EventSourceResponse(
+        process_resume_stream(file), media_type="text/event-stream"
+    )
 
 
 @router.get("/{resume_id}", response_model=ResumeInDB)

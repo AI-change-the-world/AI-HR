@@ -6,8 +6,8 @@ import xlrd
 from openpyxl import load_workbook
 from sqlalchemy.orm import Session
 
-from models.employee import Employee as EmployeeModel
 from models.department import Department as DepartmentModel
+from models.employee import Employee as EmployeeModel
 
 from ..department.models import DepartmentCreate
 from ..department.service import create_department, get_department_by_name
@@ -37,7 +37,11 @@ async def process_file(file):
         for emp_data in employees_data:
             # 检查部门是否存在，如果不存在则创建
             department_name = emp_data["部门"]
-            db_department = db.query(DepartmentModel).filter(DepartmentModel.name == department_name).first()
+            db_department = (
+                db.query(DepartmentModel)
+                .filter(DepartmentModel.name == department_name)
+                .first()
+            )
             if not db_department:
                 # 创建新部门（使用默认值）
                 dept_create = DepartmentCreate(
@@ -56,7 +60,7 @@ async def process_file(file):
                 department_id=db_department.id,
                 position=emp_data["职位"],
                 status=0,  # 默认在职
-                comment="通过文件导入"
+                comment="通过文件导入",
             )
 
             # 保存到数据库
@@ -150,7 +154,9 @@ def create_employee(employee_create: EmployeeCreate, db: Session) -> EmployeeInD
 
 def get_employee(employee_id: int, db: Session) -> Optional[EmployeeInDB]:
     """获取指定ID的员工"""
-    db_employee = db.query(EmployeeModel).filter(EmployeeModel.id == employee_id).first()
+    db_employee = (
+        db.query(EmployeeModel).filter(EmployeeModel.id == employee_id).first()
+    )
     if db_employee:
         return EmployeeInDB(**db_employee.to_dict())
     return None
@@ -170,7 +176,9 @@ def update_employee(
     employee_id: int, employee_update: EmployeeUpdate, db: Session
 ) -> Optional[EmployeeInDB]:
     """更新员工"""
-    db_employee = db.query(EmployeeModel).filter(EmployeeModel.id == employee_id).first()
+    db_employee = (
+        db.query(EmployeeModel).filter(EmployeeModel.id == employee_id).first()
+    )
     if db_employee:
         update_data = employee_update.dict(exclude_unset=True)
         for key, value in update_data.items():
@@ -183,7 +191,9 @@ def update_employee(
 
 def delete_employee(employee_id: int, db: Session) -> bool:
     """删除员工"""
-    db_employee = db.query(EmployeeModel).filter(EmployeeModel.id == employee_id).first()
+    db_employee = (
+        db.query(EmployeeModel).filter(EmployeeModel.id == employee_id).first()
+    )
     if db_employee:
         db.delete(db_employee)
         db.commit()

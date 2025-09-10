@@ -7,7 +7,6 @@ from modules.jd.router import router as jd_router
 from modules.okr.router import router as okr_router
 from modules.resume.router import router as resume_router
 
-
 app = FastAPI(
     title="AI HR 后端服务", description="AI HR 简历管理系统后端API", version="1.0.0"
 )
