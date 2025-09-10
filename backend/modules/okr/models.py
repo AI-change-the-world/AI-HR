@@ -32,5 +32,4 @@ class OKRInDB(OKRBase):
     id: int
     key_results: List[KeyResult] = []
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}

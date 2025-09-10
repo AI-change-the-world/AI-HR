@@ -16,15 +16,25 @@ from .service import (
 router = APIRouter(prefix="/api/resumes", tags=["简历管理"])
 
 
-@router.post("/upload-stream")
+@router.post(
+    "/upload-stream",
+    response_class=EventSourceResponse,
+    responses={200: {"description": "SSE 流式响应", "content": {}}},
+    description="流式上传简历，返回 Server-Sent Events (SSE)"
+)
 async def upload_resume_stream(file: UploadFile = File(...)):
-    """流式上传和处理简历"""
-    if not file.filename.endswith((".pdf", ".docx")):
-        yield {"message": "只支持PDF和DOCX格式的文件"}
+    """
+    流式上传和处理简历（SSE）
+    """
 
-    return EventSourceResponse(
-        process_resume_stream(file), media_type="text/event-stream"
-    )
+    async def error_generator(message: str):
+        yield {"data": message}  # SSE 格式：data: ...\n\n
+
+    if not file.filename.endswith((".pdf", ".docx")):
+        return EventSourceResponse(error_generator("只支持PDF和DOCX格式的文件"))
+
+    # 正常返回流式处理生成器
+    return EventSourceResponse(process_resume_stream(file))
 
 
 @router.get("/{resume_id}", response_model=ResumeInDB)

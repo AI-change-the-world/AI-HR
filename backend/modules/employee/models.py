@@ -10,9 +10,11 @@ class EmployeeBase(BaseModel):
     status: Optional[int] = 0
     comment: Optional[str] = None
 
+    model_config = {"from_attributes": True}
+
 
 class EmployeeCreate(EmployeeBase):
-    pass
+    model_config = {"from_attributes": True}
 
 
 class EmployeeUpdate(EmployeeBase):
@@ -26,5 +28,4 @@ class EmployeeUpdate(EmployeeBase):
 class EmployeeInDB(EmployeeBase):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}

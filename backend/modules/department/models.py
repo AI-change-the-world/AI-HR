@@ -5,8 +5,9 @@ from pydantic import BaseModel
 
 class DepartmentBase(BaseModel):
     name: str
-    manager: str
     description: Optional[str] = None
+
+    model_config = {"from_attributes": True}
 
 
 class DepartmentCreate(DepartmentBase):
@@ -23,5 +24,4 @@ class DepartmentInDB(DepartmentBase):
     id: int
     employee_count: int = 0
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}

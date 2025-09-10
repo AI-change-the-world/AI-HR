@@ -14,7 +14,7 @@ from ..department.service import create_department, get_department_by_name
 from .models import EmployeeCreate, EmployeeInDB, EmployeeUpdate
 
 
-async def process_file(file):
+async def process_file(file, db: Session):
     """处理上传的员工文件"""
     # 保存上传的文件到临时位置
     file_location = f"temp_{file.filename}"
@@ -27,11 +27,6 @@ async def process_file(file):
         employees_data = await process_xls_file(file_location)
     elif file.filename.endswith(".xlsx"):
         employees_data = await process_xlsx_file(file_location)
-
-    # 处理员工数据并保存到数据库
-    from config.database import SessionLocal
-
-    db = SessionLocal()
     try:
         created_employees = []
         for emp_data in employees_data:
@@ -46,7 +41,6 @@ async def process_file(file):
                 # 创建新部门（使用默认值）
                 dept_create = DepartmentCreate(
                     name=department_name,
-                    manager="待定",
                     description=f"自动创建的部门: {department_name}",
                 )
                 db_department = DepartmentModel(**dept_create.dict())

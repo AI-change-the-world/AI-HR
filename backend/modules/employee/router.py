@@ -1,5 +1,7 @@
+import traceback
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
+from common.logger import logger
 
 from config.database import get_db
 from modules import BaseResponse
@@ -17,8 +19,8 @@ from .service import (
 router = APIRouter(prefix="/api/employees", tags=["员工管理"])
 
 
-@router.post("/upload", response_class=BaseResponse)
-async def upload_resume(file: UploadFile = File(...)):
+@router.post("/upload", response_model=BaseResponse)
+async def upload_resume(file: UploadFile = File(...), db: Session = Depends(get_db)):
     """上传处理员工列表
     必须包括以下几个字段 1. 姓名 2. 职位 3. 部门
     几个要点：
@@ -28,8 +30,14 @@ async def upload_resume(file: UploadFile = File(...)):
     """
     if not file.filename.endswith((".xls", ".xlsx")):
         raise BaseResponse(code=400, message="只支持xls和xlsx格式的文件")
-
-    return await process_file(file)
+    
+    try:
+        await process_file(file, db)
+        return BaseResponse(code=200, message="OK")
+    except Exception as e:
+        traceback.print_exc()
+        logger.error(e)
+        return BaseResponse(code=400, message=str(e))
 
 
 @router.post("/", response_model=EmployeeInDB)
