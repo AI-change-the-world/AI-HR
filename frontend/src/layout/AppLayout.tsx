@@ -171,6 +171,7 @@ export default function AppLayout() {
                     alignItems: 'center',
                     padding: '0 16px',
                     background: '#fff', // 浅蓝色背景
+                    height: '48px',  // 修改Header高度为48px
                 }}
             >
                 <img
@@ -190,6 +191,10 @@ export default function AppLayout() {
                 <Sider
                     style={{
                         background: '#fff', // 浅蓝色背景
+                        overflowY: 'auto',
+                        position: 'sticky',
+                        height: 'calc(100vh - 48px)',  // 调整Sider高度计算
+                        top: 0,
                     }}
                 >
                     <Menu
@@ -212,15 +217,16 @@ export default function AppLayout() {
                 <Content
                     style={{
                         padding: '24px',
-                        minHeight: 'calc(100vh - 64px)',
+                        minHeight: 'calc(100vh - 48px)',  // 调整Content最小高度计算
                         background: '#fafafa', // 浅灰色背景
+                        overflowY: 'auto',
                     }}
                 >
                     <div
                         style={{
                             background: '#fff',
                             padding: '24px',
-                            minHeight: 'calc(100vh - 112px)',
+                            minHeight: 'calc(100vh - 96px)',  // 调整内部div最小高度计算
                             position: 'relative'
                         }}
                     >
