@@ -129,14 +129,16 @@ export default function AppLayout() {
                 </Sider>
 
                 <Content
-                    className="min-h-screen bg-transparent transition-all duration-300"
+                    className="bg-transparent transition-all duration-300"
                     style={{
                         padding: '24px',
                         marginLeft: '240px',
                         marginTop: '64px',
+                        height: 'calc(100vh - 64px)',
+                        overflow: 'hidden',
                     }}
                 >
-                    <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-soft border border-white/50 p-6 min-h-[calc(100vh-152px)] transition-all duration-300 hover:shadow-medium">
+                    <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-soft border border-white/50 p-6 h-full overflow-auto transition-all duration-300 hover:shadow-medium">
                         <Outlet />
                     </div>
                 </Content>
