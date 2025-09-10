@@ -1,5 +1,5 @@
-<div style="text-align: center;">
-  <img src="aihr-icon.png" width="300" />
+<div align="center">
+  <img src="aihr-icon.png" width="300" height="300" />
 </div>
 
 
