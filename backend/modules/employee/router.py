@@ -1,9 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from config.database import get_db
+
 from .models import EmployeeCreate, EmployeeInDB, EmployeeUpdate
-from .service import (create_employee, delete_employee, get_db, get_employee,
-                      get_employees, update_employee)
+from .service import (
+    create_employee,
+    delete_employee,
+    get_employee,
+    get_employees,
+    update_employee,
+)
 
 router = APIRouter(prefix="/api/employees", tags=["员工管理"])
 

@@ -1,14 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from .models import JDCreation, JDInDB, JDUpdate
-from .service import create_jd, delete_jd, get_db, get_jd, get_jds, update_jd
+from config.database import get_db
+
+from .models import JDCreate, JDInDB, JDUpdate
+from .service import create_jd, delete_jd, get_jd, get_jds, update_jd
 
 router = APIRouter(prefix="/api/jd", tags=["JD管理"])
 
 
 @router.post("/", response_model=JDInDB)
-async def create_jd_info(jd: JDCreation, db: Session = Depends(get_db)):
+async def create_jd_info(jd: JDCreate, db: Session = Depends(get_db)):
     """创建JD"""
     return create_jd(jd, db)
 

@@ -24,4 +24,4 @@ class DepartmentInDB(DepartmentBase):
     employee_count: int = 0
 
     class Config:
-        orm_mode = True
+        from_attributes = True

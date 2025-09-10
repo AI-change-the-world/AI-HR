@@ -33,4 +33,4 @@ class OKRInDB(OKRBase):
     key_results: List[KeyResult] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True

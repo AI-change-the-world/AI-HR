@@ -1,15 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from .models import OKRCreation, OKRInDB, OKRUpdate
-from .service import (create_okr, delete_okr, get_db, get_okr, get_okrs,
-                      update_okr)
+from config.database import get_db
+
+from .models import OKRCreate, OKRInDB, OKRUpdate
+from .service import create_okr, delete_okr, get_okr, get_okrs, update_okr
 
 router = APIRouter(prefix="/api/okr", tags=["OKR/KPI管理"])
 
 
 @router.post("/", response_model=OKRInDB)
-async def create_okr_info(okr: OKRCreation, db: Session = Depends(get_db)):
+async def create_okr_info(okr: OKRCreate, db: Session = Depends(get_db)):
     """创建OKR"""
     return create_okr(okr, db)
 

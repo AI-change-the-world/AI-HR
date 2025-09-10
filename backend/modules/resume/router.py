@@ -5,8 +5,13 @@ from sqlalchemy.orm import Session
 from config.database import get_db
 
 from .models import ResumeCreate, ResumeInDB, ResumeUpdate
-from .service import (delete_resume, get_resume, get_resumes,
-                      process_resume_stream, update_resume)
+from .service import (
+    delete_resume,
+    get_resume,
+    get_resumes,
+    process_resume_stream,
+    update_resume,
+)
 
 router = APIRouter(prefix="/api/resumes", tags=["简历管理"])
 

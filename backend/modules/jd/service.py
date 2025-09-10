@@ -4,10 +4,10 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
-from .models import JDCreation, JDInDB, JDUpdate
+from .models import JDCreate, JDInDB, JDUpdate
 
 
-def create_jd(jd_create: JDCreation, db: Session) -> JDInDB:
+def create_jd(jd_create: JDCreate, db: Session) -> JDInDB:
     """创建新JD"""
     # 创建JD记录
     jd_dict = jd_create.dict()

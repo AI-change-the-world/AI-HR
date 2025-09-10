@@ -2,6 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+from common.logger import logger
 from config.settings import settings
 
 # 创建数据库引擎
@@ -23,3 +24,13 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def init_db():
+    from models import OKR, Department, Employee, JobDescription, Resume
+
+    logger.info(f"init db, url: {engine.url}")
+    Base.metadata.create_all(bind=engine)
+    logger.info(
+        f"注册的表：{Base.metadata.tables.keys()}",
+    )

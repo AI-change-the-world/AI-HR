@@ -4,10 +4,10 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
-from .models import OKRCreation, OKRInDB, OKRUpdate
+from .models import OKRCreate, OKRInDB, OKRUpdate
 
 
-def create_okr(okr_create: OKRCreation, db: Session) -> OKRInDB:
+def create_okr(okr_create: OKRCreate, db: Session) -> OKRInDB:
     """创建新OKR"""
     # 创建OKR记录
     okr_dict = okr_create.dict()

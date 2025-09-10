@@ -1,9 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from config.database import get_db
+
 from .models import DepartmentCreate, DepartmentInDB, DepartmentUpdate
-from .service import (create_department, delete_department, get_db,
-                      get_department, get_departments, update_department)
+from .service import (
+    create_department,
+    delete_department,
+    get_department,
+    get_departments,
+    update_department,
+)
 
 router = APIRouter(prefix="/api/departments", tags=["部门管理"])
 

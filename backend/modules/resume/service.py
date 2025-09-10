@@ -10,6 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from config.database import SessionLocal, engine
+
 # 创建数据库表
 from models import department, employee, jd, okr, resume
 from models.resume import Resume
