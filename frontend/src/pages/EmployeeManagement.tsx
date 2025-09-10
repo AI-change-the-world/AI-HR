@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Button, Table, Space, Typography } from 'antd';
+import { PlusOutlined, UploadOutlined } from '@ant-design/icons';
 
 // 员工数据接口
 interface Employee {
@@ -9,6 +11,8 @@ interface Employee {
     email: string;
     phone: string;
 }
+
+const { Title } = Typography;
 
 const EmployeeManagement: React.FC = () => {
     const [employees, setEmployees] = useState<Employee[]>([]);
@@ -62,52 +66,82 @@ const EmployeeManagement: React.FC = () => {
         fetchEmployees();
     }, []);
 
+    const columns = [
+        {
+            title: 'ID',
+            dataIndex: 'id',
+            key: 'id',
+        },
+        {
+            title: '姓名',
+            dataIndex: 'name',
+            key: 'name',
+        },
+        {
+            title: '部门',
+            dataIndex: 'department',
+            key: 'department',
+        },
+        {
+            title: '职位',
+            dataIndex: 'position',
+            key: 'position',
+        },
+        {
+            title: '邮箱',
+            dataIndex: 'email',
+            key: 'email',
+        },
+        {
+            title: '电话',
+            dataIndex: 'phone',
+            key: 'phone',
+        },
+        {
+            title: '操作',
+            key: 'action',
+            render: (_: any, record: Employee) => (
+                <Space size="middle">
+                    <Button type="link" style={{ color: '#2196f3' }}>编辑</Button>
+                    <Button type="link" danger>删除</Button>
+                </Space>
+            ),
+        },
+    ];
+
     if (loading) {
-        return <div className="page-container">加载中...</div>;
+        return <div style={{ padding: '24px' }}>加载中...</div>;
     }
 
     if (error) {
-        return <div className="page-container">错误: {error}</div>;
+        return <div style={{ padding: '24px' }}>错误: {error}</div>;
     }
 
     return (
-        <div className="page-container">
-            <h1>员工管理</h1>
-            <div className="toolbar">
-                <button className="btn btn-primary">添加员工</button>
-                <button className="btn btn-secondary">导入员工</button>
+        <div>
+            <Title level={2} style={{ color: '#0d47a1' }}>员工管理</Title>
+
+            <div style={{ marginBottom: '24px' }}>
+                <Space>
+                    <Button type="primary" icon={<PlusOutlined />} style={{ background: '#2196f3', borderColor: '#2196f3' }}>
+                        添加员工
+                    </Button>
+                    <Button icon={<UploadOutlined />} style={{ borderColor: '#2196f3', color: '#2196f3' }}>
+                        导入员工
+                    </Button>
+                </Space>
             </div>
-            <div className="table-container">
-                <table className="data-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>姓名</th>
-                            <th>部门</th>
-                            <th>职位</th>
-                            <th>邮箱</th>
-                            <th>电话</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {employees.map((employee) => (
-                            <tr key={employee.id}>
-                                <td>{employee.id}</td>
-                                <td>{employee.name}</td>
-                                <td>{employee.department}</td>
-                                <td>{employee.position}</td>
-                                <td>{employee.email}</td>
-                                <td>{employee.phone}</td>
-                                <td>
-                                    <button className="btn btn-small btn-secondary">编辑</button>
-                                    <button className="btn btn-small btn-danger">删除</button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+
+            <Table
+                dataSource={employees}
+                columns={columns}
+                pagination={{ pageSize: 10 }}
+                style={{
+                    background: '#fff',
+                    borderRadius: '8px',
+                    overflow: 'hidden',
+                }}
+            />
         </div>
     );
 };

@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Button, Table, Space, Typography, Upload } from 'antd';
+import { PlusOutlined, UploadOutlined } from '@ant-design/icons';
 
 // 简历数据接口
 interface Resume {
@@ -9,6 +11,8 @@ interface Resume {
     status: string;
     createdAt: string;
 }
+
+const { Title } = Typography;
 
 const ResumeLibrary: React.FC = () => {
     const [resumes, setResumes] = useState<Resume[]>([
@@ -38,63 +42,77 @@ const ResumeLibrary: React.FC = () => {
         }
     ]);
 
-    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const files = event.target.files;
-        if (files && files.length > 0) {
-            // 这里应该是实际的文件上传逻辑
-            alert(`选择了文件: ${files[0].name}`);
-        }
+    const handleFileUpload = (file: any) => {
+        // 这里应该是实际的文件上传逻辑
+        alert(`选择了文件: ${file.name}`);
+        return false; // 阻止自动上传
     };
 
+    const columns = [
+        {
+            title: 'ID',
+            dataIndex: 'id',
+            key: 'id',
+        },
+        {
+            title: '姓名',
+            dataIndex: 'name',
+            key: 'name',
+        },
+        {
+            title: '职位',
+            dataIndex: 'position',
+            key: 'position',
+        },
+        {
+            title: '评分',
+            dataIndex: 'score',
+            key: 'score',
+        },
+        {
+            title: '状态',
+            dataIndex: 'status',
+            key: 'status',
+        },
+        {
+            title: '上传时间',
+            dataIndex: 'createdAt',
+            key: 'createdAt',
+        },
+        {
+            title: '操作',
+            key: 'action',
+            render: (_: any, record: Resume) => (
+                <Space size="middle">
+                    <Button type="link">查看</Button>
+                    <Button type="link" danger>删除</Button>
+                </Space>
+            ),
+        },
+    ];
+
     return (
-        <div className="page-container">
-            <h1>简历库</h1>
-            <div className="toolbar">
-                <div className="upload-section">
-                    <label htmlFor="resume-upload" className="btn btn-primary">
-                        上传简历
-                    </label>
-                    <input
-                        id="resume-upload"
-                        type="file"
-                        accept=".pdf,.doc,.docx"
-                        onChange={handleFileUpload}
-                        style={{ display: 'none' }}
-                    />
-                </div>
-                <button className="btn btn-secondary">筛选简历</button>
+        <div>
+            <Title level={2}>简历库</Title>
+
+            <div style={{ marginBottom: '24px' }}>
+                <Space>
+                    <Upload beforeUpload={handleFileUpload}>
+                        <Button type="primary" icon={<UploadOutlined />}>
+                            上传简历
+                        </Button>
+                    </Upload>
+                    <Button icon={<PlusOutlined />}>
+                        筛选简历
+                    </Button>
+                </Space>
             </div>
-            <div className="table-container">
-                <table className="data-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>姓名</th>
-                            <th>职位</th>
-                            <th>评分</th>
-                            <th>状态</th>
-                            <th>上传时间</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {resumes.map((resume) => (
-                            <tr key={resume.id}>
-                                <td>{resume.id}</td>
-                                <td>{resume.name}</td>
-                                <td>{resume.position}</td>
-                                <td>{resume.score}</td>
-                                <td>{resume.status}</td>
-                                <td>{resume.createdAt}</td>
-                                <td>
-                                    <button className="btn btn-small btn-secondary">查看</button>
-                                    <button className="btn btn-small btn-danger">删除</button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+
+            <Table
+                dataSource={resumes}
+                columns={columns}
+                pagination={{ pageSize: 10 }}
+            />
         </div>
     );
 };

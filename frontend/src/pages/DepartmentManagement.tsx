@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Button, Table, Space, Typography } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 
 // 部门数据接口
 interface Department {
@@ -9,7 +11,9 @@ interface Department {
     description: string;
 }
 
-const DepartmentManagement: React.FC = () => {
+const { Title } = Typography;
+
+const DepartmentManagement = () => {
     const [departments, setDepartments] = useState<Department[]>([
         {
             id: 1,
@@ -34,41 +38,61 @@ const DepartmentManagement: React.FC = () => {
         }
     ]);
 
+    const columns = [
+        {
+            title: 'ID',
+            dataIndex: 'id',
+            key: 'id',
+        },
+        {
+            title: '部门名称',
+            dataIndex: 'name',
+            key: 'name',
+        },
+        {
+            title: '部门经理',
+            dataIndex: 'manager',
+            key: 'manager',
+        },
+        {
+            title: '员工数量',
+            dataIndex: 'employeeCount',
+            key: 'employeeCount',
+        },
+        {
+            title: '描述',
+            dataIndex: 'description',
+            key: 'description',
+        },
+        {
+            title: '操作',
+            key: 'action',
+            render: (_: any, record: Department) => (
+                <Space size="middle">
+                    <Button type="link">编辑</Button>
+                    <Button type="link" danger>删除</Button>
+                </Space>
+            ),
+        },
+    ];
+
     return (
-        <div className="page-container">
-            <h1>部门管理</h1>
-            <div className="toolbar">
-                <button className="btn btn-primary">添加部门</button>
+        <div>
+            <Title level={2}>部门管理</Title>
+
+            <div style={{ marginBottom: '24px' }}>
+                <Space>
+                    <Button type="primary" icon={<PlusOutlined />}>
+                        添加部门
+                    </Button>
+                </Space>
             </div>
-            <div className="table-container">
-                <table className="data-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>部门名称</th>
-                            <th>部门经理</th>
-                            <th>员工数量</th>
-                            <th>描述</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {departments.map((department) => (
-                            <tr key={department.id}>
-                                <td>{department.id}</td>
-                                <td>{department.name}</td>
-                                <td>{department.manager}</td>
-                                <td>{department.employeeCount}</td>
-                                <td>{department.description}</td>
-                                <td>
-                                    <button className="btn btn-small btn-secondary">编辑</button>
-                                    <button className="btn btn-small btn-danger">删除</button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+
+            <Table
+                dataSource={departments}
+                columns={columns}
+                pagination={{ pageSize: 10 }}
+            />
         </div>
     );
 };

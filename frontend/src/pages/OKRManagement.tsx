@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Button, Card, Progress, Typography, Space, List } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
 // OKR数据接口
 interface OKR {
@@ -9,6 +11,8 @@ interface OKR {
     quarter: string;
     progress: number;
 }
+
+const { Title, Text } = Typography;
 
 const OKRManagement: React.FC = () => {
     const [okrs, setOkrs] = useState<OKR[]>([
@@ -39,43 +43,53 @@ const OKRManagement: React.FC = () => {
     ]);
 
     return (
-        <div className="page-container">
-            <h1>OKR/KPI管理</h1>
-            <div className="toolbar">
-                <button className="btn btn-primary">添加OKR</button>
+        <div>
+            <Title level={2}>OKR/KPI管理</Title>
+
+            <div style={{ marginBottom: '24px' }}>
+                <Space>
+                    <Button type="primary" icon={<PlusOutlined />}>
+                        添加OKR
+                    </Button>
+                </Space>
             </div>
-            <div className="okr-list">
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 {okrs.map((okr) => (
-                    <div key={okr.id} className="okr-card">
-                        <div className="okr-header">
-                            <h3>{okr.objective}</h3>
-                            <span className="quarter-tag">{okr.quarter}</span>
-                        </div>
-                        <div className="okr-body">
-                            <p className="employee-name">负责人: {okr.employeeName}</p>
-                            <div className="progress-section">
-                                <span>进度: {okr.progress}%</span>
-                                <div className="progress-bar">
-                                    <div
-                                        className="progress-fill"
-                                        style={{ width: `${okr.progress}%` }}
-                                    ></div>
-                                </div>
+                    <Card
+                        key={okr.id}
+                        title={
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Text strong>{okr.objective}</Text>
+                                <Text type="secondary">{okr.quarter}</Text>
                             </div>
-                            <div className="key-results">
-                                <h4>关键结果:</h4>
-                                <ul>
-                                    {okr.keyResults.map((kr, index) => (
-                                        <li key={index}>{kr}</li>
-                                    ))}
-                                </ul>
-                            </div>
+                        }
+                        extra={
+                            <Space>
+                                <Button type="link" icon={<EditOutlined />}>编辑</Button>
+                                <Button type="link" danger icon={<DeleteOutlined />}>删除</Button>
+                            </Space>
+                        }
+                    >
+                        <div style={{ marginBottom: '16px' }}>
+                            <Text strong>负责人: </Text>
+                            <Text>{okr.employeeName}</Text>
                         </div>
-                        <div className="okr-footer">
-                            <button className="btn btn-small btn-secondary">编辑</button>
-                            <button className="btn btn-small btn-danger">删除</button>
+
+                        <div style={{ marginBottom: '16px' }}>
+                            <Text strong>进度: </Text>
+                            <Progress percent={okr.progress} />
                         </div>
-                    </div>
+
+                        <div>
+                            <Text strong>关键结果:</Text>
+                            <List
+                                size="small"
+                                dataSource={okr.keyResults}
+                                renderItem={item => <List.Item>{item}</List.Item>}
+                            />
+                        </div>
+                    </Card>
                 ))}
             </div>
         </div>

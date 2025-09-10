@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Button, Table, Space, Typography, Tag } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
 // JD数据接口
 interface JobDescription {
@@ -9,6 +11,8 @@ interface JobDescription {
     isOpen: boolean;
     createdAt: string;
 }
+
+const { Title } = Typography;
 
 const JDManagement: React.FC = () => {
     const [jds, setJds] = useState<JobDescription[]>([
@@ -44,53 +48,77 @@ const JDManagement: React.FC = () => {
         ));
     };
 
+    const columns = [
+        {
+            title: 'ID',
+            dataIndex: 'id',
+            key: 'id',
+        },
+        {
+            title: '职位名称',
+            dataIndex: 'title',
+            key: 'title',
+        },
+        {
+            title: '部门',
+            dataIndex: 'department',
+            key: 'department',
+        },
+        {
+            title: '工作地点',
+            dataIndex: 'location',
+            key: 'location',
+        },
+        {
+            title: '状态',
+            dataIndex: 'isOpen',
+            key: 'isOpen',
+            render: (isOpen: boolean) => (
+                <Tag color={isOpen ? 'green' : 'red'}>
+                    {isOpen ? '开放' : '关闭'}
+                </Tag>
+            ),
+        },
+        {
+            title: '创建时间',
+            dataIndex: 'createdAt',
+            key: 'createdAt',
+        },
+        {
+            title: '操作',
+            key: 'action',
+            render: (_: any, record: JobDescription) => (
+                <Space size="middle">
+                    <Button type="link" icon={<EditOutlined />}>编辑</Button>
+                    <Button
+                        type="link"
+                        onClick={() => toggleJDStatus(record.id)}
+                    >
+                        {record.isOpen ? '关闭' : '开放'}
+                    </Button>
+                    <Button type="link" danger icon={<DeleteOutlined />}>删除</Button>
+                </Space>
+            ),
+        },
+    ];
+
     return (
-        <div className="page-container">
-            <h1>JD管理</h1>
-            <div className="toolbar">
-                <button className="btn btn-primary">创建JD</button>
+        <div>
+            <Title level={2}>JD管理</Title>
+
+            <div style={{ marginBottom: '24px' }}>
+                <Space>
+                    <Button type="primary" icon={<PlusOutlined />}>
+                        创建JD
+                    </Button>
+                </Space>
             </div>
-            <div className="table-container">
-                <table className="data-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>职位名称</th>
-                            <th>部门</th>
-                            <th>工作地点</th>
-                            <th>状态</th>
-                            <th>创建时间</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {jds.map((jd) => (
-                            <tr key={jd.id}>
-                                <td>{jd.id}</td>
-                                <td>{jd.title}</td>
-                                <td>{jd.department}</td>
-                                <td>{jd.location}</td>
-                                <td>
-                                    <span className={`status ${jd.isOpen ? 'status-open' : 'status-closed'}`}>
-                                        {jd.isOpen ? '开放' : '关闭'}
-                                    </span>
-                                </td>
-                                <td>{jd.createdAt}</td>
-                                <td>
-                                    <button className="btn btn-small btn-secondary">编辑</button>
-                                    <button
-                                        className={`btn btn-small ${jd.isOpen ? 'btn-warning' : 'btn-success'}`}
-                                        onClick={() => toggleJDStatus(jd.id)}
-                                    >
-                                        {jd.isOpen ? '关闭' : '开放'}
-                                    </button>
-                                    <button className="btn btn-small btn-danger">删除</button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+
+            <Table
+                dataSource={jds}
+                columns={columns}
+                pagination={{ pageSize: 10 }}
+            />
         </div>
     );
 };

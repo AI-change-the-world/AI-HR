@@ -6,10 +6,6 @@ import { AppstoreOutlined, ClusterOutlined, DashboardOutlined, MonitorOutlined, 
 const { Header, Sider, Content } = Layout;
 
 export default function AppLayout() {
-
-    const appbarHeight = '40px';
-
-
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -29,40 +25,33 @@ export default function AppLayout() {
         <Layout style={{ minHeight: '100vh' }}>
             <Header
                 style={{
-                    background: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
                     padding: '0 16px',
-                    height: appbarHeight,
-                    lineHeight: appbarHeight,
-                    fontSize: '20px',
-                    display: 'flex',         // 使用 flex 布局
-                    alignItems: 'center',    // 垂直居中
+                    background: '#e3f2fd', // 浅蓝色背景
                 }}
             >
                 <img
-                    src={defaultThumbnail}  // 图片路径，可以是本地 public 文件夹下的路径或网络图片
+                    src={defaultThumbnail}
                     alt="Logo"
-                    style={{ height: '20px', marginRight: '8px' }} // 高度控制，右边留点空隙
+                    style={{ height: '32px', marginRight: '12px' }}
                 />
                 <div>
-                    <span style={{ fontWeight: 'bold' }}>AI人事干人事</span>
+                    <span style={{ fontWeight: 'bold', fontSize: '20px', color: '#0d47a1' }}>AI人事干人事</span>
                 </div>
             </Header>
             <Layout>
                 <Sider
-                    width={200}
                     style={{
-                        background: '#fff',
-                        height: 'calc(100vh -' + appbarHeight + ')', // 减去 Header 高度
-                        position: 'sticky',           // 侧边固定
-                        top: 30,                       // 从 Header 底部开始
-                        overflowY: 'auto',            // 超出显示滚动条
+                        background: '#f5f9ff', // 浅蓝色背景
                     }}
                 >
                     <Menu
                         mode="inline"
-                        // defaultSelectedKeys={['org']}
                         selectedKeys={[getSelectedKey()]}
-                        style={{ height: '100%' }}
+                        style={{
+                            background: '#f5f9ff', // 浅蓝色背景
+                        }}
                         items={[
                             { key: 'dashboard', label: '仪表盘', onClick: () => navigate('/dashboard'), icon: <DashboardOutlined /> },
                             { key: 'employee-management', label: '员工管理', onClick: () => navigate('/employee-management'), icon: <MonitorOutlined /> },
@@ -76,17 +65,22 @@ export default function AppLayout() {
 
                 <Content
                     style={{
-                        background: '#f5f5f5',
-                        padding: 16,
-                        flex: 1,
-                        height: 'calc(100vh -' + appbarHeight + ')',
-                        overflowY: 'auto',          // 内容独立滚动
+                        padding: '24px',
+                        minHeight: 'calc(100vh - 64px)',
+                        background: '#fafafa', // 浅灰色背景
                     }}
                 >
-                    <Outlet />
+                    <div
+                        style={{
+                            background: '#fff',
+                            padding: '24px',
+                            minHeight: 'calc(100vh - 112px)',
+                        }}
+                    >
+                        <Outlet />
+                    </div>
                 </Content>
             </Layout>
         </Layout>
-
     );
 }
