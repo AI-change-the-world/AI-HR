@@ -96,6 +96,13 @@ const EmployeeManagement: React.FC = () => {
                 <Space size="small">
                     <Button
                         type="link"
+                        style={{ color: '#64748b' }} // Tailwind gray-500
+                        className="hover:!text-gray-700 p-0 h-auto font-medium"
+                    >
+                        汇报管理
+                    </Button>
+                    <Button
+                        type="link"
                         className="text-primary-600 hover:text-primary-700 p-0 h-auto font-medium"
                     >
                         编辑
