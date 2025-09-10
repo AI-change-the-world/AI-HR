@@ -13,4 +13,6 @@ class Department(Base, ToDictMixin):
     description = Column(Text, nullable=True, comment="部门描述")
 
     created_at = Column(DateTime, default=func.now(), comment="创建时间")
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), comment="更新时间")
+    updated_at = Column(
+        DateTime, default=func.now(), onupdate=func.now(), comment="更新时间"
+    )

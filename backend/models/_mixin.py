@@ -1,5 +1,7 @@
-from sqlalchemy import inspect
 from datetime import datetime
+
+from sqlalchemy import inspect
+
 
 class ToDictMixin:
     def to_dict(self):

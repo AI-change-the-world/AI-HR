@@ -27,4 +27,6 @@ class Resume(Base, ToDictMixin):
     match_score = Column(Float, default=0.0, comment="匹配度评分")
     path = Column(String(255), nullable=True, comment="文件存储的s3路径")
     created_at = Column(DateTime, default=func.now(), comment="创建时间")
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), comment="更新时间")
+    updated_at = Column(
+        DateTime, default=func.now(), onupdate=func.now(), comment="更新时间"
+    )

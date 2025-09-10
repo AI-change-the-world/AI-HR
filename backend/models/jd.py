@@ -19,4 +19,6 @@ class JobDescription(Base, ToDictMixin):
     salary_range = Column(String(50), nullable=True, comment="薪资范围")
     is_open = Column(Boolean, default=True, comment="是否开放")
     created_at = Column(DateTime, default=func.now(), comment="创建时间")
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), comment="更新时间")
+    updated_at = Column(
+        DateTime, default=func.now(), onupdate=func.now(), comment="更新时间"
+    )

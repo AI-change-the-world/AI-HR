@@ -1,14 +1,16 @@
 import json
 import os
 from typing import List, Optional
+
 import xlrd
 from openpyxl import load_workbook
 from sqlalchemy.orm import Session
 
 from backend.models.employee import Employee as EmployeeModel
-from .models import EmployeeCreate, EmployeeInDB, EmployeeUpdate
-from ..department.service import get_department_by_name, create_department
+
 from ..department.models import DepartmentCreate
+from ..department.service import create_department, get_department_by_name
+from .models import EmployeeCreate, EmployeeInDB, EmployeeUpdate
 
 
 async def process_file(file):
@@ -17,51 +19,52 @@ async def process_file(file):
     file_location = f"temp_{file.filename}"
     with open(file_location, "wb+") as file_object:
         file_object.write(await file.read())
-    
+
     # 根据文件扩展名选择处理方式
     employees_data = []
-    if file.filename.endswith('.xls'):
+    if file.filename.endswith(".xls"):
         employees_data = await process_xls_file(file_location)
-    elif file.filename.endswith('.xlsx'):
+    elif file.filename.endswith(".xlsx"):
         employees_data = await process_xlsx_file(file_location)
-    
+
     # 处理员工数据并保存到数据库
     from config.database import SessionLocal
+
     db = SessionLocal()
     try:
         created_employees = []
         for emp_data in employees_data:
             # 检查部门是否存在，如果不存在则创建
-            department_name = emp_data['部门']
+            department_name = emp_data["部门"]
             department = get_department_by_name(department_name, db)
             if not department:
                 # 创建新部门（使用默认值）
                 dept_create = DepartmentCreate(
                     name=department_name,
                     manager="待定",
-                    description=f"自动创建的部门: {department_name}"
+                    description=f"自动创建的部门: {department_name}",
                 )
                 department = create_department(dept_create, db)
-            
+
             # 创建员工记录
             employee_create = EmployeeCreate(
-                name=emp_data['姓名'],
-                department=emp_data['部门'],
-                position=emp_data['职位'],
+                name=emp_data["姓名"],
+                department=emp_data["部门"],
+                position=emp_data["职位"],
                 email=f"{emp_data['姓名'].replace(' ', '')}@example.com",  # 简单处理邮箱
-                phone=""
+                phone="",
             )
-            
+
             # 保存到数据库
             db_employee = EmployeeModel(**employee_create.dict())
             db.add(db_employee)
             created_employees.append(db_employee)
-        
+
         db.commit()
         # 刷新以获取ID
         for emp in created_employees:
             db.refresh(emp)
-        
+
         # 转换为返回格式
         result = [
             EmployeeInDB(
@@ -70,10 +73,11 @@ async def process_file(file):
                 department=emp.department,
                 position=emp.position,
                 email=emp.email,
-                phone=emp.phone
-            ) for emp in created_employees
+                phone=emp.phone,
+            )
+            for emp in created_employees
         ]
-        
+
         return result
     except Exception as e:
         db.rollback()
@@ -88,26 +92,26 @@ async def process_xls_file(file_path: str):
     """处理.xls文件"""
     workbook = xlrd.open_workbook(file_path)
     sheet = workbook.sheet_by_index(0)  # 读取第一个工作表
-    
+
     # 获取表头
     headers = [str(cell.value) for cell in sheet.row(0)]
-    
+
     # 验证必需的列是否存在
-    required_columns = ['姓名', '职位', '部门']
+    required_columns = ["姓名", "职位", "部门"]
     missing_columns = [col for col in required_columns if col not in headers]
     if missing_columns:
         raise ValueError(f"缺少必需的列: {', '.join(missing_columns)}")
-    
+
     # 解析数据行
     employees_data = []
     for row_idx in range(1, sheet.nrows):
         row = sheet.row(row_idx)
         employee_dict = {}
         for col_idx, header in enumerate(headers):
-            if header in ['姓名', '职位', '部门']:
+            if header in ["姓名", "职位", "部门"]:
                 employee_dict[header] = str(row[col_idx].value).strip()
         employees_data.append(employee_dict)
-    
+
     return employees_data
 
 
@@ -115,25 +119,25 @@ async def process_xlsx_file(file_path: str):
     """处理.xlsx文件"""
     workbook = load_workbook(file_path)
     sheet = workbook.active
-    
+
     # 获取表头
     headers = [str(cell.value) for cell in sheet[1]]  # 第一行是表头
-    
+
     # 验证必需的列是否存在
-    required_columns = ['姓名', '职位', '部门']
+    required_columns = ["姓名", "职位", "部门"]
     missing_columns = [col for col in required_columns if col not in headers]
     if missing_columns:
         raise ValueError(f"缺少必需的列: {', '.join(missing_columns)}")
-    
+
     # 解析数据行
     employees_data = []
     for row in sheet.iter_rows(min_row=2):  # 从第二行开始是数据
         employee_dict = {}
         for col_idx, header in enumerate(headers):
-            if header in ['姓名', '职位', '部门']:
+            if header in ["姓名", "职位", "部门"]:
                 employee_dict[header] = str(row[col_idx].value).strip()
         employees_data.append(employee_dict)
-    
+
     return employees_data
 
 
@@ -146,14 +150,14 @@ def create_employee(employee_create: EmployeeCreate, db: Session) -> EmployeeInD
     db.add(db_employee)
     db.commit()
     db.refresh(db_employee)
-    
+
     return EmployeeInDB(
         id=db_employee.id,
         name=db_employee.name,
         department=db_employee.department,
         position=db_employee.position,
         email=db_employee.email,
-        phone=db_employee.phone
+        phone=db_employee.phone,
     )
 
 

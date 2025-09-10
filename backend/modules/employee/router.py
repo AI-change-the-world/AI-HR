@@ -2,16 +2,16 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from config.database import get_db
+from modules import BaseResponse
 
 from .models import EmployeeCreate, EmployeeInDB, EmployeeUpdate
-from modules import BaseResponse
 from .service import (
     create_employee,
     delete_employee,
     get_employee,
     get_employees,
-    update_employee,
     process_file,
+    update_employee,
 )
 
 router = APIRouter(prefix="/api/employees", tags=["员工管理"])
@@ -20,15 +20,15 @@ router = APIRouter(prefix="/api/employees", tags=["员工管理"])
 @router.post("/upload", response_class=BaseResponse)
 async def upload_resume(file: UploadFile = File(...)):
     """上传处理员工列表
-        必须包括以下几个字段 1. 姓名 2. 职位 3. 部门 
-        几个要点：
-        1. 文件必须为xls或者xlsx格式
-        2. 员工可以同名
-        3. 如果部门不存在，则需要先创建部门
+    必须包括以下几个字段 1. 姓名 2. 职位 3. 部门
+    几个要点：
+    1. 文件必须为xls或者xlsx格式
+    2. 员工可以同名
+    3. 如果部门不存在，则需要先创建部门
     """
-    if not file.filename.endswith(('.xls', '.xlsx')):
+    if not file.filename.endswith((".xls", ".xlsx")):
         raise BaseResponse(code=400, message="只支持xls和xlsx格式的文件")
-    
+
     return await process_file(file)
 
 
