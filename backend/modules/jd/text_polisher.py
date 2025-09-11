@@ -1,14 +1,16 @@
-from typing import Dict, Any
-from config.settings import settings
-from config.openai_client import openai_client as client
 import json
+from typing import Any, Dict
+
+from config.openai_client import openai_client as client
+from config.settings import settings
+
 
 class JDTextPolisher:
     """JD文本AI润色处理类"""
-    
+
     def __init__(self):
         self.model = settings.OPENAI_MODEL
-    
+
     def polish_text(self, original_text: str) -> str:
         """
         使用AI对JD原文进行润色，输出格式化的Markdown文本
@@ -36,21 +38,21 @@ class JDTextPolisher:
 
 请输出润色后的Markdown格式文本：
 """
-        
+
         try:
             response = client.chat.completions.create(
                 model=self.model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.7,
-                max_tokens=2000
+                max_tokens=2000,
             )
-            
+
             polished_text = response.choices[0].message.content.strip()
             return polished_text
-            
+
         except Exception as e:
             raise ValueError(f"AI润色失败: {str(e)}")
-    
+
     def extract_jd_fields(self, text: str) -> Dict[str, Any]:
         """
         从文本中提取JD的结构化字段信息
@@ -85,21 +87,21 @@ JD文本内容：
 
 请输出提取的JSON数据：
 """
-        
+
         try:
             response = client.chat.completions.create(
                 model=self.model,
                 messages=[{"role": "user", "content": prompt}],
                 response_format={"type": "json_object"},
-                temperature=0.3
+                temperature=0.3,
             )
-            
+
             result = json.loads(response.choices[0].message.content)
             return result
-            
+
         except Exception as e:
             raise ValueError(f"信息提取失败: {str(e)}")
-    
+
     def generate_evaluation_criteria(self, text: str) -> Dict[str, Any]:
         """
         根据JD内容生成智能评估标准
@@ -149,18 +151,18 @@ JD内容：
 
 请输出评估标准的JSON数据：
 """
-        
+
         try:
             response = client.chat.completions.create(
                 model=self.model,
                 messages=[{"role": "user", "content": prompt}],
                 response_format={"type": "json_object"},
-                temperature=0.5
+                temperature=0.5,
             )
-            
+
             criteria = json.loads(response.choices[0].message.content)
             return criteria
-            
+
         except Exception as e:
             raise ValueError(f"评估标准生成失败: {str(e)}")
 

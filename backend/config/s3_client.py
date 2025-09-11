@@ -3,8 +3,8 @@ from typing import Optional
 
 import opendal
 
-from config.settings import settings
 from common.logger import logger
+from config.settings import settings
 
 
 @lru_cache(maxsize=10)

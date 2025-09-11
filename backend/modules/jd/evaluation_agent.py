@@ -1,8 +1,10 @@
 import json
 import re
-from typing import Dict, Any, Generator
-from config.settings import settings
+from typing import Any, Dict, Generator
+
 from config.openai_client import openai_client as client
+from config.settings import settings
+
 
 def safe_json_parse(s: str):
     """
@@ -30,7 +32,9 @@ def safe_json_parse(s: str):
         raise ValueError(f"无法解析为 JSON: {s}")
 
 
-def evaluate_resume_stepwise(jd_text: str, resume_text: str, scoring_rules: Dict[str, Any]) -> Generator[Dict[str, Any], None, None]:
+def evaluate_resume_stepwise(
+    jd_text: str, resume_text: str, scoring_rules: Dict[str, Any]
+) -> Generator[Dict[str, Any], None, None]:
     """
     基于用户自定义评分规则，对简历与JD逐步评估。
     - 第一步：任务拆分

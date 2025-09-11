@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Input, Button, message, Spin, Divider, Card, Typography, Space, Tabs } from 'antd';
+import { Modal, Input, Button, message, Spin, Divider, Card, Typography, Space, Tabs, Progress } from 'antd';
 import { StarOutlined, EditOutlined, EyeOutlined, CopyOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
-import { createJDFromText, polishJDText } from '../api';
+import { createJDFromText, polishJDTextStream } from '../api';
 import { JobDescription } from '../types';
 import './JDCreateModal.css';
 
@@ -22,6 +22,8 @@ const JDCreateModal: React.FC<JDCreateModalProps> = ({ visible, onCancel, onSucc
     const [polishing, setPolishing] = useState(false);
     const [creating, setCreating] = useState(false);
     const [activeTab, setActiveTab] = useState('input');
+    const [polishProgress, setPolishProgress] = useState(0);
+    const [polishMessage, setPolishMessage] = useState('');
 
     // 重置状态
     useEffect(() => {
@@ -29,10 +31,12 @@ const JDCreateModal: React.FC<JDCreateModalProps> = ({ visible, onCancel, onSucc
             setOriginalText('');
             setPolishedText('');
             setActiveTab('input');
+            setPolishProgress(0);
+            setPolishMessage('');
         }
     }, [visible]);
 
-    // AI润色功能
+    // AI润色功能 - 流式处理
     const handlePolish = async () => {
         if (!originalText.trim()) {
             message.warning('请先输入JD原文');
@@ -40,16 +44,39 @@ const JDCreateModal: React.FC<JDCreateModalProps> = ({ visible, onCancel, onSucc
         }
 
         setPolishing(true);
+        setPolishProgress(0);
+        setPolishMessage('');
+
         try {
-            const result = await polishJDText(originalText);
-            setPolishedText(result.polished_text);
-            setActiveTab('polished');
-            message.success('AI润色完成');
+            await polishJDTextStream(
+                originalText,
+                // onProgress
+                (data) => {
+                    setPolishMessage(data.message);
+                    if (data.progress !== undefined) {
+                        setPolishProgress(data.progress);
+                    }
+                },
+                // onComplete
+                (polishedText) => {
+                    setPolishedText(polishedText);
+                    setActiveTab('polished');
+                    message.success('AI润色完成');
+                    setPolishProgress(100);
+                },
+                // onError
+                (error) => {
+                    message.error(`润色失败: ${error}`);
+                    console.error('Polish error:', error);
+                }
+            );
         } catch (error) {
             message.error('润色失败，请重试');
             console.error('Polish error:', error);
         } finally {
             setPolishing(false);
+            setPolishProgress(0);
+            setPolishMessage('');
         }
     };
 
@@ -115,6 +142,33 @@ const JDCreateModal: React.FC<JDCreateModalProps> = ({ visible, onCancel, onSucc
                     </Button>
                 </Space>
             </div>
+
+            {/* 润色进度显示 */}
+            {polishing && (
+                <Card className="bg-purple-50 border-purple-200">
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <Text strong className="text-purple-700">正在进行AI润色...</Text>
+                            <Text className="text-purple-600 text-sm">{polishProgress}%</Text>
+                        </div>
+                        <Progress
+                            percent={polishProgress}
+                            strokeColor={{
+                                '0%': '#a855f7',
+                                '100%': '#7c3aed',
+                            }}
+                            trailColor="#e5e7eb"
+                            strokeWidth={6}
+                            showInfo={false}
+                        />
+                        {polishMessage && (
+                            <Text type="secondary" className="text-sm">
+                                {polishMessage}
+                            </Text>
+                        )}
+                    </div>
+                </Card>
+            )}
         </div>
     );
 

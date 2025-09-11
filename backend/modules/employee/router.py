@@ -1,8 +1,9 @@
 import traceback
+
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
-from common.logger import logger
 
+from common.logger import logger
 from config.database import get_db
 from modules import BaseResponse
 

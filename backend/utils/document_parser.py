@@ -1,8 +1,10 @@
 from io import BytesIO
 from typing import Optional
-from common.logger import logger
+
 import docx
 import PyPDF2
+
+from common.logger import logger
 
 
 def parse_pdf(content: bytes) -> str:

@@ -1,5 +1,5 @@
-from typing import Optional, Dict, Any
 from datetime import datetime
+from typing import Any, Dict, Optional
 
 from pydantic import BaseModel
 
@@ -39,10 +39,12 @@ class JDInDB(JDBase):
 
 class JDFullInfoUpdate(BaseModel):
     """更新JD完整信息和评估标准"""
+
     full_text: Optional[str] = None
     evaluation_criteria: Optional[Dict[str, Any]] = None
 
 
 class EvaluationCriteriaUpdate(BaseModel):
     """更新JD评估标准"""
+
     criteria: Dict[str, Any]
