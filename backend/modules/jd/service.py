@@ -6,6 +6,56 @@ from sqlalchemy.orm import Session
 from models.jd import JobDescription
 from .models import JDCreate, JDInDB, JDUpdate, JDFullInfoUpdate
 from .evaluation_agent import evaluate_resume_stepwise
+from .text_polisher import jd_polisher
+
+
+def polish_jd_text(original_text: str) -> str:
+    """
+    AI润色JD文本
+    """
+    return jd_polisher.polish_text(original_text)
+
+
+def create_jd_from_text(text: str, db: Session) -> JDInDB:
+    """
+    从文本创建JD
+    """
+    # 使用AI提取结构化信息
+    extracted_fields = jd_polisher.extract_jd_fields(text)
+    
+    # 生成评估标准
+    evaluation_criteria = jd_polisher.generate_evaluation_criteria(text)
+    
+    # 创建JD记录
+    db_jd = JobDescription(
+        title=extracted_fields.get('title', '未命名职位'),
+        department=extracted_fields.get('department', '未指定'),
+        location=extracted_fields.get('location', '未指定'),
+        description=extracted_fields.get('description', ''),
+        requirements=extracted_fields.get('requirements', ''),
+        full_text=text,
+        evaluation_criteria=json.dumps(evaluation_criteria, ensure_ascii=False),
+        is_open=True  # 默认开放状态
+    )
+    
+    db.add(db_jd)
+    db.commit()
+    db.refresh(db_jd)
+    
+    return JDInDB(
+        id=db_jd.id,
+        title=db_jd.title,
+        department=db_jd.department,
+        location=db_jd.location,
+        description=db_jd.description,
+        requirements=db_jd.requirements,
+        status="开放" if db_jd.is_open else "关闭",
+        created_at=db_jd.created_at,
+        updated_at=db_jd.updated_at,
+        full_text=db_jd.full_text,
+        evaluation_criteria=evaluation_criteria
+    )
+
 
 def create_jd(jd_create: JDCreate, db: Session) -> JDInDB:
     """创建新JD"""

@@ -7,8 +7,8 @@ export interface JobDescription {
     description?: string;
     requirements?: string;
     status: string; // '开放' | '关闭'
-    createdAt: string;
-    updatedAt?: string;
+    created_at?: string;
+    updated_at?: string;
     is_open?: boolean;
     salary_range?: string;
     full_text?: string;
@@ -65,4 +65,14 @@ export interface JDQueryParams {
     department?: string;
     location?: string;
     status?: string;
+}
+
+// AI润色响应接口
+export interface PolishResponse {
+    polished_text: string;
+}
+
+// 从文本创建JD请求接口
+export interface CreateFromTextRequest {
+    text: string;
 }

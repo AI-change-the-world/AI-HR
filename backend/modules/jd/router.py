@@ -11,7 +11,8 @@ from utils.document_parser import parse_document
 from .models import JDCreate, JDInDB, JDUpdate, JDFullInfoUpdate, EvaluationCriteriaUpdate
 from .service import (
     create_jd, delete_jd, get_jd, get_jds, update_jd, evaluate_resume, 
-    update_jd_evaluation_criteria, get_jd_evaluation_criteria, update_jd_full_info
+    update_jd_evaluation_criteria, get_jd_evaluation_criteria, update_jd_full_info,
+    polish_jd_text, create_jd_from_text
 )
 
 router = APIRouter(prefix="/api/jd", tags=["JD管理"])
@@ -229,3 +230,38 @@ async def extract_keywords_from_jd(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"关键字提取失败: {str(e)}")
+
+
+@router.post("/polish-text")
+async def polish_jd_text_endpoint(request_data: dict):
+    """
+    AI润色JD文本
+    """
+    original_text = request_data.get('original_text', '')
+    if not original_text.strip():
+        raise HTTPException(status_code=400, detail="原始文本不能为空")
+    
+    try:
+        polished_text = polish_jd_text(original_text)
+        return {"polished_text": polished_text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"润色失败: {str(e)}")
+
+
+@router.post("/create-from-text", response_model=JDInDB)
+async def create_jd_from_text_endpoint(
+    request_data: dict,
+    db: Session = Depends(get_db)
+):
+    """
+    从文本创建JD
+    """
+    text = request_data.get('text', '')
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="文本内容不能为空")
+    
+    try:
+        jd = create_jd_from_text(text, db)
+        return jd
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"创建JD失败: {str(e)}")

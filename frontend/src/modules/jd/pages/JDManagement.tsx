@@ -4,7 +4,7 @@ import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, MoreOutline
 import type { MenuProps } from 'antd';
 import { JobDescription } from '../types';
 import { getJDs, toggleJDStatus as apiToggleJDStatus, deleteJD } from '../api';
-import { ResumeEvaluator, JDFullInfoModal } from '../components';
+import { ResumeEvaluator, JDFullInfoModal, JDCreateModal } from '../components';
 
 const { Title } = Typography;
 
@@ -14,6 +14,7 @@ const JDManagement: React.FC = () => {
     const [showEvaluator, setShowEvaluator] = useState(false);
     const [selectedJD, setSelectedJD] = useState<JobDescription | null>(null);
     const [showFullInfoModal, setShowFullInfoModal] = useState(false);
+    const [showCreateModal, setShowCreateModal] = useState(false);
 
     // 加载JD列表
     const loadJDs = async () => {
@@ -94,6 +95,20 @@ const JDManagement: React.FC = () => {
         setSelectedJD(null);
     };
 
+    const handleCreateClick = () => {
+        setShowCreateModal(true);
+    };
+
+    const handleCreateModalCancel = () => {
+        setShowCreateModal(false);
+    };
+
+    const handleCreateSuccess = (newJD: JobDescription) => {
+        message.success('JD创建成功');
+        loadJDs(); // 重新加载数据
+        setShowCreateModal(false);
+    };
+
     const getMenuItems = (record: JobDescription): MenuProps['items'] => [
         {
             key: 'evaluate',
@@ -157,7 +172,7 @@ const JDManagement: React.FC = () => {
             title: '创建时间',
             dataIndex: 'created_at',
             key: 'created_at',
-            render: (createdAt: string) => createdAt.split('T')[0],
+            render: (createdAt: string) => createdAt?.split('T')[0] || '-',
         },
         {
             title: '操作',
@@ -206,6 +221,7 @@ const JDManagement: React.FC = () => {
                 <Button
                     type="primary"
                     icon={<PlusOutlined />}
+                    onClick={handleCreateClick}
                     className="bg-gradient-to-r from-primary-500 to-primary-600 border-none shadow-soft hover:shadow-medium hover:scale-105 transition-all duration-200 h-10 px-6 font-medium align-right"
                 >
                     创建JD
@@ -243,6 +259,14 @@ const JDManagement: React.FC = () => {
                     jd={selectedJD}
                     onCancel={handleFullInfoModalCancel}
                     onSuccess={handleFullInfoUpdateSuccess}
+                />
+            )}
+
+            {showCreateModal && (
+                <JDCreateModal
+                    visible={showCreateModal}
+                    onCancel={handleCreateModalCancel}
+                    onSuccess={handleCreateSuccess}
                 />
             )}
         </div>

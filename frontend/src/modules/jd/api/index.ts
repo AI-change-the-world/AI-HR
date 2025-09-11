@@ -1,4 +1,4 @@
-import { JobDescription, CreateJDRequest, UpdateJDRequest, JDQueryParams, EvaluationStep, JDFullInfoUpdate, EvaluationCriteriaUpdate } from '../types';
+import { JobDescription, CreateJDRequest, UpdateJDRequest, JDQueryParams, EvaluationStep, JDFullInfoUpdate, EvaluationCriteriaUpdate, PolishResponse } from '../types';
 import apiClient from '../../../utils/api';
 
 const API_BASE = '/api/jd';
@@ -160,4 +160,14 @@ export const getJDFullInfo = async (id: number): Promise<{ full_text?: string; e
 // 提取关键字并更新JD字段
 export const extractJDKeywords = async (id: number, fullText: string): Promise<JobDescription> => {
     return apiClient.post(`${API_BASE}/${id}/extract-keywords`, { full_text: fullText });
+};
+
+// AI润色JD文本
+export const polishJDText = async (originalText: string): Promise<PolishResponse> => {
+    return apiClient.post(`${API_BASE}/polish-text`, { original_text: originalText });
+};
+
+// 从文本创建JD
+export const createJDFromText = async (text: string): Promise<JobDescription> => {
+    return apiClient.post(`${API_BASE}/create-from-text`, { text });
 };

@@ -12,7 +12,7 @@ interface ApiClient {
 // 创建axios实例
 const axiosInstance = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
-    timeout: 10000,
+    timeout: 30 * 1000,
     headers: {
         'Content-Type': 'application/json',
     },
