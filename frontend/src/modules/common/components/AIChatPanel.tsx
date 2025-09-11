@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Button, Input, Typography, Avatar, Spin } from 'antd';
-import { MessageOutlined } from '@ant-design/icons';
+import { Button, Input, Typography, Avatar, Spin, Modal } from 'antd';
+import { MessageOutlined, ExpandOutlined } from '@ant-design/icons';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import apiClient from '../../../utils/api';
 
@@ -11,7 +11,7 @@ interface Message {
     id: number;
     text: string;
     isUser: boolean;
-    chartData?: any; // 添加图表数据字段
+    chartData?: any;
 }
 
 interface ChatResponse {
@@ -24,6 +24,12 @@ interface ChatRequest {
     message: string;
 }
 
+interface ChartModalData {
+    visible: boolean;
+    data: any;
+    title: string;
+}
+
 // 颜色配置
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
@@ -33,6 +39,7 @@ export default function AIChatPanel() {
     ]);
     const [inputValue, setInputValue] = useState('');
     const [loading, setLoading] = useState(false);
+    const [chartModal, setChartModal] = useState<ChartModalData>({ visible: false, data: null, title: '' });
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // 滚动到消息底部
@@ -96,8 +103,26 @@ export default function AIChatPanel() {
         setMessages(prev => [...prev, newAiMessage]);
     };
 
+    // 打开图表放大查看
+    const openChartModal = (chartData: any) => {
+        setChartModal({
+            visible: true,
+            data: chartData,
+            title: chartData.title
+        });
+    };
+
+    // 关闭图表放大查看
+    const closeChartModal = () => {
+        setChartModal({
+            visible: false,
+            data: null,
+            title: ''
+        });
+    };
+
     // 渲染柱状图
-    const renderBarChart = (chartData: any) => {
+    const renderBarChart = (chartData: any, isModal: boolean = false) => {
         if (!chartData || chartData.type !== 'bar') return null;
 
         const { data, title } = chartData;
@@ -109,88 +134,117 @@ export default function AIChatPanel() {
             value: series[0].data[index]
         }));
 
+        const chartHeight = isModal ? 400 : 250;
+
         return (
-            <div className="mt-4 p-4 border rounded-lg bg-white shadow-sm">
-                <h4 className="text-lg font-semibold mb-4 text-center text-gray-800">{title}</h4>
-                <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                            data={chartDataFormatted}
-                            margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-                        >
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                            <XAxis
-                                dataKey="name"
-                                angle={-45}
-                                textAnchor="end"
-                                height={60}
-                                tick={{ fontSize: 12 }}
-                            />
-                            <YAxis
-                                tick={{ fontSize: 12 }}
-                            />
-                            <Tooltip
-                                contentStyle={{
-                                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                    borderRadius: '8px',
-                                    border: '1px solid #e5e7eb'
-                                }}
-                            />
-                            <Legend />
-                            <Bar
-                                dataKey="value"
-                                fill="#3b82f6"
-                                name="员工数量"
-                                radius={[4, 4, 0, 0]}
-                            />
-                        </BarChart>
-                    </ResponsiveContainer>
+            <div className={`${isModal ? '' : 'mt-3'} rounded-lg bg-white border border-gray-200`}>
+                {!isModal && (
+                    <div className="flex justify-between items-center p-2 bg-gray-50 border-b border-gray-200">
+                        <span className="text-sm font-medium text-gray-700">{title}</span>
+                        <Button
+                            type="text"
+                            icon={<ExpandOutlined />}
+                            onClick={() => openChartModal(chartData)}
+                            size="small"
+                        />
+                    </div>
+                )}
+                <div className={isModal ? 'p-4' : ''}>
+                    <div className={isModal ? 'h-96' : 'h-60'}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                                data={chartDataFormatted}
+                                margin={{ top: 20, right: 30, left: 20, bottom: isModal ? 60 : 40 }}
+                            >
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                <XAxis
+                                    dataKey="name"
+                                    angle={isModal ? -45 : -45}
+                                    textAnchor="end"
+                                    height={isModal ? 60 : 40}
+                                    tick={{ fontSize: isModal ? 14 : 12 }}
+                                />
+                                <YAxis
+                                    tick={{ fontSize: isModal ? 14 : 12 }}
+                                />
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                        borderRadius: '8px',
+                                        border: '1px solid #e5e7eb'
+                                    }}
+                                    formatter={(value) => [value, '人数']}
+                                />
+                                <Legend />
+                                <Bar
+                                    dataKey="value"
+                                    fill="#3b82f6"
+                                    name="员工数量"
+                                    radius={[4, 4, 0, 0]}
+                                />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
             </div>
         );
     };
 
     // 渲染饼图
-    const renderPieChart = (chartData: any) => {
+    const renderPieChart = (chartData: any, isModal: boolean = false) => {
         if (!chartData || chartData.type !== 'pie') return null;
 
         const { data, title } = chartData;
         const chartDataFormatted = data.series[0].data;
 
+        const chartHeight = isModal ? 400 : 250;
+
         return (
-            <div className="mt-4 p-4 border rounded-lg bg-white shadow-sm">
-                <h4 className="text-lg font-semibold mb-4 text-center text-gray-800">{title}</h4>
-                <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                            <Pie
-                                data={chartDataFormatted}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={true}
-                                // label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                                outerRadius={80}
-                                fill="#8884d8"
-                                dataKey="value"
-                            >
-                                {chartDataFormatted.map((entry: any, index: number) => (
-                                    <Cell
-                                        key={`cell-${index}`}
-                                        fill={COLORS[index % COLORS.length]}
-                                    />
-                                ))}
-                            </Pie>
-                            <Tooltip
-                                formatter={(value) => [value, '人数']}
-                                contentStyle={{
-                                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                    borderRadius: '8px',
-                                    border: '1px solid #e5e7eb'
-                                }}
-                            />
-                            <Legend />
-                        </PieChart>
-                    </ResponsiveContainer>
+            <div className={`${isModal ? '' : 'mt-3'} rounded-lg bg-white border border-gray-200`}>
+                {!isModal && (
+                    <div className="flex justify-between items-center p-2 bg-gray-50 border-b border-gray-200">
+                        <span className="text-sm font-medium text-gray-700">{title}</span>
+                        <Button
+                            type="text"
+                            icon={<ExpandOutlined />}
+                            onClick={() => openChartModal(chartData)}
+                            size="small"
+                        />
+                    </div>
+                )}
+                <div className={isModal ? 'p-4' : ''}>
+                    <div className={isModal ? 'h-96' : 'h-60'}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={chartDataFormatted}
+                                    cx="50%"
+                                    cy="50%"
+                                    labelLine={true}
+                                    // label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                    outerRadius={isModal ? 120 : 70}
+                                    fill="#8884d8"
+                                    dataKey="value"
+                                >
+                                    {chartDataFormatted.map((entry: any, index: number) => (
+                                        <Cell
+                                            key={`cell-${index}`}
+                                            fill={COLORS[index % COLORS.length]}
+                                        />
+                                    ))}
+                                </Pie>
+                                <Tooltip
+                                    formatter={(value) => [value, '人数']}
+                                    contentStyle={{
+                                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                        borderRadius: '8px',
+                                        border: '1px solid #e5e7eb'
+                                    }}
+                                />
+                                <Legend />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
             </div>
         );
@@ -255,7 +309,7 @@ export default function AIChatPanel() {
                             />
                         )}
                         <div
-                            className={`max-w-[80%] px-4 py-3 rounded-2xl break-words ${message.isUser
+                            className={`max-w-[85%] px-4 py-3 rounded-2xl break-words ${message.isUser
                                 ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
                                 : 'bg-gray-100 text-gray-800'
                                 }`}
@@ -296,6 +350,21 @@ export default function AIChatPanel() {
                     发送
                 </Button>
             </div>
+
+            {/* 图表放大查看模态框 */}
+            <Modal
+                title={chartModal.title}
+                open={chartModal.visible}
+                onCancel={closeChartModal}
+                footer={null}
+                width="80%"
+                style={{ top: 20 }}
+            >
+                <div className="p-4">
+                    {chartModal.data && chartModal.data.type === 'bar' && renderBarChart(chartModal.data, true)}
+                    {chartModal.data && chartModal.data.type === 'pie' && renderPieChart(chartModal.data, true)}
+                </div>
+            </Modal>
         </div>
     );
 }

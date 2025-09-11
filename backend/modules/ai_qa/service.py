@@ -7,6 +7,8 @@ from config.settings import settings
 from models.employee import Employee as EmployeeModel
 from models.department import Department as DepartmentModel
 from .models import ChartData
+from common.logger import logger
+from utils.logger_format_utils import log_safe_json
 
 
 def identify_intent(user_message: str) -> Dict[str, Any]:
@@ -193,7 +195,8 @@ def process_employee_query(user_message: str, db: Session) -> Dict[str, Any]:
     """
     # 识别用户意图
     intent_result = identify_intent(user_message)
-    print("意图识别结果: "+ json.dumps(intent_result))
+    # print("意图识别结果: "+ json.dumps(intent_result))
+    log_safe_json(logger, "意图识别结果", intent_result)
     
     # 根据意图处理查询
     if intent_result["intent"] == "employee_count":
