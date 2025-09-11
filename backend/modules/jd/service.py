@@ -4,7 +4,7 @@ from typing import List, Optional, Dict, Any, Generator
 from sqlalchemy.orm import Session
 
 from models.jd import JobDescription
-from .models import JDCreate, JDInDB, JDUpdate
+from .models import JDCreate, JDInDB, JDUpdate, JDFullInfoUpdate
 from .evaluation_agent import evaluate_resume_stepwise
 
 def create_jd(jd_create: JDCreate, db: Session) -> JDInDB:
@@ -42,6 +42,14 @@ def get_jd(jd_id: int, db: Session) -> Optional[JDInDB]:
     if db_jd is None:
         return None
     
+    # 解析evaluation_criteria
+    evaluation_criteria = None
+    if db_jd.evaluation_criteria:
+        try:
+            evaluation_criteria = json.loads(db_jd.evaluation_criteria)
+        except json.JSONDecodeError:
+            evaluation_criteria = None
+    
     return JDInDB(
         id=db_jd.id,
         title=db_jd.title,
@@ -51,7 +59,9 @@ def get_jd(jd_id: int, db: Session) -> Optional[JDInDB]:
         requirements=db_jd.requirements,
         status="开放" if db_jd.is_open else "关闭",
         created_at=db_jd.created_at,
-        updated_at=db_jd.updated_at
+        updated_at=db_jd.updated_at,
+        full_text=db_jd.full_text,
+        evaluation_criteria=evaluation_criteria
     )
 
 
@@ -62,8 +72,17 @@ def get_jds(
 ) -> List[JDInDB]:
     """获取JD列表"""
     db_jds = db.query(JobDescription).offset(skip).limit(limit).all()
-    return [
-        JDInDB(
+    result = []
+    for db_jd in db_jds:
+        # 解析evaluation_criteria
+        evaluation_criteria = None
+        if db_jd.evaluation_criteria:
+            try:
+                evaluation_criteria = json.loads(db_jd.evaluation_criteria)
+            except json.JSONDecodeError:
+                evaluation_criteria = None
+        
+        result.append(JDInDB(
             id=db_jd.id,
             title=db_jd.title,
             department=db_jd.department,
@@ -72,10 +91,11 @@ def get_jds(
             requirements=db_jd.requirements,
             status="开放" if db_jd.is_open else "关闭",
             created_at=db_jd.created_at,
-            updated_at=db_jd.updated_at
-        )
-        for db_jd in db_jds
-    ]
+            updated_at=db_jd.updated_at,
+            full_text=db_jd.full_text,
+            evaluation_criteria=evaluation_criteria
+        ))
+    return result
 
 
 def update_jd(jd_id: int, jd_update: JDUpdate, db: Session) -> Optional[JDInDB]:
@@ -94,6 +114,14 @@ def update_jd(jd_id: int, jd_update: JDUpdate, db: Session) -> Optional[JDInDB]:
     db.commit()
     db.refresh(db_jd)
     
+    # 解析evaluation_criteria
+    evaluation_criteria = None
+    if db_jd.evaluation_criteria:
+        try:
+            evaluation_criteria = json.loads(db_jd.evaluation_criteria)
+        except json.JSONDecodeError:
+            evaluation_criteria = None
+    
     return JDInDB(
         id=db_jd.id,
         title=db_jd.title,
@@ -103,7 +131,9 @@ def update_jd(jd_id: int, jd_update: JDUpdate, db: Session) -> Optional[JDInDB]:
         requirements=db_jd.requirements,
         status="开放" if db_jd.is_open else "关闭",
         created_at=db_jd.created_at,
-        updated_at=db_jd.updated_at
+        updated_at=db_jd.updated_at,
+        full_text=db_jd.full_text,
+        evaluation_criteria=evaluation_criteria
     )
 
 
@@ -118,26 +148,28 @@ def delete_jd(jd_id: int, db: Session) -> bool:
     return True
 
 
-def evaluate_resume(jd_id: int, resume_text: str, scoring_rules: Dict[str, Any], db: Session) -> Generator[Dict[str, Any], None, None]:
+def evaluate_resume(jd_id: int, resume_text: str, db: Session) -> Generator[Dict[str, Any], None, None]:
     """
     评估简历与指定JD的匹配度
     """
     # 获取JD信息
-    jd = get_jd(jd_id, db)
-    if not jd:
+    db_jd = db.query(JobDescription).filter(JobDescription.id == jd_id).first()
+    if not db_jd:
         raise ValueError("JD未找到")
     
-    # 构造JD文本
-    jd_text = f"职位名称: {jd.title}\n部门: {jd.department}\n工作地点: {jd.location}\n描述: {jd.description}\n要求: {jd.requirements}"
+    # 优先使用full_text，如果没有则使用结构化信息
+    if db_jd.full_text:
+        jd_text = db_jd.full_text
+    else:
+        jd_text = f"职位名称: {db_jd.title}\n部门: {db_jd.department}\n工作地点: {db_jd.location}\n描述: {db_jd.description}\n要求: {db_jd.requirements}"
     
-    # 如果没有传入评分规则，尝试从jd的evaluation_criteria中获取
-    if not scoring_rules:
-        db_jd = db.query(JobDescription).filter(JobDescription.id == jd_id).first()
-        if db_jd and db_jd.evaluation_criteria:
-            try:
-                scoring_rules = json.loads(db_jd.evaluation_criteria)
-            except json.JSONDecodeError:
-                scoring_rules = {}
+    # 获取评分规则
+    scoring_rules = {}
+    if db_jd.evaluation_criteria:
+        try:
+            scoring_rules = json.loads(db_jd.evaluation_criteria)
+        except json.JSONDecodeError:
+            scoring_rules = {}
     
     # 调用评估智能体
     return evaluate_resume_stepwise(jd_text, resume_text, scoring_rules)
@@ -177,3 +209,43 @@ def get_jd_evaluation_criteria(jd_id: int, db: Session) -> Optional[Dict[str, An
         "年限": { ">=3年": 10, "<3年": 5, "<1年": 0 },
         "真实性": { "AI生成嫌疑": -10, "具体案例丰富": 10 }
     }
+
+
+def update_jd_full_info(jd_id: int, full_info: JDFullInfoUpdate, db: Session) -> Optional[JDInDB]:
+    """
+    更新JD的完整信息和评估标准
+    """
+    db_jd = db.query(JobDescription).filter(JobDescription.id == jd_id).first()
+    if db_jd is None:
+        return None
+    
+    if full_info.full_text is not None:
+        db_jd.full_text = full_info.full_text
+    
+    if full_info.evaluation_criteria is not None:
+        db_jd.evaluation_criteria = json.dumps(full_info.evaluation_criteria, ensure_ascii=False)
+    
+    db.commit()
+    db.refresh(db_jd)
+    
+    # 解析evaluation_criteria
+    evaluation_criteria = None
+    if db_jd.evaluation_criteria:
+        try:
+            evaluation_criteria = json.loads(db_jd.evaluation_criteria)
+        except json.JSONDecodeError:
+            evaluation_criteria = None
+    
+    return JDInDB(
+        id=db_jd.id,
+        title=db_jd.title,
+        department=db_jd.department,
+        location=db_jd.location,
+        description=db_jd.description,
+        requirements=db_jd.requirements,
+        status="开放" if db_jd.is_open else "关闭",
+        created_at=db_jd.created_at,
+        updated_at=db_jd.updated_at,
+        full_text=db_jd.full_text,
+        evaluation_criteria=evaluation_criteria
+    )

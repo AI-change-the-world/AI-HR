@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Button, Upload, message, Card, Spin, List, Typography, Modal } from 'antd';
-import { UploadOutlined, FilePdfOutlined, FileTextOutlined } from '@ant-design/icons';
+import { Button, Upload, message, Card, Spin, List, Typography, Modal, Progress } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd/es/upload/interface';
-import { evaluateResume, getJDEvaluationCriteria } from '../api';
+import { evaluateResumeStream } from '../api';
+import { EvaluationStep } from '../types';
 const { Title, Text } = Typography;
 
 interface ResumeEvaluatorProps {
@@ -17,6 +18,9 @@ const ResumeEvaluator: React.FC<ResumeEvaluatorProps> = ({ jdId, jdTitle, onCanc
     const [uploading, setUploading] = useState(false);
     const [evaluationResults, setEvaluationResults] = useState<EvaluationStep[]>([]);
     const [evaluating, setEvaluating] = useState(false);
+    const [currentStep, setCurrentStep] = useState<string>('');
+    const [progress, setProgress] = useState<number>(0);
+    const [totalSteps, setTotalSteps] = useState<number>(0);
 
     const props: UploadProps = {
         beforeUpload: (file) => {
@@ -51,14 +55,49 @@ const ResumeEvaluator: React.FC<ResumeEvaluatorProps> = ({ jdId, jdTitle, onCanc
         setUploading(true);
         setEvaluating(true);
         setEvaluationResults([]);
+        setCurrentStep('正在初始化评估...');
+        setProgress(0);
+        setTotalSteps(0);
 
         try {
-            // 获取该JD的评估标准
-            const criteria = await getJDEvaluationCriteria(jdId);
+            // 使用流式接口进行评估
+            const results = await evaluateResumeStream(
+                jdId,
+                file,
+                // 实时进度回调
+                (step: EvaluationStep) => {
+                    console.log('收到流式数据:', step);
 
-            // 调用后端API进行评估
-            const results = await evaluateResume(jdId, file, criteria);
-            setEvaluationResults(results);
+                    if (step.step === 0 && step.steps) {
+                        // 第一步：任务拆解
+                        setTotalSteps(step.steps.length + 1); // +1 for the task breakdown step
+                        setCurrentStep('任务拆解完成');
+                        setProgress(1);
+                    } else {
+                        // 后续步骤：具体评估
+                        setCurrentStep(`正在执行: ${step.name}`);
+                        if (totalSteps > 0) {
+                            setProgress(step.step + 1);
+                        }
+                    }
+
+                    // 实时更新结果列表
+                    setEvaluationResults(prev => {
+                        const existing = prev.find(r => r.step === step.step);
+                        if (existing) {
+                            return prev.map(r => r.step === step.step ? step : r);
+                        } else {
+                            return [...prev, step];
+                        }
+                    });
+                },
+                // 错误回调
+                (error: string) => {
+                    message.error(`评估出错: ${error}`);
+                }
+            );
+
+            setCurrentStep('评估完成');
             message.success('评估完成');
             onEvaluate();
         } catch (error) {
@@ -109,10 +148,24 @@ const ResumeEvaluator: React.FC<ResumeEvaluatorProps> = ({ jdId, jdTitle, onCanc
                 </div>
 
                 {evaluating && (
-                    <div className="flex flex-col items-center justify-center py-8">
-                        <Spin size="large" />
-                        <Text className="mt-4 text-gray-600">正在分析简历与职位匹配度...</Text>
-                    </div>
+                    <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100">
+                        <div className="flex flex-col items-center justify-center py-6">
+                            <Spin size="large" />
+                            <Text className="mt-4 text-gray-600 text-center">{currentStep}</Text>
+                            {totalSteps > 0 && (
+                                <div className="w-full max-w-md mt-4">
+                                    <Progress
+                                        percent={Math.round((progress / totalSteps) * 100)}
+                                        format={(percent) => `${progress}/${totalSteps} 步骤`}
+                                        strokeColor={{
+                                            '0%': '#1890ff',
+                                            '100%': '#52c41a',
+                                        }}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    </Card>
                 )}
 
                 {evaluationResults.length > 0 && (
@@ -128,17 +181,22 @@ const ResumeEvaluator: React.FC<ResumeEvaluatorProps> = ({ jdId, jdTitle, onCanc
                                                 {getIconForStep(item.step)}
                                             </div>
                                         }
-                                        title={
-                                            <div className="flex items-center">
+                                        title={(
+                                            <div className="flex items-center justify-between">
                                                 <span className="font-medium text-gray-800">{item.name}</span>
-                                                {item.score !== undefined && (
-                                                    <span className="ml-3 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
-                                                        得分: {item.score}
-                                                    </span>
-                                                )}
+                                                <div className="flex items-center space-x-2">
+                                                    {evaluating && !item.score && item.step > 0 && (
+                                                        <Spin size="small" />
+                                                    )}
+                                                    {item.score !== undefined && (
+                                                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
+                                                            得分: {item.score}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
-                                        }
-                                        description={
+                                        )}
+                                        description={(
                                             <div className="mt-1">
                                                 {item.reason && <Text>{item.reason}</Text>}
                                                 {item.steps && (
@@ -156,21 +214,23 @@ const ResumeEvaluator: React.FC<ResumeEvaluatorProps> = ({ jdId, jdTitle, onCanc
                                                     </div>
                                                 )}
                                             </div>
-                                        }
+                                        )}
                                     />
                                 </List.Item>
                             )}
                         />
-                        <div className="mt-4 pt-4 border-t border-gray-200">
-                            <Text strong className="text-lg">
-                                总体匹配度:{" "}
-                                <span className="text-blue-600">
-                                    {evaluationResults
-                                        .filter(r => r.score !== undefined)
-                                        .reduce((sum, r) => sum + (r.score || 0), 0)}分
-                                </span>
-                            </Text>
-                        </div>
+                        {evaluationResults.filter(r => r.score !== undefined).length > 0 && (
+                            <div className="mt-4 pt-4 border-t border-gray-200">
+                                <Text strong className="text-lg">
+                                    总体匹配度:{" "}
+                                    <span className="text-blue-600">
+                                        {evaluationResults
+                                            .filter(r => r.score !== undefined)
+                                            .reduce((sum, r) => sum + (r.score || 0), 0)}分
+                                    </span>
+                                </Text>
+                            </div>
+                        )}
                     </Card>
                 )}
             </div>

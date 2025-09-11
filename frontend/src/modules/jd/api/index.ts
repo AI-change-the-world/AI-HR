@@ -1,4 +1,4 @@
-import { JobDescription, CreateJDRequest, UpdateJDRequest, JDQueryParams, EvaluationStep } from '../types';
+import { JobDescription, CreateJDRequest, UpdateJDRequest, JDQueryParams, EvaluationStep, JDFullInfoUpdate, EvaluationCriteriaUpdate } from '../types';
 import apiClient from '../../../utils/api';
 
 const API_BASE = '/api/jd';
@@ -41,19 +41,13 @@ export const toggleJDStatus = async (id: number): Promise<JobDescription> => {
     return updateJD({ id, status: newStatus });
 };
 
-// 简历评估API
+// 简历评估API（非流式）
 export const evaluateResume = async (
     jdId: number,
-    file: File,
-    scoringRules?: Record<string, any>
+    file: File
 ): Promise<EvaluationStep[]> => {
     const formData = new FormData();
     formData.append('resume_file', file);
-
-    // 如果有评分规则，添加到请求中
-    if (scoringRules) {
-        formData.append('scoring_rules', JSON.stringify(scoringRules));
-    }
 
     const response = await apiClient.post(`${API_BASE}/${jdId}/evaluate-resume`, formData, {
         headers: {
@@ -68,17 +62,13 @@ export const evaluateResume = async (
 export const evaluateResumeStream = async (
     jdId: number,
     file: File,
-    scoringRules?: Record<string, any>,
-    onProgress?: (step: EvaluationStep) => void
+    onProgress?: (step: EvaluationStep) => void,
+    onError?: (error: string) => void
 ): Promise<EvaluationStep[]> => {
     const formData = new FormData();
     formData.append('resume_file', file);
 
-    if (scoringRules) {
-        formData.append('scoring_rules', JSON.stringify(scoringRules));
-    }
-
-    // 注意：流式接口不使用axios，使用原生fetch支持流式读取
+    // 流式接口使用原生fetch支持流式读取
     const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
     const response = await fetch(`${baseURL}${API_BASE}/${jdId}/evaluate-resume`, {
         method: 'POST',
@@ -86,20 +76,55 @@ export const evaluateResumeStream = async (
     });
 
     if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || '简历评估失败');
+        throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const data = await response.json();
-    const results = data.results || [];
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+    const results: EvaluationStep[] = [];
 
-    // 模拟流式返回，实际可以用WebSocket或Server-Sent Events
-    if (onProgress) {
-        for (let i = 0; i < results.length; i++) {
-            setTimeout(() => {
-                onProgress(results[i]);
-            }, i * 1000); // 每秒返回一个步骤
+    if (!reader) {
+        throw new Error('响应流不可用');
+    }
+
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = line.slice(6).trim();
+
+                    if (data === '[DONE]') {
+                        return results;
+                    }
+
+                    try {
+                        const stepData = JSON.parse(data);
+
+                        if (stepData.error) {
+                            if (onError) {
+                                onError(stepData.error);
+                            }
+                            throw new Error(stepData.error);
+                        }
+
+                        results.push(stepData);
+                        if (onProgress) {
+                            onProgress(stepData);
+                        }
+                    } catch (parseError) {
+                        console.warn('解析流式数据失败:', parseError);
+                    }
+                }
+            }
         }
+    } finally {
+        reader.releaseLock();
     }
 
     return results;
@@ -117,4 +142,17 @@ export const saveJDEvaluationCriteria = async (
     criteria: Record<string, any>
 ): Promise<void> => {
     return apiClient.put(`${API_BASE}/${id}/evaluation-criteria`, { criteria });
+};
+
+// 更新JD的完整信息
+export const updateJDFullInfo = async (
+    id: number,
+    fullInfo: JDFullInfoUpdate
+): Promise<JobDescription> => {
+    return apiClient.put(`${API_BASE}/${id}/full-info`, fullInfo);
+};
+
+// 获取JD的完整信息
+export const getJDFullInfo = async (id: number): Promise<{ full_text?: string; evaluation_criteria?: Record<string, any> }> => {
+    return apiClient.get(`${API_BASE}/${id}/full-info`);
 };

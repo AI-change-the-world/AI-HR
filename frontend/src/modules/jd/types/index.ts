@@ -12,7 +12,7 @@ export interface JobDescription {
     is_open?: boolean;
     salary_range?: string;
     full_text?: string;
-    evaluation_criteria?: string;
+    evaluation_criteria?: Record<string, any>; // 改为对象类型
 }
 
 export interface EvaluationStep {
@@ -44,6 +44,17 @@ export interface UpdateJDRequest {
     requirements?: string;
     status?: string;
     salary_range?: string;
+}
+
+// JD完整信息更新接口
+export interface JDFullInfoUpdate {
+    full_text?: string;
+    evaluation_criteria?: Record<string, any>;
+}
+
+// 评价标准更新接口
+export interface EvaluationCriteriaUpdate {
+    criteria: Record<string, any>;
 }
 
 // JD查询参数接口
