@@ -2,14 +2,7 @@ import json
 import os
 import re
 from typing import Dict, Any, Generator
-from openai import OpenAI
-
-# 初始化OpenAI客户端
-client = OpenAI(
-    api_key=os.environ.get("OPENAI_API_KEY", "sk-your-api-key"),
-    base_url=os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
-)
-
+from config.openai_client import openai_client as client
 
 def safe_json_parse(s: str):
     """
