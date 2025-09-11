@@ -285,10 +285,10 @@ export default function AIChatPanel() {
 
     return (
         <div className="h-full flex flex-col">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl mb-4 border border-blue-100">
+            {/* <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl mb-4 border border-blue-100">
                 <Title level={4} className="text-blue-800 m-0 mb-1">AI助手</Title>
                 <Text className="text-blue-600 text-sm">您好！我是AI人事助手，有什么可以帮助您的吗？</Text>
-            </div>
+            </div> */}
 
             {loading && (
                 <div className="flex justify-center my-2">

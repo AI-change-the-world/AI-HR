@@ -204,26 +204,26 @@ def okr_count_query(params: Dict[str, Any], db: Session) -> Dict[str, Any]:
 
 
 # 注册所有预定义查询
-register_query("员工总数", "查询公司员工总数", employee_count_query)
-register_query("在职员工数", "查询在职员工数量", active_employee_count_query)
-register_query("离职员工数", "查询离职员工数量", inactive_employee_count_query)
-register_query("部门总数", "查询公司部门总数", department_count_query)
-register_query("职位总数", "查询职位描述总数", jd_count_query)
-register_query("开放职位数", "查询当前开放的职位数量", open_jd_count_query)
-register_query("简历总数", "查询简历总数", resume_count_query)
-register_query("待筛选简历数", "查询待筛选的简历数量", pending_resume_count_query)
-register_query("OKR总数", "查询OKR总数", okr_count_query)
+register_query("employee_count", "查询公司员工总数", employee_count_query)
+register_query("active_employee_count", "查询在职员工数量", active_employee_count_query)
+register_query("inactive_employee_count", "查询离职员工数量", inactive_employee_count_query)
+register_query("department_count", "查询公司部门总数", department_count_query)
+register_query("jd_count", "查询职位描述总数", jd_count_query)
+register_query("open_jd_count", "查询当前开放的职位数量", open_jd_count_query)
+register_query("resume_count", "查询简历总数", resume_count_query)
+register_query("pending_resume_count", "查询待筛选的简历数量", pending_resume_count_query)
+register_query("okr_count", "查询OKR总数", okr_count_query)
 
 # 注册带图表的查询
 register_query(
-    "各部门人数", 
+    "department_stats", 
     "按部门统计员工人数", 
     department_stats_query, 
     department_stats_chart_generator
 )
 
 register_query(
-    "员工状态分布", 
+    "employee_status_distribution", 
     "统计员工状态分布情况", 
     employee_status_distribution_query, 
     employee_status_chart_generator

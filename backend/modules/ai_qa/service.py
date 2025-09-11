@@ -37,7 +37,7 @@ def identify_intent(user_message: str) -> Dict[str, Any]:
     
     # 定义系统提示词，告诉模型如何识别意图
     system_prompt =  f"""
-你是一个精确的意图识别与参数抽取助手，专注于“人力资源管理系统（HRMS）”相关的自然语言查询。目标：把用户的自然语言问题映射为严格、可机器解析的 JSON（仅返回 JSON，不允许多余文本、注释或代码块），以便后端直接调用预定义的 SQL 查询或其他处理逻辑。
+你是一个精确的意图识别与参数抽取助手，专注于"人力资源管理系统（HRMS）"相关的自然语言查询。目标：把用户的自然语言问题映射为严格、可机器解析的 JSON（仅返回 JSON，不允许多余文本、注释或代码块），以便后端直接调用预定义的 SQL 查询或其他处理逻辑。
 
 -- 当前系统支持的预定义查询（注册表）：
 {chr(10).join([f"{i+1}. {name}: {desc}" for i, (name, desc) in enumerate(queries.items())])}
@@ -52,13 +52,13 @@ def identify_intent(user_message: str) -> Dict[str, Any]:
 }}
 
 -- 允许的意图（intent）说明（优先级按顺序）：
-- "registered_query"：明确匹配到上面某个已注册查询（**优先使用**）。当命中此意图时，parameters 必须包含 "query_name"（其值为上面列表中的中文名称），其余可带上抽取到的参数（如 department、need_chart 等）。
+- "registered_query"：明确匹配到上面某个已注册查询（**优先使用**）。当命中此意图时，parameters 必须包含 "query_name"（其值为上面列表中的英文标识符），其余可带上抽取到的参数（如 department、need_chart 等）。
 - "employee_search"：在寻找或查询特定员工的详细信息或列表（参数示例：employee_name、employee_id、fuzzy、department）。
-- "department_stats"：以部门为单位的统计与查询（可为单个部门或请求“各部门”总体）；若可映射为已注册查询（如“各部门人数”），优先返回 registered_query。
+- "department_stats"：以部门为单位的统计与查询（可为单个部门或请求"各部门"总体）；若可映射为已注册查询（如"各部门人数"），优先返回 registered_query。
 - "general_question"：非结构化的一般问题或非 HR 数据查询（例如天气、闲聊等）。
 
 -- 常用/推荐参数（字段名与约定格式）：
-- query_name: 已注册查询的完整中文名（仅在 intent == "registered_query" 时使用）。
+- query_name: 已注册查询的英文标识符（仅在 intent == "registered_query" 时使用）。
 - department: 部门名称（字符串，例如 "技术部"、"人事部"；尽量保留用户原话，但建议归一化为常见后缀 "部"）。
 - employee_name: 员工姓名（字符串）。
 - employee_id: 员工唯一 ID（数字或字符串）。
@@ -67,7 +67,7 @@ def identify_intent(user_message: str) -> Dict[str, Any]:
 - job_title: 职位/职称字符串。
 - jd_is_open: 布尔（true/false），用于职位是否开放的过滤。
 - resume_status: 简历状态（比如 "待筛选"）。
-- need_chart: 布尔（true/false），当用户明确要求“画图/图表/饼图/柱状图”时置为 true。
+- need_chart: 布尔（true/false），当用户明确要求"画图/图表/饼图/柱状图"时置为 true。
 - page, page_size: 分页（整数）。
 
 -- 匹配与置信度策略：
@@ -79,10 +79,10 @@ def identify_intent(user_message: str) -> Dict[str, Any]:
 
 -- 示例：
 用户: "公司现在有多少员工？"
-返回: {{"intent":"registered_query","parameters":{{"query_name":"员工总数"}},"confidence":0.99}}
+返回: {{"intent":"registered_query","parameters":{{"query_name":"employee_count"}},"confidence":0.99}}
 
 用户: "技术部有多少人？"
-返回: {{"intent":"registered_query","parameters":{{"query_name":"各部门人数","department":"技术部"}},"confidence":0.92}}
+返回: {{"intent":"registered_query","parameters":{{"query_name":"department_stats","department":"技术部"}},"confidence":0.92}}
 
 用户: "今天天气怎么样？"
 返回: {{"intent":"general_question","parameters":{{}},"confidence":0.12}}
@@ -266,10 +266,19 @@ def process_employee_query(user_message: str, db: Session) -> Dict[str, Any]:
                             data=chart_dict["data"]
                         )
                     
+                    # 确保 raw_data 是字典类型
+                    raw_result = query_result.get("result", {})
+                    if isinstance(raw_result, list):
+                        raw_data = {"data": raw_result}
+                    elif isinstance(raw_result, dict):
+                        raw_data = raw_result
+                    else:
+                        raw_data = {"value": raw_result}
+                    
                     return {
                         "message": response_text,
                         "chart_data": chart_data,
-                        "raw_data": query_result.get("result", {})
+                        "raw_data": raw_data
                     }
                 else:
                     return {
