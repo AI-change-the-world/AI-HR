@@ -30,7 +30,7 @@ async def upload_resume(file: UploadFile = File(...), db: Session = Depends(get_
     """
     if not file.filename.endswith((".xls", ".xlsx")):
         raise BaseResponse(code=400, message="只支持xls和xlsx格式的文件")
-    
+
     try:
         await process_file(file, db)
         return BaseResponse(code=200, message="OK")

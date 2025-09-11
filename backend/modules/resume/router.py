@@ -20,7 +20,7 @@ router = APIRouter(prefix="/api/resumes", tags=["简历管理"])
     "/upload-stream",
     response_class=EventSourceResponse,
     responses={200: {"description": "SSE 流式响应", "content": {}}},
-    description="流式上传简历，返回 Server-Sent Events (SSE)"
+    description="流式上传简历，返回 Server-Sent Events (SSE)",
 )
 async def upload_resume_stream(file: UploadFile = File(...)):
     """

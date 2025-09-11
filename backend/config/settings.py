@@ -10,12 +10,14 @@ class Settings(BaseSettings):
     # 调试模式
     DEBUG: bool = False
 
-    # Redis配置（用于缓存和消息队列）
-    REDIS_URL: str = "redis://localhost:6379/0"
+    OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str = ""
+    OPENAI_MODEL: str = "gpt-3.5-turbo"
 
-    # Celery配置
-    CELERY_BROKER_URL: str = "redis://localhost:6379/0"
-    CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
+    S3_ACCESS_KEY: str = ""
+    S3_SECRET_KEY: str = ""
+    S3_BUCKET: str = ""
+    S3_ENDPOINT: str = ""
 
     class Config:
         env_file = ".env"
