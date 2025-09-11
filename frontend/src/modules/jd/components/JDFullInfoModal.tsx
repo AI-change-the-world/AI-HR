@@ -198,7 +198,7 @@ const JDFullInfoModal: React.FC<JDFullInfoModalProps> = ({
             onOk={handleSubmit}
             confirmLoading={loading}
             width={800}
-            destroyOnClose
+            destroyOnHidden
         >
             <Spin spinning={loading}>
                 <Form form={form} layout="vertical">

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Input, Button, message, Spin, Divider, Card, Typography, Space, Tabs, Progress } from 'antd';
-import { StarOutlined, EditOutlined, EyeOutlined, CopyOutlined } from '@ant-design/icons';
+import { Modal, Input, Button, message, Spin, Divider, Card, Typography, Space, Tabs, Progress, Select } from 'antd';
+import { StarOutlined, EditOutlined, EyeOutlined, CopyOutlined, BankOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
-import { createJDFromText, polishJDTextStream } from '../api';
-import { JobDescription } from '../types';
+import { createJDFromText, polishJDTextStream, getDepartments } from '../api';
+import { JobDescription, Department } from '../types';
 import './JDCreateModal.css';
 
 const { TextArea } = Input;
@@ -24,6 +24,9 @@ const JDCreateModal: React.FC<JDCreateModalProps> = ({ visible, onCancel, onSucc
     const [activeTab, setActiveTab] = useState('input');
     const [polishProgress, setPolishProgress] = useState(0);
     const [polishMessage, setPolishMessage] = useState('');
+    const [departments, setDepartments] = useState<Department[]>([]);
+    const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | undefined>();
+    const [loadingDepartments, setLoadingDepartments] = useState(false);
 
     // 重置状态
     useEffect(() => {
@@ -33,8 +36,24 @@ const JDCreateModal: React.FC<JDCreateModalProps> = ({ visible, onCancel, onSucc
             setActiveTab('input');
             setPolishProgress(0);
             setPolishMessage('');
+            setSelectedDepartmentId(undefined);
+            loadDepartments();
         }
     }, [visible]);
+
+    // 加载部门列表
+    const loadDepartments = async () => {
+        setLoadingDepartments(true);
+        try {
+            const deptList = await getDepartments();
+            setDepartments(deptList);
+        } catch (error) {
+            console.error('加载部门列表失败:', error);
+            message.error('加载部门列表失败');
+        } finally {
+            setLoadingDepartments(false);
+        }
+    };
 
     // AI润色功能 - 流式处理
     const handlePolish = async () => {
@@ -90,9 +109,22 @@ const JDCreateModal: React.FC<JDCreateModalProps> = ({ visible, onCancel, onSucc
 
         setCreating(true);
         try {
+            // 先从文本创建JD
             const newJD = await createJDFromText(textToUse);
-            message.success('JD创建成功');
-            onSuccess(newJD);
+
+            // 如果选择了部门，则更新JD的部门信息
+            if (selectedDepartmentId && newJD.id) {
+                const { updateJD } = await import('../api');
+                const updatedJD = await updateJD({
+                    id: newJD.id,
+                    department_id: selectedDepartmentId
+                });
+                message.success('JD创建成功');
+                onSuccess(updatedJD);
+            } else {
+                message.success('JD创建成功');
+                onSuccess(newJD);
+            }
         } catch (error) {
             message.error('创建失败，请重试');
             console.error('Create error:', error);
@@ -113,6 +145,31 @@ const JDCreateModal: React.FC<JDCreateModalProps> = ({ visible, onCancel, onSucc
 
     const renderInputTab = () => (
         <div className="space-y-4">
+            {/* 部门选择 */}
+            <div>
+                <Text strong className="text-gray-700 block mb-2">
+                    所属部门 <Text type="secondary">(可选，创建后可编辑)</Text>
+                </Text>
+                <Select
+                    value={selectedDepartmentId}
+                    onChange={setSelectedDepartmentId}
+                    placeholder="请选择所属部门"
+                    allowClear
+                    loading={loadingDepartments}
+                    className="w-full"
+                    suffixIcon={<BankOutlined />}
+                    showSearch
+                    filterOption={(input, option) =>
+                        (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                    }
+                    options={departments.map(dept => ({
+                        value: dept.id,
+                        label: dept.name,
+                        title: dept.description || dept.name
+                    }))}
+                />
+            </div>
+
             <div>
                 <Text strong className="text-gray-700 block mb-2">
                     JD原文 <Text type="secondary">(支持粘贴完整的职位描述)</Text>
@@ -286,9 +343,10 @@ const JDCreateModal: React.FC<JDCreateModalProps> = ({ visible, onCancel, onSucc
                         <div className="text-sm text-blue-800">
                             <div className="font-medium mb-1">智能JD创建流程：</div>
                             <div className="space-y-1 text-blue-700">
-                                <div>1. 粘贴或输入完整的JD原文</div>
-                                <div>2. 使用AI智能润色功能优化格式和内容</div>
-                                <div>3. 系统将自动解析并提取关键信息创建结构化JD</div>
+                                <div>1. 选择所属部门（可选）</div>
+                                <div>2. 粘贴或输入完整的JD原文</div>
+                                <div>3. 使用AI智能润色功能优化格式和内容</div>
+                                <div>4. 系统将自动解析并提取关键信息创建结构化JD</div>
                             </div>
                         </div>
                     </div>

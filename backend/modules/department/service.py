@@ -20,7 +20,6 @@ def get_department_by_name(name: str, db: Session) -> Optional[DepartmentInDB]:
             name=db_department.name,
             manager=db_department.manager,
             description=db_department.description,
-            employee_count=db_department.employee_count,
         )
     return None
 
@@ -42,22 +41,21 @@ def create_department(
         name=db_department.name,
         manager=db_department.manager,
         description=db_department.description,
-        employee_count=db_department.employee_count,
     )
 
 
 def get_department(department_id: int, db: Session) -> Optional[DepartmentInDB]:
     """获取指定ID的部门"""
-    # 这里应该从数据库查询部门
-    # 暂时返回模拟数据
-    department_data = {
-        "id": department_id,
-        "name": "技术部",
-        "manager": "李四",
-        "description": "负责软件开发和技术支持",
-        "employee_count": 10,
-    }
-    return DepartmentInDB(**department_data)
+    db_department = db.query(DepartmentModel).filter(DepartmentModel.id == department_id).first()
+    if not db_department:
+        return None
+        
+    return DepartmentInDB(
+        id=db_department.id,
+        name=db_department.name,
+        manager=db_department.manager,
+        description=db_department.description,
+    )
 
 
 def get_departments(
@@ -66,37 +64,49 @@ def get_departments(
     limit: int = 100,
 ) -> List[DepartmentInDB]:
     """获取部门列表"""
-    # 这里应该从数据库查询部门列表
-    # 暂时返回模拟数据
-    department_data = {
-        "id": 1,
-        "name": "技术部",
-        "manager": "李四",
-        "description": "负责软件开发和技术支持",
-        "employee_count": 10,
-    }
-    return [DepartmentInDB(**department_data)]
+    db_departments = db.query(DepartmentModel).offset(skip).limit(limit).all()
+    result = []
+    for db_department in db_departments:
+        result.append(
+            DepartmentInDB(
+                id=db_department.id,
+                name=db_department.name,
+                description=db_department.description,
+            )
+        )
+    return result
 
 
 def update_department(
     department_id: int, department_update: DepartmentUpdate, db: Session
 ) -> Optional[DepartmentInDB]:
     """更新部门"""
-    # 这里应该更新数据库中的部门信息
-    # 暂时返回模拟数据
+    db_department = db.query(DepartmentModel).filter(DepartmentModel.id == department_id).first()
+    if not db_department:
+        return None
+
     update_data = department_update.dict(exclude_unset=True)
-    department_data = {
-        "id": department_id,
-        "name": update_data.get("name", "技术部"),
-        "manager": update_data.get("manager", "李四"),
-        "description": update_data.get("description", "负责软件开发和技术支持"),
-        "employee_count": 10,
-    }
-    return DepartmentInDB(**department_data)
+    for key, value in update_data.items():
+        if value is not None:
+            setattr(db_department, key, value)
+
+    db.commit()
+    db.refresh(db_department)
+
+    return DepartmentInDB(
+        id=db_department.id,
+        name=db_department.name,
+        manager=db_department.manager,
+        description=db_department.description,
+    )
 
 
 def delete_department(department_id: int, db: Session) -> bool:
     """删除部门"""
-    # 这里应该从数据库删除部门
-    # 暂时返回模拟结果
+    db_department = db.query(DepartmentModel).filter(DepartmentModel.id == department_id).first()
+    if not db_department:
+        return False
+
+    db.delete(db_department)
+    db.commit()
     return True

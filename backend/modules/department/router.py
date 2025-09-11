@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from config.database import get_db
+from modules import BaseResponse, PageResponse
 
 from .models import DepartmentCreate, DepartmentInDB, DepartmentUpdate
 from .service import (
@@ -15,29 +16,40 @@ from .service import (
 router = APIRouter(prefix="/api/departments", tags=["部门管理"])
 
 
-@router.post("/", response_model=DepartmentInDB)
+@router.post("/", response_model=BaseResponse[DepartmentInDB])
 async def create_department_info(
     department: DepartmentCreate, db: Session = Depends(get_db)
 ):
     """创建部门"""
-    return create_department(department, db)
+    try:
+        result = create_department(department, db)
+        return BaseResponse(data=result)
+    except Exception as e:
+        return BaseResponse(code=500, message=f"创建部门失败: {str(e)}", data=None)
 
 
-@router.get("/{department_id}", response_model=DepartmentInDB)
+@router.get("/{department_id}", response_model=BaseResponse[DepartmentInDB])
 async def read_department(department_id: int, db: Session = Depends(get_db)):
     """获取部门详情"""
-    department = get_department(department_id, db)
-    if department is None:
-        raise HTTPException(status_code=404, detail="部门未找到")
-    return department
+    try:
+        department = get_department(department_id, db)
+        if department is None:
+            return BaseResponse(code=404, message="部门未找到", data=None)
+        return BaseResponse(data=department)
+    except Exception as e:
+        return BaseResponse(code=500, message=f"获取部门失败: {str(e)}", data=None)
 
 
-@router.get("/", response_model=list[DepartmentInDB])
+@router.get("/", response_model=BaseResponse[list[DepartmentInDB]])
 async def read_departments(
     skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
 ):
     """获取部门列表"""
-    return get_departments(skip=skip, limit=limit, db=db)
+    try:
+        departments = get_departments(skip=skip, limit=limit, db=db)
+        return BaseResponse(data=departments)
+    except Exception as e:
+        return BaseResponse(code=500, message=f"获取部门列表失败: {str(e)}", data=None)
 
 
 @router.put("/{department_id}", response_model=DepartmentInDB)

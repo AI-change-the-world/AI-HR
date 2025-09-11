@@ -4,10 +4,44 @@ from typing import Any, Dict, Generator, List, Optional
 from sqlalchemy.orm import Session
 
 from models.jd import JobDescription
+from models.department import Department
 
 from .evaluation_agent import evaluate_resume_stepwise
 from .models import JDCreate, JDFullInfoUpdate, JDInDB, JDUpdate
 from .text_polisher import jd_polisher
+
+
+def _build_jd_in_db(db_jd: JobDescription, db: Session) -> JDInDB:
+    """构建 JDInDB 对象，包含部门信息（使用简单JOIN查询）"""
+    # 获取部门信息 - 使用简单的JOIN查询
+    department_name = None
+    if db_jd.department_id:
+        department = db.query(Department).filter(Department.id == db_jd.department_id).first()
+        if department:
+            department_name = department.name
+
+    # 解析evaluation_criteria
+    evaluation_criteria = None
+    if db_jd.evaluation_criteria:
+        try:
+            evaluation_criteria = json.loads(db_jd.evaluation_criteria)
+        except json.JSONDecodeError:
+            evaluation_criteria = None
+
+    return JDInDB(
+        id=db_jd.id,
+        title=db_jd.title,
+        department_id=db_jd.department_id,
+        department=department_name,
+        location=db_jd.location,
+        description=db_jd.description,
+        requirements=db_jd.requirements,
+        status="开放" if db_jd.is_open else "关闭",
+        created_at=db_jd.created_at,
+        updated_at=db_jd.updated_at,
+        full_text=db_jd.full_text,
+        evaluation_criteria=evaluation_criteria,
+    )
 
 
 def polish_jd_text(original_text: str) -> str:
@@ -30,7 +64,7 @@ def create_jd_from_text(text: str, db: Session) -> JDInDB:
     # 创建JD记录
     db_jd = JobDescription(
         title=extracted_fields.get("title", "未命名职位"),
-        department=extracted_fields.get("department", "未指定"),
+        department_id=None,  # 初始创建时不指定部门，后续可编辑
         location=extracted_fields.get("location", "未指定"),
         description=extracted_fields.get("description", ""),
         requirements=extracted_fields.get("requirements", ""),
@@ -43,19 +77,7 @@ def create_jd_from_text(text: str, db: Session) -> JDInDB:
     db.commit()
     db.refresh(db_jd)
 
-    return JDInDB(
-        id=db_jd.id,
-        title=db_jd.title,
-        department=db_jd.department,
-        location=db_jd.location,
-        description=db_jd.description,
-        requirements=db_jd.requirements,
-        status="开放" if db_jd.is_open else "关闭",
-        created_at=db_jd.created_at,
-        updated_at=db_jd.updated_at,
-        full_text=db_jd.full_text,
-        evaluation_criteria="",
-    )
+    return _build_jd_in_db(db_jd, db)
 
 
 def create_jd(jd_create: JDCreate, db: Session) -> JDInDB:
@@ -63,7 +85,7 @@ def create_jd(jd_create: JDCreate, db: Session) -> JDInDB:
     # 创建JD记录
     db_jd = JobDescription(
         title=jd_create.title,
-        department=jd_create.department,
+        department_id=jd_create.department_id,
         location=jd_create.location,
         description=jd_create.description or "",
         requirements=jd_create.requirements or "",
@@ -74,17 +96,7 @@ def create_jd(jd_create: JDCreate, db: Session) -> JDInDB:
     db.commit()
     db.refresh(db_jd)
 
-    return JDInDB(
-        id=db_jd.id,
-        title=db_jd.title,
-        department=db_jd.department,
-        location=db_jd.location,
-        description=db_jd.description,
-        requirements=db_jd.requirements,
-        status="开放" if db_jd.is_open else "关闭",
-        created_at=db_jd.created_at,
-        updated_at=db_jd.updated_at,
-    )
+    return _build_jd_in_db(db_jd, db)
 
 
 def get_jd(jd_id: int, db: Session) -> Optional[JDInDB]:
@@ -93,27 +105,7 @@ def get_jd(jd_id: int, db: Session) -> Optional[JDInDB]:
     if db_jd is None:
         return None
 
-    # 解析evaluation_criteria
-    evaluation_criteria = None
-    if db_jd.evaluation_criteria:
-        try:
-            evaluation_criteria = json.loads(db_jd.evaluation_criteria)
-        except json.JSONDecodeError:
-            evaluation_criteria = None
-
-    return JDInDB(
-        id=db_jd.id,
-        title=db_jd.title,
-        department=db_jd.department,
-        location=db_jd.location,
-        description=db_jd.description,
-        requirements=db_jd.requirements,
-        status="开放" if db_jd.is_open else "关闭",
-        created_at=db_jd.created_at,
-        updated_at=db_jd.updated_at,
-        full_text=db_jd.full_text,
-        evaluation_criteria=evaluation_criteria,
-    )
+    return _build_jd_in_db(db_jd, db)
 
 
 def get_jds(
@@ -121,10 +113,16 @@ def get_jds(
     skip: int = 0,
     limit: int = 100,
 ) -> List[JDInDB]:
-    """获取JD列表"""
-    db_jds = db.query(JobDescription).offset(skip).limit(limit).all()
-    result = []
-    for db_jd in db_jds:
+    """获取JD列表（优化版，使用一次JOIN查询）"""
+    # 使用JOIN查询一次性获取JD和部门信息
+    query = db.query(JobDescription, Department.name.label('department_name')).outerjoin(
+        Department, JobDescription.department_id == Department.id
+    ).offset(skip).limit(limit)
+    
+    results = query.all()
+    jd_list = []
+    
+    for db_jd, dept_name in results:
         # 解析evaluation_criteria
         evaluation_criteria = None
         if db_jd.evaluation_criteria:
@@ -133,11 +131,12 @@ def get_jds(
             except json.JSONDecodeError:
                 evaluation_criteria = None
 
-        result.append(
+        jd_list.append(
             JDInDB(
                 id=db_jd.id,
                 title=db_jd.title,
-                department=db_jd.department,
+                department_id=db_jd.department_id,
+                department=dept_name,  # 从 JOIN 查询结果获取
                 location=db_jd.location,
                 description=db_jd.description,
                 requirements=db_jd.requirements,
@@ -148,7 +147,8 @@ def get_jds(
                 evaluation_criteria=evaluation_criteria,
             )
         )
-    return result
+    
+    return jd_list
 
 
 def update_jd(jd_id: int, jd_update: JDUpdate, db: Session) -> Optional[JDInDB]:
@@ -167,27 +167,7 @@ def update_jd(jd_id: int, jd_update: JDUpdate, db: Session) -> Optional[JDInDB]:
     db.commit()
     db.refresh(db_jd)
 
-    # 解析evaluation_criteria
-    evaluation_criteria = None
-    if db_jd.evaluation_criteria:
-        try:
-            evaluation_criteria = json.loads(db_jd.evaluation_criteria)
-        except json.JSONDecodeError:
-            evaluation_criteria = None
-
-    return JDInDB(
-        id=db_jd.id,
-        title=db_jd.title,
-        department=db_jd.department,
-        location=db_jd.location,
-        description=db_jd.description,
-        requirements=db_jd.requirements,
-        status="开放" if db_jd.is_open else "关闭",
-        created_at=db_jd.created_at,
-        updated_at=db_jd.updated_at,
-        full_text=db_jd.full_text,
-        evaluation_criteria=evaluation_criteria,
-    )
+    return _build_jd_in_db(db_jd, db)
 
 
 def delete_jd(jd_id: int, db: Session) -> bool:
@@ -289,24 +269,4 @@ def update_jd_full_info(
     db.commit()
     db.refresh(db_jd)
 
-    # 解析evaluation_criteria
-    evaluation_criteria = None
-    if db_jd.evaluation_criteria:
-        try:
-            evaluation_criteria = json.loads(db_jd.evaluation_criteria)
-        except json.JSONDecodeError:
-            evaluation_criteria = None
-
-    return JDInDB(
-        id=db_jd.id,
-        title=db_jd.title,
-        department=db_jd.department,
-        location=db_jd.location,
-        description=db_jd.description,
-        requirements=db_jd.requirements,
-        status="开放" if db_jd.is_open else "关闭",
-        created_at=db_jd.created_at,
-        updated_at=db_jd.updated_at,
-        full_text=db_jd.full_text,
-        evaluation_criteria=evaluation_criteria,
-    )
+    return _build_jd_in_db(db_jd, db)

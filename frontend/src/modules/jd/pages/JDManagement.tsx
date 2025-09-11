@@ -233,6 +233,7 @@ const JDManagement: React.FC = () => {
                     dataSource={jds}
                     columns={columns}
                     loading={loading}
+                    rowKey={(record) => record.id}
                     pagination={{
                         pageSize: 10,
                         showSizeChanger: true,

@@ -1,5 +1,6 @@
 import asyncio
 import json
+import traceback
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
@@ -252,27 +253,8 @@ async def extract_keywords_from_jd(
         db.refresh(db_jd)
 
         # 返回更新后的JD信息
-        # 解析evaluation_criteria
-        evaluation_criteria = None
-        if db_jd.evaluation_criteria:
-            try:
-                evaluation_criteria = json.loads(db_jd.evaluation_criteria)
-            except json.JSONDecodeError:
-                evaluation_criteria = None
-
-        result = JDInDB(
-            id=db_jd.id,
-            title=db_jd.title,
-            department=db_jd.department,
-            location=db_jd.location,
-            description=db_jd.description,
-            requirements=db_jd.requirements,
-            status="开放" if db_jd.is_open else "关闭",
-            created_at=db_jd.created_at,
-            updated_at=db_jd.updated_at,
-            full_text=db_jd.full_text,
-            evaluation_criteria=evaluation_criteria,
-        )
+        from .service import _build_jd_in_db
+        result = _build_jd_in_db(db_jd, db)
 
         return BaseResponse(data=result)
 
@@ -355,4 +337,5 @@ async def create_jd_from_text_endpoint(
         jd = create_jd_from_text(text, db)
         return BaseResponse(data=jd)
     except Exception as e:
+        traceback.print_exc()
         return BaseResponse(code=500, message=f"创建JD失败: {str(e)}", data=None)

@@ -1,10 +1,17 @@
-import type { BaseResponse, PageResponse } from '../../../utils/api';
+// 部门数据接口
+export interface Department {
+    id: number;
+    name: string;
+    manager?: string;
+    description?: string;
+}
 
 // JD数据接口
 export interface JobDescription {
     id: number;
     title: string;
-    department: string;
+    department_id?: number;
+    department?: string; // 部门名称，用于显示
     location: string;
     description?: string;
     requirements?: string;
@@ -28,7 +35,7 @@ export interface EvaluationStep {
 // 创建JD请求接口
 export interface CreateJDRequest {
     title: string;
-    department: string;
+    department_id?: number;
     location: string;
     description?: string;
     requirements?: string;
@@ -40,7 +47,7 @@ export interface CreateJDRequest {
 export interface UpdateJDRequest {
     id: number;
     title?: string;
-    department?: string;
+    department_id?: number;
     location?: string;
     description?: string;
     requirements?: string;
@@ -64,7 +71,7 @@ export interface JDQueryParams {
     skip?: number;
     limit?: number;
     title?: string;
-    department?: string;
+    department_id?: number;
     location?: string;
     status?: string;
 }

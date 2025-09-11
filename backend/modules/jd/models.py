@@ -6,8 +6,8 @@ from pydantic import BaseModel
 
 class JDBase(BaseModel):
     title: str
-    department: str
-    location: str
+    department_id: Optional[int] = None
+    location: Optional[str] = None
     description: Optional[str] = None
     requirements: Optional[str] = None
     status: str = "草稿"
@@ -19,7 +19,7 @@ class JDCreate(JDBase):
 
 class JDUpdate(JDBase):
     title: Optional[str] = None
-    department: Optional[str] = None
+    department_id: Optional[int] = None
     location: Optional[str] = None
     description: Optional[str] = None
     requirements: Optional[str] = None
@@ -28,6 +28,8 @@ class JDUpdate(JDBase):
 
 class JDInDB(JDBase):
     id: int
+    department_id: Optional[int] = None
+    department: Optional[str] = None  # 部门名称，用于显示
     is_open: bool = True
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

@@ -1,4 +1,4 @@
-import { JobDescription, CreateJDRequest, UpdateJDRequest, JDQueryParams, EvaluationStep, JDFullInfoUpdate, EvaluationCriteriaUpdate, PolishResponse } from '../types';
+import { JobDescription, CreateJDRequest, UpdateJDRequest, JDQueryParams, EvaluationStep, JDFullInfoUpdate, EvaluationCriteriaUpdate, PolishResponse, Department } from '../types';
 import apiClient, { PageResponse } from '../../../utils/api';
 
 const API_BASE = '/api/jd';
@@ -304,4 +304,9 @@ export const polishJDText = async (originalText: string): Promise<PolishResponse
 // 从文本创建JD
 export const createJDFromText = async (text: string): Promise<JobDescription> => {
     return apiClient.post(`${API_BASE}/create-from-text`, { text });
+};
+
+// 获取部门列表
+export const getDepartments = async (): Promise<Department[]> => {
+    return apiClient.get('/api/departments');
 };
