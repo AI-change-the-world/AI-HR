@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Button, Upload, message, Card, Spin, List, Typography, Modal, Progress } from 'antd';
-import { UploadOutlined } from '@ant-design/icons';
+import { Button, Upload, message, Card, Spin, Typography, Modal, Progress, Collapse, Badge, Space } from 'antd';
+import { UploadOutlined, CheckCircleOutlined, ClockCircleOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd/es/upload/interface';
 import { evaluateResumeStream } from '../api';
 import { EvaluationStep } from '../types';
-const { Title, Text } = Typography;
+
+const { Title, Text, Paragraph } = Typography;
+const { Panel } = Collapse;
 
 interface ResumeEvaluatorProps {
     jdId: number;
@@ -13,37 +15,38 @@ interface ResumeEvaluatorProps {
     onEvaluate: () => void;
 }
 
+interface TaskState {
+    id: number;
+    title: string;
+    description?: string;
+    status: 'pending' | 'running' | 'completed' | 'error';
+    result?: EvaluationStep;
+    startTime?: number;
+    endTime?: number;
+}
+
 const ResumeEvaluator: React.FC<ResumeEvaluatorProps> = ({ jdId, jdTitle, onCancel, onEvaluate }) => {
     const [file, setFile] = useState<File | null>(null);
-    const [uploading, setUploading] = useState(false);
-    const [evaluationResults, setEvaluationResults] = useState<EvaluationStep[]>([]);
     const [evaluating, setEvaluating] = useState(false);
-    const [currentStep, setCurrentStep] = useState<string>('');
-    const [progress, setProgress] = useState<number>(0);
-    const [totalSteps, setTotalSteps] = useState<number>(0);
+    const [tasks, setTasks] = useState<TaskState[]>([]);
+    const [currentTaskId, setCurrentTaskId] = useState<number | null>(null);
+    const [overallProgress, setOverallProgress] = useState(0);
+    const [activeKey, setActiveKey] = useState<string | string[]>([]);
 
-    const props: UploadProps = {
-        beforeUpload: (file) => {
-            const isPDF = file.type === 'application/pdf' || file.name.endsWith('.pdf');
-            const isDOC = file.type === 'application/msword' ||
-                file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-                file.name.endsWith('.doc') || file.name.endsWith('.docx');
-            const isTXT = file.type === 'text/plain' || file.name.endsWith('.txt');
+    const handleFileUpload: UploadProps['beforeUpload'] = (file) => {
+        const isPDF = file.type === 'application/pdf' || file.name.endsWith('.pdf');
+        const isDOC = file.type === 'application/msword' ||
+            file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+            file.name.endsWith('.doc') || file.name.endsWith('.docx');
+        const isTXT = file.type === 'text/plain' || file.name.endsWith('.txt');
 
-            if (!isPDF && !isDOC && !isTXT) {
-                message.error('只能上传 PDF、DOC/DOCX 或 TXT 文件!');
-                return false;
-            }
-
-            setFile(file);
+        if (!isPDF && !isDOC && !isTXT) {
+            message.error('只能上传 PDF、DOC/DOCX 或 TXT 文件!');
             return false;
-        },
-        fileList: file ? [{ uid: '1', name: file.name, status: 'done', size: file.size, type: file.type }] : [],
-        onRemove: () => {
-            setFile(null);
-            return true;
-        },
-        maxCount: 1,
+        }
+
+        setFile(file);
+        return false;
     };
 
     const handleEvaluate = async () => {
@@ -52,188 +55,307 @@ const ResumeEvaluator: React.FC<ResumeEvaluatorProps> = ({ jdId, jdTitle, onCanc
             return;
         }
 
-        setUploading(true);
         setEvaluating(true);
-        setEvaluationResults([]);
-        setCurrentStep('正在初始化评估...');
-        setProgress(0);
-        setTotalSteps(0);
+        setTasks([]);
+        setCurrentTaskId(null);
+        setOverallProgress(0);
+        setActiveKey([]);
 
         try {
-            // 使用流式接口进行评估
-            const results = await evaluateResumeStream(
+            await evaluateResumeStream(
                 jdId,
                 file,
-                // 实时进度回调
                 (step: EvaluationStep) => {
-                    console.log('收到流式数据:', step);
-
                     if (step.step === 0 && step.steps) {
-                        // 第一步：任务拆解
-                        setTotalSteps(step.steps.length + 1); // +1 for the task breakdown step
-                        setCurrentStep('任务拆解完成');
-                        setProgress(1);
-                    } else {
-                        // 后续步骤：具体评估
-                        setCurrentStep(`正在执行: ${step.name}`);
-                        if (totalSteps > 0) {
-                            setProgress(step.step + 1);
+                        // 初始化任务列表
+                        const initialTasks: TaskState[] = step.steps.map((s, index) => ({
+                            id: index + 1,
+                            title: s.name,
+                            description: s.desc,
+                            status: 'pending'
+                        }));
+                        setTasks(initialTasks);
+                    } else if (step.step > 0) {
+                        // 更新任务状态
+                        setTasks(prev => prev.map(task => {
+                            if (task.id === step.step) {
+                                return {
+                                    ...task,
+                                    status: step.score !== undefined ? 'completed' : 'running',
+                                    result: step,
+                                    startTime: task.startTime || Date.now(),
+                                    endTime: step.score !== undefined ? Date.now() : undefined
+                                };
+                            } else if (task.id < step.step) {
+                                return { ...task, status: 'completed' };
+                            }
+                            return task;
+                        }));
+
+                        setCurrentTaskId(step.step);
+                        setOverallProgress((step.step / (tasks.length || 1)) * 100);
+
+                        // 自动展开当前正在执行的任务
+                        if (step.score !== undefined) {
+                            setActiveKey(prev => [...(Array.isArray(prev) ? prev : [prev]), step.step.toString()]);
                         }
                     }
-
-                    // 实时更新结果列表
-                    setEvaluationResults(prev => {
-                        const existing = prev.find(r => r.step === step.step);
-                        if (existing) {
-                            return prev.map(r => r.step === step.step ? step : r);
-                        } else {
-                            return [...prev, step];
-                        }
-                    });
                 },
-                // 错误回调
                 (error: string) => {
                     message.error(`评估出错: ${error}`);
+                    if (currentTaskId) {
+                        setTasks(prev => prev.map(task =>
+                            task.id === currentTaskId ? { ...task, status: 'error' } : task
+                        ));
+                    }
                 }
             );
 
-            setCurrentStep('评估完成');
+            setTasks(prev => prev.map(task => ({ ...task, status: 'completed' })));
+            setOverallProgress(100);
             message.success('评估完成');
             onEvaluate();
         } catch (error) {
-            console.error('评估失败:', error);
-            message.error(`评估失败：${error instanceof Error ? error.message : '请重试'}`);
+            message.error('评估失败');
         } finally {
-            setUploading(false);
             setEvaluating(false);
+            setCurrentTaskId(null);
         }
     };
 
-    const getIconForStep = (step: number) => {
-        if (step === 0) return '📋';
-        if (step <= 3) return '🔍';
-        return '📊';
+    const getTaskIcon = (status: TaskState['status']) => {
+        switch (status) {
+            case 'completed':
+                return <CheckCircleOutlined className="text-green-500" />;
+            case 'running':
+                return <Spin size="small" />;
+            case 'error':
+                return <ClockCircleOutlined className="text-red-500" />;
+            default:
+                return <PlayCircleOutlined className="text-gray-400" />;
+        }
+    };
+
+    const getTaskBadgeStatus = (status: TaskState['status']): 'success' | 'processing' | 'error' | 'default' => {
+        switch (status) {
+            case 'completed': return 'success';
+            case 'running': return 'processing';
+            case 'error': return 'error';
+            default: return 'default';
+        }
+    };
+
+    const formatDuration = (startTime?: number, endTime?: number) => {
+        if (!startTime) return '';
+        const duration = (endTime || Date.now()) - startTime;
+        return `${(duration / 1000).toFixed(1)}s`;
+    };
+
+    const getTotalScore = () => {
+        return tasks
+            .filter(task => task.result?.score !== undefined && typeof task.result.score === 'number')
+            .reduce((sum, task) => sum + (task.result?.score || 0), 0);
     };
 
     return (
         <Modal
-            title={`评估简历 - ${jdTitle}`}
+            title={
+                <div className="flex items-center space-x-3">
+                    <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
+                    <div>
+                        <div className="text-lg font-semibold text-gray-800">简历智能评估</div>
+                        <div className="text-sm text-gray-500">{jdTitle}</div>
+                    </div>
+                </div>
+            }
             open={true}
             onCancel={onCancel}
             footer={null}
-            width={800}
+            width={900}
+            className="resume-evaluator-modal"
+            styles={{
+                body: { maxHeight: '70vh', overflowY: 'auto', padding: '24px' },
+                header: { borderBottom: '1px solid #f0f0f0', paddingBottom: '16px' }
+            }}
         >
             <div className="space-y-6">
-                <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100">
-                    <Title level={5} className="text-blue-800">上传简历</Title>
-                    <Upload {...props} className="mb-4">
-                        <Button icon={<UploadOutlined />}>选择简历文件</Button>
-                    </Upload>
-                    <Text type="secondary" className="text-sm">
-                        支持 PDF、DOC/DOCX 和 TXT 格式
-                    </Text>
+                {/* 文件上传区域 */}
+                <Card className="border-dashed border-2 border-blue-200 bg-blue-50/30 hover:border-blue-300 transition-colors">
+                    <div className="text-center py-6">
+                        <Upload
+                            beforeUpload={handleFileUpload}
+                            fileList={file ? [{
+                                uid: '1',
+                                name: file.name,
+                                status: 'done',
+                                size: file.size,
+                                type: file.type
+                            }] : []}
+                            onRemove={() => {
+                                setFile(null);
+                                return true;
+                            }}
+                            maxCount={1}
+                            showUploadList={{ showRemoveIcon: true }}
+                        >
+                            <Button
+                                icon={<UploadOutlined />}
+                                size="large"
+                                className="border-blue-300 text-blue-600 hover:border-blue-400 hover:text-blue-700"
+                            >
+                                选择简历文件
+                            </Button>
+                        </Upload>
+                        <Text type="secondary" className="text-sm mt-2 block">
+                            支持 PDF、DOC/DOCX 和 TXT 格式，文件大小不超过 10MB
+                        </Text>
+                    </div>
                 </Card>
 
+                {/* 操作按钮 */}
                 <div className="flex justify-center">
                     <Button
                         type="primary"
                         size="large"
                         onClick={handleEvaluate}
-                        loading={uploading || evaluating}
-                        disabled={!file || uploading || evaluating}
-                        className="bg-gradient-to-r from-blue-500 to-indigo-600 border-none shadow-lg hover:shadow-xl transition-all duration-300 px-8"
+                        loading={evaluating}
+                        disabled={!file}
+                        className="bg-gradient-to-r from-blue-500 to-blue-600 border-none shadow-lg hover:shadow-xl transition-all duration-300 px-8 h-12 text-base font-medium"
                     >
-                        {evaluating ? '评估中...' : '开始评估'}
+                        {evaluating ? '正在评估...' : '开始智能评估'}
                     </Button>
                 </div>
 
-                {evaluating && (
-                    <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100">
-                        <div className="flex flex-col items-center justify-center py-6">
-                            <Spin size="large" />
-                            <Text className="mt-4 text-gray-600 text-center">{currentStep}</Text>
-                            {totalSteps > 0 && (
-                                <div className="w-full max-w-md mt-4">
-                                    <Progress
-                                        percent={Math.round((progress / totalSteps) * 100)}
-                                        format={(percent) => `${progress}/${totalSteps} 步骤`}
-                                        strokeColor={{
-                                            '0%': '#1890ff',
-                                            '100%': '#52c41a',
-                                        }}
-                                    />
-                                </div>
-                            )}
+                {/* 整体进度 */}
+                {evaluating && tasks.length > 0 && (
+                    <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100">
+                        <div className="flex items-center justify-between mb-3">
+                            <Title level={5} className="text-blue-800 mb-0">评估进度</Title>
+                            <Text className="text-blue-600 font-medium">
+                                {tasks.filter(t => t.status === 'completed').length}/{tasks.length} 已完成
+                            </Text>
                         </div>
+                        <Progress
+                            percent={Math.round(overallProgress)}
+                            strokeColor={{
+                                '0%': '#3b82f6',
+                                '100%': '#10b981',
+                            }}
+                            trailColor="#e5e7eb"
+                            strokeWidth={8}
+                            format={(percent) => `${percent}%`}
+                        />
                     </Card>
                 )}
 
-                {evaluationResults.length > 0 && (
-                    <Card className="bg-white border-gray-200 shadow-sm">
-                        <Title level={5} className="text-gray-800 border-b pb-2 mb-4">评估结果</Title>
-                        <List
-                            dataSource={evaluationResults}
-                            renderItem={(item) => (
-                                <List.Item className="py-3 border-b border-gray-100">
-                                    <List.Item.Meta
-                                        avatar={
-                                            <div className="text-2xl">
-                                                {getIconForStep(item.step)}
-                                            </div>
-                                        }
-                                        title={(
-                                            <div className="flex items-center justify-between">
-                                                <span className="font-medium text-gray-800">{item.name}</span>
-                                                <div className="flex items-center space-x-2">
-                                                    {evaluating && !item.score && item.step > 0 && (
-                                                        <Spin size="small" />
-                                                    )}
-                                                    {item.score !== undefined && (
-                                                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
-                                                            得分: {item.score}
-                                                        </span>
+                {/* 任务列表 */}
+                {tasks.length > 0 && (
+                    <Card className="bg-white shadow-sm">
+                        <div className="flex items-center justify-between mb-4">
+                            <Title level={5} className="text-gray-800 mb-0">评估任务</Title>
+                            {tasks.some(t => t.result?.score !== undefined) && (
+                                <Badge
+                                    count={`总分: ${getTotalScore()}`}
+                                    className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium"
+                                />
+                            )}
+                        </div>
+
+                        <Collapse
+                            activeKey={activeKey}
+                            onChange={setActiveKey}
+                            className="task-collapse"
+                            ghost
+                        >
+                            {tasks.map((task) => (
+                                <Panel
+                                    key={task.id}
+                                    header={
+                                        <div className="flex items-center justify-between w-full pr-4">
+                                            <div className="flex items-center space-x-3">
+                                                {getTaskIcon(task.status)}
+                                                <div className={`transition-colors duration-200 ${task.status === 'completed'
+                                                    ? 'text-gray-600'
+                                                    : task.status === 'running'
+                                                        ? 'text-blue-600 font-medium'
+                                                        : 'text-gray-400'
+                                                    }`}>
+                                                    <div className="font-medium">{task.title}</div>
+                                                    {task.description && (
+                                                        <div className="text-sm text-gray-500 mt-1">
+                                                            {task.description}
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
-                                        )}
-                                        description={(
-                                            <div className="mt-1">
-                                                {item.reason && <Text>{item.reason}</Text>}
-                                                {item.steps && (
-                                                    <div className="mt-2">
-                                                        <Text strong>评估步骤:</Text>
-                                                        <List
-                                                            size="small"
-                                                            dataSource={item.steps}
-                                                            renderItem={(step) => (
-                                                                <List.Item className="py-1 border-none">
-                                                                    <Text type="secondary">• {step.name}: {step.desc}</Text>
-                                                                </List.Item>
-                                                            )}
+                                            <div className="flex items-center space-x-2">
+                                                {task.result?.score !== undefined && (
+                                                    <Badge
+                                                        count={`${task.result.score}分`}
+                                                        status={getTaskBadgeStatus(task.status)}
+                                                        className="text-xs"
+                                                    />
+                                                )}
+                                                {task.startTime && (
+                                                    <Text type="secondary" className="text-xs">
+                                                        {formatDuration(task.startTime, task.endTime)}
+                                                    </Text>
+                                                )}
+                                            </div>
+                                        </div>
+                                    }
+                                    className={`task-panel transition-all duration-200 ${task.status === 'completed' ? 'task-completed' : ''
+                                        }`}
+                                >
+                                    {task.result && (
+                                        <div className="pl-8 pb-4">
+                                            <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
+                                                {task.result.reason && (
+                                                    <Paragraph className="mb-2 text-gray-700">
+                                                        <Text strong>评估结果: </Text>
+                                                        {task.result.reason}
+                                                    </Paragraph>
+                                                )}
+                                                {task.result.score !== undefined && (
+                                                    <div className="flex items-center space-x-4 mt-3">
+                                                        <Badge
+                                                            count={`得分: ${task.result.score}`}
+                                                            className="bg-blue-500 text-white px-3 py-1 rounded-full font-medium"
                                                         />
+                                                        <Text type="secondary" className="text-sm">
+                                                            评估完成时间: {task.endTime ? new Date(task.endTime).toLocaleTimeString() : '--'}
+                                                        </Text>
                                                     </div>
                                                 )}
                                             </div>
-                                        )}
-                                    />
-                                </List.Item>
-                            )}
-                        />
-                        {evaluationResults.filter(r => r.score !== undefined).length > 0 && (
-                            <div className="mt-4 pt-4 border-t border-gray-200">
-                                <Text strong className="text-lg">
-                                    总体匹配度:{" "}
-                                    <span className="text-blue-600">
-                                        {evaluationResults
-                                            .filter(r => r.score !== undefined)
-                                            .reduce((sum, r) => sum + (r.score || 0), 0)}分
-                                    </span>
+                                        </div>
+                                    )}
+                                </Panel>
+                            ))}
+                        </Collapse>
+                    </Card>
+                )}
+
+                {/* 评估完成总结 */}
+                {!evaluating && tasks.length > 0 && tasks.every(t => t.status === 'completed') && (
+                    <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
+                        <div className="text-center py-4">
+                            <CheckCircleOutlined className="text-green-500 text-3xl mb-2" />
+                            <Title level={4} className="text-green-700 mb-2">评估完成</Title>
+                            <Space direction="vertical" className="text-center">
+                                <Text className="text-lg">
+                                    <Text strong>总体匹配度: </Text>
+                                    <Text className="text-green-600 font-bold text-xl">{getTotalScore()}分</Text>
                                 </Text>
-                            </div>
-                        )}
+                                <Text type="secondary">
+                                    评估完成时间: {new Date().toLocaleString()}
+                                </Text>
+                            </Space>
+                        </div>
                     </Card>
                 )}
             </div>
+
         </Modal>
     );
 };

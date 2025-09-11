@@ -50,12 +50,13 @@ def evaluate_resume_stepwise(jd_text: str, resume_text: str, scoring_rules: Dict
     # 第一步：任务拆解
     step_prompt = f"""
 你是一个招聘评估专家。
-用户提供了一套简历评分标准，请你拆解整个评估流程，分为 3-6 个步骤。
+用户提供了一套简历评分标准，请你拆解整个评估流程，分为 3-5 个具体的评估步骤。
 
 拆解要求：
 1. 每个步骤必须对应标准中的一个维度或一类维度。
 2. 步骤要有明确的任务描述，告诉如何对简历和 JD 进行比对。
-3. 最后增加一个"总分计算与匹配结论"步骤。
+3. 每个步骤都应该是具体的评估任务，不要包含"总分计算"或"汇总"类的步骤。
+4. 总分计算将由前端系统自动完成。
 
 请输出 JSON，格式如下：
 {{
@@ -88,6 +89,8 @@ def evaluate_resume_stepwise(jd_text: str, resume_text: str, scoring_rules: Dict
 任务说明：{step['desc']}
 
 请根据用户提供的评分标准，对 JD 与简历进行评估。
+注意：只需评估当前步骤对应的维度，不要计算总分或其他维度的分数。
+
 要求输出 JSON，包含：
 {{
   "step": {step['id']},
