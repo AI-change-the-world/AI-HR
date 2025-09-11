@@ -22,3 +22,6 @@ class JobDescription(Base, ToDictMixin):
     updated_at = Column(
         DateTime, default=func.now(), onupdate=func.now(), comment="更新时间"
     )
+
+    full_text = Column(Text, nullable=True, comment="职位描述全文")
+    evaluation_criteria = Column(Text, nullable=True, comment="评价标准prompt")
