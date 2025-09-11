@@ -1,3 +1,5 @@
+import type { BaseResponse, PageResponse } from '../../../utils/api';
+
 // JD数据接口
 export interface JobDescription {
     id: number;

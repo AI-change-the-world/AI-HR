@@ -1,5 +1,5 @@
 import { JobDescription, CreateJDRequest, UpdateJDRequest, JDQueryParams, EvaluationStep, JDFullInfoUpdate, EvaluationCriteriaUpdate, PolishResponse } from '../types';
-import apiClient from '../../../utils/api';
+import apiClient, { PageResponse } from '../../../utils/api';
 
 const API_BASE = '/api/jd';
 
@@ -8,7 +8,8 @@ export const getJDs = async (params?: JDQueryParams): Promise<JobDescription[]> 
     const queryString = params ? new URLSearchParams(params as any).toString() : '';
     const url = queryString ? `${API_BASE}?${queryString}` : API_BASE;
 
-    return apiClient.get(url);
+    const pageResponse: PageResponse<JobDescription> = await apiClient.get(url);
+    return pageResponse.data || [];
 };
 
 // 获取单个JD
@@ -132,7 +133,7 @@ export const evaluateResumeStream = async (
 
 // 获取JD的评估标准
 export const getJDEvaluationCriteria = async (id: number): Promise<Record<string, any>> => {
-    const response = await apiClient.get(`${API_BASE}/${id}/evaluation-criteria`);
+    const response: { criteria: Record<string, any> } = await apiClient.get(`${API_BASE}/${id}/evaluation-criteria`);
     return response.criteria || {};
 };
 

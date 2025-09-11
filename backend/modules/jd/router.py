@@ -6,6 +6,7 @@ import json
 
 from config.database import get_db
 from models.jd import JobDescription
+from modules import BaseResponse, PageResponse
 
 from utils.document_parser import parse_document
 from .models import JDCreate, JDInDB, JDUpdate, JDFullInfoUpdate, EvaluationCriteriaUpdate
@@ -18,45 +19,65 @@ from .service import (
 router = APIRouter(prefix="/api/jd", tags=["JD管理"])
 
 
-@router.post("/", response_model=JDInDB)
+@router.post("/", response_model=BaseResponse[JDInDB])
 async def create_jd_info(jd: JDCreate, db: Session = Depends(get_db)):
     """创建JD"""
-    return create_jd(jd, db)
+    try:
+        result = create_jd(jd, db)
+        return BaseResponse(data=result)
+    except Exception as e:
+        return BaseResponse(code=500, message=f"创建JD失败: {str(e)}", data=None)
 
 
-@router.get("/{jd_id}", response_model=JDInDB)
+@router.get("/{jd_id}", response_model=BaseResponse[JDInDB])
 async def read_jd(jd_id: int, db: Session = Depends(get_db)):
     """获取JD详情"""
-    jd = get_jd(jd_id, db)
-    if jd is None:
-        raise HTTPException(status_code=404, detail="JD未找到")
-    return jd
+    try:
+        jd = get_jd(jd_id, db)
+        if jd is None:
+            return BaseResponse(code=404, message="JD未找到", data=None)
+        return BaseResponse(data=jd)
+    except Exception as e:
+        return BaseResponse(code=500, message=f"获取JD失败: {str(e)}", data=None)
 
 
-@router.get("/", response_model=list[JDInDB])
+@router.get("/", response_model=BaseResponse[PageResponse[JDInDB]])
 async def read_jds(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """获取JD列表"""
-    return get_jds(skip=skip, limit=limit, db=db)
+    try:
+        jds = get_jds(skip=skip, limit=limit, db=db)
+        # 获取总数
+        total = db.query(JobDescription).count()
+        page_response = PageResponse(total=total, data=jds)
+        return BaseResponse(data=page_response)
+    except Exception as e:
+        return BaseResponse(code=500, message=f"获取JD列表失败: {str(e)}", data=None)
 
 
-@router.put("/{jd_id}", response_model=JDInDB)
+@router.put("/{jd_id}", response_model=BaseResponse[JDInDB])
 async def update_jd_info(
     jd_id: int, jd_update: JDUpdate, db: Session = Depends(get_db)
 ):
     """更新JD信息"""
-    jd = update_jd(jd_id, jd_update, db)
-    if jd is None:
-        raise HTTPException(status_code=404, detail="JD未找到")
-    return jd
+    try:
+        jd = update_jd(jd_id, jd_update, db)
+        if jd is None:
+            return BaseResponse(code=404, message="JD未找到", data=None)
+        return BaseResponse(data=jd)
+    except Exception as e:
+        return BaseResponse(code=500, message=f"更新JD失败: {str(e)}", data=None)
 
 
-@router.delete("/{jd_id}")
+@router.delete("/{jd_id}", response_model=BaseResponse[dict])
 async def delete_jd_info(jd_id: int, db: Session = Depends(get_db)):
     """删除JD"""
-    success = delete_jd(jd_id, db)
-    if not success:
-        raise HTTPException(status_code=404, detail="JD未找到")
-    return {"message": "JD删除成功"}
+    try:
+        success = delete_jd(jd_id, db)
+        if not success:
+            return BaseResponse(code=404, message="JD未找到", data=None)
+        return BaseResponse(data={"message": "JD删除成功"})
+    except Exception as e:
+        return BaseResponse(code=500, message=f"删除JD失败: {str(e)}", data=None)
 
 
 @router.post("/{jd_id}/evaluate-resume")
@@ -100,7 +121,7 @@ async def evaluate_resume_stream(
     )
 
 
-@router.put("/{jd_id}/evaluation-criteria")
+@router.put("/{jd_id}/evaluation-criteria", response_model=BaseResponse[dict])
 async def update_evaluation_criteria(
     jd_id: int,
     criteria_data: EvaluationCriteriaUpdate,
@@ -109,13 +130,16 @@ async def update_evaluation_criteria(
     """
     更新JD的评估标准
     """
-    success = update_jd_evaluation_criteria(jd_id, criteria_data.criteria, db)
-    if not success:
-        raise HTTPException(status_code=404, detail="JD未找到")
-    return {"message": "评估标准更新成功"}
+    try:
+        success = update_jd_evaluation_criteria(jd_id, criteria_data.criteria, db)
+        if not success:
+            return BaseResponse(code=404, message="JD未找到", data=None)
+        return BaseResponse(data={"message": "评估标准更新成功"})
+    except Exception as e:
+        return BaseResponse(code=500, message=f"更新评估标准失败: {str(e)}", data=None)
 
 
-@router.get("/{jd_id}/evaluation-criteria")
+@router.get("/{jd_id}/evaluation-criteria", response_model=BaseResponse[dict])
 async def get_evaluation_criteria(
     jd_id: int,
     db: Session = Depends(get_db)
@@ -123,13 +147,16 @@ async def get_evaluation_criteria(
     """
     获取JD的评估标准
     """
-    criteria = get_jd_evaluation_criteria(jd_id, db)
-    if criteria is None:
-        raise HTTPException(status_code=404, detail="JD未找到")
-    return {"criteria": criteria}
+    try:
+        criteria = get_jd_evaluation_criteria(jd_id, db)
+        if criteria is None:
+            return BaseResponse(code=404, message="JD未找到", data=None)
+        return BaseResponse(data={"criteria": criteria})
+    except Exception as e:
+        return BaseResponse(code=500, message=f"获取评估标准失败: {str(e)}", data=None)
 
 
-@router.put("/{jd_id}/full-info")
+@router.put("/{jd_id}/full-info", response_model=BaseResponse[JDInDB])
 async def update_jd_full_info_endpoint(
     jd_id: int,
     full_info: JDFullInfoUpdate,
@@ -138,13 +165,16 @@ async def update_jd_full_info_endpoint(
     """
     更新JD的完整信息和评估标准
     """
-    updated_jd = update_jd_full_info(jd_id, full_info, db)
-    if updated_jd is None:
-        raise HTTPException(status_code=404, detail="JD未找到")
-    return updated_jd
+    try:
+        updated_jd = update_jd_full_info(jd_id, full_info, db)
+        if updated_jd is None:
+            return BaseResponse(code=404, message="JD未找到", data=None)
+        return BaseResponse(data=updated_jd)
+    except Exception as e:
+        return BaseResponse(code=500, message=f"更新JD完整信息失败: {str(e)}", data=None)
 
 
-@router.get("/{jd_id}/full-info")
+@router.get("/{jd_id}/full-info", response_model=BaseResponse[dict])
 async def get_jd_full_info(
     jd_id: int,
     db: Session = Depends(get_db)
@@ -152,17 +182,20 @@ async def get_jd_full_info(
     """
     获取JD的完整信息
     """
-    jd = get_jd(jd_id, db)
-    if jd is None:
-        raise HTTPException(status_code=404, detail="JD未找到")
-    
-    return {
-        "full_text": jd.full_text,
-        "evaluation_criteria": jd.evaluation_criteria
-    }
+    try:
+        jd = get_jd(jd_id, db)
+        if jd is None:
+            return BaseResponse(code=404, message="JD未找到", data=None)
+        
+        return BaseResponse(data={
+            "full_text": jd.full_text,
+            "evaluation_criteria": jd.evaluation_criteria
+        })
+    except Exception as e:
+        return BaseResponse(code=500, message=f"获取JD完整信息失败: {str(e)}", data=None)
 
 
-@router.post("/{jd_id}/extract-keywords")
+@router.post("/{jd_id}/extract-keywords", response_model=BaseResponse[JDInDB])
 async def extract_keywords_from_jd(
     jd_id: int,
     request_data: dict,
@@ -171,16 +204,16 @@ async def extract_keywords_from_jd(
     """
     从完整JD描述中提取关键字并更新JD字段
     """
-    # 获取JD
-    db_jd = db.query(JobDescription).filter(JobDescription.id == jd_id).first()
-    if db_jd is None:
-        raise HTTPException(status_code=404, detail="JD未找到")
-    
-    full_text = request_data.get('full_text', '')
-    if not full_text.strip():
-        raise HTTPException(status_code=400, detail="完整职位描述不能为空")
-    
     try:
+        # 获取JD
+        db_jd = db.query(JobDescription).filter(JobDescription.id == jd_id).first()
+        if db_jd is None:
+            return BaseResponse(code=404, message="JD未找到", data=None)
+        
+        full_text = request_data.get('full_text', '')
+        if not full_text.strip():
+            return BaseResponse(code=400, message="完整职位描述不能为空", data=None)
+        
         # 调用大模型提取关键字
         from .keyword_extractor import extract_jd_keywords
         extracted_data = extract_jd_keywords(full_text)
@@ -214,7 +247,7 @@ async def extract_keywords_from_jd(
             except json.JSONDecodeError:
                 evaluation_criteria = None
         
-        return JDInDB(
+        result = JDInDB(
             id=db_jd.id,
             title=db_jd.title,
             department=db_jd.department,
@@ -228,27 +261,29 @@ async def extract_keywords_from_jd(
             evaluation_criteria=evaluation_criteria
         )
         
+        return BaseResponse(data=result)
+        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"关键字提取失败: {str(e)}")
+        return BaseResponse(code=500, message=f"关键字提取失败: {str(e)}", data=None)
 
 
-@router.post("/polish-text")
+@router.post("/polish-text", response_model=BaseResponse[dict])
 async def polish_jd_text_endpoint(request_data: dict):
     """
     AI润色JD文本
     """
-    original_text = request_data.get('original_text', '')
-    if not original_text.strip():
-        raise HTTPException(status_code=400, detail="原始文本不能为空")
-    
     try:
+        original_text = request_data.get('original_text', '')
+        if not original_text.strip():
+            return BaseResponse(code=400, message="原始文本不能为空", data=None)
+        
         polished_text = polish_jd_text(original_text)
-        return {"polished_text": polished_text}
+        return BaseResponse(data={"polished_text": polished_text})
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"润色失败: {str(e)}")
+        return BaseResponse(code=500, message=f"润色失败: {str(e)}", data=None)
 
 
-@router.post("/create-from-text", response_model=JDInDB)
+@router.post("/create-from-text", response_model=BaseResponse[JDInDB])
 async def create_jd_from_text_endpoint(
     request_data: dict,
     db: Session = Depends(get_db)
@@ -256,12 +291,12 @@ async def create_jd_from_text_endpoint(
     """
     从文本创建JD
     """
-    text = request_data.get('text', '')
-    if not text.strip():
-        raise HTTPException(status_code=400, detail="文本内容不能为空")
-    
     try:
+        text = request_data.get('text', '')
+        if not text.strip():
+            return BaseResponse(code=400, message="文本内容不能为空", data=None)
+        
         jd = create_jd_from_text(text, db)
-        return jd
+        return BaseResponse(data=jd)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"创建JD失败: {str(e)}")
+        return BaseResponse(code=500, message=f"创建JD失败: {str(e)}", data=None)
