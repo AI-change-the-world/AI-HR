@@ -5,6 +5,7 @@ from typing import Dict, Any, List
 import json
 
 from config.database import get_db
+from models.jd import JobDescription
 
 from utils.document_parser import parse_document
 from .models import JDCreate, JDInDB, JDUpdate, JDFullInfoUpdate, EvaluationCriteriaUpdate
@@ -158,3 +159,73 @@ async def get_jd_full_info(
         "full_text": jd.full_text,
         "evaluation_criteria": jd.evaluation_criteria
     }
+
+
+@router.post("/{jd_id}/extract-keywords")
+async def extract_keywords_from_jd(
+    jd_id: int,
+    request_data: dict,
+    db: Session = Depends(get_db)
+):
+    """
+    从完整JD描述中提取关键字并更新JD字段
+    """
+    # 获取JD
+    db_jd = db.query(JobDescription).filter(JobDescription.id == jd_id).first()
+    if db_jd is None:
+        raise HTTPException(status_code=404, detail="JD未找到")
+    
+    full_text = request_data.get('full_text', '')
+    if not full_text.strip():
+        raise HTTPException(status_code=400, detail="完整职位描述不能为空")
+    
+    try:
+        # 调用大模型提取关键字
+        from .keyword_extractor import extract_jd_keywords
+        extracted_data = extract_jd_keywords(full_text)
+        
+        # 更新JD字段
+        if extracted_data.get('title'):
+            db_jd.title = extracted_data['title']
+        if extracted_data.get('department'):
+            db_jd.department = extracted_data['department']
+        if extracted_data.get('location'):
+            db_jd.location = extracted_data['location']
+        if extracted_data.get('description'):
+            db_jd.description = extracted_data['description']
+        if extracted_data.get('requirements'):
+            db_jd.requirements = extracted_data['requirements']
+        if extracted_data.get('salary_range'):
+            db_jd.salary_range = extracted_data['salary_range']
+            
+        # 更新full_text
+        db_jd.full_text = full_text
+        
+        db.commit()
+        db.refresh(db_jd)
+        
+        # 返回更新后的JD信息
+        # 解析evaluation_criteria
+        evaluation_criteria = None
+        if db_jd.evaluation_criteria:
+            try:
+                evaluation_criteria = json.loads(db_jd.evaluation_criteria)
+            except json.JSONDecodeError:
+                evaluation_criteria = None
+        
+        return JDInDB(
+            id=db_jd.id,
+            title=db_jd.title,
+            department=db_jd.department,
+            location=db_jd.location,
+            description=db_jd.description,
+            requirements=db_jd.requirements,
+            status="开放" if db_jd.is_open else "关闭",
+            created_at=db_jd.created_at,
+            updated_at=db_jd.updated_at,
+            full_text=db_jd.full_text,
+            evaluation_criteria=evaluation_criteria
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"关键字提取失败: {str(e)}")

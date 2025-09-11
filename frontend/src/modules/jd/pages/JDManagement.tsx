@@ -1,25 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Table, Space, Typography, Tag, message, Dropdown } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, MoreOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, MoreOutlined, SettingOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { JobDescription } from '../types';
 import { getJDs, toggleJDStatus as apiToggleJDStatus, deleteJD } from '../api';
-import { ResumeEvaluator } from '../components';
+import { ResumeEvaluator, JDFullInfoModal } from '../components';
 
 const { Title } = Typography;
 
 const JDManagement: React.FC = () => {
-    const [jds, setJds] = useState<JobDescription[]>([]);
+    const [jds, setJDs] = useState<JobDescription[]>([]);
     const [loading, setLoading] = useState(true);
     const [showEvaluator, setShowEvaluator] = useState(false);
     const [selectedJD, setSelectedJD] = useState<JobDescription | null>(null);
+    const [showFullInfoModal, setShowFullInfoModal] = useState(false);
 
     // 加载JD列表
     const loadJDs = async () => {
         try {
             setLoading(true);
             const data = await getJDs();
-            setJds(data);
+            setJDs(data);
         } catch (error) {
             message.error('加载JD列表失败');
             console.error('Error loading JDs:', error);
@@ -76,12 +77,35 @@ const JDManagement: React.FC = () => {
         message.success('简历评估完成');
     };
 
+    const handleEditFullInfo = (jd: JobDescription) => {
+        setSelectedJD(jd);
+        setShowFullInfoModal(true);
+    };
+
+    const handleFullInfoModalCancel = () => {
+        setShowFullInfoModal(false);
+        setSelectedJD(null);
+    };
+
+    const handleFullInfoUpdateSuccess = (updatedJD: JobDescription) => {
+        message.success('JD信息更新成功');
+        loadJDs(); // 重新加载数据
+        setShowFullInfoModal(false);
+        setSelectedJD(null);
+    };
+
     const getMenuItems = (record: JobDescription): MenuProps['items'] => [
         {
             key: 'evaluate',
             icon: <UploadOutlined />,
             label: '评估简历',
             onClick: () => handleEvaluateClick(record),
+        },
+        {
+            key: 'editFullInfo',
+            icon: <SettingOutlined />,
+            label: '编辑完整信息',
+            onClick: () => handleEditFullInfo(record),
         },
         {
             key: 'delete',
@@ -150,8 +174,8 @@ const JDManagement: React.FC = () => {
                         type="link"
                         onClick={() => handleToggleJDStatus(record.id)}
                         className={`p-0 h-auto font-medium ${record.status === '开放'
-                                ? 'text-warning-600 hover:text-warning-700'
-                                : 'text-success-600 hover:text-success-700'
+                            ? 'text-warning-600 hover:text-warning-700'
+                            : 'text-success-600 hover:text-success-700'
                             }`}
                     >
                         {record.status === '开放' ? '关闭' : '开放'}
@@ -211,6 +235,15 @@ const JDManagement: React.FC = () => {
                     jdTitle={selectedJD.title}
                     onCancel={handleEvaluatorCancel}
                     onEvaluate={handleEvaluateSuccess}
+                />
+            )}
+
+            {showFullInfoModal && selectedJD && (
+                <JDFullInfoModal
+                    visible={showFullInfoModal}
+                    jd={selectedJD}
+                    onCancel={handleFullInfoModalCancel}
+                    onSuccess={handleFullInfoUpdateSuccess}
                 />
             )}
         </div>

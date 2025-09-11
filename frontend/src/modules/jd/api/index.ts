@@ -156,3 +156,8 @@ export const updateJDFullInfo = async (
 export const getJDFullInfo = async (id: number): Promise<{ full_text?: string; evaluation_criteria?: Record<string, any> }> => {
     return apiClient.get(`${API_BASE}/${id}/full-info`);
 };
+
+// 提取关键字并更新JD字段
+export const extractJDKeywords = async (id: number, fullText: string): Promise<JobDescription> => {
+    return apiClient.post(`${API_BASE}/${id}/extract-keywords`, { full_text: fullText });
+};
