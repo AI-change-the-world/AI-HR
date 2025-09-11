@@ -114,6 +114,7 @@ def identify_intent(user_message: str) -> Dict[str, Any]:
             
         return json.loads(content)
     except Exception as e:
+        logger.error(f"Failed to identify intent: {e}")
         # 如果意图识别失败，返回默认的一般性问题意图
         return {
             "intent": "general_question",

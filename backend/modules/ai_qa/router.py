@@ -7,6 +7,7 @@ from modules import BaseResponse
 from .models import ChatRequest, AIChatResponse
 from .service import process_employee_query
 from common.logger import logger
+from utils.logger_format_utils import log_safe_json
 
 router = APIRouter(prefix="/api/ai-qa", tags=["AI问答"])
 
@@ -51,7 +52,8 @@ async def chat_with_ai(
             data=response_data
         )
     except Exception as e:
-        logger.error(f"处理AI问答请求时发生错误: {str(e)}")
+        # logger.error(f"处理AI问答请求时发生错误: {str(e)}")
+        log_safe_json(logger, "处理AI问答请求时发生错误", {"error": str(e)})
         traceback.print_exc()
         return BaseResponse(
             code=500,
