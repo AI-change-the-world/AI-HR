@@ -29,11 +29,20 @@ async def chat_with_ai(
     try:
         # 处理用户查询
         result = process_employee_query(request.message, db) 
+        
+        # 检查结果并构造响应
+        if result is None:
+            return BaseResponse(
+                code=500,
+                message="处理请求时发生错误: 未返回有效结果",
+                data=None
+            )
+        
         # 构造响应
         response_data = AIChatResponse(
-            message=result["message"],
-            chart_data=result["chart_data"],
-            raw_data=result["raw_data"]
+            message=result.get("message", ""),
+            chart_data=result.get("chart_data"),
+            raw_data=result.get("raw_data")
         )
         
         return BaseResponse(
@@ -42,6 +51,7 @@ async def chat_with_ai(
             data=response_data
         )
     except Exception as e:
+        logger.error(f"处理AI问答请求时发生错误: {str(e)}")
         traceback.print_exc()
         return BaseResponse(
             code=500,
