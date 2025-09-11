@@ -8,7 +8,8 @@ const HomePage: React.FC = () => {
     const notices = [
         "AI 人事办人事",
         "做有温度的人工智能系统",
-        "客观，公平"
+        "客观，公平, 智能，高效",
+        "此系统仅为演示系统"
     ];
 
     const [currentNotice, setCurrentNotice] = useState(0);

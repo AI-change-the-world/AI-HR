@@ -1,4 +1,5 @@
 import { OKR, CreateOKRRequest, UpdateOKRRequest, OKRQueryParams } from '../types';
+import apiClient from '../../../utils/api';
 
 const API_BASE = '/api/okrs';
 
@@ -7,77 +8,30 @@ export const getOKRs = async (params?: OKRQueryParams): Promise<OKR[]> => {
     const queryString = params ? new URLSearchParams(params as any).toString() : '';
     const url = queryString ? `${API_BASE}?${queryString}` : API_BASE;
 
-    const response = await fetch(url);
-    if (!response.ok) {
-        throw new Error('获取OKR列表失败');
-    }
-    return response.json();
+    return apiClient.get(url);
 };
 
 // 获取单个OKR
 export const getOKR = async (id: number): Promise<OKR> => {
-    const response = await fetch(`${API_BASE}/${id}`);
-    if (!response.ok) {
-        throw new Error('获取OKR信息失败');
-    }
-    return response.json();
+    return apiClient.get(`${API_BASE}/${id}`);
 };
 
 // 创建OKR
 export const createOKR = async (data: CreateOKRRequest): Promise<OKR> => {
-    const response = await fetch(API_BASE, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-        throw new Error('创建OKR失败');
-    }
-    return response.json();
+    return apiClient.post(API_BASE, data);
 };
 
 // 更新OKR
 export const updateOKR = async (data: UpdateOKRRequest): Promise<OKR> => {
-    const response = await fetch(`${API_BASE}/${data.id}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-        throw new Error('更新OKR失败');
-    }
-    return response.json();
+    return apiClient.put(`${API_BASE}/${data.id}`, data);
 };
 
 // 删除OKR
 export const deleteOKR = async (id: number): Promise<void> => {
-    const response = await fetch(`${API_BASE}/${id}`, {
-        method: 'DELETE',
-    });
-
-    if (!response.ok) {
-        throw new Error('删除OKR失败');
-    }
+    return apiClient.delete(`${API_BASE}/${id}`);
 };
 
 // 更新OKR进度
 export const updateOKRProgress = async (id: number, progress: number): Promise<OKR> => {
-    const response = await fetch(`${API_BASE}/${id}/progress`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ progress }),
-    });
-
-    if (!response.ok) {
-        throw new Error('更新OKR进度失败');
-    }
-    return response.json();
+    return apiClient.patch(`${API_BASE}/${id}/progress`, { progress });
 };

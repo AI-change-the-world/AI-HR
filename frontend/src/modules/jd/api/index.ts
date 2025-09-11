@@ -1,4 +1,5 @@
 import { JobDescription, CreateJDRequest, UpdateJDRequest, JDQueryParams, EvaluationStep } from '../types';
+import apiClient from '../../../utils/api';
 
 const API_BASE = '/api/jd';
 
@@ -7,63 +8,27 @@ export const getJDs = async (params?: JDQueryParams): Promise<JobDescription[]> 
     const queryString = params ? new URLSearchParams(params as any).toString() : '';
     const url = queryString ? `${API_BASE}?${queryString}` : API_BASE;
 
-    const response = await fetch(url);
-    if (!response.ok) {
-        throw new Error('获取JD列表失败');
-    }
-    return response.json();
+    return apiClient.get(url);
 };
 
 // 获取单个JD
 export const getJD = async (id: number): Promise<JobDescription> => {
-    const response = await fetch(`${API_BASE}/${id}`);
-    if (!response.ok) {
-        throw new Error('获取JD信息失败');
-    }
-    return response.json();
+    return apiClient.get(`${API_BASE}/${id}`);
 };
 
 // 创建JD
 export const createJD = async (data: CreateJDRequest): Promise<JobDescription> => {
-    const response = await fetch(API_BASE, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-        throw new Error('创建JD失败');
-    }
-    return response.json();
+    return apiClient.post(API_BASE, data);
 };
 
 // 更新JD
 export const updateJD = async (data: UpdateJDRequest): Promise<JobDescription> => {
-    const response = await fetch(`${API_BASE}/${data.id}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-        throw new Error('更新JD失败');
-    }
-    return response.json();
+    return apiClient.put(`${API_BASE}/${data.id}`, data);
 };
 
 // 删除JD
 export const deleteJD = async (id: number): Promise<void> => {
-    const response = await fetch(`${API_BASE}/${id}`, {
-        method: 'DELETE',
-    });
-
-    if (!response.ok) {
-        throw new Error('删除JD失败');
-    }
+    return apiClient.delete(`${API_BASE}/${id}`);
 };
 
 // 切换JD状态
@@ -90,18 +55,13 @@ export const evaluateResume = async (
         formData.append('scoring_rules', JSON.stringify(scoringRules));
     }
 
-    const response = await fetch(`${API_BASE}/${jdId}/evaluate-resume`, {
-        method: 'POST',
-        body: formData,
+    const response = await apiClient.post(`${API_BASE}/${jdId}/evaluate-resume`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
     });
 
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || '简历评估失败');
-    }
-
-    const data = await response.json();
-    return data.results || [];
+    return response.results || [];
 };
 
 // 流式简历评估API（实时返回评估进度）
@@ -118,7 +78,9 @@ export const evaluateResumeStream = async (
         formData.append('scoring_rules', JSON.stringify(scoringRules));
     }
 
-    const response = await fetch(`${API_BASE}/${jdId}/evaluate-resume`, {
+    // 注意：流式接口不使用axios，使用原生fetch支持流式读取
+    const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    const response = await fetch(`${baseURL}${API_BASE}/${jdId}/evaluate-resume`, {
         method: 'POST',
         body: formData,
     });
@@ -145,12 +107,8 @@ export const evaluateResumeStream = async (
 
 // 获取JD的评估标准
 export const getJDEvaluationCriteria = async (id: number): Promise<Record<string, any>> => {
-    const response = await fetch(`${API_BASE}/${id}/evaluation-criteria`);
-    if (!response.ok) {
-        throw new Error('获取评估标准失败');
-    }
-    const data = await response.json();
-    return data.criteria || {};
+    const response = await apiClient.get(`${API_BASE}/${id}/evaluation-criteria`);
+    return response.criteria || {};
 };
 
 // 保存JD的评估标准
@@ -158,16 +116,5 @@ export const saveJDEvaluationCriteria = async (
     id: number,
     criteria: Record<string, any>
 ): Promise<void> => {
-    // 这里需要后端支持保存评估标准到JD的evaluation_criteria字段
-    const response = await fetch(`${API_BASE}/${id}/evaluation-criteria`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ criteria }),
-    });
-
-    if (!response.ok) {
-        throw new Error('保存评估标准失败');
-    }
+    return apiClient.put(`${API_BASE}/${id}/evaluation-criteria`, { criteria });
 };

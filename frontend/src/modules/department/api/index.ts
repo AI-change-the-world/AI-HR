@@ -1,4 +1,5 @@
 import { Department, CreateDepartmentRequest, UpdateDepartmentRequest, DepartmentQueryParams } from '../types';
+import apiClient from '../../../utils/api';
 
 const API_BASE = '/api/departments';
 
@@ -7,61 +8,25 @@ export const getDepartments = async (params?: DepartmentQueryParams): Promise<De
     const queryString = params ? new URLSearchParams(params as any).toString() : '';
     const url = queryString ? `${API_BASE}?${queryString}` : API_BASE;
 
-    const response = await fetch(url);
-    if (!response.ok) {
-        throw new Error('获取部门列表失败');
-    }
-    return response.json();
+    return apiClient.get(url);
 };
 
 // 获取单个部门
 export const getDepartment = async (id: number): Promise<Department> => {
-    const response = await fetch(`${API_BASE}/${id}`);
-    if (!response.ok) {
-        throw new Error('获取部门信息失败');
-    }
-    return response.json();
+    return apiClient.get(`${API_BASE}/${id}`);
 };
 
 // 创建部门
 export const createDepartment = async (data: CreateDepartmentRequest): Promise<Department> => {
-    const response = await fetch(API_BASE, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-        throw new Error('创建部门失败');
-    }
-    return response.json();
+    return apiClient.post(API_BASE, data);
 };
 
 // 更新部门
 export const updateDepartment = async (data: UpdateDepartmentRequest): Promise<Department> => {
-    const response = await fetch(`${API_BASE}/${data.id}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-        throw new Error('更新部门失败');
-    }
-    return response.json();
+    return apiClient.put(`${API_BASE}/${data.id}`, data);
 };
 
 // 删除部门
 export const deleteDepartment = async (id: number): Promise<void> => {
-    const response = await fetch(`${API_BASE}/${id}`, {
-        method: 'DELETE',
-    });
-
-    if (!response.ok) {
-        throw new Error('删除部门失败');
-    }
+    return apiClient.delete(`${API_BASE}/${id}`);
 };

@@ -5,6 +5,7 @@ import json
 
 from config.database import get_db
 
+from utils.document_parser import parse_document
 from .models import JDCreate, JDInDB, JDUpdate
 from .service import create_jd, delete_jd, get_jd, get_jds, update_jd, evaluate_resume, update_jd_evaluation_criteria, get_jd_evaluation_criteria
 
@@ -62,8 +63,11 @@ async def evaluate_resume_endpoint(
     """
     评估简历与JD的匹配度
     """
+    filename = resume_file.filename
+    file_extension = filename.split(".")[-1]
+
     # 读取简历文件内容
-    resume_content = (await resume_file.read()).decode("utf-8")
+    resume_content = parse_document(await resume_file.read(), file_extension)
     
     # 解析评分规则
     rules = {}
