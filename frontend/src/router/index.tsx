@@ -10,7 +10,6 @@ import Error from '../modules/common/pages/Error';
 
 
 export const router = createBrowserRouter([
-
     {
         element: <AppLayout />,
         children: [
