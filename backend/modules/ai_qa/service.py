@@ -9,6 +9,8 @@ from models.department import Department as DepartmentModel
 from .models import ChartData
 from common.logger import logger
 from utils.logger_format_utils import log_safe_json
+from .query_registry import get_query, list_queries, execute_query, generate_chart
+from .predefined_queries import *  # 导入所有预定义查询
 
 
 def identify_intent(user_message: str) -> Dict[str, Any]:
@@ -21,31 +23,47 @@ def identify_intent(user_message: str) -> Dict[str, Any]:
     Returns:
         包含意图、参数和置信度的字典
     """
+    # 首先尝试基于查询注册表进行精确匹配
+    queries = list_queries()
+    for query_name in queries:
+        if query_name in user_message:
+            return {
+                "intent": "registered_query",
+                "parameters": {
+                    "query_name": query_name
+                },
+                "confidence": 0.95
+            }
+    
     # 定义系统提示词，告诉模型如何识别意图
-    system_prompt = """
+    system_prompt = f"""
     你是一个人力资源系统的AI助手，能够识别用户查询的意图。请根据用户的问题识别其意图和相关参数。
     
+    系统支持以下预定义查询：
+    {', '.join(queries)}
+    
     可能的意图包括：
-    1. employee_count - 查询员工数量统计
-    2. department_stats - 查询部门统计信息
-    3. employee_search - 搜索特定员工
-    4. general_question - 一般性问题
+    1. registered_query - 使用预定义查询注册表
+    2. employee_count - 查询员工数量统计
+    3. department_stats - 查询部门统计信息
+    4. employee_search - 搜索特定员工
+    5. general_question - 一般性问题
     
     请以以下JSON格式返回结果：
-    {
+    {{
         "intent": "意图标识",
-        "parameters": {
+        "parameters": {{
             "参数名": "参数值"
-        },
+        }},
         "confidence": 置信度(0-1之间的浮点数)
-    }
+    }}
     
     示例：
     用户问："公司现在有多少员工？"
-    返回：{"intent": "employee_count", "parameters": {}, "confidence": 0.95}
+    返回：{{"intent": "registered_query", "parameters": {{"query_name": "员工总数"}}, "confidence": 0.95}}
     
     用户问："技术部有多少人？"
-    返回：{"intent": "department_stats", "parameters": {"department": "技术部"}, "confidence": 0.9}
+    返回：{{"intent": "department_stats", "parameters": {{"department": "技术部"}}, "confidence": 0.9}}
     """
     
     try:
@@ -61,7 +79,7 @@ def identify_intent(user_message: str) -> Dict[str, Any]:
         
         # 解析模型响应
         content = response.choices[0].message.content.strip()
-        # 移除可能的markdown代码块标记
+        # 移除可能的代码块标记
         if content.startswith("```json"):
             content = content[7:]
         if content.endswith("```"):
@@ -195,11 +213,56 @@ def process_employee_query(user_message: str, db: Session) -> Dict[str, Any]:
     """
     # 识别用户意图
     intent_result = identify_intent(user_message)
-    # print("意图识别结果: "+ json.dumps(intent_result))
     log_safe_json(logger, "意图识别结果", intent_result)
     
     # 根据意图处理查询
-    if intent_result["intent"] == "employee_count":
+    if intent_result["intent"] == "registered_query":
+        # 使用预定义查询注册表
+        query_name = intent_result["parameters"].get("query_name")
+        if query_name:
+            query_info = get_query(query_name)
+            if query_info:
+                # 执行查询
+                query_result = execute_query(query_name, {}, db)
+                if query_result:
+                    # 生成回答文本
+                    response_text = query_result.get("message", f"查询 '{query_name}' 执行完成")
+                    
+                    # 生成图表数据
+                    chart_data = None
+                    chart_dict = generate_chart(query_name, query_result)
+                    if chart_dict:
+                        chart_data = ChartData(
+                            type=chart_dict["type"],
+                            title=chart_dict["title"],
+                            data=chart_dict["data"]
+                        )
+                    
+                    return {
+                        "message": response_text,
+                        "chart_data": chart_data,
+                        "raw_data": query_result.get("result", {})
+                    }
+                else:
+                    return {
+                        "message": f"执行查询 '{query_name}' 时发生错误",
+                        "chart_data": None,
+                        "raw_data": None
+                    }
+            else:
+                return {
+                    "message": f"未找到查询 '{query_name}'",
+                    "chart_data": None,
+                    "raw_data": None
+                }
+        else:
+            return {
+                "message": "未指定查询名称",
+                "chart_data": None,
+                "raw_data": None
+            }
+        
+    elif intent_result["intent"] == "employee_count":
         # 获取员工统计数据
         stats = get_employee_stats(db)
         chart_data_dict = generate_chart_data(stats)
