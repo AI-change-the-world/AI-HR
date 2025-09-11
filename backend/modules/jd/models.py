@@ -1,4 +1,5 @@
 from typing import Optional
+from datetime import datetime
 
 from pydantic import BaseModel
 
@@ -8,6 +9,7 @@ class JDBase(BaseModel):
     department: str
     location: str
     description: Optional[str] = None
+    requirements: Optional[str] = None
     status: str = "草稿"
 
 
@@ -20,10 +22,14 @@ class JDUpdate(JDBase):
     department: Optional[str] = None
     location: Optional[str] = None
     description: Optional[str] = None
+    requirements: Optional[str] = None
     status: Optional[str] = None
 
 
 class JDInDB(JDBase):
     id: int
+    is_open: bool = True
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}

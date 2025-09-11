@@ -9,3 +9,5 @@ python-docx
 uvicorn
 sqlalchemy
 pymysql
+openai>=1.0.0
+python-multipart

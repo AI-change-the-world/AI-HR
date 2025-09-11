@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Button, Table, Space, Typography, Tag } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Button, Table, Space, Typography, Tag, message, Dropdown } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, MoreOutlined } from '@ant-design/icons';
+import type { MenuProps } from 'antd';
 import { JobDescription } from '../types';
 import { getJDs, toggleJDStatus } from '../api';
+import { ResumeEvaluator } from '../components';
 
 const { Title } = Typography;
 
@@ -13,7 +15,7 @@ const JDManagement: React.FC = () => {
             title: '前端工程师',
             department: '技术部',
             location: '北京',
-            isOpen: true,
+            status: '开放',
             createdAt: '2023-05-01'
         },
         {
@@ -21,7 +23,7 @@ const JDManagement: React.FC = () => {
             title: '后端工程师',
             department: '技术部',
             location: '上海',
-            isOpen: true,
+            status: '开放',
             createdAt: '2023-05-02'
         },
         {
@@ -29,16 +31,53 @@ const JDManagement: React.FC = () => {
             title: '产品经理',
             department: '产品部',
             location: '深圳',
-            isOpen: false,
+            status: '关闭',
             createdAt: '2023-04-15'
         }
     ]);
 
+    const [showEvaluator, setShowEvaluator] = useState(false);
+    const [selectedJD, setSelectedJD] = useState<JobDescription | null>(null);
+
     const toggleJDStatus = (id: number) => {
         setJds(jds.map(jd =>
-            jd.id === id ? { ...jd, isOpen: !jd.isOpen } : jd
+            jd.id === id ? { ...jd, status: jd.status === '开放' ? '关闭' : '开放' } : jd
         ));
     };
+
+    const handleEvaluateClick = (jd: JobDescription) => {
+        if (jd.status !== '开放') {
+            message.warning('只能对开放的JD进行简历评估');
+            return;
+        }
+        setSelectedJD(jd);
+        setShowEvaluator(true);
+    };
+
+    const handleEvaluatorCancel = () => {
+        setShowEvaluator(false);
+        setSelectedJD(null);
+    };
+
+    const handleEvaluateSuccess = () => {
+        // 评估成功后的回调
+        message.success('简历评估完成');
+    };
+
+    const getMenuItems = (record: JobDescription): MenuProps['items'] => [
+        {
+            key: 'evaluate',
+            icon: <UploadOutlined />,
+            label: '评估简历',
+            onClick: () => handleEvaluateClick(record),
+        },
+        {
+            key: 'delete',
+            icon: <DeleteOutlined />,
+            label: '删除',
+            danger: true,
+        },
+    ];
 
     const columns = [
         {
@@ -63,17 +102,17 @@ const JDManagement: React.FC = () => {
         },
         {
             title: '状态',
-            dataIndex: 'isOpen',
-            key: 'isOpen',
-            render: (isOpen: boolean) => (
+            dataIndex: 'status',
+            key: 'status',
+            render: (status: string) => (
                 <Tag
-                    color={isOpen ? 'green' : 'red'}
-                    className={`px-3 py-1 rounded-full font-medium ${isOpen
+                    color={status === '开放' ? 'green' : 'red'}
+                    className={`px-3 py-1 rounded-full font-medium ${status === '开放'
                         ? 'bg-success-50 text-success-600 border-success-200'
                         : 'bg-danger-50 text-danger-600 border-danger-200'
                         }`}
                 >
-                    {isOpen ? '开放' : '关闭'}
+                    {status}
                 </Tag>
             ),
         },
@@ -97,21 +136,20 @@ const JDManagement: React.FC = () => {
                     <Button
                         type="link"
                         onClick={() => toggleJDStatus(record.id)}
-                        className={`p-0 h-auto font-medium ${record.isOpen
+                        className={`p-0 h-auto font-medium ${record.status === '开放'
                             ? 'text-warning-600 hover:text-warning-700'
                             : 'text-success-600 hover:text-success-700'
                             }`}
                     >
-                        {record.isOpen ? '关闭' : '开放'}
+                        {record.status === '开放' ? '关闭' : '开放'}
                     </Button>
-                    <Button
-                        type="link"
-                        danger
-                        icon={<DeleteOutlined />}
-                        className="text-danger-500 hover:text-danger-600 p-0 h-auto font-medium"
-                    >
-                        删除
-                    </Button>
+                    <Dropdown menu={{ items: getMenuItems(record) }} trigger={['click']}>
+                        <Button
+                            type="link"
+                            icon={<MoreOutlined />}
+                            className="text-gray-600 hover:text-gray-800 p-0 h-auto font-medium"
+                        />
+                    </Dropdown>
                 </Space>
             ),
         },
@@ -152,6 +190,15 @@ const JDManagement: React.FC = () => {
                     className="[&_.ant-table-thead>tr>th]:bg-gray-50/80 [&_.ant-table-thead>tr>th]:border-gray-200/50 [&_.ant-table-tbody>tr:hover>td]:bg-primary-50/30 [&_.ant-table-tbody>tr>td]:border-gray-200/30"
                 />
             </div>
+
+            {showEvaluator && selectedJD && (
+                <ResumeEvaluator
+                    jdId={selectedJD.id}
+                    jdTitle={selectedJD.title}
+                    onCancel={handleEvaluatorCancel}
+                    onEvaluate={handleEvaluateSuccess}
+                />
+            )}
         </div>
     );
 };

@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
+from typing import Dict, Any, List
+import json
 
 from config.database import get_db
 
 from .models import JDCreate, JDInDB, JDUpdate
-from .service import create_jd, delete_jd, get_jd, get_jds, update_jd
+from .service import create_jd, delete_jd, get_jd, get_jds, update_jd, evaluate_resume
 
 router = APIRouter(prefix="/api/jd", tags=["JD管理"])
 
@@ -48,3 +50,36 @@ async def delete_jd_info(jd_id: int, db: Session = Depends(get_db)):
     if not success:
         raise HTTPException(status_code=404, detail="JD未找到")
     return {"message": "JD删除成功"}
+
+
+@router.post("/{jd_id}/evaluate-resume")
+async def evaluate_resume_endpoint(
+    jd_id: int,
+    resume_file: UploadFile = File(...),
+    scoring_rules: str = None,
+    db: Session = Depends(get_db)
+):
+    """
+    评估简历与JD的匹配度
+    """
+    # 读取简历文件内容
+    resume_content = (await resume_file.read()).decode("utf-8")
+    
+    # 解析评分规则
+    rules = {}
+    if scoring_rules:
+        try:
+            rules = json.loads(scoring_rules)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="评分规则格式错误")
+    
+    # 调用评估服务
+    try:
+        evaluation_results = []
+        for result in evaluate_resume(jd_id, resume_content, rules, db):
+            evaluation_results.append(result)
+        return {"results": evaluation_results}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"评估过程中发生错误: {str(e)}")

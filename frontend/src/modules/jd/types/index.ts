@@ -3,18 +3,18 @@ export interface JobDescription {
     id: number;
     title: string;
     department: string;
-    departmentId?: number;
     location: string;
-    isOpen: boolean;
-    createdAt: string;
-    updatedAt?: string;
     description?: string;
-    requirements?: string[];
-    benefits?: string[];
-    salaryRange?: {
-        min: number;
-        max: number;
-    };
+    status: string; // '开放' | '关闭'
+    createdAt: string;
+}
+
+export interface EvaluationStep {
+    step: number;
+    name: string;
+    score?: number;
+    reason?: string;
+    steps?: Array<{ id: number; name: string; desc: string }>;
 }
 
 // 创建JD请求接口
