@@ -30,7 +30,9 @@ def create_jd(jd_create: JDCreate, db: Session) -> JDInDB:
         location=db_jd.location,
         description=db_jd.description,
         requirements=db_jd.requirements,
-        status="开放" if db_jd.is_open else "关闭"
+        status="开放" if db_jd.is_open else "关闭",
+        created_at=db_jd.created_at,
+        updated_at=db_jd.updated_at
     )
 
 
@@ -47,7 +49,9 @@ def get_jd(jd_id: int, db: Session) -> Optional[JDInDB]:
         location=db_jd.location,
         description=db_jd.description,
         requirements=db_jd.requirements,
-        status="开放" if db_jd.is_open else "关闭"
+        status="开放" if db_jd.is_open else "关闭",
+        created_at=db_jd.created_at,
+        updated_at=db_jd.updated_at
     )
 
 
@@ -66,7 +70,9 @@ def get_jds(
             location=db_jd.location,
             description=db_jd.description,
             requirements=db_jd.requirements,
-            status="开放" if db_jd.is_open else "关闭"
+            status="开放" if db_jd.is_open else "关闭",
+            created_at=db_jd.created_at,
+            updated_at=db_jd.updated_at
         )
         for db_jd in db_jds
     ]
@@ -95,7 +101,9 @@ def update_jd(jd_id: int, jd_update: JDUpdate, db: Session) -> Optional[JDInDB]:
         location=db_jd.location,
         description=db_jd.description,
         requirements=db_jd.requirements,
-        status="开放" if db_jd.is_open else "关闭"
+        status="开放" if db_jd.is_open else "关闭",
+        created_at=db_jd.created_at,
+        updated_at=db_jd.updated_at
     )
 
 
@@ -122,5 +130,50 @@ def evaluate_resume(jd_id: int, resume_text: str, scoring_rules: Dict[str, Any],
     # 构造JD文本
     jd_text = f"职位名称: {jd.title}\n部门: {jd.department}\n工作地点: {jd.location}\n描述: {jd.description}\n要求: {jd.requirements}"
     
+    # 如果没有传入评分规则，尝试从jd的evaluation_criteria中获取
+    if not scoring_rules:
+        db_jd = db.query(JobDescription).filter(JobDescription.id == jd_id).first()
+        if db_jd and db_jd.evaluation_criteria:
+            try:
+                scoring_rules = json.loads(db_jd.evaluation_criteria)
+            except json.JSONDecodeError:
+                scoring_rules = {}
+    
     # 调用评估智能体
     return evaluate_resume_stepwise(jd_text, resume_text, scoring_rules)
+
+
+def update_jd_evaluation_criteria(jd_id: int, criteria: Dict[str, Any], db: Session) -> bool:
+    """
+    更新JD的评估标准
+    """
+    db_jd = db.query(JobDescription).filter(JobDescription.id == jd_id).first()
+    if db_jd is None:
+        return False
+    
+    db_jd.evaluation_criteria = json.dumps(criteria, ensure_ascii=False)
+    db.commit()
+    return True
+
+
+def get_jd_evaluation_criteria(jd_id: int, db: Session) -> Optional[Dict[str, Any]]:
+    """
+    获取JD的评估标准
+    """
+    db_jd = db.query(JobDescription).filter(JobDescription.id == jd_id).first()
+    if db_jd is None:
+        return None
+    
+    if db_jd.evaluation_criteria:
+        try:
+            return json.loads(db_jd.evaluation_criteria)
+        except json.JSONDecodeError:
+            return {}
+    
+    # 返回默认评估标准
+    return {
+        "学历": { "本科": 5, "研究生": 10, "博士及以上": 20 },
+        "技能": { "Python": 10, "SQL": 5, "Java": 8, "JavaScript": 8 },
+        "年限": { ">=3年": 10, "<3年": 5, "<1年": 0 },
+        "真实性": { "AI生成嫌疑": -10, "具体案例丰富": 10 }
+    }

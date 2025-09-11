@@ -1,7 +1,7 @@
 import json
-import os
 import re
 from typing import Dict, Any, Generator
+from config.settings import settings
 from config.openai_client import openai_client as client
 
 def safe_json_parse(s: str):
@@ -69,7 +69,7 @@ def evaluate_resume_stepwise(jd_text: str, resume_text: str, scoring_rules: Dict
 {scoring_rules}
 """
     step_response = client.chat.completions.create(
-        model=os.environ.get("LLM_MODEL", "gpt-3.5-turbo"),
+        model=settings.OPENAI_MODEL,
         messages=[{"role": "user", "content": step_prompt}],
         response_format={"type": "json_object"},
     )
@@ -106,7 +106,7 @@ def evaluate_resume_stepwise(jd_text: str, resume_text: str, scoring_rules: Dict
 {resume_text}
 """
         score_response = client.chat.completions.create(
-            model=os.environ.get("LLM_MODEL", "gpt-3.5-turbo"),
+            model=settings.OPENAI_MODEL,
             messages=[{"role": "user", "content": score_prompt}],
             response_format={"type": "json_object"},
         )

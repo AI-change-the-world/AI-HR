@@ -2,17 +2,8 @@ import React, { useState } from 'react';
 import { Button, Upload, message, Card, Spin, List, Typography, Modal } from 'antd';
 import { UploadOutlined, FilePdfOutlined, FileTextOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd/es/upload/interface';
-import { evaluateResume } from '../api';
-
+import { evaluateResume, getJDEvaluationCriteria } from '../api';
 const { Title, Text } = Typography;
-
-interface EvaluationStep {
-    step: number;
-    name: string;
-    score?: number;
-    reason?: string;
-    steps?: Array<{ id: number; name: string; desc: string }>;
-}
 
 interface ResumeEvaluatorProps {
     jdId: number;
@@ -62,15 +53,17 @@ const ResumeEvaluator: React.FC<ResumeEvaluatorProps> = ({ jdId, jdTitle, onCanc
         setEvaluationResults([]);
 
         try {
-            // 这里应该调用后端API进行评估
-            // 模拟API调用
-            const results = await evaluateResume(jdId, file);
+            // 获取该JD的评估标准
+            const criteria = await getJDEvaluationCriteria(jdId);
+
+            // 调用后端API进行评估
+            const results = await evaluateResume(jdId, file, criteria);
             setEvaluationResults(results);
             message.success('评估完成');
             onEvaluate();
         } catch (error) {
             console.error('评估失败:', error);
-            message.error('评估失败，请重试');
+            message.error(`评估失败：${error instanceof Error ? error.message : '请重试'}`);
         } finally {
             setUploading(false);
             setEvaluating(false);

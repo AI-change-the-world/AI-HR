@@ -1,48 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Table, Space, Typography, Tag, message, Dropdown } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, MoreOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { JobDescription } from '../types';
-import { getJDs, toggleJDStatus } from '../api';
+import { getJDs, toggleJDStatus as apiToggleJDStatus, deleteJD } from '../api';
 import { ResumeEvaluator } from '../components';
 
 const { Title } = Typography;
 
 const JDManagement: React.FC = () => {
-    const [jds, setJds] = useState<JobDescription[]>([
-        {
-            id: 1,
-            title: '前端工程师',
-            department: '技术部',
-            location: '北京',
-            status: '开放',
-            createdAt: '2023-05-01'
-        },
-        {
-            id: 2,
-            title: '后端工程师',
-            department: '技术部',
-            location: '上海',
-            status: '开放',
-            createdAt: '2023-05-02'
-        },
-        {
-            id: 3,
-            title: '产品经理',
-            department: '产品部',
-            location: '深圳',
-            status: '关闭',
-            createdAt: '2023-04-15'
-        }
-    ]);
-
+    const [jds, setJds] = useState<JobDescription[]>([]);
+    const [loading, setLoading] = useState(true);
     const [showEvaluator, setShowEvaluator] = useState(false);
     const [selectedJD, setSelectedJD] = useState<JobDescription | null>(null);
 
-    const toggleJDStatus = (id: number) => {
-        setJds(jds.map(jd =>
-            jd.id === id ? { ...jd, status: jd.status === '开放' ? '关闭' : '开放' } : jd
-        ));
+    // 加载JD列表
+    const loadJDs = async () => {
+        try {
+            setLoading(true);
+            const data = await getJDs();
+            setJds(data);
+        } catch (error) {
+            message.error('加载JD列表失败');
+            console.error('Error loading JDs:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // 组件加载时获取数据
+    useEffect(() => {
+        loadJDs();
+    }, []);
+
+    // 切换JD状态
+    const handleToggleJDStatus = async (id: number) => {
+        try {
+            await apiToggleJDStatus(id);
+            message.success('状态更新成功');
+            loadJDs(); // 重新加载数据
+        } catch (error) {
+            message.error('状态更新失败');
+            console.error('Error toggling JD status:', error);
+        }
+    };
+
+    // 删除JD
+    const handleDeleteJD = async (id: number) => {
+        try {
+            await deleteJD(id);
+            message.success('删除成功');
+            loadJDs(); // 重新加载数据
+        } catch (error) {
+            message.error('删除失败');
+            console.error('Error deleting JD:', error);
+        }
     };
 
     const handleEvaluateClick = (jd: JobDescription) => {
@@ -76,6 +88,7 @@ const JDManagement: React.FC = () => {
             icon: <DeleteOutlined />,
             label: '删除',
             danger: true,
+            onClick: () => handleDeleteJD(record.id),
         },
     ];
 
@@ -135,10 +148,10 @@ const JDManagement: React.FC = () => {
                     </Button>
                     <Button
                         type="link"
-                        onClick={() => toggleJDStatus(record.id)}
+                        onClick={() => handleToggleJDStatus(record.id)}
                         className={`p-0 h-auto font-medium ${record.status === '开放'
-                            ? 'text-warning-600 hover:text-warning-700'
-                            : 'text-success-600 hover:text-success-700'
+                                ? 'text-warning-600 hover:text-warning-700'
+                                : 'text-success-600 hover:text-success-700'
                             }`}
                     >
                         {record.status === '开放' ? '关闭' : '开放'}
@@ -180,6 +193,7 @@ const JDManagement: React.FC = () => {
                 <Table
                     dataSource={jds}
                     columns={columns}
+                    loading={loading}
                     pagination={{
                         pageSize: 10,
                         showSizeChanger: true,

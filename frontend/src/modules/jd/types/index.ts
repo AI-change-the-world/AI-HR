@@ -5,8 +5,14 @@ export interface JobDescription {
     department: string;
     location: string;
     description?: string;
+    requirements?: string;
     status: string; // '开放' | '关闭'
     createdAt: string;
+    updatedAt?: string;
+    is_open?: boolean;
+    salary_range?: string;
+    full_text?: string;
+    evaluation_criteria?: string;
 }
 
 export interface EvaluationStep {
@@ -20,39 +26,32 @@ export interface EvaluationStep {
 // 创建JD请求接口
 export interface CreateJDRequest {
     title: string;
-    departmentId: number;
+    department: string;
     location: string;
-    description: string;
-    requirements: string[];
-    benefits?: string[];
-    salaryRange?: {
-        min: number;
-        max: number;
-    };
+    description?: string;
+    requirements?: string;
+    status?: string;
+    salary_range?: string;
 }
 
 // 更新JD请求接口
 export interface UpdateJDRequest {
     id: number;
     title?: string;
-    departmentId?: number;
+    department?: string;
     location?: string;
     description?: string;
-    requirements?: string[];
-    benefits?: string[];
-    isOpen?: boolean;
-    salaryRange?: {
-        min: number;
-        max: number;
-    };
+    requirements?: string;
+    status?: string;
+    salary_range?: string;
 }
 
 // JD查询参数接口
 export interface JDQueryParams {
-    page?: number;
-    pageSize?: number;
+    skip?: number;
+    limit?: number;
     title?: string;
     department?: string;
     location?: string;
-    isOpen?: boolean;
+    status?: string;
 }

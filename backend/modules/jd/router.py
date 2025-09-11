@@ -6,7 +6,7 @@ import json
 from config.database import get_db
 
 from .models import JDCreate, JDInDB, JDUpdate
-from .service import create_jd, delete_jd, get_jd, get_jds, update_jd, evaluate_resume
+from .service import create_jd, delete_jd, get_jd, get_jds, update_jd, evaluate_resume, update_jd_evaluation_criteria, get_jd_evaluation_criteria
 
 router = APIRouter(prefix="/api/jd", tags=["JD管理"])
 
@@ -83,3 +83,32 @@ async def evaluate_resume_endpoint(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"评估过程中发生错误: {str(e)}")
+
+
+@router.put("/{jd_id}/evaluation-criteria")
+async def update_evaluation_criteria(
+    jd_id: int,
+    criteria_data: Dict[str, Any],
+    db: Session = Depends(get_db)
+):
+    """
+    更新JD的评估标准
+    """
+    success = update_jd_evaluation_criteria(jd_id, criteria_data.get("criteria", {}), db)
+    if not success:
+        raise HTTPException(status_code=404, detail="JD未找到")
+    return {"message": "评估标准更新成功"}
+
+
+@router.get("/{jd_id}/evaluation-criteria")
+async def get_evaluation_criteria(
+    jd_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    获取JD的评估标准
+    """
+    criteria = get_jd_evaluation_criteria(jd_id, db)
+    if criteria is None:
+        raise HTTPException(status_code=404, detail="JD未找到")
+    return {"criteria": criteria}
