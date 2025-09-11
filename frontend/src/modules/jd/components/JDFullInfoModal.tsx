@@ -95,15 +95,40 @@ const JDFullInfoModal: React.FC<JDFullInfoModalProps> = ({
         }
     };
 
-    const exampleCriteria = {
-        "学历": { "本科": 5, "研究生": 10, "博士及以上": 20 },
-        "技能": { "Python": 10, "SQL": 5, "Java": 8, "JavaScript": 8 },
-        "年限": { ">=3年": 10, "<3年": 5, "<1年": 0 },
-        "真实性": { "AI生成嫌疑": -10, "具体案例丰富": 10 }
-    };
+    // const exampleCriteria = {
+    //     "学历": { "本科": 5, "研究生": 10, "博士及以上": 20 },
+    //     "技能": { "Python": 10, "SQL": 5, "Java": 8, "JavaScript": 8 },
+    //     "年限": { ">=3年": 10, "<3年": 5, "<1年": 0 },
+    //     "真实性": { "AI生成嫌疑": -10, "具体案例丰富": 10 }
+    // };
+    const exampleCriteria = `简历打分标准
+一、学历要求
+  本科：5 分
+  研究生：10 分
+  博士及以上：20 分
+二、技能要求
+  Python：10 分
+  SQL：5 分
+  Java：8 分
+  JavaScript：8 分
+三、工作年限
+  三年及以上：10 分
+  不足三年：5 分
+  不足一年：0 分
+四、内容真实性
+  存在 AI 生成嫌疑：扣 10 分
+五、项目多样性
+  具体案例丰富，技术多样且合理：加 10 分
+六、总分说明
+  本评分体系总分不设上限，候选人得分由学历、技能、年限、内容真实性以及项目多样性五个维度累计计算，若出现扣分情况，则按相应标准从总分中减去。
+七、评级标准
+  优秀：40 分及以上
+  良好：30–39 分
+  合格：20–29 分
+  不合格：20 分以下`;
 
     const insertExample = () => {
-        form.setFieldValue('evaluation_criteria', JSON.stringify(exampleCriteria, null, 2));
+        form.setFieldValue('evaluation_criteria', exampleCriteria);
     };
 
     const items = [
@@ -152,7 +177,7 @@ const JDFullInfoModal: React.FC<JDFullInfoModalProps> = ({
                     </div>
                     <Form.Item
                         name="evaluation_criteria"
-                        label="评价标准 (JSON格式)"
+                        label="评价标准"
                         extra="定义简历评估的评分标准，支持多维度评估"
                     >
                         <TextArea

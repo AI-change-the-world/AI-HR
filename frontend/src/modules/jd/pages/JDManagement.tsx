@@ -155,8 +155,9 @@ const JDManagement: React.FC = () => {
         },
         {
             title: '创建时间',
-            dataIndex: 'createdAt',
-            key: 'createdAt',
+            dataIndex: 'created_at',
+            key: 'created_at',
+            render: (createdAt: string) => createdAt.split('T')[0],
         },
         {
             title: '操作',
@@ -201,16 +202,14 @@ const JDManagement: React.FC = () => {
                 <div className="w-24 h-1 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full mb-4"></div>
             </div>
 
-            <div className="mb-6">
-                <Space>
-                    <Button
-                        type="primary"
-                        icon={<PlusOutlined />}
-                        className="bg-gradient-to-r from-primary-500 to-primary-600 border-none shadow-soft hover:shadow-medium hover:scale-105 transition-all duration-200 h-10 px-6 font-medium"
-                    >
-                        创建JD
-                    </Button>
-                </Space>
+            <div className="mb-6 flex justify-end">
+                <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    className="bg-gradient-to-r from-primary-500 to-primary-600 border-none shadow-soft hover:shadow-medium hover:scale-105 transition-all duration-200 h-10 px-6 font-medium align-right"
+                >
+                    创建JD
+                </Button>
             </div>
 
             <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-soft border border-white/50 overflow-hidden hover:shadow-medium transition-all duration-300">
