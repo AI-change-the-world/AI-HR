@@ -5,7 +5,6 @@ import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Toolti
 import apiClient from '../../../utils/api';
 
 const { TextArea } = Input;
-const { Title, Text } = Typography;
 
 interface Message {
     id: number;

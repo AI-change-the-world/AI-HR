@@ -1,0 +1,33 @@
+name: salary_report
+description: "A new Flutter project."
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  excel:
+    git:
+      url: https://github.com/justkawal/excel
+      ref: 37e0807f97fe8c293bdf75441cf21413b322882d
+  riverpod: ^3.0.0
+  flutter_riverpod: ^3.0.0
+  toastification: ^3.0.3
+  rust_lib_salary_report:
+    path: rust_builder
+  flutter_rust_bridge: 2.11.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  integration_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
