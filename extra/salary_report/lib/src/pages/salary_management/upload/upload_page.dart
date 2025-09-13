@@ -270,6 +270,23 @@ class _UploadPageState extends State<UploadPage> with TickerProviderStateMixin {
                             ),
                           ],
                         ),
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: () {
+                            // 这里实现一个
+                          },
+                          child: MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF6C63FF),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(Icons.add),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
 

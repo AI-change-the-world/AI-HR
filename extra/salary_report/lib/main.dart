@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/pages/main_layout.dart';
 import 'package:salary_report/src/pages/salary_management/upload/upload_page.dart';
 import 'package:salary_report/src/pages/salary_management/detail/salary_detail_page.dart';
@@ -14,9 +16,18 @@ import 'package:salary_report/src/pages/settings/user/user_settings_page.dart';
 import 'package:salary_report/src/pages/settings/system/system_settings_page.dart';
 import 'package:salary_report/src/rust/frb_generated.dart';
 import 'package:toastification/toastification.dart';
+import 'package:logging/logging.dart';
 
 Future<void> main() async {
   await RustLib.init();
+  Logger.root.level = Level.ALL; // defaults to Level.INFO
+  Logger.root.onRecord.listen((record) {
+    if (kDebugMode) {
+      print('${record.level.name}: ${record.time}: ${record.message}');
+    }
+  });
+  IsarDatabase database = IsarDatabase();
+  await database.initialDatabase();
   runApp(const MyApp());
 }
 
