@@ -25,7 +25,8 @@ const SalaryListSchema = CollectionSchema(
 
       target: r'SalaryListRecord',
     ),
-    r'year': PropertySchema(id: 2, name: r'year', type: IsarType.long),
+    r'total': PropertySchema(id: 2, name: r'total', type: IsarType.string),
+    r'year': PropertySchema(id: 3, name: r'year', type: IsarType.long),
   },
 
   estimateSize: _salaryListEstimateSize,
@@ -61,6 +62,7 @@ int _salaryListEstimateSize(
       );
     }
   }
+  bytesCount += 3 + object.total.length * 3;
   return bytesCount;
 }
 
@@ -77,7 +79,8 @@ void _salaryListSerialize(
     SalaryListRecordSchema.serialize,
     object.records,
   );
-  writer.writeLong(offsets[2], object.year);
+  writer.writeString(offsets[2], object.total);
+  writer.writeLong(offsets[3], object.year);
 }
 
 SalaryList _salaryListDeserialize(
@@ -97,7 +100,8 @@ SalaryList _salaryListDeserialize(
         SalaryListRecord(),
       ) ??
       [];
-  object.year = reader.readLong(offsets[2]);
+  object.total = reader.readString(offsets[2]);
+  object.year = reader.readLong(offsets[3]);
   return object;
 }
 
@@ -120,6 +124,8 @@ P _salaryListDeserializeProp<P>(
               [])
           as P;
     case 2:
+      return (reader.readString(offset)) as P;
+    case 3:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -390,6 +396,153 @@ extension SalaryListQueryFilter
     });
   }
 
+  QueryBuilder<SalaryList, SalaryList, QAfterFilterCondition> totalEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'total',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SalaryList, SalaryList, QAfterFilterCondition> totalGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'total',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SalaryList, SalaryList, QAfterFilterCondition> totalLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'total',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SalaryList, SalaryList, QAfterFilterCondition> totalBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'total',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SalaryList, SalaryList, QAfterFilterCondition> totalStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'total',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SalaryList, SalaryList, QAfterFilterCondition> totalEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'total',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SalaryList, SalaryList, QAfterFilterCondition> totalContains(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'total',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SalaryList, SalaryList, QAfterFilterCondition> totalMatches(
+    String pattern, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'total',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SalaryList, SalaryList, QAfterFilterCondition> totalIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'total', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<SalaryList, SalaryList, QAfterFilterCondition>
+  totalIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'total', value: ''),
+      );
+    });
+  }
+
   QueryBuilder<SalaryList, SalaryList, QAfterFilterCondition> yearEqualTo(
     int value,
   ) {
@@ -478,6 +631,18 @@ extension SalaryListQuerySortBy
     });
   }
 
+  QueryBuilder<SalaryList, SalaryList, QAfterSortBy> sortByTotal() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'total', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SalaryList, SalaryList, QAfterSortBy> sortByTotalDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'total', Sort.desc);
+    });
+  }
+
   QueryBuilder<SalaryList, SalaryList, QAfterSortBy> sortByYear() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'year', Sort.asc);
@@ -517,6 +682,18 @@ extension SalaryListQuerySortThenBy
     });
   }
 
+  QueryBuilder<SalaryList, SalaryList, QAfterSortBy> thenByTotal() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'total', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SalaryList, SalaryList, QAfterSortBy> thenByTotalDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'total', Sort.desc);
+    });
+  }
+
   QueryBuilder<SalaryList, SalaryList, QAfterSortBy> thenByYear() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'year', Sort.asc);
@@ -535,6 +712,14 @@ extension SalaryListQueryWhereDistinct
   QueryBuilder<SalaryList, SalaryList, QDistinct> distinctByMonth() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'month');
+    });
+  }
+
+  QueryBuilder<SalaryList, SalaryList, QDistinct> distinctByTotal({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'total', caseSensitive: caseSensitive);
     });
   }
 
@@ -563,6 +748,12 @@ extension SalaryListQueryProperty
   recordsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'records');
+    });
+  }
+
+  QueryBuilder<SalaryList, String, QQueryOperations> totalProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'total');
     });
   }
 

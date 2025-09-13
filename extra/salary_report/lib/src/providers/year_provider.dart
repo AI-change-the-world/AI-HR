@@ -1,5 +1,6 @@
 import 'package:riverpod/riverpod.dart';
 import 'package:isar_community/isar.dart';
+import 'package:salary_report/src/common/logger.dart';
 import '../isar/database.dart';
 import '../isar/years.dart';
 import '../isar/salary_list.dart';
@@ -28,9 +29,10 @@ class MonthInfo {
 }
 
 // 年份状态管理
-final yearDataProvider = NotifierProvider<YearDataNotifier, List<YearInfo>>(
-  YearDataNotifier.new,
-);
+final yearDataProvider =
+    NotifierProvider.autoDispose<YearDataNotifier, List<YearInfo>>(
+      YearDataNotifier.new,
+    );
 
 class YearDataNotifier extends Notifier<List<YearInfo>> {
   @override
@@ -91,7 +93,7 @@ class YearDataNotifier extends Notifier<List<YearInfo>> {
       state = yearInfoList;
     } catch (e) {
       // 处理错误
-      print('加载年份数据失败: $e');
+      logger.severe('加载年份数据失败: $e');
     }
   }
 
@@ -121,7 +123,7 @@ class YearDataNotifier extends Notifier<List<YearInfo>> {
       // 更新状态
       await _loadYearsFromDatabase();
     } catch (e) {
-      print('添加年份失败: $e');
+      logger.severe('添加年份失败: $e');
     }
   }
 
@@ -151,7 +153,7 @@ class YearDataNotifier extends Notifier<List<YearInfo>> {
       // 更新状态
       await _loadYearsFromDatabase();
     } catch (e) {
-      print('激活年份失败: $e');
+      logger.severe('激活年份失败: $e');
     }
   }
 
@@ -180,7 +182,7 @@ class YearDataNotifier extends Notifier<List<YearInfo>> {
       // 更新状态
       await _loadYearsFromDatabase();
     } catch (e) {
-      print('取消激活年份失败: $e');
+      logger.severe('取消激活年份失败: $e');
     }
   }
 

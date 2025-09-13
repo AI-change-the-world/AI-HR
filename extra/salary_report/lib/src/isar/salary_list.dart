@@ -10,6 +10,8 @@ class SalaryList {
   late int month;
 
   late List<SalaryListRecord> records;
+  // 用来判断数据对不对
+  late String total;
 }
 
 @embedded

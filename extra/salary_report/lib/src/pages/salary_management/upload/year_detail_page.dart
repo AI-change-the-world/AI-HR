@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/common/toast.dart';
+import 'package:salary_report/src/rust/api/salary_api.dart';
 import 'upload_page.dart';
 import '../../../providers/year_provider.dart';
 
@@ -16,8 +18,6 @@ class YearDetailPage extends ConsumerStatefulWidget {
 
 class _YearDetailPageState extends ConsumerState<YearDetailPage>
     with SingleTickerProviderStateMixin {
-  String? _selectedFilePath;
-  int? _selectedMonth;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -42,7 +42,7 @@ class _YearDetailPageState extends ConsumerState<YearDetailPage>
     super.dispose();
   }
 
-  Future<void> _selectFile() async {
+  Future<void> _selectFile(int month) async {
     const XTypeGroup xlsxTypeGroup = XTypeGroup(
       label: 'Excel文件',
       extensions: ['xlsx'],
@@ -53,34 +53,33 @@ class _YearDetailPageState extends ConsumerState<YearDetailPage>
     );
 
     if (files.isNotEmpty) {
-      setState(() {
-        _selectedFilePath = files.first.path;
-      });
+      // 选择文件后直接开始上传，传递文件路径和月份
+      _uploadFile(files.first.path, month);
     }
   }
 
-  Future<void> _uploadFile() async {
-    if (_selectedFilePath == null || _selectedMonth == null) {
+  Future<void> _uploadFile([String? filePath, int? month]) async {
+    if (filePath == null || month == null) {
       ToastUtils.error(null, title: '请选择文件和月份');
       return;
     }
 
-    // 这里应该实现实际的文件上传逻辑
-    // 由于我们没有实际的后端，这里只是模拟上传过程
     try {
       // 模拟上传过程
-      await Future.delayed(const Duration(seconds: 2));
+      // await Future.delayed(const Duration(seconds: 2));
+      final result = await getCaculateResult(p: filePath);
+      if (result.$1 == "") {
+        logger.info(result.$2!.summaryData);
+      } else {
+        ToastUtils.error(null, title: "文件上传成功 ${result.$1}");
+        return;
+      }
 
       if (mounted) {
         ToastUtils.success(null, title: '文件上传成功');
 
         // 上传成功后，刷新年份数据
         ref.read(yearDataProvider.notifier).refresh();
-
-        setState(() {
-          _selectedFilePath = null;
-          _selectedMonth = null;
-        });
 
         // 返回上一页
         Navigator.of(context).pop();
@@ -223,118 +222,6 @@ class _YearDetailPageState extends ConsumerState<YearDetailPage>
               ),
 
               const SizedBox(height: 32),
-
-              // 上传区域
-              if (_selectedMonth != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade200),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '上传 ${widget.yearData.year}年$_selectedMonth月 薪资数据',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF2D3748),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // 文件选择器
-                      Container(
-                        width: double.infinity,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: _selectedFilePath != null
-                                ? const Color(0xFF10B981)
-                                : Colors.grey.shade300,
-                            width: 2,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          color: _selectedFilePath != null
-                              ? const Color(0xFF10B981).withValues(alpha: 0.05)
-                              : Colors.grey.shade50,
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(10),
-                            onTap: _selectFile,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  _selectedFilePath != null
-                                      ? Icons.check_circle
-                                      : Icons.cloud_upload,
-                                  size: 32,
-                                  color: _selectedFilePath != null
-                                      ? const Color(0xFF10B981)
-                                      : Colors.grey,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  _selectedFilePath != null
-                                      ? _selectedFilePath!.split('/').last
-                                      : '点击选择Excel文件',
-                                  style: TextStyle(
-                                    color: _selectedFilePath != null
-                                        ? const Color(0xFF10B981)
-                                        : Colors.grey[600],
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // 上传按钮
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: _selectedFilePath == null
-                              ? null
-                              : _uploadFile,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF6C63FF),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            '开始上传',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
             ],
           ),
         ),
@@ -343,8 +230,6 @@ class _YearDetailPageState extends ConsumerState<YearDetailPage>
   }
 
   Widget _buildMonthCard(int month, MonthData monthData) {
-    final isSelected = _selectedMonth == month;
-
     return TweenAnimationBuilder<double>(
       duration: Duration(milliseconds: 400 + (month * 50)),
       tween: Tween(begin: 0.0, end: 1.0),
@@ -355,27 +240,26 @@ class _YearDetailPageState extends ConsumerState<YearDetailPage>
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: () {
-            setState(() {
-              _selectedMonth = isSelected ? null : month;
-              _selectedFilePath = null;
-            });
+          onTap: () async {
+            // 如果该月份已经有数据，不执行任何操作
+            if (monthData.hasData) {
+              return;
+            }
+
+            // 直接触发文件选择
+            _selectFile(month);
           },
           child: Container(
             decoration: BoxDecoration(
-              color: isSelected
-                  ? const Color(0xFF6C63FF).withValues(alpha: 0.1)
-                  : monthData.hasData
+              color: monthData.hasData
                   ? const Color(0xFF10B981).withValues(alpha: 0.1)
                   : Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isSelected
-                    ? const Color(0xFF6C63FF)
-                    : monthData.hasData
+                color: monthData.hasData
                     ? const Color(0xFF10B981)
                     : Colors.grey.shade300,
-                width: isSelected ? 2 : 1,
+                width: 1,
               ),
               boxShadow: [
                 BoxShadow(
@@ -391,19 +275,13 @@ class _YearDetailPageState extends ConsumerState<YearDetailPage>
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? const Color(0xFF6C63FF)
-                        : monthData.hasData
+                    color: monthData.hasData
                         ? const Color(0xFF10B981)
                         : Colors.grey.shade400,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    monthData.hasData
-                        ? Icons.check
-                        : isSelected
-                        ? Icons.edit
-                        : Icons.add,
+                    monthData.hasData ? Icons.check : Icons.add,
                     color: Colors.white,
                     size: 16,
                   ),
@@ -414,9 +292,7 @@ class _YearDetailPageState extends ConsumerState<YearDetailPage>
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: isSelected
-                        ? const Color(0xFF6C63FF)
-                        : monthData.hasData
+                    color: monthData.hasData
                         ? const Color(0xFF10B981)
                         : Colors.grey[600],
                   ),
@@ -428,13 +304,8 @@ class _YearDetailPageState extends ConsumerState<YearDetailPage>
                   )
                 else
                   Text(
-                    isSelected ? '选中' : '未上传',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: isSelected
-                          ? const Color(0xFF6C63FF)
-                          : Colors.grey[600],
-                    ),
+                    '点击上传',
+                    style: TextStyle(fontSize: 10, color: Colors.grey[600]),
                   ),
               ],
             ),
