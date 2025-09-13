@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../providers/app_providers.dart';
 
-class MainLayout extends StatefulWidget {
+class MainLayout extends ConsumerStatefulWidget {
   final Widget child;
 
   const MainLayout({super.key, required this.child});
 
   @override
-  State<MainLayout> createState() => _MainLayoutState();
+  ConsumerState<MainLayout> createState() => _MainLayoutState();
 }
 
 class AppColors {
@@ -21,21 +24,24 @@ class AppColors {
   static const Color cardShadow = Color(0x1A000000);
 }
 
-class _MainLayoutState extends State<MainLayout> {
+class _MainLayoutState extends ConsumerState<MainLayout> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  bool _isSidebarOpen = true;
 
   @override
   Widget build(BuildContext context) {
+    final sidebarState = ref.watch(sidebarStateProvider);
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
 
-    // 在小屏幕上默认收起侧边栏
-    if (screenWidth < 768) {
-      _isSidebarOpen = false;
-    } else {
-      _isSidebarOpen = true;
-    }
+    // 根据当前路径更新选中状态
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final currentRoute = GoRouterState.of(context).uri.path;
+      ref
+          .read(sidebarStateProvider.notifier)
+          .updateSelectedRouteFromPath(currentRoute);
+    });
+
+    // 在小屏幕上自动管理侧边栏状态
+    final shouldShowSidebar = sidebarState.isOpen || screenWidth >= 768;
 
     return Scaffold(
       key: _scaffoldKey,
@@ -145,7 +151,7 @@ class _MainLayoutState extends State<MainLayout> {
         child: Row(
           children: [
             // 侧边栏
-            if (_isSidebarOpen || screenWidth >= 768)
+            if (shouldShowSidebar)
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
@@ -316,7 +322,8 @@ class _MainLayoutState extends State<MainLayout> {
     required double screenWidth,
     required Color color,
   }) {
-    final isSelected = GoRouterState.of(context).uri.path.startsWith(route);
+    final sidebarState = ref.watch(sidebarStateProvider);
+    final isSelected = sidebarState.selectedRoute == route;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
@@ -338,9 +345,10 @@ class _MainLayoutState extends State<MainLayout> {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
+            ref.read(sidebarStateProvider.notifier).setSelectedRoute(route);
             context.go(route);
             if (screenWidth < 768) {
-              Navigator.of(context).pop();
+              ref.read(sidebarStateProvider.notifier).setSidebarOpen(false);
             }
           },
           child: Padding(

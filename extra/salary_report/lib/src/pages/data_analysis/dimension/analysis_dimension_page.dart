@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../components/smart_time_picker.dart';
+import '../../../providers/app_providers.dart';
 
-class AnalysisDimensionPage extends StatefulWidget {
+class AnalysisDimensionPage extends ConsumerStatefulWidget {
   const AnalysisDimensionPage({super.key});
 
   @override
-  State<AnalysisDimensionPage> createState() => _AnalysisDimensionPageState();
+  ConsumerState<AnalysisDimensionPage> createState() =>
+      _AnalysisDimensionPageState();
 }
 
-class _AnalysisDimensionPageState extends State<AnalysisDimensionPage>
+class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
     with SingleTickerProviderStateMixin {
-  String _selectedDimension = 'month';
-  DateTime _selectedDate = DateTime.now();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -263,19 +265,34 @@ class _AnalysisDimensionPageState extends State<AnalysisDimensionPage>
                   ),
                   child: ElevatedButton(
                     onPressed: () {
-                      // 使用go_router进行导航
-                      if (_selectedDimension == 'month') {
-                        context.push(
-                          '/analysis/monthly?year=${_selectedDate.year}&month=${_selectedDate.month}',
+                      final selectedDimension = ref.read(
+                        analysisDimensionProvider,
+                      );
+                      final timeRange = ref.read(timeRangeProvider);
+
+                      if (timeRange == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('请先选择时间范围')),
                         );
-                      } else if (_selectedDimension == 'year') {
+                        return;
+                      }
+
+                      // 使用go_router进行导航
+                      if (selectedDimension == 'month') {
                         context.push(
-                          '/analysis/yearly?year=${_selectedDate.year}',
+                          '/analysis/monthly?year=${timeRange.startDate.year}&month=${timeRange.startDate.month}&endYear=${timeRange.endDate.year}&endMonth=${timeRange.endDate.month}',
+                        );
+                      } else if (selectedDimension == 'year') {
+                        context.push(
+                          '/analysis/yearly?year=${timeRange.startDate.year}&endYear=${timeRange.endDate.year}',
                         );
                       } else {
-                        final quarter = ((_selectedDate.month - 1) ~/ 3) + 1;
+                        final startQuarter =
+                            ((timeRange.startDate.month - 1) ~/ 3) + 1;
+                        final endQuarter =
+                            ((timeRange.endDate.month - 1) ~/ 3) + 1;
                         context.push(
-                          '/analysis/quarterly?year=${_selectedDate.year}&quarter=$quarter',
+                          '/analysis/quarterly?year=${timeRange.startDate.year}&quarter=$startQuarter&endYear=${timeRange.endDate.year}&endQuarter=$endQuarter',
                         );
                       }
                     },
@@ -322,13 +339,14 @@ class _AnalysisDimensionPageState extends State<AnalysisDimensionPage>
     IconData icon,
     Color color,
   ) {
-    final isSelected = _selectedDimension == value;
+    final selectedDimension = ref.watch(analysisDimensionProvider);
+    final isSelected = selectedDimension == value;
 
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _selectedDimension = value;
-        });
+        ref.read(analysisDimensionProvider.notifier).setDimension(value);
+        // 清除之前的时间选择
+        ref.read(timeRangeProvider.notifier).clearTimeRange();
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -385,86 +403,123 @@ class _AnalysisDimensionPageState extends State<AnalysisDimensionPage>
   }
 
   Widget _buildTimeSelector() {
+    final selectedDimension = ref.watch(analysisDimensionProvider);
+    final timeRange = ref.watch(timeRangeProvider);
+
     return GestureDetector(
       onTap: () async {
-        final DateTime? picked = await showDatePicker(
-          context: context,
-          initialDate: _selectedDate,
-          firstDate: DateTime(2020),
-          lastDate: DateTime.now(),
-          initialDatePickerMode: _selectedDimension == 'year'
-              ? DatePickerMode.year
-              : DatePickerMode.day,
-          builder: (context, child) {
-            return Theme(
-              data: Theme.of(context).copyWith(
-                colorScheme: const ColorScheme.light(
-                  primary: Color(0xFF6C63FF),
-                  onPrimary: Colors.white,
-                  surface: Colors.white,
-                  onSurface: Colors.black,
-                ),
-              ),
-              child: child!,
-            );
-          },
-        );
-        if (picked != null && picked != _selectedDate) {
-          setState(() {
-            _selectedDate = picked;
-          });
+        TimePickerMode mode;
+        switch (selectedDimension) {
+          case 'month':
+            mode = TimePickerMode.month;
+            break;
+          case 'year':
+            mode = TimePickerMode.year;
+            break;
+          case 'quarter':
+            mode = TimePickerMode.quarter;
+            break;
+          default:
+            mode = TimePickerMode.month;
         }
+
+        await showDialog(
+          context: context,
+          builder: (context) => SmartTimePicker(
+            mode: mode,
+            initialRange: timeRange,
+            onRangeSelected: (TimeRange selectedRange) {
+              ref.read(timeRangeProvider.notifier).setTimeRange(selectedRange);
+            },
+          ),
+        );
       },
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color(0xFF6C63FF).withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF6C63FF).withOpacity(0.1),
+              const Color(0xFF26D0CE).withOpacity(0.1),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: const Color(0xFF6C63FF).withOpacity(0.3),
             width: 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF6C63FF).withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF6C63FF),
-                borderRadius: BorderRadius.circular(8),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF6C63FF), Color(0xFF26D0CE)],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF6C63FF).withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: const Icon(
-                Icons.calendar_today_rounded,
+                Icons.schedule_rounded,
                 color: Colors.white,
-                size: 16,
+                size: 20,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _getTimeDisplayText(),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF6C63FF),
+                    timeRange?.toString() ?? '点击选择时间范围',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: timeRange != null
+                          ? const Color(0xFF2D3748)
+                          : Colors.grey[600],
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 4),
                   Text(
-                    '点击选择${_getDimensionText()}',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    '点击选择${_getDimensionText(selectedDimension)}范围',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ),
             ),
-            const Icon(
-              Icons.arrow_forward_ios,
-              color: Color(0xFF6C63FF),
-              size: 16,
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF6C63FF).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.arrow_forward_ios,
+                color: Color(0xFF6C63FF),
+                size: 16,
+              ),
             ),
           ],
         ),
@@ -472,19 +527,8 @@ class _AnalysisDimensionPageState extends State<AnalysisDimensionPage>
     );
   }
 
-  String _getTimeDisplayText() {
-    if (_selectedDimension == 'month') {
-      return '${_selectedDate.year}年${_selectedDate.month.toString().padLeft(2, '0')}月';
-    } else if (_selectedDimension == 'year') {
-      return '${_selectedDate.year}年';
-    } else {
-      final quarter = ((_selectedDate.month - 1) ~/ 3) + 1;
-      return '${_selectedDate.year}年第$quarter季度';
-    }
-  }
-
-  String _getDimensionText() {
-    switch (_selectedDimension) {
+  String _getDimensionText(String dimension) {
+    switch (dimension) {
       case 'month':
         return '月份';
       case 'year':
