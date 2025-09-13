@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'year_detail_page.dart';
+import '../../../providers/year_provider.dart';
 
 // 年度数据模型
 class YearData {
@@ -22,14 +24,15 @@ class MonthData {
   MonthData({required this.month, required this.hasData, this.fileName});
 }
 
-class UploadPage extends StatefulWidget {
+class UploadPage extends ConsumerStatefulWidget {
   const UploadPage({super.key});
 
   @override
-  State<UploadPage> createState() => _UploadPageState();
+  ConsumerState<UploadPage> createState() => _UploadPageState();
 }
 
-class _UploadPageState extends State<UploadPage> with TickerProviderStateMixin {
+class _UploadPageState extends ConsumerState<UploadPage>
+    with TickerProviderStateMixin {
   late AnimationController _animationController;
   late AnimationController _chatAnimationController;
   late Animation<double> _fadeAnimation;
@@ -42,15 +45,16 @@ class _UploadPageState extends State<UploadPage> with TickerProviderStateMixin {
   final List<ChatMessage> _chatMessages = [];
   final ScrollController _chatScrollController = ScrollController();
 
-  // 模拟年度数据
-  late List<YearData> _yearDataList;
-
   @override
   void initState() {
     super.initState();
     _initAnimations();
-    _initMockData();
     _animationController.forward();
+
+    // 初始化数据
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(yearDataProvider.notifier).refresh();
+    });
   }
 
   void _initAnimations() {
@@ -90,47 +94,6 @@ class _UploadPageState extends State<UploadPage> with TickerProviderStateMixin {
             curve: Curves.easeOutCubic,
           ),
         );
-  }
-
-  void _initMockData() {
-    _yearDataList = [
-      YearData(
-        year: 2024,
-        uploadedCount: 8,
-        months: List.generate(
-          12,
-          (index) => MonthData(
-            month: index + 1,
-            hasData: index < 8,
-            fileName: index < 8 ? '2024年${index + 1}月工资表.xlsx' : null,
-          ),
-        ),
-      ),
-      YearData(
-        year: 2023,
-        uploadedCount: 12,
-        months: List.generate(
-          12,
-          (index) => MonthData(
-            month: index + 1,
-            hasData: true,
-            fileName: '2023年${index + 1}月工资表.xlsx',
-          ),
-        ),
-      ),
-      YearData(
-        year: 2022,
-        uploadedCount: 10,
-        months: List.generate(
-          12,
-          (index) => MonthData(
-            month: index + 1,
-            hasData: index < 10,
-            fileName: index < 10 ? '2022年${index + 1}月工资表.xlsx' : null,
-          ),
-        ),
-      ),
-    ];
   }
 
   @override
@@ -208,171 +171,272 @@ class _UploadPageState extends State<UploadPage> with TickerProviderStateMixin {
     );
   }
 
+  // 添加年份功能
+  void _showAddYearDialog() {
+    final yearsInState = ref.read(yearDataProvider);
+    final existingYears = yearsInState.map((y) => y.year).toSet();
+
+    // 生成可选年份列表（从当前年份往前推20年）
+    final currentYear = DateTime.now().year;
+    final availableYears = List.generate(
+      20,
+      (index) => currentYear - index,
+    ).where((year) => !existingYears.contains(year)).toList();
+
+    if (availableYears.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('没有可添加的年份')));
+      return;
+    }
+
+    String? selectedYear = availableYears.first.toString();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('添加年份'),
+          content: StatefulBuilder(
+            builder: (context, setState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('请选择要添加的年份'),
+                  const SizedBox(height: 16),
+                  DropdownButton<String>(
+                    value: selectedYear,
+                    isExpanded: true,
+                    items: availableYears.map((year) {
+                      return DropdownMenuItem(
+                        value: year.toString(),
+                        child: Text('$year 年'),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        selectedYear = value;
+                      });
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('取消'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (selectedYear != null) {
+                  await ref
+                      .read(yearDataProvider.notifier)
+                      .addYear(int.parse(selectedYear!));
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('年份添加成功')));
+                }
+              },
+              child: const Text('确定'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final yearDataList = ref.watch(yearDataProvider);
+
+    // 转换数据格式以适配现有UI
+    final convertedYearDataList = yearDataList.map((yearInfo) {
+      return YearData(
+        year: yearInfo.year,
+        uploadedCount: yearInfo.uploadedCount,
+        months: yearInfo.months.map((monthInfo) {
+          return MonthData(
+            month: monthInfo.month,
+            hasData: monthInfo.hasData,
+            fileName: monthInfo.hasData
+                ? '${yearInfo.year}年${monthInfo.month}月工资表.xlsx'
+                : null,
+          );
+        }).toList(),
+      );
+    }).toList();
+
     return Scaffold(
       body: Stack(
         children: [
-          FadeTransition(
-            opacity: _fadeAnimation,
-            child: SlideTransition(
-              position: _slideAnimation,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 页面标题
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF6C63FF), Color(0xFF8B83FF)],
+          SizedBox.expand(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: SlideTransition(
+                position: _slideAnimation,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 页面标题
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF6C63FF), Color(0xFF8B83FF)],
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFF6C63FF,
+                                  ).withValues(alpha: 0.3),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
                             ),
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(
-                                  0xFF6C63FF,
-                                ).withValues(alpha: 0.3),
-                                blurRadius: 12,
-                                offset: const Offset(0, 6),
+                            child: const Icon(
+                              Icons.calendar_today_rounded,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                '薪资数据管理',
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF2D3748),
+                                ),
+                              ),
+                              Text(
+                                '按年度管理和上传Excel薪资数据',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w400,
+                                ),
                               ),
                             ],
                           ),
-                          child: const Icon(
-                            Icons.calendar_today_rounded,
-                            color: Colors.white,
-                            size: 28,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              '薪资数据管理',
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF2D3748),
+                          const Spacer(),
+                          GestureDetector(
+                            onTap: _showAddYearDialog,
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF6C63FF),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(Icons.add),
                               ),
-                            ),
-                            Text(
-                              '按年度管理和上传Excel薪资数据',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Spacer(),
-                        GestureDetector(
-                          onTap: () {
-                            // 这里实现一个
-                          },
-                          child: MouseRegion(
-                            cursor: SystemMouseCursors.click,
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF6C63FF),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(Icons.add),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // 年份统计概览
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            const Color(0xFF6C63FF).withValues(alpha: 0.1),
-                            const Color(0xFF26D0CE).withValues(alpha: 0.1),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: const Color(0xFF6C63FF).withValues(alpha: 0.2),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _buildStatItem(
-                              '总年份',
-                              _yearDataList.length.toString(),
-                              Icons.calendar_today,
-                              const Color(0xFF6C63FF),
-                            ),
-                          ),
-                          Container(
-                            width: 1,
-                            height: 40,
-                            color: Colors.grey.shade300,
-                          ),
-                          Expanded(
-                            child: _buildStatItem(
-                              '总上传数',
-                              _yearDataList
-                                  .fold(
-                                    0,
-                                    (sum, year) => sum + year.uploadedCount,
-                                  )
-                                  .toString(),
-                              Icons.cloud_upload,
-                              const Color(0xFF10B981),
-                            ),
-                          ),
-                          Container(
-                            width: 1,
-                            height: 40,
-                            color: Colors.grey.shade300,
-                          ),
-                          Expanded(
-                            child: _buildStatItem(
-                              '最新年份',
-                              _yearDataList.first.year.toString(),
-                              Icons.update,
-                              const Color(0xFF26D0CE),
                             ),
                           ),
                         ],
                       ),
-                    ),
 
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 32),
 
-                    // 年份卡片列表
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _yearDataList.length,
-                      itemBuilder: (context, index) {
-                        final yearData = _yearDataList[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: _buildYearCard(yearData, index),
-                        );
-                      },
-                    ),
+                      // 年份统计概览
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              const Color(0xFF6C63FF).withValues(alpha: 0.1),
+                              const Color(0xFF26D0CE).withValues(alpha: 0.1),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(
+                              0xFF6C63FF,
+                            ).withValues(alpha: 0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatItem(
+                                '总年份',
+                                convertedYearDataList.length.toString(),
+                                Icons.calendar_today,
+                                const Color(0xFF6C63FF),
+                              ),
+                            ),
+                            Container(
+                              width: 1,
+                              height: 40,
+                              color: Colors.grey.shade300,
+                            ),
+                            Expanded(
+                              child: _buildStatItem(
+                                '总上传数',
+                                convertedYearDataList
+                                    .fold(
+                                      0,
+                                      (sum, year) => sum + year.uploadedCount,
+                                    )
+                                    .toString(),
+                                Icons.cloud_upload,
+                                const Color(0xFF10B981),
+                              ),
+                            ),
+                            Container(
+                              width: 1,
+                              height: 40,
+                              color: Colors.grey.shade300,
+                            ),
+                            Expanded(
+                              child: _buildStatItem(
+                                '最新年份',
+                                convertedYearDataList.isNotEmpty
+                                    ? convertedYearDataList.first.year
+                                          .toString()
+                                    : '无',
+                                Icons.update,
+                                const Color(0xFF26D0CE),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
 
-                    const SizedBox(height: 80), // 为浮动按钮留出空间
-                  ],
+                      const SizedBox(height: 24),
+
+                      // 年份卡片列表
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: convertedYearDataList.length,
+                        itemBuilder: (context, index) {
+                          final yearData = convertedYearDataList[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: _buildYearCard(yearData, index),
+                          );
+                        },
+                      ),
+
+                      const SizedBox(height: 80), // 为浮动按钮留出空间
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -406,237 +470,6 @@ class _UploadPageState extends State<UploadPage> with TickerProviderStateMixin {
       ),
     );
   }
-
-  // List<Widget> _buildSelectedFileContent() {
-  //   return [
-  //     Container(
-  //       padding: const EdgeInsets.all(20),
-  //       decoration: BoxDecoration(
-  //         color: const Color(0xFF10B981).withValues(alpha: 0.1),
-  //         shape: BoxShape.circle,
-  //       ),
-  //       child: const Icon(
-  //         Icons.check_circle_rounded,
-  //         color: Color(0xFF10B981),
-  //         size: 48,
-  //       ),
-  //     ),
-  //     const SizedBox(height: 24),
-  //     const Text(
-  //       '文件已选择',
-  //       style: TextStyle(
-  //         fontSize: 20,
-  //         fontWeight: FontWeight.bold,
-  //         color: Color(0xFF2D3748),
-  //       ),
-  //     ),
-  //     const SizedBox(height: 12),
-  //     Container(
-  //       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-  //       decoration: BoxDecoration(
-  //         color: const Color(0xFF10B981).withValues(alpha: 0.1),
-  //         borderRadius: BorderRadius.circular(12),
-  //         border: Border.all(
-  //           color: const Color(0xFF10B981).withValues(alpha: 0.3),
-  //           width: 1,
-  //         ),
-  //       ),
-  //       child: Row(
-  //         mainAxisSize: MainAxisSize.min,
-  //         children: [
-  //           const Icon(
-  //             Icons.description_rounded,
-  //             color: Color(0xFF10B981),
-  //             size: 20,
-  //           ),
-  //           const SizedBox(width: 8),
-  //           Flexible(
-  //             child: Text(
-  //               '文件已选择',
-  //               style: const TextStyle(
-  //                 fontWeight: FontWeight.w600,
-  //                 color: Color(0xFF10B981),
-  //                 fontSize: 14,
-  //               ),
-  //               overflow: TextOverflow.ellipsis,
-  //             ),
-  //           ),
-  //         ],
-  //       ),
-  //     ),
-  //     const SizedBox(height: 16),
-  //     Text(
-  //       '点击"开始上传"按钮来处理此文件',
-  //       style: TextStyle(color: Colors.grey[600], fontSize: 14),
-  //       textAlign: TextAlign.center,
-  //     ),
-  //   ];
-  // }
-
-  // List<Widget> _buildSelectFileContent() {
-  //   return [
-  //     Container(
-  //       padding: const EdgeInsets.all(24),
-  //       decoration: BoxDecoration(
-  //         color: const Color(0xFF6C63FF).withValues(alpha: 0.1),
-  //         shape: BoxShape.circle,
-  //       ),
-  //       child: const Icon(
-  //         Icons.cloud_upload_rounded,
-  //         color: Color(0xFF6C63FF),
-  //         size: 56,
-  //       ),
-  //     ),
-  //     const SizedBox(height: 24),
-  //     const Text(
-  //       '选择要上传的Excel文件',
-  //       style: TextStyle(
-  //         fontSize: 20,
-  //         fontWeight: FontWeight.bold,
-  //         color: Color(0xFF2D3748),
-  //       ),
-  //       textAlign: TextAlign.center,
-  //     ),
-  //     const SizedBox(height: 12),
-  //     Text(
-  //       '拖放文件到这里或点击选择文件',
-  //       style: TextStyle(color: Colors.grey[600], fontSize: 16),
-  //       textAlign: TextAlign.center,
-  //     ),
-  //     const SizedBox(height: 8),
-  //     Text(
-  //       '支持 .xlsx 格式',
-  //       style: TextStyle(color: Colors.grey[500], fontSize: 14),
-  //       textAlign: TextAlign.center,
-  //     ),
-  //   ];
-  // }
-
-  // Widget _buildActionButton({
-  //   required VoidCallback? onPressed,
-  //   IconData? icon,
-  //   required String label,
-  //   required Color color,
-  //   bool isOutlined = false,
-  //   bool isLoading = false,
-  // }) {
-  //   return SizedBox(
-  //     height: 56,
-  //     child: ElevatedButton(
-  //       onPressed: onPressed,
-  //       style: ElevatedButton.styleFrom(
-  //         backgroundColor: isOutlined ? Colors.white : color,
-  //         foregroundColor: isOutlined ? color : Colors.white,
-  //         side: isOutlined ? BorderSide(color: color, width: 2) : null,
-  //         elevation: isOutlined ? 0 : 8,
-  //         shadowColor: isOutlined ? null : color.withValues(alpha: 0.3),
-  //         shape: RoundedRectangleBorder(
-  //           borderRadius: BorderRadius.circular(16),
-  //         ),
-  //       ),
-  //       child: Row(
-  //         mainAxisAlignment: MainAxisAlignment.center,
-  //         children: [
-  //           if (isLoading)
-  //             SizedBox(
-  //               width: 20,
-  //               height: 20,
-  //               child: CircularProgressIndicator(
-  //                 strokeWidth: 2,
-  //                 valueColor: AlwaysStoppedAnimation<Color>(
-  //                   isOutlined ? color : Colors.white,
-  //                 ),
-  //               ),
-  //             )
-  //           else if (icon != null)
-  //             Icon(icon, size: 20),
-  //           if (!isLoading && icon != null) const SizedBox(width: 8),
-  //           Text(
-  //             label,
-  //             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-  //           ),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  // Widget _buildUploadGuide() {
-  //   return Container(
-  //     padding: const EdgeInsets.all(20),
-  //     decoration: BoxDecoration(
-  //       color: Colors.grey.shade50,
-  //       borderRadius: BorderRadius.circular(16),
-  //       border: Border.all(color: Colors.grey.shade200, width: 1),
-  //     ),
-  //     child: Column(
-  //       crossAxisAlignment: CrossAxisAlignment.start,
-  //       children: [
-  //         Row(
-  //           children: [
-  //             const Icon(
-  //               Icons.lightbulb_outline,
-  //               color: Color(0xFFF59E0B),
-  //               size: 20,
-  //             ),
-  //             const SizedBox(width: 8),
-  //             const Text(
-  //               '上传指南',
-  //               style: TextStyle(
-  //                 fontWeight: FontWeight.bold,
-  //                 color: Color(0xFFF59E0B),
-  //                 fontSize: 16,
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //         const SizedBox(height: 12),
-  //         _buildGuideItem('1', '确保 Excel 文件包含员工姓名、部门、职位、薪资等信息'),
-  //         const SizedBox(height: 8),
-  //         _buildGuideItem('2', '文件格式必须为 .xlsx，不支持 .xls 或其他格式'),
-  //         const SizedBox(height: 8),
-  //         _buildGuideItem('3', '建议文件大小不超过 10MB，确保上传速度'),
-  //       ],
-  //     ),
-  //   );
-  // }
-
-  // Widget _buildGuideItem(String step, String text) {
-  //   return Row(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       Container(
-  //         width: 20,
-  //         height: 20,
-  //         decoration: const BoxDecoration(
-  //           color: Color(0xFFF59E0B),
-  //           shape: BoxShape.circle,
-  //         ),
-  //         child: Center(
-  //           child: Text(
-  //             step,
-  //             style: const TextStyle(
-  //               color: Colors.white,
-  //               fontSize: 10,
-  //               fontWeight: FontWeight.bold,
-  //             ),
-  //           ),
-  //         ),
-  //       ),
-  //       const SizedBox(width: 12),
-  //       Expanded(
-  //         child: Text(
-  //           text,
-  //           style: TextStyle(
-  //             color: Colors.grey[700],
-  //             fontSize: 14,
-  //             height: 1.4,
-  //           ),
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
 
   Widget _buildStatItem(
     String label,

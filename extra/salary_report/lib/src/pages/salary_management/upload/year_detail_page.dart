@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'upload_page.dart';
+import '../../../providers/year_provider.dart';
 
-class YearDetailPage extends StatefulWidget {
+class YearDetailPage extends ConsumerStatefulWidget {
   final YearData yearData;
 
   const YearDetailPage({super.key, required this.yearData});
 
   @override
-  State<YearDetailPage> createState() => _YearDetailPageState();
+  ConsumerState<YearDetailPage> createState() => _YearDetailPageState();
 }
 
-class _YearDetailPageState extends State<YearDetailPage>
+class _YearDetailPageState extends ConsumerState<YearDetailPage>
     with SingleTickerProviderStateMixin {
   String? _selectedFilePath;
-  bool _isUploading = false;
   int? _selectedMonth;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -65,21 +66,26 @@ class _YearDetailPageState extends State<YearDetailPage>
       return;
     }
 
-    setState(() {
-      _isUploading = true;
-    });
-
+    // 这里应该实现实际的文件上传逻辑
+    // 由于我们没有实际的后端，这里只是模拟上传过程
     try {
+      // 模拟上传过程
       await Future.delayed(const Duration(seconds: 2));
 
       if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('文件上传成功')));
+
+        // 上传成功后，刷新年份数据
+        ref.read(yearDataProvider.notifier).refresh();
+
         setState(() {
           _selectedFilePath = null;
           _selectedMonth = null;
         });
+
+        // 返回上一页
         Navigator.of(context).pop();
       }
     } catch (e) {
@@ -87,12 +93,6 @@ class _YearDetailPageState extends State<YearDetailPage>
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('上传失败: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isUploading = false;
-        });
       }
     }
   }
@@ -278,7 +278,7 @@ class _YearDetailPageState extends State<YearDetailPage>
                           color: Colors.transparent,
                           child: InkWell(
                             borderRadius: BorderRadius.circular(10),
-                            onTap: _isUploading ? null : _selectFile,
+                            onTap: _selectFile,
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -317,7 +317,7 @@ class _YearDetailPageState extends State<YearDetailPage>
                         width: double.infinity,
                         height: 48,
                         child: ElevatedButton(
-                          onPressed: _isUploading || _selectedFilePath == null
+                          onPressed: _selectedFilePath == null
                               ? null
                               : _uploadFile,
                           style: ElevatedButton.styleFrom(
@@ -327,32 +327,13 @@ class _YearDetailPageState extends State<YearDetailPage>
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: _isUploading
-                              ? const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                              Colors.white,
-                                            ),
-                                      ),
-                                    ),
-                                    SizedBox(width: 8),
-                                    Text('上传中...'),
-                                  ],
-                                )
-                              : const Text(
-                                  '开始上传',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                          child: const Text(
+                            '开始上传',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
                     ],
