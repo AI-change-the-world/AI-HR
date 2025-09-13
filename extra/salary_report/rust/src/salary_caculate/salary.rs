@@ -141,7 +141,7 @@ pub fn parse_salary_report(file_path: &str) -> Result<SalarySummary> {
             continue; // 继续检查下一行，看是否还有更多汇总信息
         }
 
-        // 如果姓名为空但行不为空，可能是汇总行
+        // 获取姓名、部门和税后应实发字段的值
         let name_cell_value = if let Some(&col_index) = field_indices.get("name") {
             if let Some(cell) = row
                 .iter()
@@ -155,8 +155,37 @@ pub fn parse_salary_report(file_path: &str) -> Result<SalarySummary> {
             String::new()
         };
 
-        // 如果姓名为空但行不为空，可能是汇总行
-        if name_cell_value.is_empty() && !first_cell_value.is_empty() {
+        let department_cell_value = if let Some(&col_index) = field_indices.get("department") {
+            if let Some(cell) = row
+                .iter()
+                .find(|c| c.get_coordinate().get_col_num() == col_index)
+            {
+                cell.get_value().to_string()
+            } else {
+                String::new()
+            }
+        } else {
+            String::new()
+        };
+
+        let net_salary_cell_value = if let Some(&col_index) = field_indices.get("net_salary") {
+            if let Some(cell) = row
+                .iter()
+                .find(|c| c.get_coordinate().get_col_num() == col_index)
+            {
+                cell.get_value().to_string()
+            } else {
+                String::new()
+            }
+        } else {
+            String::new()
+        };
+
+        // 判断是否为汇总行：税后应实发有数据但没有人员信息和部门信息
+        if !net_salary_cell_value.is_empty()
+            && name_cell_value.is_empty()
+            && department_cell_value.is_empty()
+        {
             // 提取汇总行数据
             for cell in row {
                 let col_index = cell.get_coordinate().get_col_num();
@@ -164,8 +193,32 @@ pub fn parse_salary_report(file_path: &str) -> Result<SalarySummary> {
 
                 // 只有当单元格有值时才保存
                 if !cell_value.is_empty() {
-                    let field_name = format!("summary_col_{}", col_index);
-                    summary_data.insert(field_name, cell_value);
+                    // 尝试找到对应的字段名
+                    let field_name = field_indices
+                        .iter()
+                        .find(|(_, &index)| index == col_index)
+                        .map(|(name, _)| name.clone())
+                        .unwrap_or_else(|| format!("summary_col_{}", col_index));
+
+                    // 如果找到了字段名，使用中文字段名
+                    let display_name = match field_name.as_str() {
+                        "name" => "姓名".to_string(),
+                        "department" => "一级部门".to_string(),
+                        "position" => "职位".to_string(),
+                        "attendance" => "实际出勤折算天数".to_string(),
+                        "salary_components" => "税前工资".to_string(),
+                        "social_security_tax" => "社保公积金个人部分合计".to_string(),
+                        "net_salary" => "税后应实发".to_string(),
+                        "payroll_days" => "计薪日天数".to_string(),
+                        "sick_leave" => "病假/天".to_string(),
+                        "personal_leave" => "事假/hr".to_string(),
+                        "absence" => "缺勤/次".to_string(),
+                        "truancy" => "旷工/天".to_string(),
+                        "performance_score" => "绩效得分".to_string(),
+                        _ => field_name,
+                    };
+
+                    summary_data.insert(display_name, cell_value);
                 }
             }
 
@@ -173,8 +226,8 @@ pub fn parse_salary_report(file_path: &str) -> Result<SalarySummary> {
             continue;
         }
 
-        // 如果姓名为空且第一列也为空，说明是空行，停止解析
-        if name_cell_value.is_empty() && first_cell_value.is_empty() {
+        // 如果姓名为空且税后应实发也为空，说明是空行，停止解析
+        if name_cell_value.is_empty() && net_salary_cell_value.is_empty() {
             break;
         }
 
