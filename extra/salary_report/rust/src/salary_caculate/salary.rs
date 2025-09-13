@@ -2,6 +2,7 @@ use anyhow::Result;
 use std::collections::HashMap;
 use umya_spreadsheet::reader;
 
+/// 工资记录
 #[derive(Debug, Clone)]
 pub struct SalaryRecord {
     pub name: String,                // 姓名
@@ -21,20 +22,30 @@ pub struct SalaryRecord {
     pub performance_score: String,      // 绩效得分
 }
 
+/// 工资汇总信息
 #[derive(Debug)]
 pub struct SalarySummary {
     pub total_records: usize,
     pub records: Vec<SalaryRecord>,
+    /// 汇总行数据，键为字段名或列索引，值为单元格内容
+    pub summary_data: HashMap<String, String>,
 }
 
+/// 解析工资报表Excel文件
+///
+/// # 参数
+/// * `file_path` - Excel文件路径
+///
+/// # 返回值
+/// 返回解析结果，包含所有工资记录和可能的汇总信息
 pub fn parse_salary_report(file_path: &str) -> Result<SalarySummary> {
     let book = reader::xlsx::read(file_path)?;
     let sheet = book
         .get_sheet(&0)
         .ok_or_else(|| anyhow::anyhow!("无法获取工作表"))?;
 
-    // 查找表头行（第二行）
-    let header_row_num = 2; // 第二行是字段名
+    // 查找表头行（第三行，索引为2）
+    let header_row_num = 2; // 第三行是字段名
     let header_row = sheet.get_collection_by_row(&header_row_num);
 
     // 查找需要的字段索引
@@ -86,9 +97,10 @@ pub fn parse_salary_report(file_path: &str) -> Result<SalarySummary> {
 
     // 解析数据行
     let mut records = Vec::new();
+    let mut summary_data = HashMap::new(); // 初始化汇总数据
     let mut row_num = header_row_num + 1;
 
-    // 遍历所有行直到遇到汇总行或文件结束
+    // 遍历所有行直到遇到非数据行或文件结束
     loop {
         let row = sheet.get_collection_by_row(&row_num);
 
@@ -97,19 +109,72 @@ pub fn parse_salary_report(file_path: &str) -> Result<SalarySummary> {
             break;
         }
 
-        // 检查是否是汇总行（通过某些特征判断）
+        // 检查是否是非数据行（如制表人、审核人等）
         let first_cell_value = if !row.is_empty() {
             row[0].get_value().to_string()
         } else {
             String::new()
         };
 
-        // 如果遇到空行或者汇总标记，则停止解析
-        if first_cell_value.is_empty()
-            || first_cell_value.contains("合计")
-            || first_cell_value.contains("汇总")
-            || first_cell_value.contains("总计")
+        // 如果遇到明显不是数据行的行，则提取为汇总信息
+        if first_cell_value.contains("制表")
+            || first_cell_value.contains("审核")
+            || first_cell_value.contains("核准")
+            || first_cell_value.contains("更新")
+            || first_cell_value.contains("新入职")
+            || first_cell_value.contains("离职/待离职")
+            || first_cell_value.contains("三期员工")
         {
+            // 提取这些行作为汇总信息
+            for cell in row {
+                let col_index = cell.get_coordinate().get_col_num();
+                let cell_value = cell.get_value().to_string();
+
+                // 只有当单元格有值时才保存
+                if !cell_value.is_empty() {
+                    let field_name = format!("summary_{}", col_index);
+                    summary_data.insert(field_name, cell_value);
+                }
+            }
+
+            row_num += 1;
+            continue; // 继续检查下一行，看是否还有更多汇总信息
+        }
+
+        // 如果姓名为空但行不为空，可能是汇总行
+        let name_cell_value = if let Some(&col_index) = field_indices.get("name") {
+            if let Some(cell) = row
+                .iter()
+                .find(|c| c.get_coordinate().get_col_num() == col_index)
+            {
+                cell.get_value().to_string()
+            } else {
+                String::new()
+            }
+        } else {
+            String::new()
+        };
+
+        // 如果姓名为空但行不为空，可能是汇总行
+        if name_cell_value.is_empty() && !first_cell_value.is_empty() {
+            // 提取汇总行数据
+            for cell in row {
+                let col_index = cell.get_coordinate().get_col_num();
+                let cell_value = cell.get_value().to_string();
+
+                // 只有当单元格有值时才保存
+                if !cell_value.is_empty() {
+                    let field_name = format!("summary_col_{}", col_index);
+                    summary_data.insert(field_name, cell_value);
+                }
+            }
+
+            row_num += 1;
+            continue;
+        }
+
+        // 如果姓名为空且第一列也为空，说明是空行，停止解析
+        if name_cell_value.is_empty() && first_cell_value.is_empty() {
             break;
         }
 
@@ -179,5 +244,6 @@ pub fn parse_salary_report(file_path: &str) -> Result<SalarySummary> {
     Ok(SalarySummary {
         total_records: records.len(),
         records,
+        summary_data,
     })
 }

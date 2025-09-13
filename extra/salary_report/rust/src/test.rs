@@ -1,6 +1,7 @@
 #[allow(unused_imports)]
+#[cfg(test)]
 mod tests {
-    use crate::api::salary::{parse_salary_report, SalaryRecord};
+    use crate::salary_caculate::salary::{parse_salary_report, SalaryRecord};
     use umya_spreadsheet::reader;
     use umya_spreadsheet::structs::Spreadsheet;
     use umya_spreadsheet::structs::Worksheet;
@@ -63,5 +64,138 @@ mod tests {
         // 这个测试用于验证错误处理逻辑
         // 由于我们没有不完整的测试文件，这里只是演示测试结构
         assert!(true);
+    }
+
+    pub fn debug_excel_structure(file_path: &str) -> anyhow::Result<()> {
+        let book = reader::xlsx::read(file_path)?;
+        let sheet = book
+            .get_sheet(&0)
+            .ok_or_else(|| anyhow::anyhow!("无法获取工作表"))?;
+
+        println!(
+            "Sheet dimensions: {} rows, {} columns",
+            sheet.get_highest_row(),
+            sheet.get_highest_column()
+        );
+
+        // 打印前10行的数据来查看结构
+        for row_num in 1..=10 {
+            let row = sheet.get_collection_by_row(&row_num);
+            if !row.is_empty() {
+                println!("Row {}: ", row_num);
+                for cell in row {
+                    let cell_value = cell.get_value().to_string();
+                    if !cell_value.is_empty() {
+                        println!(
+                            "  Col {}: {}",
+                            cell.get_coordinate().get_col_num(),
+                            cell_value
+                        );
+                    }
+                }
+            }
+        }
+
+        // 查找包含"合计"、"总计"等关键词的行
+        for row_num in 1..=sheet.get_highest_row() {
+            let row = sheet.get_collection_by_row(&row_num);
+            if !row.is_empty() {
+                let first_cell_value = row[0].get_value().to_string();
+                if first_cell_value.contains("合计")
+                    || first_cell_value.contains("总计")
+                    || first_cell_value.contains("汇总")
+                {
+                    println!("Summary row {}: {}", row_num, first_cell_value);
+                    for cell in row {
+                        let cell_value = cell.get_value().to_string();
+                        if !cell_value.is_empty() {
+                            println!(
+                                "  Col {}: {}",
+                                cell.get_coordinate().get_col_num(),
+                                cell_value
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_parse_salary_report_with_summary() {
+        // 使用现有的test.xlsx文件进行测试
+        let result = parse_salary_report("../test.xlsx");
+
+        // 确保解析成功
+        assert!(result.is_ok());
+
+        let summary = result.unwrap();
+
+        // 检查基本数据
+        println!("Total records: {}", summary.total_records);
+        println!("Number of records: {}", summary.records.len());
+
+        // 打印前几条记录用于调试
+        for (i, record) in summary.records.iter().enumerate() {
+            if i < 3 {
+                println!(
+                    "Record {}: Name={}, Department={}, Position={}, Net Salary={}",
+                    i, record.name, record.department, record.position, record.net_salary
+                );
+            }
+        }
+
+        // 检查是否包含汇总数据
+        println!("Summary data keys: {:?}", summary.summary_data.keys());
+        println!("Summary data: {:?}", summary.summary_data);
+
+        // 验证至少解析出了一条记录
+        assert!(summary.total_records > 0);
+        assert!(!summary.records.is_empty());
+
+        // 验证第一条记录有数据
+        let first_record = &summary.records[0];
+        assert!(!first_record.name.is_empty());
+        assert!(!first_record.department.is_empty());
+        assert!(!first_record.position.is_empty());
+        assert!(!first_record.net_salary.is_empty());
+
+        // 检查汇总数据（即使为空也是可以接受的）
+        println!("Summary data count: {}", summary.summary_data.len());
+    }
+
+    #[test]
+    fn test_salary_record_fields() {
+        let result = parse_salary_report("../test.xlsx");
+        assert!(result.is_ok());
+
+        let summary = result.unwrap();
+        assert!(!summary.records.is_empty());
+
+        let first_record = &summary.records[0];
+
+        // 验证所有必需字段都有值
+        assert!(!first_record.name.is_empty());
+        assert!(!first_record.department.is_empty());
+        assert!(!first_record.position.is_empty());
+        assert!(!first_record.attendance.is_empty());
+        assert!(!first_record.salary_components.is_empty());
+        assert!(!first_record.social_security_tax.is_empty());
+        assert!(!first_record.net_salary.is_empty());
+
+        // 验证考勤相关字段
+        assert!(!first_record.payroll_days.is_empty());
+        assert!(!first_record.actual_attendance_days.is_empty());
+        assert!(!first_record.performance_score.is_empty());
+
+        println!("First record: {:?}", first_record);
+    }
+
+    #[test]
+    fn test_debug_excel() {
+        let result = debug_excel_structure("../test.xlsx");
+        assert!(result.is_ok());
     }
 }

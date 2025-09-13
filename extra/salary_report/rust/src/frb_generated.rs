@@ -37,7 +37,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.11.1";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1918914929;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -2102929849;
 
 // Section: executor
 
@@ -45,6 +45,40 @@ flutter_rust_bridge::frb_generated_default_handler!();
 
 // Section: wire_funcs
 
+fn wire__crate__api__salary_api__get_caculate_result_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "get_caculate_result",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_p = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok =
+                        Result::<_, ()>::Ok(crate::api::salary_api::get_caculate_result(api_p))?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
 fn wire__crate__api__simple__greet_impl(
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -112,6 +146,14 @@ fn wire__crate__api__simple__init_app_impl(
 
 // Section: dart2rust
 
+impl SseDecode for std::collections::HashMap<String, String> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <Vec<(String, String)>>::sse_decode(deserializer);
+        return inner.into_iter().collect();
+    }
+}
+
 impl SseDecode for String {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -132,6 +174,121 @@ impl SseDecode for Vec<u8> {
     }
 }
 
+impl SseDecode for Vec<(String, String)> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<(String, String)>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::salary_caculate::salary::SalaryRecord> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::salary_caculate::salary::SalaryRecord>::sse_decode(
+                deserializer,
+            ));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Option<crate::salary_caculate::salary::SalarySummary> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<crate::salary_caculate::salary::SalarySummary>::sse_decode(
+                deserializer,
+            ));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode
+    for (
+        String,
+        Option<crate::salary_caculate::salary::SalarySummary>,
+    )
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_field0 = <String>::sse_decode(deserializer);
+        let mut var_field1 =
+            <Option<crate::salary_caculate::salary::SalarySummary>>::sse_decode(deserializer);
+        return (var_field0, var_field1);
+    }
+}
+
+impl SseDecode for (String, String) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_field0 = <String>::sse_decode(deserializer);
+        let mut var_field1 = <String>::sse_decode(deserializer);
+        return (var_field0, var_field1);
+    }
+}
+
+impl SseDecode for crate::salary_caculate::salary::SalaryRecord {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_name = <String>::sse_decode(deserializer);
+        let mut var_department = <String>::sse_decode(deserializer);
+        let mut var_position = <String>::sse_decode(deserializer);
+        let mut var_attendance = <String>::sse_decode(deserializer);
+        let mut var_salaryComponents = <String>::sse_decode(deserializer);
+        let mut var_socialSecurityTax = <String>::sse_decode(deserializer);
+        let mut var_netSalary = <String>::sse_decode(deserializer);
+        let mut var_payrollDays = <String>::sse_decode(deserializer);
+        let mut var_actualAttendanceDays = <String>::sse_decode(deserializer);
+        let mut var_sickLeave = <String>::sse_decode(deserializer);
+        let mut var_personalLeave = <String>::sse_decode(deserializer);
+        let mut var_absence = <String>::sse_decode(deserializer);
+        let mut var_truancy = <String>::sse_decode(deserializer);
+        let mut var_performanceScore = <String>::sse_decode(deserializer);
+        return crate::salary_caculate::salary::SalaryRecord {
+            name: var_name,
+            department: var_department,
+            position: var_position,
+            attendance: var_attendance,
+            salary_components: var_salaryComponents,
+            social_security_tax: var_socialSecurityTax,
+            net_salary: var_netSalary,
+            payroll_days: var_payrollDays,
+            actual_attendance_days: var_actualAttendanceDays,
+            sick_leave: var_sickLeave,
+            personal_leave: var_personalLeave,
+            absence: var_absence,
+            truancy: var_truancy,
+            performance_score: var_performanceScore,
+        };
+    }
+}
+
+impl SseDecode for crate::salary_caculate::salary::SalarySummary {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_totalRecords = <usize>::sse_decode(deserializer);
+        let mut var_records =
+            <Vec<crate::salary_caculate::salary::SalaryRecord>>::sse_decode(deserializer);
+        let mut var_summaryData =
+            <std::collections::HashMap<String, String>>::sse_decode(deserializer);
+        return crate::salary_caculate::salary::SalarySummary {
+            total_records: var_totalRecords,
+            records: var_records,
+            summary_data: var_summaryData,
+        };
+    }
+}
+
 impl SseDecode for u8 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -142,6 +299,13 @@ impl SseDecode for u8 {
 impl SseDecode for () {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {}
+}
+
+impl SseDecode for usize {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        deserializer.cursor.read_u64::<NativeEndian>().unwrap() as _
+    }
 }
 
 impl SseDecode for i32 {
@@ -167,7 +331,13 @@ fn pde_ffi_dispatcher_primary_impl(
 ) {
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
-        2 => wire__crate__api__simple__init_app_impl(port, ptr, rust_vec_len, data_len),
+        1 => wire__crate__api__salary_api__get_caculate_result_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        3 => wire__crate__api__simple__init_app_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -180,12 +350,75 @@ fn pde_ffi_dispatcher_sync_impl(
 ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
-        1 => wire__crate__api__simple__greet_impl(ptr, rust_vec_len, data_len),
+        2 => wire__crate__api__simple__greet_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
 
 // Section: rust2dart
+
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::salary_caculate::salary::SalaryRecord {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.name.into_into_dart().into_dart(),
+            self.department.into_into_dart().into_dart(),
+            self.position.into_into_dart().into_dart(),
+            self.attendance.into_into_dart().into_dart(),
+            self.salary_components.into_into_dart().into_dart(),
+            self.social_security_tax.into_into_dart().into_dart(),
+            self.net_salary.into_into_dart().into_dart(),
+            self.payroll_days.into_into_dart().into_dart(),
+            self.actual_attendance_days.into_into_dart().into_dart(),
+            self.sick_leave.into_into_dart().into_dart(),
+            self.personal_leave.into_into_dart().into_dart(),
+            self.absence.into_into_dart().into_dart(),
+            self.truancy.into_into_dart().into_dart(),
+            self.performance_score.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::salary_caculate::salary::SalaryRecord
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::salary_caculate::salary::SalaryRecord>
+    for crate::salary_caculate::salary::SalaryRecord
+{
+    fn into_into_dart(self) -> crate::salary_caculate::salary::SalaryRecord {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::salary_caculate::salary::SalarySummary {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.total_records.into_into_dart().into_dart(),
+            self.records.into_into_dart().into_dart(),
+            self.summary_data.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::salary_caculate::salary::SalarySummary
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::salary_caculate::salary::SalarySummary>
+    for crate::salary_caculate::salary::SalarySummary
+{
+    fn into_into_dart(self) -> crate::salary_caculate::salary::SalarySummary {
+        self
+    }
+}
+
+impl SseEncode for std::collections::HashMap<String, String> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Vec<(String, String)>>::sse_encode(self.into_iter().collect(), serializer);
+    }
+}
 
 impl SseEncode for String {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -204,6 +437,86 @@ impl SseEncode for Vec<u8> {
     }
 }
 
+impl SseEncode for Vec<(String, String)> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <(String, String)>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::salary_caculate::salary::SalaryRecord> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::salary_caculate::salary::SalaryRecord>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::salary_caculate::salary::SalarySummary> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::salary_caculate::salary::SalarySummary>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode
+    for (
+        String,
+        Option<crate::salary_caculate::salary::SalarySummary>,
+    )
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.0, serializer);
+        <Option<crate::salary_caculate::salary::SalarySummary>>::sse_encode(self.1, serializer);
+    }
+}
+
+impl SseEncode for (String, String) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.0, serializer);
+        <String>::sse_encode(self.1, serializer);
+    }
+}
+
+impl SseEncode for crate::salary_caculate::salary::SalaryRecord {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.name, serializer);
+        <String>::sse_encode(self.department, serializer);
+        <String>::sse_encode(self.position, serializer);
+        <String>::sse_encode(self.attendance, serializer);
+        <String>::sse_encode(self.salary_components, serializer);
+        <String>::sse_encode(self.social_security_tax, serializer);
+        <String>::sse_encode(self.net_salary, serializer);
+        <String>::sse_encode(self.payroll_days, serializer);
+        <String>::sse_encode(self.actual_attendance_days, serializer);
+        <String>::sse_encode(self.sick_leave, serializer);
+        <String>::sse_encode(self.personal_leave, serializer);
+        <String>::sse_encode(self.absence, serializer);
+        <String>::sse_encode(self.truancy, serializer);
+        <String>::sse_encode(self.performance_score, serializer);
+    }
+}
+
+impl SseEncode for crate::salary_caculate::salary::SalarySummary {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <usize>::sse_encode(self.total_records, serializer);
+        <Vec<crate::salary_caculate::salary::SalaryRecord>>::sse_encode(self.records, serializer);
+        <std::collections::HashMap<String, String>>::sse_encode(self.summary_data, serializer);
+    }
+}
+
 impl SseEncode for u8 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -214,6 +527,16 @@ impl SseEncode for u8 {
 impl SseEncode for () {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {}
+}
+
+impl SseEncode for usize {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        serializer
+            .cursor
+            .write_u64::<NativeEndian>(self as _)
+            .unwrap();
+    }
 }
 
 impl SseEncode for i32 {
