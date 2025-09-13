@@ -118,6 +118,7 @@ class MyApp extends StatelessWidget {
     return ProviderScope(
       child: ToastificationWrapper(
         child: MaterialApp.router(
+          debugShowCheckedModeBanner: false,
           title: '员工工资智能化分析系统',
           theme: ThemeData(
             primarySwatch: Colors.lightBlue,

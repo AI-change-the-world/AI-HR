@@ -10,6 +10,17 @@ class MainLayout extends StatefulWidget {
   State<MainLayout> createState() => _MainLayoutState();
 }
 
+class AppColors {
+  static const Color primary = Color(0xFF6C63FF);
+  static const Color primaryLight = Color(0xFF8B83FF);
+  static const Color primaryDark = Color(0xFF4A47A3);
+  static const Color secondary = Color(0xFF26D0CE);
+  static const Color accent = Color(0xFFFF6B6B);
+  static const Color background = Color(0xFFF8FAFC);
+  static const Color surface = Color(0xFFFFFFFF);
+  static const Color cardShadow = Color(0x1A000000);
+}
+
 class _MainLayoutState extends State<MainLayout> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   bool _isSidebarOpen = true;
@@ -17,6 +28,7 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
 
     // 在小屏幕上默认收起侧边栏
     if (screenWidth < 768) {
@@ -27,115 +39,270 @@ class _MainLayoutState extends State<MainLayout> {
 
     return Scaffold(
       key: _scaffoldKey,
-      appBar: AppBar(
-        title: const Text('员工工资智能化分析系统'),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () {
-            setState(() {
-              _isSidebarOpen = !_isSidebarOpen;
-            });
-          },
+      // appBar: PreferredSize(
+      //   preferredSize: const Size.fromHeight(70),
+      //   child: Container(
+      //     decoration: BoxDecoration(
+      //       gradient: LinearGradient(
+      //         begin: Alignment.topLeft,
+      //         end: Alignment.bottomRight,
+      //         colors: [AppColors.primary, AppColors.primaryLight],
+      //       ),
+      //       boxShadow: [
+      //         BoxShadow(
+      //           color: AppColors.cardShadow,
+      //           blurRadius: 10,
+      //           offset: const Offset(0, 2),
+      //         ),
+      //       ],
+      //     ),
+      //     child: AppBar(
+      //       title: Row(
+      //         children: [
+      //           Container(
+      //             padding: const EdgeInsets.all(8),
+      //             decoration: BoxDecoration(
+      //               color: Colors.white.withOpacity(0.2),
+      //               borderRadius: BorderRadius.circular(12),
+      //             ),
+      //             child: const Icon(
+      //               Icons.analytics_outlined,
+      //               color: Colors.white,
+      //               size: 24,
+      //             ),
+      //           ),
+      //           const SizedBox(width: 12),
+      //           const Column(
+      //             crossAxisAlignment: CrossAxisAlignment.start,
+      //             mainAxisAlignment: MainAxisAlignment.center,
+      //             children: [
+      //               Text(
+      //                 '薪资智能分析',
+      //                 style: TextStyle(
+      //                   color: Colors.white,
+      //                   fontSize: 20,
+      //                   fontWeight: FontWeight.bold,
+      //                 ),
+      //               ),
+      //               Text(
+      //                 'Smart Salary Analytics',
+      //                 style: TextStyle(
+      //                   color: Colors.white70,
+      //                   fontSize: 12,
+      //                   fontWeight: FontWeight.w400,
+      //                 ),
+      //               ),
+      //             ],
+      //           ),
+      //         ],
+      //       ),
+      //       centerTitle: false,
+      //       leading: IconButton(
+      //         icon: Container(
+      //           padding: const EdgeInsets.all(8),
+      //           decoration: BoxDecoration(
+      //             color: Colors.white.withOpacity(0.2),
+      //             borderRadius: BorderRadius.circular(10),
+      //           ),
+      //           child: const Icon(
+      //             Icons.menu_rounded,
+      //             color: Colors.white,
+      //             size: 20,
+      //           ),
+      //         ),
+      //         onPressed: () {
+      //           setState(() {
+      //             _isSidebarOpen = !_isSidebarOpen;
+      //           });
+      //         },
+      //       ),
+      //       backgroundColor: Colors.transparent,
+      //       elevation: 0,
+      //       actions: [
+      //         Padding(
+      //           padding: const EdgeInsets.only(right: 16),
+      //           child: CircleAvatar(
+      //             backgroundColor: Colors.white.withOpacity(0.2),
+      //             child: const Icon(
+      //               Icons.person_outline,
+      //               color: Colors.white,
+      //               size: 20,
+      //             ),
+      //           ),
+      //         ),
+      //       ],
+      //     ),
+      //   ),
+      // ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [AppColors.background, Colors.white],
+          ),
         ),
-        backgroundColor: Colors.lightBlue.shade50,
-        elevation: 2,
-        shadowColor: Colors.lightBlue.withOpacity(0.3),
-      ),
-      body: Row(
-        children: [
-          // 侧边栏
-          if (_isSidebarOpen || screenWidth >= 768)
-            Container(
-              width: 250,
-              decoration: BoxDecoration(
-                color: Colors.lightBlue.shade50,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.lightBlue.withOpacity(0.2),
-                    blurRadius: 10,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // 侧边栏头部
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.lightBlue.shade100,
-                      borderRadius: const BorderRadius.only(
-                        bottomRight: Radius.circular(20),
+        child: Row(
+          children: [
+            // 侧边栏
+            if (_isSidebarOpen || screenWidth >= 768)
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                width: 280,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.cardShadow,
+                      blurRadius: 20,
+                      offset: const Offset(2, 0),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    // 侧边栏头部
+                    // Container(
+                    //   padding: const EdgeInsets.all(24),
+                    //   decoration: BoxDecoration(
+                    //     gradient: LinearGradient(
+                    //       begin: Alignment.topLeft,
+                    //       end: Alignment.bottomRight,
+                    //       colors: [
+                    //         AppColors.primary.withOpacity(0.1),
+                    //         AppColors.secondary.withOpacity(0.1),
+                    //       ],
+                    //     ),
+                    //     borderRadius: const BorderRadius.only(
+                    //       bottomLeft: Radius.circular(30),
+                    //       bottomRight: Radius.circular(30),
+                    //     ),
+                    //   ),
+                    //   child: Column(
+                    //     children: [
+                    //       Container(
+                    //         padding: const EdgeInsets.all(16),
+                    //         decoration: BoxDecoration(
+                    //           gradient: LinearGradient(
+                    //             colors: [
+                    //               AppColors.primary,
+                    //               AppColors.primaryLight,
+                    //             ],
+                    //           ),
+                    //           borderRadius: BorderRadius.circular(20),
+                    //           boxShadow: [
+                    //             BoxShadow(
+                    //               color: AppColors.primary.withOpacity(0.3),
+                    //               blurRadius: 15,
+                    //               offset: const Offset(0, 8),
+                    //             ),
+                    //           ],
+                    //         ),
+                    //         child: const Icon(
+                    //           Icons.trending_up_rounded,
+                    //           size: 32,
+                    //           color: Colors.white,
+                    //         ),
+                    //       ),
+                    //       const SizedBox(height: 16),
+                    //       const Text(
+                    //         '薪资分析中心',
+                    //         style: TextStyle(
+                    //           color: AppColors.primaryDark,
+                    //           fontSize: 18,
+                    //           fontWeight: FontWeight.bold,
+                    //         ),
+                    //       ),
+                    //       const SizedBox(height: 4),
+                    //       Text(
+                    //         'Salary Analytics Hub',
+                    //         style: TextStyle(
+                    //           color: Colors.grey[600],
+                    //           fontSize: 12,
+                    //           fontWeight: FontWeight.w400,
+                    //         ),
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
+                    // 导航菜单
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 24,
+                        ),
+                        children: [
+                          _buildSidebarItem(
+                            icon: Icons.cloud_upload_rounded,
+                            title: '工资表管理',
+                            subtitle: '上传与管理',
+                            route: '/salary',
+                            context: context,
+                            screenWidth: screenWidth,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(height: 12),
+                          _buildSidebarItem(
+                            icon: Icons.analytics_outlined,
+                            title: '数据分析',
+                            subtitle: '深度洞察',
+                            route: '/analysis',
+                            context: context,
+                            screenWidth: screenWidth,
+                            color: AppColors.secondary,
+                          ),
+                          const SizedBox(height: 12),
+                          _buildSidebarItem(
+                            icon: Icons.bar_chart_rounded,
+                            title: '可视化展示',
+                            subtitle: '图表报告',
+                            route: '/visualization',
+                            context: context,
+                            screenWidth: screenWidth,
+                            color: AppColors.accent,
+                          ),
+                          const SizedBox(height: 12),
+                          _buildSidebarItem(
+                            icon: Icons.settings_outlined,
+                            title: '系统设置',
+                            subtitle: '个性配置',
+                            route: '/settings',
+                            context: context,
+                            screenWidth: screenWidth,
+                            color: Colors.grey[600]!,
+                          ),
+                        ],
                       ),
                     ),
-                    child: const Row(
-                      children: [
-                        Icon(
-                          Icons.account_balance,
-                          size: 30,
-                          color: Colors.white,
-                        ),
-                        SizedBox(width: 10),
-                        Text(
-                          '工资分析系统',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                  ],
+                ),
+              ),
+
+            // 主内容区域
+            Expanded(
+              child: Container(
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.cardShadow,
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
                     ),
-                  ),
-                  // 导航菜单
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.only(top: 20),
-                      children: [
-                        _buildSidebarItem(
-                          icon: Icons.upload_file,
-                          title: '工资表管理',
-                          route: '/salary',
-                          context: context,
-                          screenWidth: screenWidth,
-                        ),
-                        _buildSidebarItem(
-                          icon: Icons.analytics,
-                          title: '数据分析',
-                          route: '/analysis',
-                          context: context,
-                          screenWidth: screenWidth,
-                        ),
-                        _buildSidebarItem(
-                          icon: Icons.bar_chart,
-                          title: '可视化展示',
-                          route: '/visualization',
-                          context: context,
-                          screenWidth: screenWidth,
-                        ),
-                        _buildSidebarItem(
-                          icon: Icons.settings,
-                          title: '系统设置',
-                          route: '/settings',
-                          context: context,
-                          screenWidth: screenWidth,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: widget.child,
+                ),
               ),
             ),
-
-          // 主内容区域
-          Expanded(
-            child: Container(
-              color: Colors.lightBlue.shade50,
-              child: widget.child,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -143,17 +310,33 @@ class _MainLayoutState extends State<MainLayout> {
   Widget _buildSidebarItem({
     required IconData icon,
     required String title,
+    required String subtitle,
     required String route,
     required BuildContext context,
     required double screenWidth,
+    required Color color,
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+    final isSelected = GoRouterState.of(context).uri.path.startsWith(route);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: isSelected
+            ? LinearGradient(
+                colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+              )
+            : null,
+        border: isSelected
+            ? Border.all(color: color.withOpacity(0.3), width: 1)
+            : null,
+      ),
       child: Material(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           onTap: () {
             context.go(route);
             if (screenWidth < 768) {
@@ -161,19 +344,66 @@ class _MainLayoutState extends State<MainLayout> {
             }
           },
           child: Padding(
-            padding: const EdgeInsets.all(15),
+            padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Icon(icon, size: 24, color: Colors.lightBlue.shade300),
-                const SizedBox(width: 15),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.lightBlue.shade900,
-                    fontWeight: FontWeight.w500,
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isSelected ? color : color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: color.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 20,
+                    color: isSelected ? Colors.white : color,
                   ),
                 ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: isSelected ? color : Colors.grey[800],
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (isSelected)
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
               ],
             ),
           ),
