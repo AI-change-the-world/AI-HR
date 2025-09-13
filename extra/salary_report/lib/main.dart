@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:salary_report/src/pages/main_layout.dart';
-import 'package:salary_report/src/pages/salary_management/list/salary_list_page.dart';
 import 'package:salary_report/src/pages/salary_management/upload/upload_page.dart';
 import 'package:salary_report/src/pages/salary_management/detail/salary_detail_page.dart';
 import 'package:salary_report/src/pages/data_analysis/dimension/analysis_dimension_page.dart';
@@ -31,18 +30,11 @@ class MyApp extends StatelessWidget {
         ShellRoute(
           builder: (context, state, child) => MainLayout(child: child),
           routes: [
-            GoRoute(
-              path: '/',
-              builder: (context, state) => const SalaryListPage(),
-            ),
+            GoRoute(path: '/', builder: (context, state) => const UploadPage()),
             GoRoute(
               path: '/salary',
-              builder: (context, state) => const SalaryListPage(),
+              builder: (context, state) => const UploadPage(),
               routes: [
-                GoRoute(
-                  path: 'upload',
-                  builder: (context, state) => const UploadPage(),
-                ),
                 GoRoute(
                   path: 'detail/:id',
                   builder: (context, state) => SalaryDetailPage(
