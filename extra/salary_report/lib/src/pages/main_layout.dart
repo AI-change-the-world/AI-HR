@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/app_providers.dart';
@@ -68,7 +67,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
       //           Container(
       //             padding: const EdgeInsets.all(8),
       //             decoration: BoxDecoration(
-      //               color: Colors.white.withOpacity(0.2),
+      //               color: Colors.white.withValues(alpha: 0.2),
       //               borderRadius: BorderRadius.circular(12),
       //             ),
       //             child: const Icon(
@@ -107,7 +106,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
       //         icon: Container(
       //           padding: const EdgeInsets.all(8),
       //           decoration: BoxDecoration(
-      //             color: Colors.white.withOpacity(0.2),
+      //             color: Colors.white.withValues(alpha: 0.2),
       //             borderRadius: BorderRadius.circular(10),
       //           ),
       //           child: const Icon(
@@ -128,7 +127,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
       //         Padding(
       //           padding: const EdgeInsets.only(right: 16),
       //           child: CircleAvatar(
-      //             backgroundColor: Colors.white.withOpacity(0.2),
+      //             backgroundColor: Colors.white.withValues(alpha: 0.2),
       //             child: const Icon(
       //               Icons.person_outline,
       //               color: Colors.white,
@@ -176,8 +175,8 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                     //       begin: Alignment.topLeft,
                     //       end: Alignment.bottomRight,
                     //       colors: [
-                    //         AppColors.primary.withOpacity(0.1),
-                    //         AppColors.secondary.withOpacity(0.1),
+                    //         AppColors.primary.withValues(alpha: 0.1),
+                    //         AppColors.secondary.withValues(alpha: 0.1),
                     //       ],
                     //     ),
                     //     borderRadius: const BorderRadius.only(
@@ -199,7 +198,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                     //           borderRadius: BorderRadius.circular(20),
                     //           boxShadow: [
                     //             BoxShadow(
-                    //               color: AppColors.primary.withOpacity(0.3),
+                    //               color: AppColors.primary.withValues(alpha: 0.3),
                     //               blurRadius: 15,
                     //               offset: const Offset(0, 8),
                     //             ),
@@ -332,11 +331,14 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
         borderRadius: BorderRadius.circular(16),
         gradient: isSelected
             ? LinearGradient(
-                colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+                colors: [
+                  color.withValues(alpha: 0.1),
+                  color.withValues(alpha: 0.05),
+                ],
               )
             : null,
         border: isSelected
-            ? Border.all(color: color.withOpacity(0.3), width: 1)
+            ? Border.all(color: color.withValues(alpha: 0.3), width: 1)
             : null,
       ),
       child: Material(
@@ -358,12 +360,12 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: isSelected ? color : color.withOpacity(0.1),
+                    color: isSelected ? color : color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                              color: color.withOpacity(0.3),
+                              color: color.withValues(alpha: 0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 4),
                             ),

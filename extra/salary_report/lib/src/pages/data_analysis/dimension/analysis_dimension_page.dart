@@ -71,7 +71,9 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF26D0CE).withOpacity(0.3),
+                            color: const Color(
+                              0xFF26D0CE,
+                            ).withValues(alpha: 0.3),
                             blurRadius: 12,
                             offset: const Offset(0, 6),
                           ),
@@ -120,17 +122,17 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
                       end: Alignment.bottomRight,
                       colors: [
                         Colors.white,
-                        const Color(0xFF26D0CE).withOpacity(0.02),
+                        const Color(0xFF26D0CE).withValues(alpha: 0.02),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: const Color(0xFF26D0CE).withOpacity(0.2),
+                      color: const Color(0xFF26D0CE).withValues(alpha: 0.2),
                       width: 1,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF26D0CE).withOpacity(0.1),
+                        color: const Color(0xFF26D0CE).withValues(alpha: 0.1),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
@@ -144,7 +146,9 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF26D0CE).withOpacity(0.1),
+                              color: const Color(
+                                0xFF26D0CE,
+                              ).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(
@@ -204,7 +208,7 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
                     border: Border.all(color: Colors.grey.shade200, width: 1),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -218,7 +222,9 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF6C63FF).withOpacity(0.1),
+                              color: const Color(
+                                0xFF6C63FF,
+                              ).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(
@@ -257,7 +263,7 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF26D0CE).withOpacity(0.4),
+                        color: const Color(0xFF26D0CE).withValues(alpha: 0.4),
                         blurRadius: 15,
                         offset: const Offset(0, 8),
                       ),
@@ -352,7 +358,9 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : Colors.grey.shade50,
+          color: isSelected
+              ? color.withValues(alpha: 0.1)
+              : Colors.grey.shade50,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? color : Colors.grey.shade200,
@@ -442,18 +450,18 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              const Color(0xFF6C63FF).withOpacity(0.1),
-              const Color(0xFF26D0CE).withOpacity(0.1),
+              const Color(0xFF6C63FF).withValues(alpha: 0.1),
+              const Color(0xFF26D0CE).withValues(alpha: 0.1),
             ],
           ),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: const Color(0xFF6C63FF).withOpacity(0.3),
+            color: const Color(0xFF6C63FF).withValues(alpha: 0.3),
             width: 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF6C63FF).withOpacity(0.1),
+              color: const Color(0xFF6C63FF).withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -470,7 +478,7 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF6C63FF).withOpacity(0.3),
+                    color: const Color(0xFF6C63FF).withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -512,7 +520,7 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFF6C63FF).withOpacity(0.1),
+                color: const Color(0xFF6C63FF).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(

@@ -119,8 +119,8 @@ class _YearDetailPageState extends State<YearDetailPage>
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      const Color(0xFF6C63FF).withOpacity(0.1),
-                      const Color(0xFF26D0CE).withOpacity(0.1),
+                      const Color(0xFF6C63FF).withValues(alpha: 0.1),
+                      const Color(0xFF26D0CE).withValues(alpha: 0.1),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(16),
@@ -239,7 +239,7 @@ class _YearDetailPageState extends State<YearDetailPage>
                     border: Border.all(color: Colors.grey.shade200),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -249,7 +249,7 @@ class _YearDetailPageState extends State<YearDetailPage>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '上传 ${widget.yearData.year}年${_selectedMonth}月 薪资数据',
+                        '上传 ${widget.yearData.year}年$_selectedMonth月 薪资数据',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -271,7 +271,7 @@ class _YearDetailPageState extends State<YearDetailPage>
                           ),
                           borderRadius: BorderRadius.circular(12),
                           color: _selectedFilePath != null
-                              ? const Color(0xFF10B981).withOpacity(0.05)
+                              ? const Color(0xFF10B981).withValues(alpha: 0.05)
                               : Colors.grey.shade50,
                         ),
                         child: Material(
@@ -388,9 +388,9 @@ class _YearDetailPageState extends State<YearDetailPage>
           child: Container(
             decoration: BoxDecoration(
               color: isSelected
-                  ? const Color(0xFF6C63FF).withOpacity(0.1)
+                  ? const Color(0xFF6C63FF).withValues(alpha: 0.1)
                   : monthData.hasData
-                  ? const Color(0xFF10B981).withOpacity(0.1)
+                  ? const Color(0xFF10B981).withValues(alpha: 0.1)
                   : Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
@@ -403,7 +403,7 @@ class _YearDetailPageState extends State<YearDetailPage>
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -434,7 +434,7 @@ class _YearDetailPageState extends State<YearDetailPage>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${month}月',
+                  '$month月',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,

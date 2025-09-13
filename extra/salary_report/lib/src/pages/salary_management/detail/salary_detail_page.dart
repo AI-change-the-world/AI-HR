@@ -105,26 +105,24 @@ class _SalaryDetailPageState extends State<SalaryDetailPage> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      ..._summaryData.entries
-                          .map(
-                            (entry) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      entry.key,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
+                      ..._summaryData.entries.map(
+                        (entry) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  entry.key,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w500,
                                   ),
-                                  Text(entry.value),
-                                ],
+                                ),
                               ),
-                            ),
-                          )
-                          .toList(),
+                              Text(entry.value),
+                            ],
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),

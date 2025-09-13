@@ -60,7 +60,7 @@ class _ChartPageState extends State<ChartPage> {
               // 图表类型选择
               Card(
                 elevation: 3,
-                shadowColor: Colors.lightBlue.withOpacity(0.2),
+                shadowColor: Colors.lightBlue.withValues(alpha: 0.2),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -123,7 +123,7 @@ class _ChartPageState extends State<ChartPage> {
               // 维度选择
               Card(
                 elevation: 3,
-                shadowColor: Colors.lightBlue.withOpacity(0.2),
+                shadowColor: Colors.lightBlue.withValues(alpha: 0.2),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -185,7 +185,7 @@ class _ChartPageState extends State<ChartPage> {
               const SizedBox(height: 12),
               Card(
                 elevation: 3,
-                shadowColor: Colors.lightBlue.withOpacity(0.2),
+                shadowColor: Colors.lightBlue.withValues(alpha: 0.2),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),

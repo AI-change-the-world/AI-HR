@@ -49,7 +49,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
               const SizedBox(height: 12),
               Card(
                 elevation: 3,
-                shadowColor: Colors.lightBlue.withOpacity(0.2),
+                shadowColor: Colors.lightBlue.withValues(alpha: 0.2),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -83,7 +83,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
               const SizedBox(height: 12),
               Card(
                 elevation: 3,
-                shadowColor: Colors.lightBlue.withOpacity(0.2),
+                shadowColor: Colors.lightBlue.withValues(alpha: 0.2),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -113,7 +113,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
               const SizedBox(height: 12),
               Card(
                 elevation: 3,
-                shadowColor: Colors.lightBlue.withOpacity(0.2),
+                shadowColor: Colors.lightBlue.withValues(alpha: 0.2),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -143,7 +143,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
               const SizedBox(height: 12),
               Card(
                 elevation: 3,
-                shadowColor: Colors.lightBlue.withOpacity(0.2),
+                shadowColor: Colors.lightBlue.withValues(alpha: 0.2),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -229,7 +229,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
 
               Card(
                 elevation: 3,
-                shadowColor: Colors.lightBlue.withOpacity(0.2),
+                shadowColor: Colors.lightBlue.withValues(alpha: 0.2),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -304,7 +304,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
               const SizedBox(height: 12),
               Card(
                 elevation: 3,
-                shadowColor: Colors.lightBlue.withOpacity(0.2),
+                shadowColor: Colors.lightBlue.withValues(alpha: 0.2),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),

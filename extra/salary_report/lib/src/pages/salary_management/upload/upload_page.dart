@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:file_selector/file_selector.dart';
-import 'package:go_router/go_router.dart';
 import 'year_detail_page.dart';
 
 // 年度数据模型
@@ -236,7 +234,9 @@ class _UploadPageState extends State<UploadPage> with TickerProviderStateMixin {
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF6C63FF).withOpacity(0.3),
+                                color: const Color(
+                                  0xFF6C63FF,
+                                ).withValues(alpha: 0.3),
                                 blurRadius: 12,
                                 offset: const Offset(0, 6),
                               ),
@@ -283,13 +283,13 @@ class _UploadPageState extends State<UploadPage> with TickerProviderStateMixin {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            const Color(0xFF6C63FF).withOpacity(0.1),
-                            const Color(0xFF26D0CE).withOpacity(0.1),
+                            const Color(0xFF6C63FF).withValues(alpha: 0.1),
+                            const Color(0xFF26D0CE).withValues(alpha: 0.1),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: const Color(0xFF6C63FF).withOpacity(0.2),
+                          color: const Color(0xFF6C63FF).withValues(alpha: 0.2),
                           width: 1,
                         ),
                       ),
@@ -390,236 +390,236 @@ class _UploadPageState extends State<UploadPage> with TickerProviderStateMixin {
     );
   }
 
-  List<Widget> _buildSelectedFileContent() {
-    return [
-      Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: const Color(0xFF10B981).withOpacity(0.1),
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(
-          Icons.check_circle_rounded,
-          color: Color(0xFF10B981),
-          size: 48,
-        ),
-      ),
-      const SizedBox(height: 24),
-      const Text(
-        '文件已选择',
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFF2D3748),
-        ),
-      ),
-      const SizedBox(height: 12),
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: const Color(0xFF10B981).withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: const Color(0xFF10B981).withOpacity(0.3),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.description_rounded,
-              color: Color(0xFF10B981),
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                '文件已选择',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF10B981),
-                  fontSize: 14,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-      const SizedBox(height: 16),
-      Text(
-        '点击"开始上传"按钮来处理此文件',
-        style: TextStyle(color: Colors.grey[600], fontSize: 14),
-        textAlign: TextAlign.center,
-      ),
-    ];
-  }
+  // List<Widget> _buildSelectedFileContent() {
+  //   return [
+  //     Container(
+  //       padding: const EdgeInsets.all(20),
+  //       decoration: BoxDecoration(
+  //         color: const Color(0xFF10B981).withValues(alpha: 0.1),
+  //         shape: BoxShape.circle,
+  //       ),
+  //       child: const Icon(
+  //         Icons.check_circle_rounded,
+  //         color: Color(0xFF10B981),
+  //         size: 48,
+  //       ),
+  //     ),
+  //     const SizedBox(height: 24),
+  //     const Text(
+  //       '文件已选择',
+  //       style: TextStyle(
+  //         fontSize: 20,
+  //         fontWeight: FontWeight.bold,
+  //         color: Color(0xFF2D3748),
+  //       ),
+  //     ),
+  //     const SizedBox(height: 12),
+  //     Container(
+  //       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+  //       decoration: BoxDecoration(
+  //         color: const Color(0xFF10B981).withValues(alpha: 0.1),
+  //         borderRadius: BorderRadius.circular(12),
+  //         border: Border.all(
+  //           color: const Color(0xFF10B981).withValues(alpha: 0.3),
+  //           width: 1,
+  //         ),
+  //       ),
+  //       child: Row(
+  //         mainAxisSize: MainAxisSize.min,
+  //         children: [
+  //           const Icon(
+  //             Icons.description_rounded,
+  //             color: Color(0xFF10B981),
+  //             size: 20,
+  //           ),
+  //           const SizedBox(width: 8),
+  //           Flexible(
+  //             child: Text(
+  //               '文件已选择',
+  //               style: const TextStyle(
+  //                 fontWeight: FontWeight.w600,
+  //                 color: Color(0xFF10B981),
+  //                 fontSize: 14,
+  //               ),
+  //               overflow: TextOverflow.ellipsis,
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //     const SizedBox(height: 16),
+  //     Text(
+  //       '点击"开始上传"按钮来处理此文件',
+  //       style: TextStyle(color: Colors.grey[600], fontSize: 14),
+  //       textAlign: TextAlign.center,
+  //     ),
+  //   ];
+  // }
 
-  List<Widget> _buildSelectFileContent() {
-    return [
-      Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: const Color(0xFF6C63FF).withOpacity(0.1),
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(
-          Icons.cloud_upload_rounded,
-          color: Color(0xFF6C63FF),
-          size: 56,
-        ),
-      ),
-      const SizedBox(height: 24),
-      const Text(
-        '选择要上传的Excel文件',
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFF2D3748),
-        ),
-        textAlign: TextAlign.center,
-      ),
-      const SizedBox(height: 12),
-      Text(
-        '拖放文件到这里或点击选择文件',
-        style: TextStyle(color: Colors.grey[600], fontSize: 16),
-        textAlign: TextAlign.center,
-      ),
-      const SizedBox(height: 8),
-      Text(
-        '支持 .xlsx 格式',
-        style: TextStyle(color: Colors.grey[500], fontSize: 14),
-        textAlign: TextAlign.center,
-      ),
-    ];
-  }
+  // List<Widget> _buildSelectFileContent() {
+  //   return [
+  //     Container(
+  //       padding: const EdgeInsets.all(24),
+  //       decoration: BoxDecoration(
+  //         color: const Color(0xFF6C63FF).withValues(alpha: 0.1),
+  //         shape: BoxShape.circle,
+  //       ),
+  //       child: const Icon(
+  //         Icons.cloud_upload_rounded,
+  //         color: Color(0xFF6C63FF),
+  //         size: 56,
+  //       ),
+  //     ),
+  //     const SizedBox(height: 24),
+  //     const Text(
+  //       '选择要上传的Excel文件',
+  //       style: TextStyle(
+  //         fontSize: 20,
+  //         fontWeight: FontWeight.bold,
+  //         color: Color(0xFF2D3748),
+  //       ),
+  //       textAlign: TextAlign.center,
+  //     ),
+  //     const SizedBox(height: 12),
+  //     Text(
+  //       '拖放文件到这里或点击选择文件',
+  //       style: TextStyle(color: Colors.grey[600], fontSize: 16),
+  //       textAlign: TextAlign.center,
+  //     ),
+  //     const SizedBox(height: 8),
+  //     Text(
+  //       '支持 .xlsx 格式',
+  //       style: TextStyle(color: Colors.grey[500], fontSize: 14),
+  //       textAlign: TextAlign.center,
+  //     ),
+  //   ];
+  // }
 
-  Widget _buildActionButton({
-    required VoidCallback? onPressed,
-    IconData? icon,
-    required String label,
-    required Color color,
-    bool isOutlined = false,
-    bool isLoading = false,
-  }) {
-    return SizedBox(
-      height: 56,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isOutlined ? Colors.white : color,
-          foregroundColor: isOutlined ? color : Colors.white,
-          side: isOutlined ? BorderSide(color: color, width: 2) : null,
-          elevation: isOutlined ? 0 : 8,
-          shadowColor: isOutlined ? null : color.withOpacity(0.3),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (isLoading)
-              SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    isOutlined ? color : Colors.white,
-                  ),
-                ),
-              )
-            else if (icon != null)
-              Icon(icon, size: 20),
-            if (!isLoading && icon != null) const SizedBox(width: 8),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Widget _buildActionButton({
+  //   required VoidCallback? onPressed,
+  //   IconData? icon,
+  //   required String label,
+  //   required Color color,
+  //   bool isOutlined = false,
+  //   bool isLoading = false,
+  // }) {
+  //   return SizedBox(
+  //     height: 56,
+  //     child: ElevatedButton(
+  //       onPressed: onPressed,
+  //       style: ElevatedButton.styleFrom(
+  //         backgroundColor: isOutlined ? Colors.white : color,
+  //         foregroundColor: isOutlined ? color : Colors.white,
+  //         side: isOutlined ? BorderSide(color: color, width: 2) : null,
+  //         elevation: isOutlined ? 0 : 8,
+  //         shadowColor: isOutlined ? null : color.withValues(alpha: 0.3),
+  //         shape: RoundedRectangleBorder(
+  //           borderRadius: BorderRadius.circular(16),
+  //         ),
+  //       ),
+  //       child: Row(
+  //         mainAxisAlignment: MainAxisAlignment.center,
+  //         children: [
+  //           if (isLoading)
+  //             SizedBox(
+  //               width: 20,
+  //               height: 20,
+  //               child: CircularProgressIndicator(
+  //                 strokeWidth: 2,
+  //                 valueColor: AlwaysStoppedAnimation<Color>(
+  //                   isOutlined ? color : Colors.white,
+  //                 ),
+  //               ),
+  //             )
+  //           else if (icon != null)
+  //             Icon(icon, size: 20),
+  //           if (!isLoading && icon != null) const SizedBox(width: 8),
+  //           Text(
+  //             label,
+  //             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
-  Widget _buildUploadGuide() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.lightbulb_outline,
-                color: Color(0xFFF59E0B),
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                '上传指南',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFF59E0B),
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _buildGuideItem('1', '确保 Excel 文件包含员工姓名、部门、职位、薪资等信息'),
-          const SizedBox(height: 8),
-          _buildGuideItem('2', '文件格式必须为 .xlsx，不支持 .xls 或其他格式'),
-          const SizedBox(height: 8),
-          _buildGuideItem('3', '建议文件大小不超过 10MB，确保上传速度'),
-        ],
-      ),
-    );
-  }
+  // Widget _buildUploadGuide() {
+  //   return Container(
+  //     padding: const EdgeInsets.all(20),
+  //     decoration: BoxDecoration(
+  //       color: Colors.grey.shade50,
+  //       borderRadius: BorderRadius.circular(16),
+  //       border: Border.all(color: Colors.grey.shade200, width: 1),
+  //     ),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Row(
+  //           children: [
+  //             const Icon(
+  //               Icons.lightbulb_outline,
+  //               color: Color(0xFFF59E0B),
+  //               size: 20,
+  //             ),
+  //             const SizedBox(width: 8),
+  //             const Text(
+  //               '上传指南',
+  //               style: TextStyle(
+  //                 fontWeight: FontWeight.bold,
+  //                 color: Color(0xFFF59E0B),
+  //                 fontSize: 16,
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //         const SizedBox(height: 12),
+  //         _buildGuideItem('1', '确保 Excel 文件包含员工姓名、部门、职位、薪资等信息'),
+  //         const SizedBox(height: 8),
+  //         _buildGuideItem('2', '文件格式必须为 .xlsx，不支持 .xls 或其他格式'),
+  //         const SizedBox(height: 8),
+  //         _buildGuideItem('3', '建议文件大小不超过 10MB，确保上传速度'),
+  //       ],
+  //     ),
+  //   );
+  // }
 
-  Widget _buildGuideItem(String step, String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 20,
-          height: 20,
-          decoration: const BoxDecoration(
-            color: Color(0xFFF59E0B),
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: Text(
-              step,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(
-              color: Colors.grey[700],
-              fontSize: 14,
-              height: 1.4,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  // Widget _buildGuideItem(String step, String text) {
+  //   return Row(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Container(
+  //         width: 20,
+  //         height: 20,
+  //         decoration: const BoxDecoration(
+  //           color: Color(0xFFF59E0B),
+  //           shape: BoxShape.circle,
+  //         ),
+  //         child: Center(
+  //           child: Text(
+  //             step,
+  //             style: const TextStyle(
+  //               color: Colors.white,
+  //               fontSize: 10,
+  //               fontWeight: FontWeight.bold,
+  //             ),
+  //           ),
+  //         ),
+  //       ),
+  //       const SizedBox(width: 12),
+  //       Expanded(
+  //         child: Text(
+  //           text,
+  //           style: TextStyle(
+  //             color: Colors.grey[700],
+  //             fontSize: 14,
+  //             height: 1.4,
+  //           ),
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   Widget _buildStatItem(
     String label,
@@ -632,7 +632,7 @@ class _UploadPageState extends State<UploadPage> with TickerProviderStateMixin {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: color, size: 20),
@@ -674,7 +674,7 @@ class _UploadPageState extends State<UploadPage> with TickerProviderStateMixin {
               border: Border.all(color: Colors.grey.shade200, width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -732,8 +732,12 @@ class _UploadPageState extends State<UploadPage> with TickerProviderStateMixin {
                             ),
                             decoration: BoxDecoration(
                               color: yearData.uploadedCount == 12
-                                  ? const Color(0xFF10B981).withOpacity(0.1)
-                                  : const Color(0xFFF59E0B).withOpacity(0.1),
+                                  ? const Color(
+                                      0xFF10B981,
+                                    ).withValues(alpha: 0.1)
+                                  : const Color(
+                                      0xFFF59E0B,
+                                    ).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -814,7 +818,7 @@ class _UploadPageState extends State<UploadPage> with TickerProviderStateMixin {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -943,7 +947,7 @@ class _UploadPageState extends State<UploadPage> with TickerProviderStateMixin {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF6C63FF).withOpacity(0.1),
+              color: const Color(0xFF6C63FF).withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(

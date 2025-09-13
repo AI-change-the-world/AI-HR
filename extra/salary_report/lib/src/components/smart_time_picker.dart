@@ -31,9 +31,9 @@ class TimeRange {
       final startQuarter = ((startDate.month - 1) ~/ 3) + 1;
       final endQuarter = ((endDate.month - 1) ~/ 3) + 1;
       if (startDate.year == endDate.year && startQuarter == endQuarter) {
-        return '${startDate.year}年第${startQuarter}季度';
+        return '${startDate.year}年第$startQuarter季度';
       } else {
-        return '${startDate.year}年Q${startQuarter} - ${endDate.year}年Q${endQuarter}';
+        return '${startDate.year}年Q$startQuarter - ${endDate.year}年Q$endQuarter';
       }
     }
   }
@@ -85,7 +85,7 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -133,7 +133,7 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [color, color.withOpacity(0.8)]),
+        gradient: LinearGradient(colors: [color, color.withValues(alpha: 0.8)]),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
@@ -144,7 +144,7 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: Colors.white, size: 24),
@@ -166,7 +166,7 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
                 Text(
                   subtitle,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                     fontSize: 12,
                   ),
                 ),
@@ -189,7 +189,7 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
         Container(
           width: 200,
           decoration: BoxDecoration(
-            color: const Color(0xFF6C63FF).withOpacity(0.05),
+            color: const Color(0xFF6C63FF).withValues(alpha: 0.05),
             border: Border(
               right: BorderSide(color: Colors.grey.shade300, width: 1),
             ),
@@ -298,7 +298,7 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF6C63FF).withOpacity(0.1),
+                        color: const Color(0xFF6C63FF).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Column(
@@ -340,59 +340,59 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
     );
   }
 
-  Widget _buildResultCard(String label, DateTime date) {
-    String displayText = '';
-    switch (widget.mode) {
-      case TimePickerMode.month:
-        displayText = '${date.year}年${date.month.toString().padLeft(2, '0')}月';
-        break;
-      case TimePickerMode.year:
-        displayText = '${date.year}年';
-        break;
-      case TimePickerMode.quarter:
-        final quarter = ((date.month - 1) ~/ 3) + 1;
-        displayText = '${date.year}年Q${quarter}';
-        break;
-    }
+  // Widget _buildResultCard(String label, DateTime date) {
+  //   String displayText = '';
+  //   switch (widget.mode) {
+  //     case TimePickerMode.month:
+  //       displayText = '${date.year}年${date.month.toString().padLeft(2, '0')}月';
+  //       break;
+  //     case TimePickerMode.year:
+  //       displayText = '${date.year}年';
+  //       break;
+  //     case TimePickerMode.quarter:
+  //       final quarter = ((date.month - 1) ~/ 3) + 1;
+  //       displayText = '${date.year}年Q${quarter}';
+  //       break;
+  //   }
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            displayText,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2D3748),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  //   return Container(
+  //     padding: const EdgeInsets.all(12),
+  //     decoration: BoxDecoration(
+  //       color: Colors.white,
+  //       borderRadius: BorderRadius.circular(8),
+  //       border: Border.all(color: Colors.grey.shade300),
+  //       boxShadow: [
+  //         BoxShadow(
+  //           color: Colors.black.withValues(alpha: 0.05),
+  //           blurRadius: 4,
+  //           offset: const Offset(0, 2),
+  //         ),
+  //       ],
+  //     ),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Text(
+  //           label,
+  //           style: const TextStyle(
+  //             fontSize: 12,
+  //             fontWeight: FontWeight.w500,
+  //             color: Colors.grey,
+  //           ),
+  //         ),
+  //         const SizedBox(height: 4),
+  //         Text(
+  //           displayText,
+  //           style: const TextStyle(
+  //             fontSize: 14,
+  //             fontWeight: FontWeight.bold,
+  //             color: Color(0xFF2D3748),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildTimeSelector() {
     switch (widget.mode) {
@@ -602,10 +602,10 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
                                   color: isSelected
-                                      ? Colors.white.withOpacity(0.2)
+                                      ? Colors.white.withValues(alpha: 0.2)
                                       : const Color(
                                           0xFFFF6B6B,
-                                        ).withOpacity(0.1),
+                                        ).withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
@@ -668,7 +668,7 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF6C63FF).withOpacity(0.1),
+        color: const Color(0xFF6C63FF).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -691,7 +691,7 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: const Color(0xFF6C63FF).withOpacity(0.3),
+                color: const Color(0xFF6C63FF).withValues(alpha: 0.3),
               ),
             ),
             child: DropdownButtonHideUnderline(
@@ -711,7 +711,7 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
                   return DropdownMenuItem<int>(
                     value: year,
                     child: Text(
-                      '${year}年',
+                      '$year年',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -748,7 +748,7 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '选择月份 - ${year}年',
+            '选择月份 - $year年',
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,

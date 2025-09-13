@@ -35,6 +35,17 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   isar_community_generator: ^3.3.0-dev.2
+  icons_launcher: ^3.0.2
 
 flutter:
   uses-material-design: true
+
+icons_launcher:
+  image_path: "../../aihr-icon.png"
+  platforms:
+    windows:
+      enable: true
+    linux:
+      enable: true
+    macos:
+      enable: true
