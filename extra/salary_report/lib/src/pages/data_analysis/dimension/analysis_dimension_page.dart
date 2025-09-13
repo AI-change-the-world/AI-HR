@@ -22,20 +22,45 @@ class _AnalysisDimensionPageState extends State<AnalysisDimensionPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              '请选择分析维度',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              '数据分析',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.lightBlue,
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
+            const Text(
+              '请选择分析维度和时间范围',
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+            const SizedBox(height: 24),
 
             // 维度选择
             Card(
+              elevation: 3,
+              shadowColor: Colors.lightBlue.withOpacity(0.2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(20.0),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const Text(
+                      '分析维度',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.lightBlue,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     ListTile(
                       title: const Text('按月份分析'),
                       leading: Radio<String>(
+                        fillColor: MaterialStateProperty.all(Colors.lightBlue),
                         value: 'month',
                         groupValue: _selectedDimension,
                         onChanged: (value) {
@@ -53,6 +78,7 @@ class _AnalysisDimensionPageState extends State<AnalysisDimensionPage> {
                     ListTile(
                       title: const Text('按年份分析'),
                       leading: Radio<String>(
+                        fillColor: MaterialStateProperty.all(Colors.lightBlue),
                         value: 'year',
                         groupValue: _selectedDimension,
                         onChanged: (value) {
@@ -70,6 +96,7 @@ class _AnalysisDimensionPageState extends State<AnalysisDimensionPage> {
                     ListTile(
                       title: const Text('按季度分析'),
                       leading: Radio<String>(
+                        fillColor: MaterialStateProperty.all(Colors.lightBlue),
                         value: 'quarter',
                         groupValue: _selectedDimension,
                         onChanged: (value) {
@@ -92,17 +119,26 @@ class _AnalysisDimensionPageState extends State<AnalysisDimensionPage> {
             const SizedBox(height: 24),
 
             // 时间选择
-            const Text(
-              '请选择时间范围',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-
             Card(
+              elevation: 3,
+              shadowColor: Colors.lightBlue.withOpacity(0.2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(20.0),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const Text(
+                      '时间范围',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.lightBlue,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     if (_selectedDimension == 'month') ...[
                       const Text('选择月份'),
                       const SizedBox(height: 12),
@@ -110,7 +146,10 @@ class _AnalysisDimensionPageState extends State<AnalysisDimensionPage> {
                         title: Text(
                           '${_selectedDate.year}年${_selectedDate.month.toString().padLeft(2, '0')}月',
                         ),
-                        trailing: const Icon(Icons.calendar_today),
+                        trailing: const Icon(
+                          Icons.calendar_today,
+                          color: Colors.lightBlue,
+                        ),
                         onTap: () async {
                           final DateTime? picked = await showDatePicker(
                             context: context,
@@ -131,7 +170,10 @@ class _AnalysisDimensionPageState extends State<AnalysisDimensionPage> {
                       const SizedBox(height: 12),
                       ListTile(
                         title: Text('${_selectedDate.year}年'),
-                        trailing: const Icon(Icons.calendar_today),
+                        trailing: const Icon(
+                          Icons.calendar_today,
+                          color: Colors.lightBlue,
+                        ),
                         onTap: () async {
                           final DateTime? picked = await showDatePicker(
                             context: context,
@@ -154,7 +196,10 @@ class _AnalysisDimensionPageState extends State<AnalysisDimensionPage> {
                         title: Text(
                           '${_selectedDate.year}年第${(((_selectedDate.month - 1) ~/ 3) + 1)}季度',
                         ),
-                        trailing: const Icon(Icons.calendar_today),
+                        trailing: const Icon(
+                          Icons.calendar_today,
+                          color: Colors.lightBlue,
+                        ),
                         onTap: () async {
                           final DateTime? picked = await showDatePicker(
                             context: context,
@@ -197,7 +242,16 @@ class _AnalysisDimensionPageState extends State<AnalysisDimensionPage> {
                     );
                   }
                 },
-                child: const Text('开始分析'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.all(16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  '开始分析',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
           ],

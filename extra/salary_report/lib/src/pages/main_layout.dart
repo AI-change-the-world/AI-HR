@@ -38,72 +38,146 @@ class _MainLayoutState extends State<MainLayout> {
             });
           },
         ),
+        backgroundColor: Colors.lightBlue.shade50,
+        elevation: 2,
+        shadowColor: Colors.lightBlue.withOpacity(0.3),
       ),
       body: Row(
         children: [
           // 侧边栏
           if (_isSidebarOpen || screenWidth >= 768)
-            SizedBox(
+            Container(
               width: 250,
-              child: Drawer(
-                child: ListView(
-                  padding: EdgeInsets.zero,
-                  children: [
-                    const DrawerHeader(
-                      decoration: BoxDecoration(color: Colors.blue),
-                      child: Text(
-                        '工资分析系统',
-                        style: TextStyle(color: Colors.white, fontSize: 24),
+              decoration: BoxDecoration(
+                color: Colors.lightBlue.shade50,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.lightBlue.withOpacity(0.2),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // 侧边栏头部
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.lightBlue.shade100,
+                      borderRadius: const BorderRadius.only(
+                        bottomRight: Radius.circular(20),
                       ),
                     ),
-                    ListTile(
-                      leading: const Icon(Icons.upload_file),
-                      title: const Text('工资表管理'),
-                      onTap: () {
-                        context.go('/salary');
-                        if (screenWidth < 768) {
-                          Navigator.of(context).pop();
-                        }
-                      },
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.account_balance,
+                          size: 30,
+                          color: Colors.white,
+                        ),
+                        SizedBox(width: 10),
+                        Text(
+                          '工资分析系统',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
-                    ListTile(
-                      leading: const Icon(Icons.analytics),
-                      title: const Text('数据分析'),
-                      onTap: () {
-                        context.go('/analysis');
-                        if (screenWidth < 768) {
-                          Navigator.of(context).pop();
-                        }
-                      },
+                  ),
+                  // 导航菜单
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.only(top: 20),
+                      children: [
+                        _buildSidebarItem(
+                          icon: Icons.upload_file,
+                          title: '工资表管理',
+                          route: '/salary',
+                          context: context,
+                          screenWidth: screenWidth,
+                        ),
+                        _buildSidebarItem(
+                          icon: Icons.analytics,
+                          title: '数据分析',
+                          route: '/analysis',
+                          context: context,
+                          screenWidth: screenWidth,
+                        ),
+                        _buildSidebarItem(
+                          icon: Icons.bar_chart,
+                          title: '可视化展示',
+                          route: '/visualization',
+                          context: context,
+                          screenWidth: screenWidth,
+                        ),
+                        _buildSidebarItem(
+                          icon: Icons.settings,
+                          title: '系统设置',
+                          route: '/settings',
+                          context: context,
+                          screenWidth: screenWidth,
+                        ),
+                      ],
                     ),
-                    ListTile(
-                      leading: const Icon(Icons.bar_chart),
-                      title: const Text('可视化展示'),
-                      onTap: () {
-                        context.go('/visualization');
-                        if (screenWidth < 768) {
-                          Navigator.of(context).pop();
-                        }
-                      },
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.settings),
-                      title: const Text('系统设置'),
-                      onTap: () {
-                        context.go('/settings');
-                        if (screenWidth < 768) {
-                          Navigator.of(context).pop();
-                        }
-                      },
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
 
           // 主内容区域
-          Expanded(child: widget.child),
+          Expanded(
+            child: Container(
+              color: Colors.lightBlue.shade50,
+              child: widget.child,
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSidebarItem({
+    required IconData icon,
+    required String title,
+    required String route,
+    required BuildContext context,
+    required double screenWidth,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      child: Material(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            context.go(route);
+            if (screenWidth < 768) {
+              Navigator.of(context).pop();
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(15),
+            child: Row(
+              children: [
+                Icon(icon, size: 24, color: Colors.lightBlue.shade300),
+                const SizedBox(width: 15),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.lightBlue.shade900,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

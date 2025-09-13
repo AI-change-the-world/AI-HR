@@ -83,44 +83,68 @@ class _UploadPageState extends State<UploadPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
+              '上传工资表',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.lightBlue,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
               '请选择要上传的工资表文件',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
             const SizedBox(height: 16),
             const Text('支持格式: .xlsx', style: TextStyle(color: Colors.grey)),
             const SizedBox(height: 32),
             Card(
+              elevation: 3,
+              shadowColor: Colors.lightBlue.withOpacity(0.2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(24.0),
                 child: Column(
                   children: [
                     if (_selectedFilePath != null) ...[
                       const Icon(
                         Icons.check_circle,
                         color: Colors.green,
-                        size: 48,
+                        size: 60,
                       ),
                       const SizedBox(height: 16),
                       Text(
                         '已选择文件:',
-                        style: Theme.of(context).textTheme.titleMedium,
+                        style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        _selectedFilePath!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.lightBlue.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          _selectedFilePath!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.lightBlue,
+                          ),
+                        ),
                       ),
                     ] else ...[
                       const Icon(
                         Icons.upload_file,
-                        size: 48,
-                        color: Colors.blue,
+                        size: 60,
+                        color: Colors.lightBlue,
                       ),
                       const SizedBox(height: 16),
                       const Text(
                         '点击下方按钮选择文件',
-                        style: TextStyle(color: Colors.grey),
+                        style: TextStyle(color: Colors.grey, fontSize: 16),
                       ),
                     ],
                   ],
@@ -133,8 +157,14 @@ class _UploadPageState extends State<UploadPage> {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: _isUploading ? null : _selectFile,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.all(16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                     icon: const Icon(Icons.folder_open),
-                    label: const Text('选择文件'),
+                    label: const Text('选择文件', style: TextStyle(fontSize: 16)),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -143,17 +173,26 @@ class _UploadPageState extends State<UploadPage> {
                     onPressed: _isUploading || _selectedFilePath == null
                         ? null
                         : _uploadFile,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.all(16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                     icon: _isUploading
                         ? const SizedBox(
-                            width: 20,
-                            height: 20,
+                            width: 24,
+                            height: 24,
                             child: CircularProgressIndicator(
-                              strokeWidth: 2,
+                              strokeWidth: 3,
                               color: Colors.white,
                             ),
                           )
                         : const Icon(Icons.cloud_upload),
-                    label: Text(_isUploading ? '上传中...' : '上传'),
+                    label: Text(
+                      _isUploading ? '上传中...' : '上传',
+                      style: const TextStyle(fontSize: 16),
+                    ),
                   ),
                 ),
               ],

@@ -42,27 +42,49 @@ class _ChartPageState extends State<ChartPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const Text(
+                '数据可视化',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.lightBlue,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '图表展示与数据分析',
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+              const SizedBox(height: 24),
+
               // 图表类型选择
               Card(
+                elevation: 3,
+                shadowColor: Colors.lightBlue.withOpacity(0.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(20.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
                         '图表类型',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
+                          color: Colors.lightBlue,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       Wrap(
                         spacing: 12,
                         children: [
                           ChoiceChip(
                             label: const Text('柱状图'),
                             selected: _selectedChartType == 'bar',
+                            selectedColor: Colors.lightBlue.shade200,
                             onSelected: (selected) {
                               setState(() {
                                 _selectedChartType = 'bar';
@@ -72,6 +94,7 @@ class _ChartPageState extends State<ChartPage> {
                           ChoiceChip(
                             label: const Text('折线图'),
                             selected: _selectedChartType == 'line',
+                            selectedColor: Colors.lightBlue.shade200,
                             onSelected: (selected) {
                               setState(() {
                                 _selectedChartType = 'line';
@@ -81,6 +104,7 @@ class _ChartPageState extends State<ChartPage> {
                           ChoiceChip(
                             label: const Text('饼图'),
                             selected: _selectedChartType == 'pie',
+                            selectedColor: Colors.lightBlue.shade200,
                             onSelected: (selected) {
                               setState(() {
                                 _selectedChartType = 'pie';
@@ -98,25 +122,32 @@ class _ChartPageState extends State<ChartPage> {
 
               // 维度选择
               Card(
+                elevation: 3,
+                shadowColor: Colors.lightBlue.withOpacity(0.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(20.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
                         '分析维度',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
+                          color: Colors.lightBlue,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       Wrap(
                         spacing: 12,
                         children: [
                           ChoiceChip(
                             label: const Text('部门对比'),
                             selected: _selectedDimension == 'department',
+                            selectedColor: Colors.lightBlue.shade200,
                             onSelected: (selected) {
                               setState(() {
                                 _selectedDimension = 'department';
@@ -126,6 +157,7 @@ class _ChartPageState extends State<ChartPage> {
                           ChoiceChip(
                             label: const Text('月度趋势'),
                             selected: _selectedDimension == 'monthly',
+                            selectedColor: Colors.lightBlue.shade200,
                             onSelected: (selected) {
                               setState(() {
                                 _selectedDimension = 'monthly';
@@ -144,10 +176,19 @@ class _ChartPageState extends State<ChartPage> {
               // 图表展示区域
               const Text(
                 '数据图表',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.lightBlue,
+                ),
               ),
               const SizedBox(height: 12),
               Card(
+                elevation: 3,
+                shadowColor: Colors.lightBlue.withOpacity(0.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Container(
                   height: 400,
                   padding: const EdgeInsets.all(16.0),
@@ -166,38 +207,56 @@ class _ChartPageState extends State<ChartPage> {
       if (_selectedChartType == 'bar') {
         return SfCartesianChart(
           primaryXAxis: CategoryAxis(),
-          title: ChartTitle(text: '各部门平均工资对比'),
+          title: ChartTitle(
+            text: '各部门平均工资对比',
+            textStyle: const TextStyle(color: Colors.lightBlue, fontSize: 16),
+          ),
           series: [
             ColumnSeries<_ChartData, String>(
               dataSource: _departmentData,
               xValueMapper: (_ChartData data, _) => data.category,
               yValueMapper: (_ChartData data, _) => data.value,
               name: '平均工资',
+              color: Colors.lightBlue,
             ),
           ],
         );
       } else if (_selectedChartType == 'line') {
         return SfCartesianChart(
           primaryXAxis: CategoryAxis(),
-          title: ChartTitle(text: '各部门平均工资对比'),
+          title: ChartTitle(
+            text: '各部门平均工资对比',
+            textStyle: const TextStyle(color: Colors.lightBlue, fontSize: 16),
+          ),
           series: [
             LineSeries<_ChartData, String>(
               dataSource: _departmentData,
               xValueMapper: (_ChartData data, _) => data.category,
               yValueMapper: (_ChartData data, _) => data.value,
               name: '平均工资',
+              color: Colors.lightBlue,
             ),
           ],
         );
       } else {
         return SfCircularChart(
-          title: ChartTitle(text: '各部门人数分布'),
+          title: ChartTitle(
+            text: '各部门人数分布',
+            textStyle: const TextStyle(color: Colors.lightBlue, fontSize: 16),
+          ),
           series: <CircularSeries<_ChartData, String>>[
             PieSeries<_ChartData, String>(
               dataSource: _departmentData,
               xValueMapper: (_ChartData data, _) => data.category,
               yValueMapper: (_ChartData data, _) => data.count,
               dataLabelSettings: const DataLabelSettings(isVisible: true),
+              pointColorMapper: (datum, index) => index == 0
+                  ? Colors.lightBlue
+                  : index == 1
+                  ? Colors.lightBlue.shade300
+                  : index == 2
+                  ? Colors.lightBlue.shade200
+                  : Colors.lightBlue.shade100,
             ),
           ],
         );
@@ -206,38 +265,56 @@ class _ChartPageState extends State<ChartPage> {
       if (_selectedChartType == 'bar') {
         return SfCartesianChart(
           primaryXAxis: CategoryAxis(),
-          title: ChartTitle(text: '月度平均工资趋势'),
+          title: ChartTitle(
+            text: '月度平均工资趋势',
+            textStyle: const TextStyle(color: Colors.lightBlue, fontSize: 16),
+          ),
           series: [
             ColumnSeries<_ChartData, String>(
               dataSource: _monthlyData,
               xValueMapper: (_ChartData data, _) => data.category,
               yValueMapper: (_ChartData data, _) => data.value,
               name: '平均工资',
+              color: Colors.lightBlue,
             ),
           ],
         );
       } else if (_selectedChartType == 'line') {
         return SfCartesianChart(
           primaryXAxis: CategoryAxis(),
-          title: ChartTitle(text: '月度平均工资趋势'),
+          title: ChartTitle(
+            text: '月度平均工资趋势',
+            textStyle: const TextStyle(color: Colors.lightBlue, fontSize: 16),
+          ),
           series: [
             LineSeries<_ChartData, String>(
               dataSource: _monthlyData,
               xValueMapper: (_ChartData data, _) => data.category,
               yValueMapper: (_ChartData data, _) => data.value,
               name: '平均工资',
+              color: Colors.lightBlue,
             ),
           ],
         );
       } else {
         return SfCircularChart(
-          title: ChartTitle(text: '月度工资总额分布'),
+          title: ChartTitle(
+            text: '月度工资总额分布',
+            textStyle: const TextStyle(color: Colors.lightBlue, fontSize: 16),
+          ),
           series: <CircularSeries<_ChartData, String>>[
             PieSeries<_ChartData, String>(
               dataSource: _monthlyData,
               xValueMapper: (_ChartData data, _) => data.category,
               yValueMapper: (_ChartData data, _) => data.value,
               dataLabelSettings: const DataLabelSettings(isVisible: true),
+              pointColorMapper: (datum, index) => index % 4 == 0
+                  ? Colors.lightBlue
+                  : index % 4 == 1
+                  ? Colors.lightBlue.shade300
+                  : index % 4 == 2
+                  ? Colors.lightBlue.shade200
+                  : Colors.lightBlue.shade100,
             ),
           ],
         );

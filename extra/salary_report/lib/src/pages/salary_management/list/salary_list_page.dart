@@ -45,7 +45,11 @@ class _SalaryListPageState extends State<SalaryListPage> {
           children: [
             const Text(
               '已上传的工资表',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.lightBlue,
+              ),
             ),
             const SizedBox(height: 16),
             Expanded(
@@ -54,18 +58,54 @@ class _SalaryListPageState extends State<SalaryListPage> {
                 itemBuilder: (context, index) {
                   final report = _salaryReports[index];
                   return Card(
-                    margin: const EdgeInsets.only(bottom: 12),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    elevation: 3,
+                    shadowColor: Colors.lightBlue.withOpacity(0.2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     child: ListTile(
-                      title: Text(report['month']),
+                      contentPadding: const EdgeInsets.all(16),
+                      title: Text(
+                        report['month'],
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('文件名: ${report['fileName']}'),
-                          Text('记录数: ${report['recordCount']}'),
-                          Text('上传时间: ${report['uploadTime']}'),
+                          const SizedBox(height: 8),
+                          Text(
+                            '文件名: ${report['fileName']}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '记录数: ${report['recordCount']}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '上传时间: ${report['uploadTime']}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
+                          ),
                         ],
                       ),
-                      trailing: const Icon(Icons.arrow_forward_ios),
+                      trailing: const Icon(
+                        Icons.arrow_forward_ios,
+                        color: Colors.lightBlue,
+                      ),
                       onTap: () {
                         // 使用go_router进行导航
                         context.push('/salary/detail/${report['id']}');
@@ -82,6 +122,7 @@ class _SalaryListPageState extends State<SalaryListPage> {
         onPressed: () {
           context.push('/salary/upload');
         },
+        backgroundColor: Colors.lightBlue,
         child: const Icon(Icons.add),
       ),
     );

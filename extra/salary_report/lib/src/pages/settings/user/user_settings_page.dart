@@ -24,16 +24,46 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
+                '用户设置',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.lightBlue,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '管理和配置您的个人偏好',
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+              const SizedBox(height: 24),
+
+              const Text(
                 '账户信息',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.lightBlue,
+                ),
               ),
               const SizedBox(height: 12),
               Card(
+                elevation: 3,
+                shadowColor: Colors.lightBlue.withOpacity(0.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: ListTile(
-                  leading: const CircleAvatar(child: Icon(Icons.person)),
+                  leading: const CircleAvatar(
+                    backgroundColor: Colors.lightBlue,
+                    child: Icon(Icons.person, color: Colors.white),
+                  ),
                   title: const Text('用户名'),
                   subtitle: const Text('admin'),
-                  trailing: const Icon(Icons.arrow_forward_ios),
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.lightBlue,
+                  ),
                   onTap: () {
                     // TODO: 修改用户名
                   },
@@ -44,14 +74,24 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
 
               const Text(
                 '通知设置',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.lightBlue,
+                ),
               ),
               const SizedBox(height: 12),
               Card(
+                elevation: 3,
+                shadowColor: Colors.lightBlue.withOpacity(0.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: SwitchListTile(
                   title: const Text('启用通知'),
                   subtitle: const Text('接收系统通知和提醒'),
                   value: _notificationsEnabled,
+                  activeColor: Colors.lightBlue,
                   onChanged: (value) {
                     setState(() {
                       _notificationsEnabled = value;
@@ -64,14 +104,24 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
 
               const Text(
                 '同步设置',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.lightBlue,
+                ),
               ),
               const SizedBox(height: 12),
               Card(
+                elevation: 3,
+                shadowColor: Colors.lightBlue.withOpacity(0.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: SwitchListTile(
                   title: const Text('自动同步'),
                   subtitle: const Text('自动同步数据到云端'),
                   value: _autoSyncEnabled,
+                  activeColor: Colors.lightBlue,
                   onChanged: (value) {
                     setState(() {
                       _autoSyncEnabled = value;
@@ -84,22 +134,38 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
 
               const Text(
                 '显示设置',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.lightBlue,
+                ),
               ),
               const SizedBox(height: 12),
               Card(
+                elevation: 3,
+                shadowColor: Colors.lightBlue.withOpacity(0.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
                         '主题模式',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 12),
                       ListTile(
                         title: const Text('跟随系统'),
                         leading: Radio<String>(
+                          fillColor: MaterialStateProperty.all(
+                            Colors.lightBlue,
+                          ),
                           value: 'system',
                           groupValue: _themeMode,
                           onChanged: (value) {
@@ -117,6 +183,9 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                       ListTile(
                         title: const Text('浅色模式'),
                         leading: Radio<String>(
+                          fillColor: MaterialStateProperty.all(
+                            Colors.lightBlue,
+                          ),
                           value: 'light',
                           groupValue: _themeMode,
                           onChanged: (value) {
@@ -134,6 +203,9 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                       ListTile(
                         title: const Text('深色模式'),
                         leading: Radio<String>(
+                          fillColor: MaterialStateProperty.all(
+                            Colors.lightBlue,
+                          ),
                           value: 'dark',
                           groupValue: _themeMode,
                           onChanged: (value) {
@@ -156,18 +228,30 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
               const SizedBox(height: 16),
 
               Card(
+                elevation: 3,
+                shadowColor: Colors.lightBlue.withOpacity(0.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
                         '语言',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 12),
                       ListTile(
                         title: const Text('中文'),
                         leading: Radio<String>(
+                          fillColor: MaterialStateProperty.all(
+                            Colors.lightBlue,
+                          ),
                           value: 'zh',
                           groupValue: _language,
                           onChanged: (value) {
@@ -185,6 +269,9 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                       ListTile(
                         title: const Text('English'),
                         leading: Radio<String>(
+                          fillColor: MaterialStateProperty.all(
+                            Colors.lightBlue,
+                          ),
                           value: 'en',
                           groupValue: _language,
                           onChanged: (value) {
@@ -208,15 +295,27 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
 
               const Text(
                 '账户操作',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.lightBlue,
+                ),
               ),
               const SizedBox(height: 12),
               Card(
+                elevation: 3,
+                shadowColor: Colors.lightBlue.withOpacity(0.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Column(
                   children: [
                     ListTile(
                       title: const Text('修改密码'),
-                      trailing: const Icon(Icons.arrow_forward_ios),
+                      trailing: const Icon(
+                        Icons.arrow_forward_ios,
+                        color: Colors.lightBlue,
+                      ),
                       onTap: () {
                         // TODO: 修改密码
                       },
@@ -224,7 +323,10 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                     const Divider(),
                     ListTile(
                       title: const Text('退出登录'),
-                      trailing: const Icon(Icons.arrow_forward_ios),
+                      trailing: const Icon(
+                        Icons.arrow_forward_ios,
+                        color: Colors.lightBlue,
+                      ),
                       onTap: () {
                         // TODO: 退出登录
                       },

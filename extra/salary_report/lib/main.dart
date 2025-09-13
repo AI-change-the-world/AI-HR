@@ -118,9 +118,34 @@ class MyApp extends StatelessWidget {
     return ProviderScope(
       child: ToastificationWrapper(
         child: MaterialApp.router(
-          debugShowCheckedModeBanner: false,
           title: '员工工资智能化分析系统',
-          theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
+          theme: ThemeData(
+            primarySwatch: Colors.lightBlue,
+            useMaterial3: true,
+            scaffoldBackgroundColor: Colors.lightBlue.shade50,
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Colors.lightBlue,
+              foregroundColor: Colors.white,
+              elevation: 2,
+            ),
+            cardTheme: CardThemeData(
+              color: Colors.white,
+              elevation: 2,
+              shadowColor: Colors.lightBlue.withOpacity(0.1),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.lightBlue.shade400,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
           routerConfig: router,
         ),
       ),
