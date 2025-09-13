@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:salary_report/src/common/toast.dart';
 import 'upload_page.dart';
 import '../../../providers/year_provider.dart';
 
@@ -60,9 +61,7 @@ class _YearDetailPageState extends ConsumerState<YearDetailPage>
 
   Future<void> _uploadFile() async {
     if (_selectedFilePath == null || _selectedMonth == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('请选择文件和月份')));
+      ToastUtils.error(null, title: '请选择文件和月份');
       return;
     }
 
@@ -73,9 +72,7 @@ class _YearDetailPageState extends ConsumerState<YearDetailPage>
       await Future.delayed(const Duration(seconds: 2));
 
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('文件上传成功')));
+        ToastUtils.success(null, title: '文件上传成功');
 
         // 上传成功后，刷新年份数据
         ref.read(yearDataProvider.notifier).refresh();
@@ -90,9 +87,7 @@ class _YearDetailPageState extends ConsumerState<YearDetailPage>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('上传失败: $e')));
+        ToastUtils.error(null, title: '上传失败: $e');
       }
     }
   }

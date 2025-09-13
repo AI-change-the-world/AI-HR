@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:salary_report/src/common/toast.dart';
 import '../../../components/smart_time_picker.dart';
 import '../../../providers/app_providers.dart';
 
@@ -277,9 +278,7 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
                       final timeRange = ref.read(timeRangeProvider);
 
                       if (timeRange == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('请先选择时间范围')),
-                        );
+                        ToastUtils.error(null, title: '请先选择时间范围');
                         return;
                       }
 

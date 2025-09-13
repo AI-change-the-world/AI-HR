@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:salary_report/src/common/toast.dart';
 
 class ReportPage extends StatefulWidget {
   const ReportPage({super.key});
@@ -187,9 +188,8 @@ class _ReportPageState extends State<ReportPage> {
               child: ElevatedButton(
                 onPressed: () {
                   // TODO: 生成报告逻辑
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('报告生成中...')));
+
+                  ToastUtils.info(null, title: '报告生成中...');
                 },
                 child: const Text('生成报告'),
               ),

@@ -56,7 +56,7 @@ class ToastUtils {
     );
   }
 
-  static void sucess(
+  static void success(
     BuildContext? context, {
     required String title,
     String? descryption,
