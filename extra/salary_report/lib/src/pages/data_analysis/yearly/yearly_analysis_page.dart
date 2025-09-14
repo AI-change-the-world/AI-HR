@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/components/attendance_pagination.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
+import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
+import 'package:flutter/rendering.dart';
+import 'package:toastification/toastification.dart';
 
 class YearlyAnalysisPage extends StatefulWidget {
   const YearlyAnalysisPage({
@@ -27,6 +30,7 @@ class YearlyAnalysisPage extends StatefulWidget {
 
 class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
   late Map<String, dynamic> _analysisData;
+  final GlobalKey _chartContainerKey = GlobalKey();
 
   @override
   void initState() {
@@ -89,6 +93,44 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
     };
   }
 
+  /// 生成工资报告
+  Future<void> _generateSalaryReport() async {
+    try {
+      final reportPath = await SalaryReportGenerator.generateSalaryReport(
+        previewContainerKey: _chartContainerKey,
+        departmentStats: widget.departmentStats,
+        attendanceStats: widget.attendanceStats,
+        leaveRatioStats: widget.leaveRatioStats,
+        year: widget.year,
+        month: 0, // 年度报告没有月份
+        isMultiMonth: widget.isMultiYear,
+        analysisData: _analysisData,
+      );
+
+      if (mounted) {
+        toastification.show(
+          context: context,
+          title: const Text('报告生成成功'),
+          description: Text('报告已保存到: $reportPath'),
+          type: ToastificationType.success,
+          style: ToastificationStyle.flat,
+          autoCloseDuration: const Duration(seconds: 5),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        toastification.show(
+          context: context,
+          title: const Text('报告生成失败'),
+          description: Text('错误信息: $e'),
+          type: ToastificationType.error,
+          style: ToastificationStyle.flat,
+          autoCloseDuration: const Duration(seconds: 5),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final title = widget.isMultiYear
@@ -96,7 +138,16 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
         : '${widget.year}年 工资分析';
 
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(
+        title: Text(title),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            onPressed: _generateSalaryReport,
+            tooltip: '生成报告',
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -149,27 +200,30 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
-              Card(
-                child: Container(
-                  height: 250,
-                  padding: const EdgeInsets.all(16.0),
-                  child: widget.isMultiYear
-                      ? Column(
-                          children: [
-                            const Text('工资总额年度趋势'),
-                            const SizedBox(height: 12),
-                            Expanded(
-                              child: MonthlySalaryTrendChart(
-                                monthlyData: _generateMultiYearData(),
+              RepaintBoundary(
+                key: _chartContainerKey,
+                child: Card(
+                  child: Container(
+                    height: 250,
+                    padding: const EdgeInsets.all(16.0),
+                    child: widget.isMultiYear
+                        ? Column(
+                            children: [
+                              const Text('工资总额年度趋势'),
+                              const SizedBox(height: 12),
+                              Expanded(
+                                child: MonthlySalaryTrendChart(
+                                  monthlyData: _generateMultiYearData(),
+                                ),
                               ),
-                            ),
-                          ],
-                        )
-                      : MonthlySalaryTrendChart(
-                          monthlyData:
-                              _analysisData['monthlyTrend']
-                                  as List<Map<String, dynamic>>,
-                        ),
+                            ],
+                          )
+                        : MonthlySalaryTrendChart(
+                            monthlyData:
+                                _analysisData['monthlyTrend']
+                                    as List<Map<String, dynamic>>,
+                          ),
+                  ),
                 ),
               ),
 

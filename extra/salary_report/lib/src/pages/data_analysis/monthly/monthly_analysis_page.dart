@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/components/attendance_pagination.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
+import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
+import 'package:flutter/rendering.dart';
+import 'package:toastification/toastification.dart';
 
 class MonthlyAnalysisPage extends StatefulWidget {
   const MonthlyAnalysisPage({
@@ -27,6 +30,7 @@ class MonthlyAnalysisPage extends StatefulWidget {
 
 class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
   late Map<String, dynamic> _analysisData;
+  final GlobalKey _chartContainerKey = GlobalKey();
 
   @override
   void initState() {
@@ -88,6 +92,44 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
     };
   }
 
+  /// 生成工资报告
+  Future<void> _generateSalaryReport() async {
+    try {
+      final reportPath = await SalaryReportGenerator.generateSalaryReport(
+        previewContainerKey: _chartContainerKey,
+        departmentStats: widget.departmentStats,
+        attendanceStats: widget.attendanceStats,
+        leaveRatioStats: widget.leaveRatioStats,
+        year: widget.year,
+        month: widget.month,
+        isMultiMonth: widget.isMultiMonth,
+        analysisData: _analysisData,
+      );
+
+      if (mounted) {
+        toastification.show(
+          context: context,
+          title: const Text('报告生成成功'),
+          description: Text('报告已保存到: $reportPath'),
+          type: ToastificationType.success,
+          style: ToastificationStyle.flat,
+          autoCloseDuration: const Duration(seconds: 5),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        toastification.show(
+          context: context,
+          title: const Text('报告生成失败'),
+          description: Text('错误信息: $e'),
+          type: ToastificationType.error,
+          style: ToastificationStyle.flat,
+          autoCloseDuration: const Duration(seconds: 5),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final title = widget.isMultiMonth
@@ -95,7 +137,16 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
         : '${widget.year}年${widget.month.toString().padLeft(2, '0')}月 工资分析';
 
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(
+        title: Text(title),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            onPressed: _generateSalaryReport,
+            tooltip: '生成报告',
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -309,30 +360,33 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
-              Card(
-                child: Container(
-                  height: 300,
-                  padding: const EdgeInsets.all(16.0),
-                  child: widget.isMultiMonth
-                      ? Column(
-                          children: [
-                            Expanded(
-                              child: MonthlySalaryTrendChart(
-                                monthlyData: _generateMultiMonthData(),
+              RepaintBoundary(
+                key: _chartContainerKey,
+                child: Card(
+                  child: Container(
+                    height: 300,
+                    padding: const EdgeInsets.all(16.0),
+                    child: widget.isMultiMonth
+                        ? Column(
+                            children: [
+                              Expanded(
+                                child: MonthlySalaryTrendChart(
+                                  monthlyData: _generateMultiMonthData(),
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 20),
-                            Expanded(
-                              child: MultiMonthDepartmentSalaryChart(
-                                departmentMonthlyData:
-                                    _generateDepartmentMonthlyData(),
+                              const SizedBox(height: 20),
+                              Expanded(
+                                child: MultiMonthDepartmentSalaryChart(
+                                  departmentMonthlyData:
+                                      _generateDepartmentMonthlyData(),
+                                ),
                               ),
-                            ),
-                          ],
-                        )
-                      : DepartmentSalaryChart(
-                          departmentStats: widget.departmentStats,
-                        ),
+                            ],
+                          )
+                        : DepartmentSalaryChart(
+                            departmentStats: widget.departmentStats,
+                          ),
+                  ),
                 ),
               ),
             ],
