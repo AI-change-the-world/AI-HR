@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:isar_community/isar.dart';
 import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/common/toast.dart';
 import 'package:salary_report/src/rust/api/salary_api.dart';
@@ -44,12 +45,12 @@ class _YearDetailPageState extends ConsumerState<YearDetailPage>
     super.dispose();
   }
 
-  Future<void> _selectFile(int month) async {
-    const XTypeGroup xlsxTypeGroup = XTypeGroup(
-      label: 'Excel文件',
-      extensions: ['xlsx'],
-    );
+  static XTypeGroup xlsxTypeGroup = XTypeGroup(
+    label: 'Excel文件',
+    extensions: ['xlsx'],
+  );
 
+  Future<void> _selectFile(int month) async {
     final List<XFile> files = await openFiles(
       acceptedTypeGroups: [xlsxTypeGroup],
     );
@@ -67,15 +68,24 @@ class _YearDetailPageState extends ConsumerState<YearDetailPage>
     }
 
     try {
-      // 模拟上传过程
-      // await Future.delayed(const Duration(seconds: 2));
       final result = await getCaculateResult(p: filePath);
       if (result.$1 == "") {
         logger.info(result.$2!.summaryData);
 
         // 将解析结果保存到Isar数据库
         final isar = IsarDatabase().isar;
+
         if (isar != null) {
+          // 删除已有数据
+          await isar.writeTxn(() async {
+            final r = await isar.salaryLists
+                .filter()
+                .monthEqualTo(month)
+                .yearEqualTo(widget.yearData.year)
+                .deleteAll();
+            logger.info("$r件数据已删除");
+          });
+
           // 创建SalaryList对象
           final salaryList = SalaryList()
             ..year = widget.yearData.year
@@ -275,7 +285,7 @@ class _YearDetailPageState extends ConsumerState<YearDetailPage>
           onTap: () async {
             // 如果该月份已经有数据，不执行任何操作
             if (monthData.hasData) {
-              return;
+              ToastUtils.info(context, title: "已有数据，重新上传将覆盖");
             }
 
             // 直接触发文件选择
