@@ -13,7 +13,7 @@ class DepartmentSalaryChart extends StatelessWidget {
     return SfCircularChart(
       title: ChartTitle(text: '各部门工资占比'),
       legend: Legend(isVisible: true, position: LegendPosition.bottom),
-      series: <CircularSeries>[
+      series: <CircularSeries<DepartmentSalaryStats, String>>[
         PieSeries<DepartmentSalaryStats, String>(
           dataSource: departmentStats,
           xValueMapper: (DepartmentSalaryStats data, _) => data.department,
@@ -41,11 +41,13 @@ class MonthlySalaryTrendChart extends StatelessWidget {
       primaryYAxis: NumericAxis(numberFormat: NumberFormat.simpleCurrency()),
       legend: Legend(isVisible: true),
       tooltipBehavior: TooltipBehavior(enable: true),
-      series: <CartesianSeries>[
+      series: <LineSeries<Map<String, dynamic>, String>>[
         LineSeries<Map<String, dynamic>, String>(
           dataSource: monthlyData,
-          xValueMapper: (Map<String, dynamic> data, _) => data['month'],
-          yValueMapper: (Map<String, dynamic> data, _) => data['salary'],
+          xValueMapper: (Map<String, dynamic> data, _) =>
+              data['month'] as String,
+          yValueMapper: (Map<String, dynamic> data, _) =>
+              data['salary'] as double,
           name: '工资总额',
           dataLabelSettings: const DataLabelSettings(isVisible: false),
         ),
@@ -74,25 +76,36 @@ class MultiMonthDepartmentSalaryChart extends StatelessWidget {
     );
   }
 
-  List<CartesianSeries> _getDepartmentSeries() {
+  List<LineSeries<Map<String, dynamic>, String>> _getDepartmentSeries() {
     // 获取所有部门名称
     final departments = <String>{};
     for (var data in departmentMonthlyData) {
-      if (data['departments'] is Map<String, double>) {
-        departments.addAll((data['departments'] as Map<String, double>).keys);
+      if (data['departments'] is Map<String, dynamic>) {
+        departments.addAll((data['departments'] as Map<String, dynamic>).keys);
       }
     }
 
     // 为每个部门创建一个系列
-    final series = <CartesianSeries>[];
+    final series = <LineSeries<Map<String, dynamic>, String>>[];
+    final colors = [
+      Colors.lightBlue,
+      Colors.orange,
+      Colors.green,
+      Colors.purple,
+      Colors.red,
+      Colors.teal,
+    ];
+
+    int colorIndex = 0;
     for (var department in departments) {
       final departmentData = <Map<String, dynamic>>[];
       for (var data in departmentMonthlyData) {
-        final month = data['month'];
-        final deptData = data['departments'] as Map<String, double>;
+        final month = data['month'] as String;
+        final deptData = data['departments'] as Map<String, dynamic>;
         departmentData.add({
           'month': month,
-          'salary': deptData[department] ?? 0,
+          'salary': deptData[department] as double? ?? 0,
+          'department': department,
         });
       }
 
@@ -100,11 +113,16 @@ class MultiMonthDepartmentSalaryChart extends StatelessWidget {
         LineSeries<Map<String, dynamic>, String>(
           name: department,
           dataSource: departmentData,
-          xValueMapper: (Map<String, dynamic> data, _) => data['month'],
-          yValueMapper: (Map<String, dynamic> data, _) => data['salary'],
+          xValueMapper: (Map<String, dynamic> data, _) =>
+              data['month'] as String,
+          yValueMapper: (Map<String, dynamic> data, _) =>
+              data['salary'] as double,
           dataLabelSettings: const DataLabelSettings(isVisible: false),
+          color: colors[colorIndex % colors.length],
         ),
       );
+
+      colorIndex++;
     }
 
     return series;
