@@ -3,8 +3,10 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart';
+// ignore: depend_on_referenced_packages
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:salary_report/src/components/attendance_pagination.dart';
 
 // 创建一个 Provider 来管理数据服务
 final dataAnalysisServiceProvider = Provider<DataAnalysisService>((ref) {
@@ -441,76 +443,9 @@ class _ComprehensiveReportPageState
                         elevation: 3,
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            children: [
-                              const Row(
-                                children: [
-                                  Expanded(
-                                    flex: 2,
-                                    child: Text(
-                                      '姓名',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Text(
-                                      '部门',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Text(
-                                      '病假(天)',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Text(
-                                      '事假(天)',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const Divider(),
-                              ..._attendanceStats.take(10).map<Widget>((stat) {
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 8.0,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const SizedBox(width: 8),
-                                      Expanded(flex: 2, child: Text(stat.name)),
-                                      Expanded(child: Text(stat.department)),
-                                      Expanded(
-                                        child: Text(
-                                          stat.sickLeaveDays.toStringAsFixed(1),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Text(
-                                          stat.leaveDays.toStringAsFixed(1),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                              if (_attendanceStats.length > 10)
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 8.0),
-                                  child: Text('... 还有更多记录'),
-                                ),
-                            ],
+                          child: AttendancePagination(
+                            attendanceStats: _attendanceStats,
+                            itemsPerPage: 10,
                           ),
                         ),
                       ),
