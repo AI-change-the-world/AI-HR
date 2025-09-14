@@ -17,6 +17,7 @@ import 'package:salary_report/src/pages/settings/system/system_settings_page.dar
 import 'package:salary_report/src/rust/frb_generated.dart';
 import 'package:toastification/toastification.dart';
 import 'package:logging/logging.dart';
+import 'package:salary_report/src/isar/data_analysis_service.dart';
 
 Future<void> main() async {
   await RustLib.init();
@@ -67,7 +68,23 @@ class MyApp extends StatelessWidget {
                     final month = int.parse(
                       state.uri.queryParameters['month'] ?? '8',
                     );
-                    return MonthlyAnalysisPage(year: year, month: month);
+                    // 获取传递的额外数据
+                    final extra = state.extra as Map<String, dynamic>?;
+
+                    return MonthlyAnalysisPage(
+                      year: year,
+                      month: month,
+                      departmentStats:
+                          extra?['departmentStats']
+                              as List<DepartmentSalaryStats>? ??
+                          [],
+                      attendanceStats:
+                          extra?['attendanceStats'] as List<AttendanceStats>? ??
+                          [],
+                      leaveRatioStats:
+                          extra?['leaveRatioStats'] as LeaveRatioStats?,
+                      isMultiMonth: extra?['isMultiMonth'] as bool? ?? false,
+                    );
                   },
                 ),
                 GoRoute(
@@ -76,7 +93,26 @@ class MyApp extends StatelessWidget {
                     final year = int.parse(
                       state.uri.queryParameters['year'] ?? '2023',
                     );
-                    return YearlyAnalysisPage(year: year);
+                    final endYear = state.uri.queryParameters['endYear'] != null
+                        ? int.parse(state.uri.queryParameters['endYear']!)
+                        : null;
+                    // 获取传递的额外数据
+                    final extra = state.extra as Map<String, dynamic>?;
+
+                    return YearlyAnalysisPage(
+                      year: year,
+                      departmentStats:
+                          extra?['departmentStats']
+                              as List<DepartmentSalaryStats>? ??
+                          [],
+                      attendanceStats:
+                          extra?['attendanceStats'] as List<AttendanceStats>? ??
+                          [],
+                      leaveRatioStats:
+                          extra?['leaveRatioStats'] as LeaveRatioStats?,
+                      isMultiYear: extra?['isMultiYear'] as bool? ?? false,
+                      endYear: endYear,
+                    );
                   },
                 ),
                 GoRoute(
@@ -88,7 +124,33 @@ class MyApp extends StatelessWidget {
                     final quarter = int.parse(
                       state.uri.queryParameters['quarter'] ?? '3',
                     );
-                    return QuarterlyAnalysisPage(year: year, quarter: quarter);
+                    final endYear = state.uri.queryParameters['endYear'] != null
+                        ? int.parse(state.uri.queryParameters['endYear']!)
+                        : null;
+                    final endQuarter =
+                        state.uri.queryParameters['endQuarter'] != null
+                        ? int.parse(state.uri.queryParameters['endQuarter']!)
+                        : null;
+                    // 获取传递的额外数据
+                    final extra = state.extra as Map<String, dynamic>?;
+
+                    return QuarterlyAnalysisPage(
+                      year: year,
+                      quarter: quarter,
+                      departmentStats:
+                          extra?['departmentStats']
+                              as List<DepartmentSalaryStats>? ??
+                          [],
+                      attendanceStats:
+                          extra?['attendanceStats'] as List<AttendanceStats>? ??
+                          [],
+                      leaveRatioStats:
+                          extra?['leaveRatioStats'] as LeaveRatioStats?,
+                      isMultiQuarter:
+                          extra?['isMultiQuarter'] as bool? ?? false,
+                      endYear: endYear,
+                      endQuarter: endQuarter,
+                    );
                   },
                 ),
               ],

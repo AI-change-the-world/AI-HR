@@ -1,44 +1,112 @@
 import 'package:flutter/material.dart';
+import 'package:salary_report/src/isar/data_analysis_service.dart';
 
 class QuarterlyAnalysisPage extends StatefulWidget {
   const QuarterlyAnalysisPage({
     super.key,
     required this.year,
     required this.quarter,
+    this.departmentStats = const [],
+    this.attendanceStats = const [],
+    this.leaveRatioStats,
+    this.isMultiQuarter = false,
+    this.endYear,
+    this.endQuarter,
   });
 
   final int year;
   final int quarter;
+  final List<DepartmentSalaryStats> departmentStats;
+  final List<AttendanceStats> attendanceStats;
+  final LeaveRatioStats? leaveRatioStats;
+  final bool isMultiQuarter;
+  final int? endYear;
+  final int? endQuarter;
 
   @override
   State<QuarterlyAnalysisPage> createState() => _QuarterlyAnalysisPageState();
 }
 
 class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
-  // 模拟数据
-  final Map<String, dynamic> _analysisData = {
-    'totalEmployees': 45,
-    'totalSalary': 1524000.00,
-    'averageSalary': 11289.00,
-    'highestSalary': 25000.00,
-    'lowestSalary': 6500.00,
-    'monthlyBreakdown': [
-      {'month': '7月', 'salary': 508000.00, 'employees': 45},
-      {'month': '8月', 'salary': 504000.00, 'employees': 45},
-      {'month': '9月', 'salary': 512000.00, 'employees': 45},
-    ],
-    'departmentComparison': [
-      {'department': '技术部', 'salary': 607500.00, 'average': 13500.00},
-      {'department': '销售部', 'salary': 576000.00, 'average': 12800.00},
-      {'department': '人事部', 'salary': 171000.00, 'average': 9500.00},
-      {'department': '财务部', 'salary': 210600.00, 'average': 11800.00},
-    ],
-  };
+  late Map<String, dynamic> _analysisData;
+
+  @override
+  void initState() {
+    super.initState();
+    _initAnalysisData();
+  }
+
+  void _initAnalysisData() {
+    // 计算总工资和平均工资
+    double totalSalary = 0;
+    int totalEmployees = 0;
+    double highestSalary = 0;
+    double lowestSalary = double.infinity;
+
+    for (var stat in widget.departmentStats) {
+      totalSalary += stat.totalNetSalary;
+      totalEmployees += stat.employeeCount;
+
+      if (stat.averageNetSalary > highestSalary) {
+        highestSalary = stat.averageNetSalary;
+      }
+
+      if (stat.averageNetSalary < lowestSalary) {
+        lowestSalary = stat.averageNetSalary;
+      }
+    }
+
+    // 如果没有数据，设置默认值
+    if (lowestSalary == double.infinity) {
+      lowestSalary = 0;
+    }
+
+    double averageSalary = totalEmployees > 0
+        ? totalSalary / totalEmployees
+        : 0;
+
+    // 构建月度分解数据（实际应用中应该从数据中计算）
+    final monthlyBreakdownData = <Map<String, dynamic>>[];
+    final startMonth = (widget.quarter - 1) * 3 + 1;
+    for (int i = 0; i < 3; i++) {
+      final month = startMonth + i;
+      final monthStr = '$month月';
+      // 这里应该从实际数据中计算，但暂时使用估算值
+      monthlyBreakdownData.add({
+        'month': monthStr,
+        'salary': totalSalary / 3,
+        'employees': totalEmployees,
+      });
+    }
+
+    // 构建部门对比数据
+    final departmentComparisonData = widget.departmentStats.map((stat) {
+      return {
+        'department': stat.department,
+        'salary': stat.totalNetSalary,
+        'average': stat.averageNetSalary,
+      };
+    }).toList();
+
+    _analysisData = {
+      'totalEmployees': totalEmployees,
+      'totalSalary': totalSalary,
+      'averageSalary': averageSalary,
+      'highestSalary': highestSalary,
+      'lowestSalary': lowestSalary,
+      'monthlyBreakdown': monthlyBreakdownData,
+      'departmentComparison': departmentComparisonData,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
+    final title = widget.isMultiQuarter
+        ? '${widget.year}年第${widget.quarter}季度-${widget.endYear}年第${widget.endQuarter}季度 工资分析'
+        : '${widget.year}年第${widget.quarter}季度 工资分析';
+
     return Scaffold(
-      appBar: AppBar(title: Text('${widget.year}年第${widget.quarter}季度 工资分析')),
+      appBar: AppBar(title: Text(title)),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -62,22 +130,22 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                   ),
                   _buildStatCard(
                     '工资总额',
-                    '¥${_analysisData['totalSalary']}',
+                    '¥${_analysisData['totalSalary'].toStringAsFixed(2)}',
                     Icons.account_balance_wallet,
                   ),
                   _buildStatCard(
                     '平均工资',
-                    '¥${_analysisData['averageSalary']}',
+                    '¥${_analysisData['averageSalary'].toStringAsFixed(2)}',
                     Icons.trending_up,
                   ),
                   _buildStatCard(
                     '最高工资',
-                    '¥${_analysisData['highestSalary']}',
+                    '¥${_analysisData['highestSalary'].toStringAsFixed(2)}',
                     Icons.arrow_upward,
                   ),
                   _buildStatCard(
                     '最低工资',
-                    '¥${_analysisData['lowestSalary']}',
+                    '¥${_analysisData['lowestSalary'].toStringAsFixed(2)}',
                     Icons.arrow_downward,
                   ),
                 ],
@@ -127,7 +195,11 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                           child: Row(
                             children: [
                               Expanded(child: Text(monthData['month'])),
-                              Expanded(child: Text('¥${monthData['salary']}')),
+                              Expanded(
+                                child: Text(
+                                  '¥${(monthData['salary'] as double).toStringAsFixed(2)}',
+                                ),
+                              ),
                               Expanded(
                                 child: Text(monthData['employees'].toString()),
                               ),
@@ -188,8 +260,16 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                                 flex: 2,
                                 child: Text(dept['department']),
                               ),
-                              Expanded(child: Text('¥${dept['salary']}')),
-                              Expanded(child: Text('¥${dept['average']}')),
+                              Expanded(
+                                child: Text(
+                                  '¥${(dept['salary'] as double).toStringAsFixed(2)}',
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  '¥${(dept['average'] as double).toStringAsFixed(2)}',
+                                ),
+                              ),
                             ],
                           ),
                         );
@@ -200,6 +280,157 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
               ),
 
               const SizedBox(height: 24),
+
+              // 考勤统计
+              const Text(
+                '考勤统计',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      const Row(
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              '姓名',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              '部门',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              '病假(天)',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              '事假(天)',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Divider(),
+                      ...widget.attendanceStats.take(10).map<Widget>((stat) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Row(
+                            children: [
+                              const SizedBox(width: 8),
+                              Expanded(flex: 2, child: Text(stat.name)),
+                              Expanded(child: Text(stat.department)),
+                              Expanded(
+                                child: Text(
+                                  stat.sickLeaveDays.toStringAsFixed(1),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(stat.leaveDays.toStringAsFixed(1)),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      if (widget.attendanceStats.length > 10)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8.0),
+                          child: Text('... 还有更多记录'),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // 请假比例统计
+              if (widget.leaveRatioStats != null) ...[
+                const Text(
+                  '请假比例统计',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        const Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '统计项',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                '数值',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Divider(),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Row(
+                            children: [
+                              const Expanded(child: Text('总员工数')),
+                              Expanded(
+                                child: Text(
+                                  widget.leaveRatioStats!.totalEmployees
+                                      .toString(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Row(
+                            children: [
+                              const Expanded(child: Text('平均病假天数/人')),
+                              Expanded(
+                                child: Text(
+                                  widget.leaveRatioStats!.sickLeaveRatio
+                                      .toStringAsFixed(2),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Row(
+                            children: [
+                              const Expanded(child: Text('平均事假天数/人')),
+                              Expanded(
+                                child: Text(
+                                  widget.leaveRatioStats!.leaveRatio
+                                      .toStringAsFixed(2),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
 
               // 图表展示区域（占位符）
               const Text(
