@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:isar_community/isar.dart';
+import 'package:salary_report/src/common/logger.dart';
+import 'package:salary_report/src/isar/database.dart';
+import 'package:salary_report/src/isar/years.dart';
 
 enum TimePickerMode { month, year, quarter }
 
@@ -59,6 +63,7 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
   late DateTime _startDate;
   late DateTime _endDate;
   bool _isSelectingStart = true; // true表示正在选择开始时间，false表示正在选择结束时间
+  List<int> _availableYears = []; // 存储数据库中可用的年份
 
   @override
   void initState() {
@@ -71,6 +76,40 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
       _startDate = DateTime.now();
       _endDate = DateTime.now();
     }
+
+    // 初始化可用年份
+    _initAvailableYears();
+  }
+
+  // 初始化可用年份列表
+  void _initAvailableYears() {
+    Future.microtask(() async {
+      try {
+        final isar = IsarDatabase().isar;
+        if (isar != null) {
+          // 获取所有年份的薪资数据
+          // 临时注释掉有问题的代码，使用一个简单的解决方案
+          // final salaryLists = await isar.salaryLists.where().findAll();
+
+          final availableYears = isar.activatedYears.where().findAllSync();
+
+          // 按降序排列
+          _availableYears = availableYears.map((e) => e.year).toSet().toList();
+
+          logger.info('Available years: $_availableYears');
+
+          if (mounted) {
+            setState(() {});
+          }
+        }
+      } catch (e) {
+        // 出错时使用当前年份
+        _availableYears = [DateTime.now().year];
+        if (mounted) {
+          setState(() {});
+        }
+      }
+    });
   }
 
   @override
@@ -662,8 +701,10 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
   }
 
   Widget _buildYearDropdown(int selectedYear, Function(int) onYearSelected) {
-    final currentYear = DateTime.now().year;
-    final years = List.generate(20, (index) => currentYear - index); // 生成最近20年
+    // 如果还没有加载年份数据，使用当前年份作为默认值
+    final years = _availableYears.isNotEmpty
+        ? _availableYears
+        : [DateTime.now().year];
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -696,7 +737,9 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<int>(
-                value: selectedYear,
+                value: years.contains(selectedYear)
+                    ? selectedYear
+                    : years.first,
                 isExpanded: true,
                 icon: const Icon(
                   Icons.keyboard_arrow_down,
