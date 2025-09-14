@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/common/toast.dart';
 import 'package:salary_report/src/rust/api/salary_api.dart';
+import 'package:salary_report/src/isar/database.dart';
+import 'package:salary_report/src/isar/salary_list.dart';
 import 'upload_page.dart';
 import '../../../providers/year_provider.dart';
 
@@ -70,8 +72,38 @@ class _YearDetailPageState extends ConsumerState<YearDetailPage>
       final result = await getCaculateResult(p: filePath);
       if (result.$1 == "") {
         logger.info(result.$2!.summaryData);
+
+        // 将解析结果保存到Isar数据库
+        final isar = IsarDatabase().isar;
+        if (isar != null) {
+          // 创建SalaryList对象
+          final salaryList = SalaryList()
+            ..year = widget.yearData.year
+            ..month = month
+            ..records = result.$2!.records.map((record) {
+              return SalaryListRecord()
+                ..name = record.name
+                ..department = record.department
+                ..position = record.position
+                ..attendance = record.attendance
+                ..netSalary = record.netSalary
+                ..payDays = record.payrollDays
+                ..actualPayDays = record.actualAttendanceDays
+                ..sickLeave = record.sickLeave
+                ..leave = record.personalLeave
+                ..absence = record.absence
+                ..truancy = record.truancy
+                ..performanceScore = record.performanceScore;
+            }).toList()
+            ..total = result.$2!.totalRecords.toString();
+
+          // 保存到数据库
+          await isar.writeTxn(() async {
+            await isar.salaryLists.put(salaryList);
+          });
+        }
       } else {
-        ToastUtils.error(null, title: "文件上传成功 ${result.$1}");
+        ToastUtils.error(null, title: "文件上传失败 ${result.$1}");
         return;
       }
 
