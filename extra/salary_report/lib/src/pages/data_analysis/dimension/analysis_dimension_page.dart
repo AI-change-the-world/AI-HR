@@ -1,7 +1,12 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:salary_report/src/common/toast.dart';
+import 'package:salary_report/src/isar/data_analysis_service.dart';
+import 'package:salary_report/src/isar/database.dart';
+import 'package:salary_report/src/common/logger.dart';
 import '../../../components/smart_time_picker.dart';
 import '../../../providers/app_providers.dart';
 
@@ -271,7 +276,7 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
                     ],
                   ),
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       final selectedDimension = ref.read(
                         analysisDimensionProvider,
                       );
@@ -281,6 +286,9 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
                         ToastUtils.error(null, title: '请先选择时间范围');
                         return;
                       }
+
+                      // 聚合数据并打印结果
+                      await _aggregateAndLogData(selectedDimension, timeRange);
 
                       // 使用go_router进行导航
                       if (selectedDimension == 'month') {
@@ -545,5 +553,209 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
       default:
         return '时间';
     }
+  }
+
+  // 聚合数据并使用logger打印结果
+  Future<void> _aggregateAndLogData(
+    String dimension,
+    TimeRange timeRange,
+  ) async {
+    try {
+      final dataAnalysisService = DataAnalysisService(IsarDatabase());
+
+      // 根据维度进行不同的数据分析
+      if (dimension == 'month') {
+        // 按月份分析
+        await _analyzeMonthlyData(dataAnalysisService, timeRange);
+      } else if (dimension == 'year') {
+        // 按年份分析
+        await _analyzeYearlyData(dataAnalysisService, timeRange);
+      } else if (dimension == 'quarter') {
+        // 按季度分析
+        await _analyzeQuarterlyData(dataAnalysisService, timeRange);
+      }
+    } catch (e) {
+      logger.severe('数据分析过程中发生错误: $e');
+      ToastUtils.error(null, title: '数据分析失败: $e');
+    }
+  }
+
+  // 按月份分析数据
+  Future<void> _analyzeMonthlyData(
+    DataAnalysisService service,
+    TimeRange timeRange,
+  ) async {
+    logger.info('开始按月份分析数据');
+    logger.info('时间范围: ${timeRange.startDate} 到 ${timeRange.endDate}');
+
+    // 获取部门工资统计
+    final departmentStats = await service.getDepartmentSalaryStats(
+      startYear: timeRange.startDate.year,
+      endYear: timeRange.endDate.year,
+      startMonth: timeRange.startDate.month,
+      endMonth: timeRange.endDate.month,
+    );
+
+    logger.info('部门工资统计结果:');
+    for (var stat in departmentStats) {
+      logger.info(
+        '  部门: ${stat.department}, 总工资: ${stat.totalNetSalary}, 平均工资: ${stat.averageNetSalary}, 员工数: ${stat.employeeCount}',
+      );
+    }
+
+    // 获取考勤统计
+    final attendanceStats = await service.getMonthlyAttendanceStats(
+      startYear: timeRange.startDate.year,
+      endYear: timeRange.endDate.year,
+      startMonth: timeRange.startDate.month,
+      endMonth: timeRange.endDate.month,
+    );
+
+    logger.info('考勤统计结果 (前10条记录):');
+    final displayCount = attendanceStats.length > 10
+        ? 10
+        : attendanceStats.length;
+    for (int i = 0; i < displayCount; i++) {
+      final stat = attendanceStats[i];
+      logger.info(
+        '  姓名: ${stat.name}, 部门: ${stat.department}, 病假: ${stat.sickLeaveDays}天, 事假: ${stat.leaveDays}天, 缺勤: ${stat.absenceCount}次, 旷工: ${stat.truancyDays}天',
+      );
+    }
+    if (attendanceStats.length > 10) {
+      logger.info('  ... 还有 ${attendanceStats.length - 10} 条记录');
+    }
+
+    // 获取请假比例统计
+    final leaveRatioStats = await service.getLeaveRatioStats(
+      startYear: timeRange.startDate.year,
+      endYear: timeRange.endDate.year,
+      startMonth: timeRange.startDate.month,
+      endMonth: timeRange.endDate.month,
+    );
+
+    logger.info('请假比例统计:');
+    logger.info('  总员工数: ${leaveRatioStats.totalEmployees}');
+    logger.info('  平均病假天数: ${leaveRatioStats.sickLeaveRatio}');
+    logger.info('  平均事假天数: ${leaveRatioStats.leaveRatio}');
+  }
+
+  // 按年份分析数据
+  Future<void> _analyzeYearlyData(
+    DataAnalysisService service,
+    TimeRange timeRange,
+  ) async {
+    logger.info('开始按年份分析数据');
+    logger.info(
+      '时间范围: ${timeRange.startDate.year} 年到 ${timeRange.endDate.year} 年',
+    );
+
+    // 获取部门工资统计
+    final departmentStats = await service.getDepartmentSalaryStats(
+      startYear: timeRange.startDate.year,
+      endYear: timeRange.endDate.year,
+    );
+
+    logger.info('部门工资统计结果:');
+    for (var stat in departmentStats) {
+      logger.info(
+        '  部门: ${stat.department}, 总工资: ${stat.totalNetSalary}, 平均工资: ${stat.averageNetSalary}, 员工数: ${stat.employeeCount}',
+      );
+    }
+
+    // 获取考勤统计
+    final attendanceStats = await service.getMonthlyAttendanceStats(
+      startYear: timeRange.startDate.year,
+      endYear: timeRange.endDate.year,
+    );
+
+    logger.info('考勤统计结果 (前10条记录):');
+    final displayCount = attendanceStats.length > 10
+        ? 10
+        : attendanceStats.length;
+    for (int i = 0; i < displayCount; i++) {
+      final stat = attendanceStats[i];
+      logger.info(
+        '  姓名: ${stat.name}, 部门: ${stat.department}, 病假: ${stat.sickLeaveDays}天, 事假: ${stat.leaveDays}天, 缺勤: ${stat.absenceCount}次, 旷工: ${stat.truancyDays}天',
+      );
+    }
+    if (attendanceStats.length > 10) {
+      logger.info('  ... 还有 ${attendanceStats.length - 10} 条记录');
+    }
+
+    // 获取请假比例统计
+    final leaveRatioStats = await service.getLeaveRatioStats(
+      startYear: timeRange.startDate.year,
+      endYear: timeRange.endDate.year,
+    );
+
+    logger.info('请假比例统计:');
+    logger.info('  总员工数: ${leaveRatioStats.totalEmployees}');
+    logger.info('  平均病假天数: ${leaveRatioStats.sickLeaveRatio}');
+    logger.info('  平均事假天数: ${leaveRatioStats.leaveRatio}');
+  }
+
+  // 按季度分析数据
+  Future<void> _analyzeQuarterlyData(
+    DataAnalysisService service,
+    TimeRange timeRange,
+  ) async {
+    logger.info('开始按季度分析数据');
+
+    // 计算季度
+    final startQuarter = ((timeRange.startDate.month - 1) ~/ 3) + 1;
+    final endQuarter = ((timeRange.endDate.month - 1) ~/ 3) + 1;
+
+    logger.info(
+      '时间范围: ${timeRange.startDate.year} 年第${startQuarter}季度 到 ${timeRange.endDate.year} 年第${endQuarter}季度',
+    );
+
+    // 获取部门工资统计
+    final departmentStats = await service.getQuarterlyDepartmentSalaryStats(
+      startYear: timeRange.startDate.year,
+      endYear: timeRange.endDate.year,
+      quarter: startQuarter,
+    );
+
+    logger.info('部门工资统计结果:');
+    for (var stat in departmentStats) {
+      logger.info(
+        '  部门: ${stat.department}, 总工资: ${stat.totalNetSalary}, 平均工资: ${stat.averageNetSalary}, 员工数: ${stat.employeeCount}',
+      );
+    }
+
+    // 获取考勤统计
+    final attendanceStats = await service.getMonthlyAttendanceStats(
+      startYear: timeRange.startDate.year,
+      endYear: timeRange.endDate.year,
+      startMonth: (startQuarter - 1) * 3 + 1,
+      endMonth: startQuarter * 3,
+    );
+
+    logger.info('考勤统计结果 (前10条记录):');
+    final displayCount = attendanceStats.length > 10
+        ? 10
+        : attendanceStats.length;
+    for (int i = 0; i < displayCount; i++) {
+      final stat = attendanceStats[i];
+      logger.info(
+        '  姓名: ${stat.name}, 部门: ${stat.department}, 病假: ${stat.sickLeaveDays}天, 事假: ${stat.leaveDays}天, 缺勤: ${stat.absenceCount}次, 旷工: ${stat.truancyDays}天',
+      );
+    }
+    if (attendanceStats.length > 10) {
+      logger.info('  ... 还有 ${attendanceStats.length - 10} 条记录');
+    }
+
+    // 获取请假比例统计
+    final leaveRatioStats = await service.getLeaveRatioStats(
+      startYear: timeRange.startDate.year,
+      endYear: timeRange.endDate.year,
+      startMonth: (startQuarter - 1) * 3 + 1,
+      endMonth: startQuarter * 3,
+    );
+
+    logger.info('请假比例统计:');
+    logger.info('  总员工数: ${leaveRatioStats.totalEmployees}');
+    logger.info('  平均病假天数: ${leaveRatioStats.sickLeaveRatio}');
+    logger.info('  平均事假天数: ${leaveRatioStats.leaveRatio}');
   }
 }
