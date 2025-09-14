@@ -272,7 +272,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                           _buildSidebarItem(
                             icon: Icons.settings_outlined,
                             title: '系统设置',
-                            subtitle: '个性配置',
+                            subtitle: 'AI配置',
                             route: '/settings',
                             context: context,
                             screenWidth: screenWidth,

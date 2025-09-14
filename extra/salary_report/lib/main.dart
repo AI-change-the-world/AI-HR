@@ -13,11 +13,11 @@ import 'package:salary_report/src/pages/data_analysis/quarterly/quarterly_analys
 import 'package:salary_report/src/pages/visualization/chart/chart_page.dart';
 import 'package:salary_report/src/pages/visualization/report/report_page.dart';
 import 'package:salary_report/src/pages/settings/user/user_settings_page.dart';
-import 'package:salary_report/src/pages/settings/system/system_settings_page.dart';
 import 'package:salary_report/src/rust/frb_generated.dart';
 import 'package:toastification/toastification.dart';
 import 'package:logging/logging.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
+import 'package:salary_report/src/common/ai_config.dart';
 
 Future<void> main() async {
   await RustLib.init();
@@ -29,6 +29,10 @@ Future<void> main() async {
   });
   IsarDatabase database = IsarDatabase();
   await database.initialDatabase();
+
+  // 初始化AI配置
+  await AIConfig.init();
+
   runApp(const MyApp());
 }
 
@@ -168,12 +172,6 @@ class MyApp extends StatelessWidget {
             GoRoute(
               path: '/settings',
               builder: (context, state) => const UserSettingsPage(),
-              routes: [
-                GoRoute(
-                  path: 'system',
-                  builder: (context, state) => const SystemSettingsPage(),
-                ),
-              ],
             ),
           ],
         ),
