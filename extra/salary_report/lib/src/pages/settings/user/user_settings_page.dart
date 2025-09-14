@@ -16,12 +16,6 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
   String _apiKey = '';
   String _modelName = '';
 
-  // 用于临时存储修改的值
-  bool _tempAiEnabled = false;
-  String _tempBaseUrl = '';
-  String _tempApiKey = '';
-  String _tempModelName = '';
-
   // 文本控制器
   late TextEditingController _baseUrlController;
   late TextEditingController _apiKeyController;
@@ -30,6 +24,10 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
   @override
   void initState() {
     super.initState();
+    // 初始化控制器
+    _baseUrlController = TextEditingController(text: _baseUrl);
+    _apiKeyController = TextEditingController(text: _apiKey);
+    _modelNameController = TextEditingController(text: _modelName);
     _loadSettings();
   }
 
@@ -48,36 +46,16 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
       _baseUrl = AIConfig.baseUrl;
       _apiKey = AIConfig.apiKey;
       _modelName = AIConfig.modelName;
-
-      // 初始化临时值
-      _tempAiEnabled = _aiEnabled;
-      _tempBaseUrl = _baseUrl;
-      _tempApiKey = _apiKey;
-      _tempModelName = _modelName;
-
-      // 初始化控制器
-      _baseUrlController = TextEditingController(text: _tempBaseUrl);
-      _apiKeyController = TextEditingController(text: _tempApiKey);
-      _modelNameController = TextEditingController(text: _tempModelName);
     });
   }
 
   // 保存设置
   Future<void> _saveSettings() async {
-    await AIConfig.setAiEnabled(_tempAiEnabled);
-    await AIConfig.setBaseUrl(_tempBaseUrl);
-    await AIConfig.setApiKey(_tempApiKey);
-    await AIConfig.setModelName(_tempModelName);
+    await AIConfig.setAiEnabled(_aiEnabled);
+    await AIConfig.setBaseUrl(_baseUrl);
+    await AIConfig.setApiKey(_apiKey);
+    await AIConfig.setModelName(_modelName);
 
-    // 更新当前值
-    setState(() {
-      _aiEnabled = _tempAiEnabled;
-      _baseUrl = _tempBaseUrl;
-      _apiKey = _tempApiKey;
-      _modelName = _tempModelName;
-    });
-
-    // 显示保存成功的提示
     if (context.mounted) {
       ToastUtils.success(null, title: '设置已保存');
     }
@@ -126,6 +104,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // AI开关
                       Row(
@@ -149,10 +128,10 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                             ],
                           ),
                           Switch(
-                            value: _tempAiEnabled,
+                            value: _aiEnabled,
                             onChanged: (value) {
                               setState(() {
-                                _tempAiEnabled = value;
+                                _aiEnabled = value;
                               });
                             },
                           ),
@@ -167,6 +146,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                       ),
                       const SizedBox(height: 8),
                       TextField(
+                        enabled: _aiEnabled,
                         controller: _baseUrlController,
                         decoration: const InputDecoration(
                           hintText: '请输入大模型API的Base URL',
@@ -182,6 +162,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                       ),
                       const SizedBox(height: 8),
                       TextField(
+                        enabled: _aiEnabled,
                         controller: _apiKeyController,
                         decoration: const InputDecoration(
                           hintText: '请输入API密钥',
@@ -198,6 +179,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                       ),
                       const SizedBox(height: 8),
                       TextField(
+                        enabled: _aiEnabled,
                         controller: _modelNameController,
                         decoration: const InputDecoration(
                           hintText: '请输入模型名称，如gpt-4',
