@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/components/attendance_pagination.dart';
+import 'package:salary_report/src/components/salary_charts.dart';
 
 class MonthlyAnalysisPage extends StatefulWidget {
   const MonthlyAnalysisPage({
@@ -71,6 +72,11 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
       };
     }).toList();
 
+    // 为单月情况准备月度数据
+    final monthlyData = [
+      {'month': '${widget.month}月', 'salary': totalSalary},
+    ];
+
     _analysisData = {
       'totalEmployees': totalEmployees,
       'totalSalary': totalSalary,
@@ -78,6 +84,7 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
       'highestSalary': highestSalary,
       'lowestSalary': lowestSalary,
       'departmentStats': departmentStatsData,
+      'monthlyData': monthlyData,
     };
   }
 
@@ -296,7 +303,7 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
                 const SizedBox(height: 24),
               ],
 
-              // 图表展示区域（占位符）
+              // 图表展示区域
               const Text(
                 '图表分析',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -304,9 +311,28 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
               const SizedBox(height: 12),
               Card(
                 child: Container(
-                  height: 200,
-                  alignment: Alignment.center,
-                  child: const Text('工资分布图表'),
+                  height: 300,
+                  padding: const EdgeInsets.all(16.0),
+                  child: widget.isMultiMonth
+                      ? Column(
+                          children: [
+                            Expanded(
+                              child: MonthlySalaryTrendChart(
+                                monthlyData: _generateMultiMonthData(),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Expanded(
+                              child: MultiMonthDepartmentSalaryChart(
+                                departmentMonthlyData:
+                                    _generateDepartmentMonthlyData(),
+                              ),
+                            ),
+                          ],
+                        )
+                      : DepartmentSalaryChart(
+                          departmentStats: widget.departmentStats,
+                        ),
                 ),
               ),
             ],
@@ -338,5 +364,34 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
         ),
       ),
     );
+  }
+
+  List<Map<String, dynamic>> _generateMultiMonthData() {
+    // 这里应该从实际数据中生成多月数据
+    // 暂时使用模拟数据
+    return [
+      {'month': '1月', 'salary': 100000},
+      {'month': '2月', 'salary': 120000},
+      {'month': '3月', 'salary': 110000},
+    ];
+  }
+
+  List<Map<String, dynamic>> _generateDepartmentMonthlyData() {
+    // 这里应该从实际数据中生成各部门多月数据
+    // 暂时使用模拟数据
+    return [
+      {
+        'month': '1月',
+        'departments': {'技术部': 50000, '销售部': 30000, '人事部': 20000},
+      },
+      {
+        'month': '2月',
+        'departments': {'技术部': 60000, '销售部': 35000, '人事部': 25000},
+      },
+      {
+        'month': '3月',
+        'departments': {'技术部': 55000, '销售部': 32000, '人事部': 23000},
+      },
+    ];
   }
 }

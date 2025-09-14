@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/components/attendance_pagination.dart';
+import 'package:salary_report/src/components/salary_charts.dart';
 
 class QuarterlyAnalysisPage extends StatefulWidget {
   const QuarterlyAnalysisPage({
@@ -381,7 +382,7 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                 const SizedBox(height: 24),
               ],
 
-              // 图表展示区域（占位符）
+              // 图表展示区域
               const Text(
                 '图表分析',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -389,9 +390,28 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
               const SizedBox(height: 12),
               Card(
                 child: Container(
-                  height: 200,
-                  alignment: Alignment.center,
-                  child: const Text('部门工资对比图表'),
+                  height: 300,
+                  padding: const EdgeInsets.all(16.0),
+                  child: widget.isMultiQuarter
+                      ? Column(
+                          children: [
+                            Expanded(
+                              child: MonthlySalaryTrendChart(
+                                monthlyData: _generateMultiQuarterData(),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Expanded(
+                              child: MultiMonthDepartmentSalaryChart(
+                                departmentMonthlyData:
+                                    _generateDepartmentQuarterlyData(),
+                              ),
+                            ),
+                          ],
+                        )
+                      : DepartmentSalaryChart(
+                          departmentStats: widget.departmentStats,
+                        ),
                 ),
               ),
             ],
@@ -423,5 +443,39 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
         ),
       ),
     );
+  }
+
+  List<Map<String, dynamic>> _generateMultiQuarterData() {
+    // 这里应该从实际数据中生成多季度数据
+    // 暂时使用模拟数据
+    return [
+      {'month': 'Q1', 'salary': 300000},
+      {'month': 'Q2', 'salary': 350000},
+      {'month': 'Q3', 'salary': 320000},
+      {'month': 'Q4', 'salary': 380000},
+    ];
+  }
+
+  List<Map<String, dynamic>> _generateDepartmentQuarterlyData() {
+    // 这里应该从实际数据中生成各部门季度数据
+    // 暂时使用模拟数据
+    return [
+      {
+        'month': 'Q1',
+        'departments': {'技术部': 150000, '销售部': 100000, '人事部': 50000},
+      },
+      {
+        'month': 'Q2',
+        'departments': {'技术部': 170000, '销售部': 120000, '人事部': 60000},
+      },
+      {
+        'month': 'Q3',
+        'departments': {'技术部': 160000, '销售部': 110000, '人事部': 50000},
+      },
+      {
+        'month': 'Q4',
+        'departments': {'技术部': 190000, '销售部': 130000, '人事部': 60000},
+      },
+    ];
   }
 }

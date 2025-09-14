@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/components/attendance_pagination.dart';
+import 'package:salary_report/src/components/salary_charts.dart';
 
 class YearlyAnalysisPage extends StatefulWidget {
   const YearlyAnalysisPage({
@@ -152,18 +153,23 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
                 child: Container(
                   height: 250,
                   padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      const Text('工资总额月度趋势'),
-                      const SizedBox(height: 12),
-                      Expanded(
-                        child: Container(
-                          alignment: Alignment.center,
-                          child: const Text('月度趋势折线图'),
+                  child: widget.isMultiYear
+                      ? Column(
+                          children: [
+                            const Text('工资总额年度趋势'),
+                            const SizedBox(height: 12),
+                            Expanded(
+                              child: MonthlySalaryTrendChart(
+                                monthlyData: _generateMultiYearData(),
+                              ),
+                            ),
+                          ],
+                        )
+                      : MonthlySalaryTrendChart(
+                          monthlyData:
+                              _analysisData['monthlyTrend']
+                                  as List<Map<String, dynamic>>,
                         ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
 
@@ -368,5 +374,15 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
         ),
       ),
     );
+  }
+
+  List<Map<String, dynamic>> _generateMultiYearData() {
+    // 这里应该从实际数据中生成多年数据
+    // 暂时使用模拟数据
+    return [
+      {'month': '2021年', 'salary': 1000000},
+      {'month': '2022年', 'salary': 1200000},
+      {'month': '2023年', 'salary': 1100000},
+    ];
   }
 }
