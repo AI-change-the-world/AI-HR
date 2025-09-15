@@ -96,6 +96,12 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
   /// 生成工资报告
   Future<void> _generateSalaryReport() async {
     try {
+      // 确定开始和结束时间
+      final startTime = DateTime(widget.year, 1);
+      final endTime = widget.isMultiYear && widget.endYear != null
+          ? DateTime(widget.endYear!, 12)
+          : DateTime(widget.year, 12);
+
       final reportPath = await SalaryReportGenerator.generateSalaryReport(
         previewContainerKey: _chartContainerKey,
         departmentStats: widget.departmentStats,
@@ -105,6 +111,8 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
         month: 0, // 年度报告没有月份
         isMultiMonth: widget.isMultiYear,
         analysisData: _analysisData,
+        startTime: startTime,
+        endTime: endTime,
       );
 
       if (mounted) {
@@ -397,7 +405,6 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
               ],
             ],
           ),
@@ -408,35 +415,47 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
 
   Widget _buildStatCard(String title, String value, IconData icon) {
     return Card(
-      child: Container(
+      elevation: 2,
+      child: SizedBox(
         width: 150,
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Icon(icon, size: 32, color: Colors.blue),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            children: [
+              Icon(icon, color: Colors.blue),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   List<Map<String, dynamic>> _generateMultiYearData() {
-    // 这里应该从实际数据中生成多年数据
-    // 暂时使用模拟数据
-    return [
-      {'month': '2021年', 'salary': 1000000},
-      {'month': '2022年', 'salary': 1200000},
-      {'month': '2023年', 'salary': 1100000},
-    ];
+    // 生成多一年的数据用于演示
+    final currentYearData =
+        _analysisData['monthlyTrend'] as List<Map<String, dynamic>>;
+    final nextYearData = currentYearData
+        .map(
+          (item) => {
+            'month': '${item['month']}+1Y',
+            'salary': (item['salary'] as double) * 1.1,
+          },
+        )
+        .toList();
+
+    return [...currentYearData, ...nextYearData];
   }
 }

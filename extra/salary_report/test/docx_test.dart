@@ -38,6 +38,7 @@ void main() async {
   print("${content.entries}");
 
   content
+    ..add(TextContent("xcx", "Paul"))
     ..add(TextContent("header", "Nice header"))
     ..add(TextContent("footer", "Nice footer"))
     ..add(TextContent("docname", "Simple docname"))
@@ -122,6 +123,8 @@ void main() async {
       ]),
     )
     ..add(TextContent('multilineText2', 'line 1\nline 2\n line 3'));
+
+  print(content.sub);
 
   final docGenerated = await docx.generate(content);
   final fileGenerated = File('generated.docx');

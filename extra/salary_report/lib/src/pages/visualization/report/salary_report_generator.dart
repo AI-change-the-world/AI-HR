@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:docx_template_fork/docx_template_fork.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
+import 'package:salary_report/src/common/ai_config.dart';
 
 class SalaryReportGenerator {
   /// 生成工资报告
@@ -18,6 +19,8 @@ class SalaryReportGenerator {
     required int month,
     required bool isMultiMonth,
     required Map<String, dynamic> analysisData,
+    required DateTime startTime,
+    required DateTime endTime,
   }) async {
     try {
       print('开始生成工资报告...');
@@ -35,6 +38,8 @@ class SalaryReportGenerator {
         month: month,
         isMultiMonth: isMultiMonth,
         analysisData: analysisData,
+        startTime: startTime,
+        endTime: endTime,
       );
       print('报告数据准备完成');
 
@@ -85,6 +90,8 @@ class SalaryReportGenerator {
     required int month,
     required bool isMultiMonth,
     required Map<String, dynamic> analysisData,
+    required DateTime startTime,
+    required DateTime endTime,
   }) {
     // 准备部门统计数据
     final departmentData = departmentStats.map((stat) {
@@ -117,6 +124,86 @@ class SalaryReportGenerator {
           }
         : null;
 
+    // 公司名称
+    final companyName = AIConfig.companyName;
+
+    // 当前时间
+    final currentTime = DateTime.now();
+
+    // 报告时间范围
+    final reportTime =
+        '${startTime.year}年${startTime.month}月-${endTime.year}年${endTime.month}月';
+
+    // 部门数量
+    final departmentCount = departmentStats.length;
+
+    // 员工总数
+    final employeeCount = departmentStats.fold(
+      0,
+      (sum, stat) => sum + stat.employeeCount,
+    );
+
+    // 员工详细信息（按部门人数排序）
+    final sortedDepartments = List<DepartmentSalaryStats>.from(departmentStats)
+      ..sort((a, b) => b.employeeCount.compareTo(a.employeeCount));
+
+    final employeeDetails = sortedDepartments
+        .map((dept) => '${dept.department}部门${dept.employeeCount}人')
+        .join('，');
+
+    // 平均薪资
+    final averageSalary = analysisData['averageSalary'] as double? ?? 0.0;
+
+    // 工资区间统计
+    final salaryRanges = <String, int>{};
+    for (final dept in departmentStats) {
+      // 简化处理，实际应该遍历所有员工记录
+      final avgSalary = dept.averageNetSalary;
+      String range;
+      if (avgSalary < 3000) {
+        range = '少于3000';
+      } else if (avgSalary < 4000) {
+        range = '3000-4000';
+      } else if (avgSalary < 5000) {
+        range = '4000-5000';
+      } else if (avgSalary < 6000) {
+        range = '5000-6000';
+      } else if (avgSalary < 7000) {
+        range = '6000-7000';
+      } else if (avgSalary < 8000) {
+        range = '7000-8000';
+      } else if (avgSalary < 9000) {
+        range = '8000-9000';
+      } else if (avgSalary < 10000) {
+        range = '9000-10000';
+      } else {
+        range = '10000以上';
+      }
+
+      salaryRanges[range] = (salaryRanges[range] ?? 0) + dept.employeeCount;
+    }
+
+    final salaryRangeDescriptions = salaryRanges.entries
+        .map((entry) => '${entry.key}元的有${entry.value}人')
+        .join('，');
+
+    // 各部门平均薪资排名
+    final sortedBySalary = List<DepartmentSalaryStats>.from(departmentStats)
+      ..sort((a, b) => b.averageNetSalary.compareTo(a.averageNetSalary));
+
+    final salaryOrder = sortedBySalary
+        .asMap()
+        .entries
+        .map(
+          (entry) =>
+              '第${entry.key + 1}名${entry.value.department}部门平均薪资${entry.value.averageNetSalary.toStringAsFixed(2)}元',
+        )
+        .join('；');
+
+    // 基本工资和绩效工资占比（简化处理，实际需要具体数据）
+    final basicRate = 85.0; // 假设值
+    final performanceRate = 15.0; // 假设值
+
     return {
       'reportTitle': isMultiMonth
           ? '$year年$month月起工资分析报告'
@@ -128,6 +215,24 @@ class SalaryReportGenerator {
       'departments': departmentData,
       'attendanceStats': attendanceData,
       'leaveStats': leaveData,
+
+      // 新增参数
+      'company_name': companyName,
+      'start_time': '${startTime.year}年${startTime.month}月',
+      'end_time': '${endTime.year}年${endTime.month}月',
+      'current_time':
+          '${currentTime.year}年${currentTime.month}月${currentTime.day}日',
+      'report_time': reportTime,
+      'department_count': departmentCount.toString(),
+      'employee_count': employeeCount.toString(),
+      'employee_details': employeeDetails,
+      'employee_details_chart': '', // 需要图表数据
+      'avarage_salary': averageSalary.toStringAsFixed(2),
+      'salary_range': salaryRangeDescriptions,
+      'salary_range_chart': '', // 需要图表数据
+      'salary_order': salaryOrder,
+      'basic_rate': basicRate.toStringAsFixed(2),
+      'performance_rate': performanceRate.toStringAsFixed(2),
     };
   }
 
@@ -175,7 +280,39 @@ class SalaryReportGenerator {
           ),
         )
         ..add(TextContent('total_salary', reportData['total_salary'] as String))
-        ..add(TextContent('avg_salary', reportData['avg_salary'] as String));
+        ..add(TextContent('avg_salary', reportData['avg_salary'] as String))
+        ..add(TextContent('company_name', reportData['company_name'] as String))
+        ..add(TextContent('start_time', reportData['start_time'] as String))
+        ..add(TextContent('end_time', reportData['end_time'] as String))
+        ..add(TextContent('current_time', reportData['current_time'] as String))
+        ..add(TextContent('report_time', reportData['report_time'] as String))
+        ..add(
+          TextContent(
+            'department_count',
+            reportData['department_count'] as String,
+          ),
+        )
+        ..add(
+          TextContent('employee_count', reportData['employee_count'] as String),
+        )
+        ..add(
+          TextContent(
+            'employee_details',
+            reportData['employee_details'] as String,
+          ),
+        )
+        ..add(
+          TextContent('avarage_salary', reportData['avarage_salary'] as String),
+        )
+        ..add(TextContent('salary_range', reportData['salary_range'] as String))
+        ..add(TextContent('salary_order', reportData['salary_order'] as String))
+        ..add(TextContent('basic_rate', reportData['basic_rate'] as String))
+        ..add(
+          TextContent(
+            'performance_rate',
+            reportData['performance_rate'] as String,
+          ),
+        );
 
       // 添加部门数据 - 使用模板中的实际占位符名称
       if (reportData['departments'] != null &&
@@ -225,6 +362,21 @@ class SalaryReportGenerator {
           print('成功添加部门图表');
         } catch (e) {
           print('添加部门图表失败: $e');
+        }
+
+        // 添加员工详情图表和工资区间图表
+        try {
+          content.add(ImageContent('employee_details_chart', chartImage));
+          print('成功添加员工详情图表');
+        } catch (e) {
+          print('添加员工详情图表失败: $e');
+        }
+
+        try {
+          content.add(ImageContent('salary_range_chart', chartImage));
+          print('成功添加工资区间图表');
+        } catch (e) {
+          print('添加工资区间图表失败: $e');
         }
       }
 

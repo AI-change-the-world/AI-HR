@@ -16,10 +16,14 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
   String _apiKey = '';
   String _modelName = '';
 
+  // 公司名称设置
+  String _companyName = '';
+
   // 文本控制器
   late TextEditingController _baseUrlController;
   late TextEditingController _apiKeyController;
   late TextEditingController _modelNameController;
+  late TextEditingController _companyNameController;
 
   @override
   void initState() {
@@ -28,6 +32,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     _baseUrlController = TextEditingController(text: _baseUrl);
     _apiKeyController = TextEditingController(text: _apiKey);
     _modelNameController = TextEditingController(text: _modelName);
+    _companyNameController = TextEditingController(text: _companyName);
     _loadSettings();
   }
 
@@ -36,6 +41,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     _baseUrlController.dispose();
     _apiKeyController.dispose();
     _modelNameController.dispose();
+    _companyNameController.dispose();
     super.dispose();
   }
 
@@ -46,6 +52,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
       _baseUrl = AIConfig.baseUrl;
       _apiKey = AIConfig.apiKey;
       _modelName = AIConfig.modelName;
+      _companyName = AIConfig.companyName;
     });
   }
 
@@ -55,6 +62,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     await AIConfig.setBaseUrl(_baseUrl);
     await AIConfig.setApiKey(_apiKey);
     await AIConfig.setModelName(_modelName);
+    await AIConfig.setCompanyName(_companyName);
 
     if (context.mounted) {
       ToastUtils.success(null, title: '设置已保存');
@@ -86,6 +94,51 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
               ),
               const SizedBox(height: 24),
 
+              // 公司信息设置
+              const Text(
+                '公司信息设置',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.lightBlue,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Card(
+                elevation: 3,
+                shadowColor: Colors.lightBlue.withValues(alpha: 0.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '公司名称',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _companyNameController,
+                        decoration: const InputDecoration(
+                          hintText: '请输入公司名称，用于生成报告抬头',
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            _companyName = value;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // AI大模型设置
               const Text(
                 'AI大模型设置',
                 style: TextStyle(
@@ -152,6 +205,11 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                           hintText: '请输入大模型API的Base URL',
                           border: OutlineInputBorder(),
                         ),
+                        onChanged: (value) {
+                          setState(() {
+                            _baseUrl = value;
+                          });
+                        },
                       ),
                       const SizedBox(height: 16),
 
@@ -169,6 +227,11 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                           border: OutlineInputBorder(),
                         ),
                         obscureText: true,
+                        onChanged: (value) {
+                          setState(() {
+                            _apiKey = value;
+                          });
+                        },
                       ),
                       const SizedBox(height: 16),
 
@@ -185,32 +248,35 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                           hintText: '请输入模型名称，如gpt-4',
                           border: OutlineInputBorder(),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // 保存按钮
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _saveSettings,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.lightBlue,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: const Text(
-                            '保存设置',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            _modelName = value;
+                          });
+                        },
                       ),
                     ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // 保存按钮
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _saveSettings,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.lightBlue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    '保存设置',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),

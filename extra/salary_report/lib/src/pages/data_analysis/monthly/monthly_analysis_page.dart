@@ -95,6 +95,12 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
   /// 生成工资报告
   Future<void> _generateSalaryReport() async {
     try {
+      // 确定开始和结束时间
+      final startTime = DateTime(widget.year, widget.month);
+      final endTime = widget.isMultiMonth
+          ? DateTime(widget.year, widget.month)
+          : DateTime(widget.year, widget.month);
+
       final reportPath = await SalaryReportGenerator.generateSalaryReport(
         previewContainerKey: _chartContainerKey,
         departmentStats: widget.departmentStats,
@@ -104,6 +110,8 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
         month: widget.month,
         isMultiMonth: widget.isMultiMonth,
         analysisData: _analysisData,
+        startTime: startTime,
+        endTime: endTime,
       );
 
       if (mounted) {
@@ -351,44 +359,7 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
               ],
-
-              // 图表展示区域
-              const Text(
-                '图表分析',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              RepaintBoundary(
-                key: _chartContainerKey,
-                child: Card(
-                  child: Container(
-                    height: 300,
-                    padding: const EdgeInsets.all(16.0),
-                    child: widget.isMultiMonth
-                        ? Column(
-                            children: [
-                              Expanded(
-                                child: MonthlySalaryTrendChart(
-                                  monthlyData: _generateMultiMonthData(),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              Expanded(
-                                child: MultiMonthDepartmentSalaryChart(
-                                  departmentMonthlyData:
-                                      _generateDepartmentMonthlyData(),
-                                ),
-                              ),
-                            ],
-                          )
-                        : DepartmentSalaryChart(
-                            departmentStats: widget.departmentStats,
-                          ),
-                  ),
-                ),
-              ),
             ],
           ),
         ),
@@ -398,54 +369,31 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
 
   Widget _buildStatCard(String title, String value, IconData icon) {
     return Card(
-      child: Container(
+      elevation: 2,
+      child: SizedBox(
         width: 150,
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Icon(icon, size: 32, color: Colors.blue),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            children: [
+              Icon(icon, color: Colors.blue),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
-  }
-
-  List<Map<String, dynamic>> _generateMultiMonthData() {
-    // 这里应该从实际数据中生成多月数据
-    // 暂时使用模拟数据
-    return [
-      {'month': '1月', 'salary': 100000},
-      {'month': '2月', 'salary': 120000},
-      {'month': '3月', 'salary': 110000},
-    ];
-  }
-
-  List<Map<String, dynamic>> _generateDepartmentMonthlyData() {
-    // 这里应该从实际数据中生成各部门多月数据
-    // 暂时使用模拟数据
-    return [
-      {
-        'month': '1月',
-        'departments': {'技术部': 50000, '销售部': 30000, '人事部': 20000},
-      },
-      {
-        'month': '2月',
-        'departments': {'技术部': 60000, '销售部': 35000, '人事部': 25000},
-      },
-      {
-        'month': '3月',
-        'departments': {'技术部': 55000, '销售部': 32000, '人事部': 23000},
-      },
-    ];
   }
 }

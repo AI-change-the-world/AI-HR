@@ -108,6 +108,18 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
   /// 生成工资报告
   Future<void> _generateSalaryReport() async {
     try {
+      // 确定开始和结束时间
+      final startMonth = (widget.quarter - 1) * 3 + 1;
+      final endMonth = startMonth + 2;
+      final startTime = DateTime(widget.year, startMonth);
+
+      final endTime =
+          widget.isMultiQuarter &&
+              widget.endYear != null &&
+              widget.endQuarter != null
+          ? DateTime(widget.endYear!, (widget.endQuarter! - 1) * 3 + 3)
+          : DateTime(widget.year, endMonth);
+
       final reportPath = await SalaryReportGenerator.generateSalaryReport(
         previewContainerKey: _chartContainerKey,
         departmentStats: widget.departmentStats,
@@ -117,6 +129,8 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
         month: widget.quarter,
         isMultiMonth: widget.isMultiQuarter,
         analysisData: _analysisData,
+        startTime: startTime,
+        endTime: endTime,
       );
 
       if (mounted) {
@@ -303,24 +317,25 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                       ),
                       const Divider(),
                       ..._analysisData['departmentComparison'].map<Widget>((
-                        dept,
+                        deptData,
                       ) {
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8.0),
                           child: Row(
                             children: [
+                              const SizedBox(width: 8),
                               Expanded(
                                 flex: 2,
-                                child: Text(dept['department']),
+                                child: Text(deptData['department']),
                               ),
                               Expanded(
                                 child: Text(
-                                  '¥${(dept['salary'] as double).toStringAsFixed(2)}',
+                                  '¥${(deptData['salary'] as double).toStringAsFixed(2)}',
                                 ),
                               ),
                               Expanded(
                                 child: Text(
-                                  '¥${(dept['average'] as double).toStringAsFixed(2)}',
+                                  '¥${(deptData['average'] as double).toStringAsFixed(2)}',
                                 ),
                               ),
                             ],
@@ -430,44 +445,7 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
               ],
-
-              // 图表展示区域
-              const Text(
-                '图表分析',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              RepaintBoundary(
-                key: _chartContainerKey,
-                child: Card(
-                  child: Container(
-                    height: 300,
-                    padding: const EdgeInsets.all(16.0),
-                    child: widget.isMultiQuarter
-                        ? Column(
-                            children: [
-                              Expanded(
-                                child: MonthlySalaryTrendChart(
-                                  monthlyData: _generateMultiQuarterData(),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              Expanded(
-                                child: MultiMonthDepartmentSalaryChart(
-                                  departmentMonthlyData:
-                                      _generateDepartmentQuarterlyData(),
-                                ),
-                              ),
-                            ],
-                          )
-                        : DepartmentSalaryChart(
-                            departmentStats: widget.departmentStats,
-                          ),
-                  ),
-                ),
-              ),
             ],
           ),
         ),
@@ -477,59 +455,31 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
 
   Widget _buildStatCard(String title, String value, IconData icon) {
     return Card(
-      child: Container(
+      elevation: 2,
+      child: SizedBox(
         width: 150,
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Icon(icon, size: 32, color: Colors.blue),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            children: [
+              Icon(icon, color: Colors.blue),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
-  }
-
-  List<Map<String, dynamic>> _generateMultiQuarterData() {
-    // 这里应该从实际数据中生成多季度数据
-    // 暂时使用模拟数据
-    return [
-      {'month': 'Q1', 'salary': 300000},
-      {'month': 'Q2', 'salary': 350000},
-      {'month': 'Q3', 'salary': 320000},
-      {'month': 'Q4', 'salary': 380000},
-    ];
-  }
-
-  List<Map<String, dynamic>> _generateDepartmentQuarterlyData() {
-    // 这里应该从实际数据中生成各部门季度数据
-    // 暂时使用模拟数据
-    return [
-      {
-        'month': 'Q1',
-        'departments': {'技术部': 150000, '销售部': 100000, '人事部': 50000},
-      },
-      {
-        'month': 'Q2',
-        'departments': {'技术部': 170000, '销售部': 120000, '人事部': 60000},
-      },
-      {
-        'month': 'Q3',
-        'departments': {'技术部': 160000, '销售部': 110000, '人事部': 50000},
-      },
-      {
-        'month': 'Q4',
-        'departments': {'技术部': 190000, '销售部': 130000, '人事部': 60000},
-      },
-    ];
   }
 }
