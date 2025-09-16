@@ -10,6 +10,7 @@ import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/common/ai_config.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
+import 'package:salary_report/src/common/llm_client.dart';
 
 class SalaryReportGenerator {
   /// 生成工资报告
@@ -41,7 +42,8 @@ class SalaryReportGenerator {
       logger.info('图表截图完成: ${chartImages.length} 个图表');
 
       // 2. 准备报告数据
-      final reportData = _prepareReportData(
+      final reportData = await _prepareReportData(
+        // 添加await
         departmentStats: departmentStats,
         attendanceStats: attendanceStats,
         leaveRatioStats: leaveRatioStats,
@@ -374,7 +376,8 @@ class SalaryReportGenerator {
   }
 
   /// 准备报告数据
-  static Map<String, dynamic> _prepareReportData({
+  static Future<Map<String, dynamic>> _prepareReportData({
+    // 改为Future
     required List<DepartmentSalaryStats> departmentStats,
     required List<AttendanceStats> attendanceStats,
     required LeaveRatioStats? leaveRatioStats,
@@ -385,7 +388,8 @@ class SalaryReportGenerator {
     required DateTime startTime,
     required DateTime endTime,
     required Map<String, Uint8List?> chartImages,
-  }) {
+  }) async {
+    // 添加async
     // 准备部门统计数据
     final departmentData = departmentStats.map((stat) {
       return {
@@ -500,6 +504,31 @@ class SalaryReportGenerator {
     final salaryRangeDescriptions =
         '${salaryRanges.entries.map((entry) => '${entry.key}元区间有${entry.value}人').join('，')}，详见下图';
 
+    // 使用AI总结薪资分布特征
+    String salaryRangeFeature = salaryRangeDescriptions; // 默认使用原始描述
+    if (AIConfig.aiEnabled) {
+      try {
+        final llmClient = LLMClient();
+        final prompt =
+            '''
+请根据以下薪资分布数据，总结薪资分布特征：
+$salaryRangeDescriptions
+
+请用简洁的语言描述薪资分布的整体情况，包括主要集中在哪个区间、分布是否均匀等特征。
+只需要返回总结内容，不要添加其他说明。
+''';
+        final aiSummary = await llmClient.getAnswer(prompt);
+        if (aiSummary.isNotEmpty) {
+          logger.info('LLM: $aiSummary');
+          salaryRangeFeature = aiSummary;
+        }
+      } catch (e) {
+        logger.info('使用AI总结薪资分布特征时出错: $e');
+        // 出错时使用默认描述
+        salaryRangeFeature = salaryRangeDescriptions;
+      }
+    }
+
     // 各部门平均薪资排名
     final sortedBySalary = List<DepartmentSalaryStats>.from(departmentStats)
       ..sort((a, b) => b.averageNetSalary.compareTo(a.averageNetSalary));
@@ -544,6 +573,7 @@ class SalaryReportGenerator {
       'employee_details_chart': '', // 图像数据将在生成报告时处理
       'avarage_salary': averageSalary.toStringAsFixed(2),
       'salary_range': salaryRangeDescriptions, // 先描述每个区间，然后说详见下图
+      'salary_range_feature': salaryRangeFeature, // 使用AI总结的特征或默认描述
       'salary_range_chart': '', // 图像数据将在生成报告时处理
       'salary_order': salaryOrder,
       'basic_rate': basicRate.toStringAsFixed(2),
@@ -592,6 +622,12 @@ class SalaryReportGenerator {
           TextContent(
             'total_employees',
             reportData['total_employees'] as String,
+          ),
+        )
+        ..add(
+          TextContent(
+            'salary_range_feature',
+            reportData['salary_range_feature'] as String,
           ),
         )
         ..add(TextContent('compare_last', reportData['compare_last'] as String))
