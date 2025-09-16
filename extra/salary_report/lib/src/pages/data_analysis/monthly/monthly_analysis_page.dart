@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/components/attendance_pagination.dart';
-import 'package:salary_report/src/components/salary_charts.dart';
 import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
-import 'package:flutter/rendering.dart';
 import 'package:toastification/toastification.dart';
 
 class MonthlyAnalysisPage extends StatefulWidget {

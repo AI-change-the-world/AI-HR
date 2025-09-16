@@ -125,11 +125,11 @@ class SalaryReportGenerator {
         images['main_chart'] = byteData?.buffer.asUint8List();
       }
 
-      // 生成虚拟图表图像
-      final employeeChartImage = await _generateEmployeeDistributionChart(
+      // 生成部门详情饼图
+      final departmentDetailsChartImage = await _generateDepartmentDetailsChart(
         departmentStats,
       );
-      images['employee_details_chart'] = employeeChartImage;
+      images['department_details_chart'] = departmentDetailsChartImage;
 
       logger.info('传递给图表的工资区间数据: $salaryRanges');
       final salaryRangeChartImage = await _generateSalaryRangeChart(
@@ -145,27 +145,27 @@ class SalaryReportGenerator {
     }
   }
 
-  /// 生成员工分布饼图
-  static Future<Uint8List?> _generateEmployeeDistributionChart(
+  /// 生成部门详情饼图
+  static Future<Uint8List?> _generateDepartmentDetailsChart(
     List<DepartmentSalaryStats> departmentStats,
   ) async {
     try {
       final screenshotController = ScreenshotController();
 
-      // 直接使用传入的数据，不创建虚假数据
-      // 如果没有数据，图表将为空，这在实际应用中应该由调用方确保数据存在
-
       // 创建一个包含MediaQuery的虚拟容器（使用您提供的正确方式）
       final virtualChartWidget = MediaQuery(
-        data: const MediaQueryData(),
-        child: Container(
-          width: 800,
-          height: 600,
-          color: Colors.white,
-          child: SfCircularChart(
-            title: ChartTitle(text: '各部门员工分布'),
-            legend: Legend(isVisible: true),
-            series: _getEmployeeDistributionSeries(departmentStats),
+        data: MediaQueryData.fromView(WidgetsBinding.instance.window),
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: Container(
+            width: 800,
+            height: 600,
+            color: Colors.white,
+            child: SfCircularChart(
+              title: ChartTitle(text: '部门人员详情'),
+              legend: Legend(isVisible: true),
+              series: _getDepartmentDetailsSeries(departmentStats),
+            ),
           ),
         ),
       );
@@ -179,7 +179,7 @@ class SalaryReportGenerator {
 
       return imageBytes;
     } catch (e) {
-      logger.info('生成员工分布图表时出错: $e');
+      logger.info('生成部门详情图表时出错: $e');
       return null;
     }
   }
@@ -254,6 +254,32 @@ class SalaryReportGenerator {
     return [
       PieSeries<Map<String, dynamic>, String>(
         dataSource: employeeData,
+        xValueMapper: (data, _) => data['department'] as String,
+        yValueMapper: (data, _) => data['count'] as int,
+        dataLabelMapper: (data, _) =>
+            '${data['department']}\n${data['count']}人',
+        dataLabelSettings: const DataLabelSettings(isVisible: true),
+        enableTooltip: true,
+      ),
+    ];
+  }
+
+  /// 获取部门详情饼图数据系列
+  static List<PieSeries<Map<String, dynamic>, String>>
+  _getDepartmentDetailsSeries(List<DepartmentSalaryStats> departmentStats) {
+    final List<Map<String, dynamic>> departmentData = departmentStats.map((
+      stat,
+    ) {
+      return {'department': stat.department, 'count': stat.employeeCount};
+    }).toList();
+
+    logger.info('处理后的部门数据: $departmentData');
+
+    return [
+      PieSeries<Map<String, dynamic>, String>(
+        animationDelay: 0,
+        animationDuration: 0,
+        dataSource: departmentData,
         xValueMapper: (data, _) => data['department'] as String,
         yValueMapper: (data, _) => data['count'] as int,
         dataLabelMapper: (data, _) =>
@@ -408,6 +434,12 @@ class SalaryReportGenerator {
       reportTime = '$year年$month月';
     }
 
+    String compareLast = "";
+
+    if (isMultiMonth) {
+      compareLast = "与${startTime.year}年${startTime.month}月对比";
+    }
+
     // 部门数量
     final departmentCount = departmentStats.length;
 
@@ -425,14 +457,48 @@ class SalaryReportGenerator {
         .map((dept) => '${dept.department}部门${dept.employeeCount}人')
         .join('，');
 
+    // 部门详情描述
+    final departmentDetails =
+        '${sortedDepartments.map((dept) => '${dept.department}部门${dept.employeeCount}人').join('，')}，详见下图';
+
     // 平均薪资
     final averageSalary = analysisData['averageSalary'] as double? ?? 0.0;
 
     // 工资区间统计（使用已计算的数据）
     // 注意：这里我们不再重新计算工资区间数据，而是使用图表生成时已计算的数据
-    // 在报告正文中，我们只提供文字描述，图表由图像展示
+    // 在报告正文中，我们提供文字描述，然后指向图表展示
 
-    final salaryRangeDescriptions = '详见图表';
+    // 计算工资区间分布用于文字描述
+    final salaryRanges = <String, int>{};
+    for (final dept in departmentStats) {
+      final avgSalary = dept.averageNetSalary;
+      String range;
+      if (avgSalary < 3000) {
+        range = '少于3000';
+      } else if (avgSalary < 4000) {
+        range = '3000-4000';
+      } else if (avgSalary < 5000) {
+        range = '4000-5000';
+      } else if (avgSalary < 6000) {
+        range = '5000-6000';
+      } else if (avgSalary < 7000) {
+        range = '6000-7000';
+      } else if (avgSalary < 8000) {
+        range = '7000-8000';
+      } else if (avgSalary < 9000) {
+        range = '8000-9000';
+      } else if (avgSalary < 10000) {
+        range = '9000-10000';
+      } else {
+        range = '10000以上';
+      }
+
+      salaryRanges[range] = (salaryRanges[range] ?? 0) + dept.employeeCount;
+    }
+
+    // 构建工资区间描述文本
+    final salaryRangeDescriptions =
+        '${salaryRanges.entries.map((entry) => '${entry.key}元区间有${entry.value}人').join('，')}，详见下图';
 
     // 各部门平均薪资排名
     final sortedBySalary = List<DepartmentSalaryStats>.from(departmentStats)
@@ -465,6 +531,7 @@ class SalaryReportGenerator {
 
       // 新增参数
       'company_name': companyName,
+      'compare_last': compareLast,
       'start_time': '${startTime.year}年${startTime.month}月',
       'end_time': '${endTime.year}年${endTime.month}月',
       'current_time':
@@ -473,9 +540,10 @@ class SalaryReportGenerator {
       'department_count': departmentCount.toString(),
       'employee_count': employeeCount.toString(),
       'employee_details': employeeDetails,
+      'department_details': departmentDetails, // 添加部门详情描述
       'employee_details_chart': '', // 图像数据将在生成报告时处理
       'avarage_salary': averageSalary.toStringAsFixed(2),
-      'salary_range': salaryRangeDescriptions, // 使用图表展示，文字描述简化
+      'salary_range': salaryRangeDescriptions, // 先描述每个区间，然后说详见下图
       'salary_range_chart': '', // 图像数据将在生成报告时处理
       'salary_order': salaryOrder,
       'basic_rate': basicRate.toStringAsFixed(2),
@@ -526,6 +594,7 @@ class SalaryReportGenerator {
             reportData['total_employees'] as String,
           ),
         )
+        ..add(TextContent('compare_last', reportData['compare_last'] as String))
         ..add(TextContent('total_salary', reportData['total_salary'] as String))
         ..add(TextContent('avg_salary', reportData['avg_salary'] as String))
         ..add(TextContent('company_name', reportData['company_name'] as String))
@@ -546,6 +615,12 @@ class SalaryReportGenerator {
           TextContent(
             'employee_details',
             reportData['employee_details'] as String,
+          ),
+        )
+        ..add(
+          TextContent(
+            'department_details',
+            reportData['department_details'] as String,
           ),
         )
         ..add(
@@ -616,18 +691,20 @@ class SalaryReportGenerator {
         }
       }
 
-      // 添加员工详情图表
-      if (chartImages['employee_details_chart'] != null) {
+      // 添加部门详情图表
+      if (chartImages['department_details_chart'] != null) {
         try {
           content.add(
             ImageContent(
-              'employee_details_chart',
-              chartImages['employee_details_chart']!,
+              'department_details_chart',
+              chartImages['department_details_chart']!,
             ),
           );
-          logger.info('成功添加员工详情图表');
+          // final f = File("department_details_chart.png");
+          // await f.writeAsBytes(chartImages['department_details_chart']!);
+          logger.info('成功添加部门详情图表');
         } catch (e) {
-          logger.info('添加员工详情图表失败: $e');
+          logger.info('添加部门详情图表失败: $e');
         }
       }
 
