@@ -504,20 +504,22 @@ class SalaryReportGenerator {
     final salaryRangeDescriptions =
         '${salaryRanges.entries.map((entry) => '${entry.key}元区间有${entry.value}人').join('，')}，详见下图';
 
-    // 使用AI总结薪资分布特征
+    // 使用AI总结薪资分布特征和分析部门薪资差异原因
     String salaryRangeFeature = salaryRangeDescriptions; // 默认使用原始描述
+    String salaryReason = ""; // 默认为空
+
     if (AIConfig.aiEnabled) {
+      final llmClient = LLMClient(); // 只创建一次LLMClient实例
+
       try {
-        final llmClient = LLMClient();
-        final prompt =
+        final prompt1 =
             '''
-请根据以下薪资分布数据，总结薪资分布特征：
+请基于以下薪资分布数据：
 $salaryRangeDescriptions
 
-请用简洁的语言描述薪资分布的整体情况，包括主要集中在哪个区间、分布是否均匀等特征。
-只需要返回总结内容，不要添加其他说明。
+撰写一段薪资分布特征总结。要求语言严谨、简洁，体现报告风格。内容需涵盖整体分布情况、主要集中区间，以及分布的均衡性或差异性。仅输出总结内容，不添加额外说明。
 ''';
-        final aiSummary = await llmClient.getAnswer(prompt);
+        final aiSummary = await llmClient.getAnswer(prompt1);
         if (aiSummary.isNotEmpty) {
           logger.info('LLM: $aiSummary');
           salaryRangeFeature = aiSummary;
@@ -526,6 +528,33 @@ $salaryRangeDescriptions
         logger.info('使用AI总结薪资分布特征时出错: $e');
         // 出错时使用默认描述
         salaryRangeFeature = salaryRangeDescriptions;
+      }
+
+      try {
+        // 构建部门薪资数据描述
+        final departmentSalaryInfo = sortedDepartments
+            .map(
+              (dept) =>
+                  '${dept.department}部门有${dept.employeeCount}人，总薪资${dept.totalNetSalary.toStringAsFixed(2)}元，人均薪资${dept.averageNetSalary.toStringAsFixed(2)}元',
+            )
+            .join('；');
+
+        final prompt2 =
+            '''
+请基于以下部门薪资数据：
+$departmentSalaryInfo
+
+分析各部门之间薪资差异的原因。要求语言严谨、简洁，体现报告风格。内容需涵盖薪资差异的主要原因、影响因素分析，以及可能的改进建议。仅输出分析内容，不添加额外说明。
+''';
+        final aiReason = await llmClient.getAnswer(prompt2);
+        if (aiReason.isNotEmpty) {
+          logger.info('LLM Salary Reason: $aiReason');
+          salaryReason = aiReason;
+        }
+      } catch (e) {
+        logger.info('使用AI分析部门薪资差异原因时出错: $e');
+        // 出错时保持默认空值
+        salaryReason = "";
       }
     }
 
@@ -575,6 +604,7 @@ $salaryRangeDescriptions
       'salary_range': salaryRangeDescriptions, // 先描述每个区间，然后说详见下图
       'salary_range_feature': salaryRangeFeature, // 使用AI总结的特征或默认描述
       'salary_range_chart': '', // 图像数据将在生成报告时处理
+      'salary_reason': salaryReason, // 使用AI分析的部门薪资差异原因
       'salary_order': salaryOrder,
       'basic_rate': basicRate.toStringAsFixed(2),
       'performance_rate': performanceRate.toStringAsFixed(2),
@@ -663,6 +693,9 @@ $salaryRangeDescriptions
           TextContent('avarage_salary', reportData['avarage_salary'] as String),
         )
         ..add(TextContent('salary_range', reportData['salary_range'] as String))
+        ..add(
+          TextContent('salary_reason', reportData['salary_reason'] as String),
+        )
         ..add(TextContent('salary_order', reportData['salary_order'] as String))
         ..add(TextContent('basic_rate', reportData['basic_rate'] as String))
         ..add(
