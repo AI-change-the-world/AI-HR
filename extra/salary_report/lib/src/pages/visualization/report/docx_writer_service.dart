@@ -110,6 +110,12 @@ class DocxWriterService {
     if (images.salaryRangeChart != null) {
       content.add(ImageContent('salary_range_chart', images.salaryRangeChart!));
     }
+    // 添加薪资结构饼图
+    if (images.salaryStructureChart != null) {
+      content.add(
+        ImageContent('salary_structure_chart', images.salaryStructureChart!),
+      );
+    }
 
     return content;
   }

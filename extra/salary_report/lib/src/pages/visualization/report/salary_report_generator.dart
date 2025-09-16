@@ -25,7 +25,8 @@ class SalaryReportGenerator {
   }) : _dataService = dataService ?? ReportDataService(AISummaryService()),
        _chartService = chartService ?? ChartGenerationService(),
        _docxService = docxService ?? DocxWriterService(),
-       _analysisService = analysisService ?? DataAnalysisService(IsarDatabase());
+       _analysisService =
+           analysisService ?? DataAnalysisService(IsarDatabase());
 
   Future<String> generateReport({
     required GlobalKey previewContainerKey,
@@ -65,6 +66,7 @@ class SalaryReportGenerator {
         previewContainerKey: previewContainerKey,
         departmentStats: departmentStats,
         salaryRanges: salaryRanges,
+        salaryStructureData: reportContent.salaryStructureData, // 传递薪资结构数据
       );
       logger.info('Chart images generated.');
 

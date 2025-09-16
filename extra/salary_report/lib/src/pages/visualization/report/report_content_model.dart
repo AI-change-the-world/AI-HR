@@ -8,11 +8,13 @@ class ReportChartImages {
   final Uint8List? mainChart;
   final Uint8List? departmentDetailsChart;
   final Uint8List? salaryRangeChart;
+  final Uint8List? salaryStructureChart; // 薪资结构饼图
 
   ReportChartImages({
     this.mainChart,
     this.departmentDetailsChart,
     this.salaryRangeChart,
+    this.salaryStructureChart, // 薪资结构饼图
   });
 }
 
@@ -40,6 +42,7 @@ class ReportContentModel {
   final double basicSalaryRate;
   final double performanceSalaryRate;
   final String salaryStructure; // 薪资结构分析
+  final List<Map<String, dynamic>> salaryStructureData; // 薪资结构数据用于图表
   final List<DepartmentSalaryStats> departmentStats;
   // ... add any other fields you need
 
@@ -66,6 +69,7 @@ class ReportContentModel {
     required this.basicSalaryRate,
     required this.performanceSalaryRate,
     required this.salaryStructure, // 薪资结构分析
+    required this.salaryStructureData, // 薪资结构数据用于图表
     required this.departmentStats,
   });
 }

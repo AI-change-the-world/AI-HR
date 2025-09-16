@@ -17,6 +17,7 @@ class ChartGenerationService {
     required GlobalKey previewContainerKey,
     required List<DepartmentSalaryStats> departmentStats,
     required Map<String, int> salaryRanges,
+    List<Map<String, dynamic>>? salaryStructureData, // 薪资结构数据
   }) async {
     // 1. Capture the existing chart from the UI
     Uint8List? mainChartImage;
@@ -34,11 +35,16 @@ class ChartGenerationService {
       departmentStats,
     );
     final salaryRangeChartImage = await _generateSalaryRangeChart(salaryRanges);
+    final salaryStructureChartImage =
+        salaryStructureData != null && salaryStructureData.isNotEmpty
+        ? await _generateSalaryStructureChart(salaryStructureData)
+        : null;
 
     return ReportChartImages(
       mainChart: mainChartImage,
       departmentDetailsChart: departmentChartImage,
       salaryRangeChart: salaryRangeChartImage,
+      salaryStructureChart: salaryStructureChartImage, // 薪资结构饼图
     );
   }
 
@@ -98,6 +104,31 @@ class ChartGenerationService {
             dataSource: data,
             xValueMapper: (d, _) => d['range'],
             yValueMapper: (d, _) => d['count'],
+            dataLabelSettings: const DataLabelSettings(isVisible: true),
+          ),
+        ],
+      ),
+    );
+    return await _captureWidgetAsImage(chartWidget);
+  }
+
+  /// 生成薪资结构饼图
+  Future<Uint8List?> _generateSalaryStructureChart(
+    List<Map<String, dynamic>> salaryStructureData,
+  ) async {
+    final chartWidget = _buildChartContainer(
+      SfCircularChart(
+        title: ChartTitle(text: '薪资结构分析'),
+        legend: Legend(isVisible: true),
+        series: <PieSeries<Map<String, dynamic>, String>>[
+          PieSeries<Map<String, dynamic>, String>(
+            animationDelay: 0,
+            animationDuration: 0,
+            dataSource: salaryStructureData,
+            xValueMapper: (data, _) => data['category'],
+            yValueMapper: (data, _) => data['value'],
+            dataLabelMapper: (data, _) =>
+                '${data['category']}\n${data['value']}',
             dataLabelSettings: const DataLabelSettings(isVisible: true),
           ),
         ],

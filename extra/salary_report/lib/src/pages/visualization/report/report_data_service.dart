@@ -91,7 +91,73 @@ class ReportDataService {
       return "暂无薪资结构数据";
     }
 
-    return buffer.toString();
+    // 优化表述，将最后一个分号替换为句号
+    String result = buffer.toString();
+    if (result.endsWith("；")) {
+      result = result.substring(0, result.length - 1) + "。";
+    }
+
+    return result;
+  }
+
+  /// 提取薪资结构数据用于生成饼图
+  List<Map<String, dynamic>> _extractSalaryStructureData(
+    Map<String, dynamic>? summaryData,
+  ) {
+    final List<Map<String, dynamic>> salaryStructureData = [];
+
+    if (summaryData == null || summaryData.isEmpty) {
+      return salaryStructureData;
+    }
+
+    // 定义需要显示的薪资结构字段及其显示名称（仅包含收入项）
+    final incomeFields = {
+      "基本工资": "基本工资",
+      "岗位工资": "岗位工资",
+      "绩效工资": "绩效工资",
+      "补贴工资": "补贴工资",
+      "综合薪资标准": "综合薪资标准",
+      "当月基本工资": "当月基本工资",
+      "当月岗位工资": "当月岗位工资",
+      "当月绩效工资": "当月绩效工资",
+      "当月补贴工资": "当月补贴工资",
+      "加班费": "加班费",
+      "津贴": "津贴",
+      "奖金": "奖金",
+      "饭补": "饭补",
+    };
+
+    // 提取收入项数据
+    incomeFields.forEach((key, displayName) {
+      if (summaryData.containsKey(key)) {
+        final value = summaryData[key];
+        if (value != null && value.toString().isNotEmpty) {
+          // 尝试解析数值
+          final numericValue = _parseNumericValue(value.toString());
+          if (numericValue != null && numericValue > 0) {
+            salaryStructureData.add({
+              'category': displayName,
+              'value': numericValue,
+            });
+          }
+        }
+      }
+    });
+
+    return salaryStructureData;
+  }
+
+  /// 解析字符串中的数值
+  double? _parseNumericValue(String value) {
+    // 移除非数字字符（保留数字、小数点和负号）
+    final numericString = value.replaceAll(RegExp(r'[^\d.-]'), '');
+    if (numericString.isEmpty) return null;
+
+    try {
+      return double.parse(numericString);
+    } catch (e) {
+      return null;
+    }
   }
 
   Future<ReportContentModel> prepareReportData({
@@ -160,6 +226,9 @@ class ReportDataService {
     final salaryStructureAnalysis = _generateSalaryStructureAnalysis(
       summaryData,
     );
+
+    // 提取薪资结构数据用于饼图
+    final salaryStructureData = _extractSalaryStructureData(summaryData);
 
     // Get AI summaries
     final salaryFeatureSummary = await _aiService.generateSalaryFeatureSummary(
@@ -232,6 +301,7 @@ class ReportDataService {
       basicSalaryRate: 85.0, // Example value
       performanceSalaryRate: 15.0, // Example value
       salaryStructure: salaryStructureAnalysis, // 薪资结构分析
+      salaryStructureData: salaryStructureData, // 薪资结构数据用于图表
       departmentStats: departmentStats,
     );
   }
