@@ -93,8 +93,24 @@ class ReportDataService {
     final departmentAnalysis = await _aiService
         .analyzeDepartmentSalaryDifferences(departmentStats);
 
+    final keySalaryPointAnalysis = await _aiService.analyzeKeySalaryPositions(
+      departmentStats,
+    );
+
     // Convert markdown format to plain text for salary analysis
     final departmentAnalysisText = departmentAnalysis
+        .replaceAll(RegExp(r'\$1'), '') // Remove $1 markers
+        .replaceAll(RegExp(r'\#\$1'), '') // Remove #$1 markers
+        .replaceAll(RegExp(r'\*\*([^*]+)\*\*'), r'$1') // Remove bold
+        .replaceAll(RegExp(r'\* ([^\n]+)'), r'• $1') // Convert list items
+        .replaceAll(RegExp(r'\#\#\# ([^\n]+)'), r'$1') // Remove headings
+        .replaceAll(RegExp(r'\#\# ([^\n]+)'), r'$1')
+        .replaceAll(RegExp(r'\# ([^\n]+)'), r'$1')
+        .replaceAll(RegExp(r'\n\s*\n'), r'\n') // Remove extra newlines
+        .trim(); // Remove leading/trailing whitespace
+
+    // Convert markdown format to plain text for key salary point analysis
+    final keySalaryPointText = keySalaryPointAnalysis
         .replaceAll(RegExp(r'\$1'), '') // Remove $1 markers
         .replaceAll(RegExp(r'\#\$1'), '') // Remove #$1 markers
         .replaceAll(RegExp(r'\*\*([^*]+)\*\*'), r'$1') // Remove bold
@@ -136,6 +152,7 @@ class ReportDataService {
       salaryRangeDescription: '$salaryRangeDesc，详见下图',
       salaryRangeFeatureSummary: salaryFeatureSummary,
       departmentSalaryAnalysis: departmentAnalysisText,
+      keySalaryPoint: keySalaryPointText,
       salaryRankings: salaryRankings,
       basicSalaryRate: 85.0, // Example value
       performanceSalaryRate: 15.0, // Example value

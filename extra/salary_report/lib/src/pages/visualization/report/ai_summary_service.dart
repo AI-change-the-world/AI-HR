@@ -18,10 +18,10 @@ class AISummaryService {
     try {
       final prompt =
           '''
-      请基于以下薪资分布数据：
-      $salaryRangeDescriptions
+请基于以下薪资分布数据：
+$salaryRangeDescriptions
 
-      撰写一段薪资分布特征总结。要求语言严谨、简洁，体现报告风格。内容需涵盖整体分布情况、主要集中区间，以及分布的均衡性或差异性。仅输出总结内容，不添加额外说明。
+撰写一段薪资分布特征总结。要求语言严谨、简洁，体现报告风格。内容需涵盖整体分布情况、主要集中区间，以及分布的均衡性或差异性。仅输出总结内容，不添加额外说明。
       ''';
       final summary = await _llmClient.getAnswer(prompt);
       return summary.isNotEmpty ? summary : salaryRangeDescriptions;
@@ -54,6 +54,34 @@ $departmentData
       return await _llmClient.getAnswer(prompt);
     } catch (e) {
       logger.info('AI department salary analysis failed: $e');
+      return ""; // Fallback to empty
+    }
+  }
+
+  Future<String> analyzeKeySalaryPositions(
+    List<DepartmentSalaryStats> departmentStats,
+  ) async {
+    if (!AIConfig.aiEnabled) return "";
+
+    try {
+      final departmentData = departmentStats
+          .map(
+            (dept) =>
+                '${dept.department}: ${dept.employeeCount} employees, total salary ${dept.totalNetSalary.toStringAsFixed(2)}, average salary ${dept.averageNetSalary.toStringAsFixed(2)}',
+          )
+          .join('; ');
+
+      // TODO 可能要联网
+      final prompt =
+          '''
+请基于以下部门薪资数据：
+$departmentData
+
+分析关键岗位的薪资情况。要求语言严谨、简洁，体现报告风格。内容需涵盖关键岗位识别、薪资水平分析、市场竞争力评估，以及优化建议。仅输出分析内容，不添加额外说明，要求只输出一个连续的段落，不允许分段或使用任何格式标记。
+      ''';
+      return await _llmClient.getAnswer(prompt);
+    } catch (e) {
+      logger.info('AI key salary positions analysis failed: $e');
       return ""; // Fallback to empty
     }
   }

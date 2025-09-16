@@ -56,6 +56,7 @@ class DocxWriterService {
       ..add(TextContent('salary_range', data.salaryRangeDescription))
       ..add(TextContent('salary_range_feature', data.salaryRangeFeatureSummary))
       ..add(TextContent('salary_reason', data.departmentSalaryAnalysis))
+      ..add(TextContent('key_salary_point', data.keySalaryPoint))
       ..add(TextContent('salary_order', data.salaryRankings))
       ..add(TextContent('basic_rate', data.basicSalaryRate.toStringAsFixed(2)))
       ..add(

@@ -35,6 +35,7 @@ class ReportContentModel {
   final String salaryRangeDescription;
   final String salaryRangeFeatureSummary; // AI-generated
   final String departmentSalaryAnalysis; // AI-generated
+  final String keySalaryPoint; // AI-generated
   final String salaryRankings;
   final double basicSalaryRate;
   final double performanceSalaryRate;
@@ -59,6 +60,7 @@ class ReportContentModel {
     required this.salaryRangeDescription,
     required this.salaryRangeFeatureSummary,
     required this.departmentSalaryAnalysis,
+    required this.keySalaryPoint,
     required this.salaryRankings,
     required this.basicSalaryRate,
     required this.performanceSalaryRate,
