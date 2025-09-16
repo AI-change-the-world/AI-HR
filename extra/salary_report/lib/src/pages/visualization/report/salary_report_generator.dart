@@ -29,11 +29,11 @@ class SalaryReportGenerator {
       logger.info('开始生成工资报告...');
 
       // 1. 截图图表组件
-      final chartImage = await _captureChartImage(
+      final chartImages = await _captureChartImages(
         previewContainerKey,
         departmentStats,
       );
-      logger.info('图表截图完成: ${chartImage != null ? '成功' : '失败'}');
+      logger.info('图表截图完成: ${chartImages.length} 个图表');
 
       // 2. 准备报告数据
       final reportData = _prepareReportData(
@@ -46,12 +46,13 @@ class SalaryReportGenerator {
         analysisData: analysisData,
         startTime: startTime,
         endTime: endTime,
+        chartImages: chartImages,
       );
       logger.info('报告数据准备完成');
 
       // 3. 生成报告文件
       final reportPath = await _generateReportFile(
-        chartImage,
+        chartImages,
         reportData,
         departmentStats,
       );
@@ -66,10 +67,12 @@ class SalaryReportGenerator {
   }
 
   /// 截图图表组件
-  static Future<Uint8List?> _captureChartImage(
+  static Future<Map<String, Uint8List?>> _captureChartImages(
     GlobalKey previewContainerKey,
     List<DepartmentSalaryStats> departmentStats,
   ) async {
+    final Map<String, Uint8List?> images = {};
+
     try {
       // 首先尝试从现有的previewContainerKey截图
       if (previewContainerKey.currentContext != null) {
@@ -78,45 +81,45 @@ class SalaryReportGenerator {
                 as RenderRepaintBoundary;
         final image = await boundary.toImage(pixelRatio: 3.0);
         final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-        return byteData?.buffer.asUint8List();
+        images['main_chart'] = byteData?.buffer.asUint8List();
       }
 
-      // 如果没有可截图的对象，创建虚拟图表
-      logger.info('未找到可截图的对象，创建虚拟图表...');
+      // 生成虚拟图表图像
+      final employeeChartImage = await _generateEmployeeDistributionChart(
+        departmentStats,
+      );
+      images['employee_details_chart'] = employeeChartImage;
+
+      final salaryRangeChartImage = await _generateSalaryRangeChart(
+        departmentStats,
+      );
+      images['salary_range_chart'] = salaryRangeChartImage;
+
+      return images;
+    } catch (e) {
+      logger.info('截图图表时出错: $e');
+      return images;
+    }
+  }
+
+  /// 生成员工分布饼图
+  static Future<Uint8List?> _generateEmployeeDistributionChart(
+    List<DepartmentSalaryStats> departmentStats,
+  ) async {
+    try {
       final screenshotController = ScreenshotController();
 
-      // 创建一个包含多个图表的虚拟容器
+      // 创建一个包含MediaQuery的虚拟容器（使用您提供的正确方式）
       final virtualChartWidget = MediaQuery(
-        data: MediaQueryData.fromView(WidgetsBinding.instance.window),
-        child: Directionality(
-          textDirection: TextDirection.ltr,
-          child: Container(
-            width: 800,
-            height: 600,
-            color: Colors.white,
-            child: Column(
-              children: [
-                // 员工分布饼图
-                Expanded(
-                  child: SfCircularChart(
-                    title: ChartTitle(text: '各部门员工分布'),
-                    legend: Legend(isVisible: true),
-                    series: _getEmployeeDistributionSeries(departmentStats),
-                  ),
-                ),
-                SizedBox(height: 20),
-                // 工资区间柱状图
-                Expanded(
-                  child: SfCartesianChart(
-                    title: ChartTitle(text: '工资区间分布'),
-                    primaryXAxis: CategoryAxis(),
-                    primaryYAxis: NumericAxis(),
-                    legend: Legend(isVisible: true),
-                    series: _getSalaryRangeSeries(departmentStats),
-                  ),
-                ),
-              ],
-            ),
+        data: const MediaQueryData(),
+        child: Container(
+          width: 800,
+          height: 600,
+          color: Colors.white,
+          child: SfCircularChart(
+            title: ChartTitle(text: '各部门员工分布'),
+            legend: Legend(isVisible: true),
+            series: _getEmployeeDistributionSeries(departmentStats),
           ),
         ),
       );
@@ -130,7 +133,45 @@ class SalaryReportGenerator {
 
       return imageBytes;
     } catch (e) {
-      logger.info('截图图表时出错: $e');
+      logger.info('生成员工分布图表时出错: $e');
+      return null;
+    }
+  }
+
+  /// 生成工资区间柱状图
+  static Future<Uint8List?> _generateSalaryRangeChart(
+    List<DepartmentSalaryStats> departmentStats,
+  ) async {
+    try {
+      final screenshotController = ScreenshotController();
+
+      // 创建一个包含MediaQuery的虚拟容器（使用您提供的正确方式）
+      final virtualChartWidget = MediaQuery(
+        data: const MediaQueryData(),
+        child: Container(
+          width: 800,
+          height: 600,
+          color: Colors.white,
+          child: SfCartesianChart(
+            title: ChartTitle(text: '工资区间分布'),
+            primaryXAxis: CategoryAxis(),
+            primaryYAxis: NumericAxis(),
+            legend: Legend(isVisible: true),
+            series: _getSalaryRangeSeries(departmentStats),
+          ),
+        ),
+      );
+
+      // 使用screenshot包截图虚拟图表
+      final imageBytes = await screenshotController.captureFromWidget(
+        virtualChartWidget,
+        delay: const Duration(milliseconds: 200),
+        pixelRatio: 3.0,
+      );
+
+      return imageBytes;
+    } catch (e) {
+      logger.info('生成工资区间图表时出错: $e');
       return null;
     }
   }
@@ -216,6 +257,7 @@ class SalaryReportGenerator {
     required Map<String, dynamic> analysisData,
     required DateTime startTime,
     required DateTime endTime,
+    required Map<String, Uint8List?> chartImages,
   }) {
     // 准备部门统计数据
     final departmentData = departmentStats.map((stat) {
@@ -357,10 +399,10 @@ class SalaryReportGenerator {
       'department_count': departmentCount.toString(),
       'employee_count': employeeCount.toString(),
       'employee_details': employeeDetails,
-      'employee_details_chart': '', // 需要图表数据
+      'employee_details_chart': '', // 图像数据将在生成报告时处理
       'avarage_salary': averageSalary.toStringAsFixed(2),
       'salary_range': salaryRangeDescriptions,
-      'salary_range_chart': '', // 需要图表数据
+      'salary_range_chart': '', // 图像数据将在生成报告时处理
       'salary_order': salaryOrder,
       'basic_rate': basicRate.toStringAsFixed(2),
       'performance_rate': performanceRate.toStringAsFixed(2),
@@ -369,7 +411,7 @@ class SalaryReportGenerator {
 
   /// 生成报告文件
   static Future<String> _generateReportFile(
-    Uint8List? chartImage,
+    Map<String, Uint8List?> chartImages,
     Map<String, dynamic> reportData,
     List<DepartmentSalaryStats> departmentStats,
   ) async {
@@ -479,32 +521,51 @@ class SalaryReportGenerator {
       }
 
       // 添加图表图片 - 使用模板中的实际占位符名称
-      if (chartImage != null) {
-        // 尝试两个图表占位符
+      // 添加主图表
+      if (chartImages['main_chart'] != null) {
         try {
-          content.add(ImageContent('chart_overall', chartImage));
+          content.add(
+            ImageContent('chart_overall', chartImages['main_chart']!),
+          );
           logger.info('成功添加整体图表');
         } catch (e) {
           logger.info('添加整体图表失败: $e');
         }
 
         try {
-          content.add(ImageContent('chart_department', chartImage));
+          content.add(
+            ImageContent('chart_department', chartImages['main_chart']!),
+          );
           logger.info('成功添加部门图表');
         } catch (e) {
           logger.info('添加部门图表失败: $e');
         }
+      }
 
-        // 添加员工详情图表和工资区间图表
+      // 添加员工详情图表
+      if (chartImages['employee_details_chart'] != null) {
         try {
-          content.add(ImageContent('employee_details_chart', chartImage));
+          content.add(
+            ImageContent(
+              'employee_details_chart',
+              chartImages['employee_details_chart']!,
+            ),
+          );
           logger.info('成功添加员工详情图表');
         } catch (e) {
           logger.info('添加员工详情图表失败: $e');
         }
+      }
 
+      // 添加工资区间图表
+      if (chartImages['salary_range_chart'] != null) {
         try {
-          content.add(ImageContent('salary_range_chart', chartImage));
+          content.add(
+            ImageContent(
+              'salary_range_chart',
+              chartImages['salary_range_chart']!,
+            ),
+          );
           logger.info('成功添加工资区间图表');
         } catch (e) {
           logger.info('添加工资区间图表失败: $e');
