@@ -28,10 +28,15 @@ class SalaryReportGenerator {
     try {
       logger.info('开始生成工资报告...');
 
+      // 计算工资区间数据
+      final salaryRanges = _calculateSalaryRanges(departmentStats);
+      logger.info('计算得到的工资区间数据: $salaryRanges');
+
       // 1. 截图图表组件
       final chartImages = await _captureChartImages(
         previewContainerKey,
         departmentStats,
+        salaryRanges,
       );
       logger.info('图表截图完成: ${chartImages.length} 个图表');
 
@@ -66,10 +71,46 @@ class SalaryReportGenerator {
     }
   }
 
+  /// 计算工资区间分布
+  static Map<String, int> _calculateSalaryRanges(
+    List<DepartmentSalaryStats> departmentStats,
+  ) {
+    final salaryRanges = <String, int>{};
+    for (final dept in departmentStats) {
+      final avgSalary = dept.averageNetSalary;
+      String range;
+      if (avgSalary < 3000) {
+        range = '少于3000';
+      } else if (avgSalary < 4000) {
+        range = '3000-4000';
+      } else if (avgSalary < 5000) {
+        range = '4000-5000';
+      } else if (avgSalary < 6000) {
+        range = '5000-6000';
+      } else if (avgSalary < 7000) {
+        range = '6000-7000';
+      } else if (avgSalary < 8000) {
+        range = '7000-8000';
+      } else if (avgSalary < 9000) {
+        range = '8000-9000';
+      } else if (avgSalary < 10000) {
+        range = '9000-10000';
+      } else {
+        range = '10000以上';
+      }
+
+      salaryRanges[range] = (salaryRanges[range] ?? 0) + dept.employeeCount;
+    }
+
+    logger.info('计算得到的工资区间数据: $salaryRanges');
+    return salaryRanges;
+  }
+
   /// 截图图表组件
   static Future<Map<String, Uint8List?>> _captureChartImages(
     GlobalKey previewContainerKey,
     List<DepartmentSalaryStats> departmentStats,
+    Map<String, int> salaryRanges, // 添加工资区间数据参数
   ) async {
     final Map<String, Uint8List?> images = {};
 
@@ -90,8 +131,10 @@ class SalaryReportGenerator {
       );
       images['employee_details_chart'] = employeeChartImage;
 
+      logger.info('传递给图表的工资区间数据: $salaryRanges');
       final salaryRangeChartImage = await _generateSalaryRangeChart(
         departmentStats,
+        salaryRanges: salaryRanges, // 传递工资区间数据
       );
       images['salary_range_chart'] = salaryRangeChartImage;
 
@@ -108,6 +151,9 @@ class SalaryReportGenerator {
   ) async {
     try {
       final screenshotController = ScreenshotController();
+
+      // 直接使用传入的数据，不创建虚假数据
+      // 如果没有数据，图表将为空，这在实际应用中应该由调用方确保数据存在
 
       // 创建一个包含MediaQuery的虚拟容器（使用您提供的正确方式）
       final virtualChartWidget = MediaQuery(
@@ -140,24 +186,46 @@ class SalaryReportGenerator {
 
   /// 生成工资区间柱状图
   static Future<Uint8List?> _generateSalaryRangeChart(
-    List<DepartmentSalaryStats> departmentStats,
-  ) async {
+    List<DepartmentSalaryStats> departmentStats, {
+    Map<String, int>? salaryRanges, // 使salaryRanges成为可选参数
+  }) async {
     try {
       final screenshotController = ScreenshotController();
 
+      // 如果没有提供salaryRanges，则基于部门数据计算
+      List<ColumnSeries<Map<String, dynamic>, String>> series;
+      if (salaryRanges != null) {
+        logger.info('使用传入的工资区间数据: $salaryRanges');
+        series = _getSalaryRangeSeriesWithData(salaryRanges);
+      } else {
+        logger.info('未提供工资区间数据，基于部门数据计算');
+        series = _getSalaryRangeSeries(departmentStats);
+      }
+
+      logger.info('生成工资区间图表的系列: ${series.firstOrNull?.dataSource}');
+
       // 创建一个包含MediaQuery的虚拟容器（使用您提供的正确方式）
       final virtualChartWidget = MediaQuery(
-        data: const MediaQueryData(),
-        child: Container(
-          width: 800,
-          height: 600,
-          color: Colors.white,
-          child: SfCartesianChart(
-            title: ChartTitle(text: '工资区间分布'),
-            primaryXAxis: CategoryAxis(),
-            primaryYAxis: NumericAxis(),
-            legend: Legend(isVisible: true),
-            series: _getSalaryRangeSeries(departmentStats),
+        data: MediaQueryData.fromView(WidgetsBinding.instance.window),
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: Container(
+            width: 800,
+            height: 600,
+            color: Colors.white,
+            child: SfCartesianChart(
+              title: ChartTitle(text: '工资区间分布'),
+              primaryXAxis: CategoryAxis(
+                labelRotation: 0,
+                labelIntersectAction: AxisLabelIntersectAction.rotate45,
+              ),
+              primaryYAxis: NumericAxis(
+                minimum: 0,
+                // 移除固定的interval设置，让图表自动调整
+              ),
+              legend: Legend(isVisible: true),
+              series: series,
+            ),
           ),
         ),
       );
@@ -197,6 +265,54 @@ class SalaryReportGenerator {
   }
 
   /// 获取工资区间柱状图数据系列
+  static List<ColumnSeries<Map<String, dynamic>, String>>
+  _getSalaryRangeSeriesWithData(Map<String, int> salaryRanges) {
+    logger.info('salaryRanges: $salaryRanges');
+
+    final List<Map<String, dynamic>> salaryRangeData = salaryRanges.entries.map(
+      (entry) {
+        return {'range': entry.key, 'count': entry.value};
+      },
+    ).toList();
+
+    logger.info('处理后的工资区间数据: $salaryRangeData');
+
+    // 检查处理后的数据是否为空
+    if (salaryRangeData.isEmpty) {
+      logger.info('处理后的工资区间数据为空，返回空系列');
+      return [
+        ColumnSeries<Map<String, dynamic>, String>(
+          dataSource: [],
+          xValueMapper: (data, _) => data['range'] as String,
+          yValueMapper: (data, _) => data['count'] as int,
+          dataLabelMapper: (data, _) => '${data['range']}\n${data['count']}人',
+          dataLabelSettings: const DataLabelSettings(
+            isVisible: true,
+            textStyle: TextStyle(fontSize: 12, color: Colors.black),
+          ),
+          enableTooltip: true,
+        ),
+      ];
+    }
+
+    return [
+      ColumnSeries<Map<String, dynamic>, String>(
+        animationDelay: 0,
+        animationDuration: 0,
+        dataSource: salaryRangeData,
+        xValueMapper: (data, _) => data['range'] as String,
+        yValueMapper: (data, _) => data['count'] as int,
+        dataLabelMapper: (data, _) => '${data['range']}\n${data['count']}人',
+        dataLabelSettings: const DataLabelSettings(
+          isVisible: true,
+          textStyle: TextStyle(fontSize: 12, color: Colors.black),
+        ),
+        enableTooltip: true,
+      ),
+    ];
+  }
+
+  /// 获取工资区间柱状图数据系列（基于部门统计数据）
   static List<ColumnSeries<Map<String, dynamic>, String>> _getSalaryRangeSeries(
     List<DepartmentSalaryStats> departmentStats,
   ) {
@@ -228,22 +344,7 @@ class SalaryReportGenerator {
       salaryRanges[range] = (salaryRanges[range] ?? 0) + dept.employeeCount;
     }
 
-    final List<Map<String, dynamic>> salaryRangeData = salaryRanges.entries.map(
-      (entry) {
-        return {'range': entry.key, 'count': entry.value};
-      },
-    ).toList();
-
-    return [
-      ColumnSeries<Map<String, dynamic>, String>(
-        dataSource: salaryRangeData,
-        xValueMapper: (data, _) => data['range'] as String,
-        yValueMapper: (data, _) => data['count'] as int,
-        dataLabelMapper: (data, _) => '${data['range']}\n${data['count']}人',
-        dataLabelSettings: const DataLabelSettings(isVisible: true),
-        enableTooltip: true,
-      ),
-    ];
+    return _getSalaryRangeSeriesWithData(salaryRanges);
   }
 
   /// 准备报告数据
@@ -327,38 +428,11 @@ class SalaryReportGenerator {
     // 平均薪资
     final averageSalary = analysisData['averageSalary'] as double? ?? 0.0;
 
-    // 工资区间统计
-    final salaryRanges = <String, int>{};
-    for (final dept in departmentStats) {
-      // 简化处理，实际应该遍历所有员工记录
-      final avgSalary = dept.averageNetSalary;
-      String range;
-      if (avgSalary < 3000) {
-        range = '少于3000';
-      } else if (avgSalary < 4000) {
-        range = '3000-4000';
-      } else if (avgSalary < 5000) {
-        range = '4000-5000';
-      } else if (avgSalary < 6000) {
-        range = '5000-6000';
-      } else if (avgSalary < 7000) {
-        range = '6000-7000';
-      } else if (avgSalary < 8000) {
-        range = '7000-8000';
-      } else if (avgSalary < 9000) {
-        range = '8000-9000';
-      } else if (avgSalary < 10000) {
-        range = '9000-10000';
-      } else {
-        range = '10000以上';
-      }
+    // 工资区间统计（使用已计算的数据）
+    // 注意：这里我们不再重新计算工资区间数据，而是使用图表生成时已计算的数据
+    // 在报告正文中，我们只提供文字描述，图表由图像展示
 
-      salaryRanges[range] = (salaryRanges[range] ?? 0) + dept.employeeCount;
-    }
-
-    final salaryRangeDescriptions = salaryRanges.entries
-        .map((entry) => '${entry.key}元的有${entry.value}人')
-        .join('，');
+    final salaryRangeDescriptions = '详见图表';
 
     // 各部门平均薪资排名
     final sortedBySalary = List<DepartmentSalaryStats>.from(departmentStats)
@@ -401,7 +475,7 @@ class SalaryReportGenerator {
       'employee_details': employeeDetails,
       'employee_details_chart': '', // 图像数据将在生成报告时处理
       'avarage_salary': averageSalary.toStringAsFixed(2),
-      'salary_range': salaryRangeDescriptions,
+      'salary_range': salaryRangeDescriptions, // 使用图表展示，文字描述简化
       'salary_range_chart': '', // 图像数据将在生成报告时处理
       'salary_order': salaryOrder,
       'basic_rate': basicRate.toStringAsFixed(2),
