@@ -105,17 +105,16 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
           ? DateTime(widget.year, widget.month)
           : DateTime(widget.year, widget.month);
 
-      final reportPath = await SalaryReportGenerator.generateSalaryReport(
+      final generator = SalaryReportGenerator();
+      final reportPath = await generator.generateReport(
         previewContainerKey: _chartContainerKey,
         departmentStats: widget.departmentStats,
-        attendanceStats: widget.attendanceStats,
-        leaveRatioStats: widget.leaveRatioStats,
+        analysisData: _analysisData,
+        endTime: endTime,
         year: widget.year,
         month: widget.month,
         isMultiMonth: widget.isMultiMonth,
-        analysisData: _analysisData,
         startTime: startTime,
-        endTime: endTime,
       );
 
       if (mounted) {

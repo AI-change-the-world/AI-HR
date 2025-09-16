@@ -124,17 +124,16 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
           ? DateTime(widget.endYear!, (widget.endQuarter! - 1) * 3 + 3)
           : DateTime(widget.year, endMonth);
 
-      final reportPath = await SalaryReportGenerator.generateSalaryReport(
+      final generator = SalaryReportGenerator();
+      final reportPath = await generator.generateReport(
         previewContainerKey: _chartContainerKey,
         departmentStats: widget.departmentStats,
-        attendanceStats: widget.attendanceStats,
-        leaveRatioStats: widget.leaveRatioStats,
+        analysisData: _analysisData,
+        endTime: endTime,
         year: widget.year,
         month: widget.quarter,
         isMultiMonth: widget.isMultiQuarter,
-        analysisData: _analysisData,
         startTime: startTime,
-        endTime: endTime,
       );
 
       if (mounted) {

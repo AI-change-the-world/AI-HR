@@ -47,6 +47,9 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
+  assets:
+    - assets/salary_report_template.docx
+
 icons_launcher:
   image_path: "../../aihr-icon.png"
   platforms:

@@ -4,7 +4,6 @@ import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/components/attendance_pagination.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
 import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
-import 'package:flutter/rendering.dart';
 import 'package:toastification/toastification.dart';
 
 class YearlyAnalysisPage extends StatefulWidget {
@@ -108,17 +107,16 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
           ? DateTime(widget.endYear!, 12)
           : DateTime(widget.year, 12);
 
-      final reportPath = await SalaryReportGenerator.generateSalaryReport(
+      final generator = SalaryReportGenerator();
+      final reportPath = await generator.generateReport(
         previewContainerKey: _chartContainerKey,
         departmentStats: widget.departmentStats,
-        attendanceStats: widget.attendanceStats,
-        leaveRatioStats: widget.leaveRatioStats,
+        analysisData: _analysisData,
+        endTime: endTime,
         year: widget.year,
         month: 0, // 年度报告没有月份
         isMultiMonth: widget.isMultiYear,
-        analysisData: _analysisData,
         startTime: startTime,
-        endTime: endTime,
       );
 
       if (mounted) {
