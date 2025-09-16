@@ -5,8 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:docx_template_fork/docx_template_fork.dart';
+import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/common/ai_config.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
 
 class SalaryReportGenerator {
   /// 生成工资报告
@@ -23,11 +26,14 @@ class SalaryReportGenerator {
     required DateTime endTime,
   }) async {
     try {
-      print('开始生成工资报告...');
+      logger.info('开始生成工资报告...');
 
       // 1. 截图图表组件
-      final chartImage = await _captureChartImage(previewContainerKey);
-      print('图表截图完成: ${chartImage != null ? '成功' : '失败'}');
+      final chartImage = await _captureChartImage(
+        previewContainerKey,
+        departmentStats,
+      );
+      logger.info('图表截图完成: ${chartImage != null ? '成功' : '失败'}');
 
       // 2. 准备报告数据
       final reportData = _prepareReportData(
@@ -41,7 +47,7 @@ class SalaryReportGenerator {
         startTime: startTime,
         endTime: endTime,
       );
-      print('报告数据准备完成');
+      logger.info('报告数据准备完成');
 
       // 3. 生成报告文件
       final reportPath = await _generateReportFile(
@@ -49,12 +55,12 @@ class SalaryReportGenerator {
         reportData,
         departmentStats,
       );
-      print('报告生成完成: $reportPath');
+      logger.info('报告生成完成: $reportPath');
 
       return reportPath;
     } catch (e, stackTrace) {
-      print('生成工资报告时出错: $e');
-      print('错误堆栈: $stackTrace');
+      logger.info('生成工资报告时出错: $e');
+      logger.info('错误堆栈: $stackTrace');
       rethrow;
     }
   }
@@ -62,23 +68,141 @@ class SalaryReportGenerator {
   /// 截图图表组件
   static Future<Uint8List?> _captureChartImage(
     GlobalKey previewContainerKey,
+    List<DepartmentSalaryStats> departmentStats,
   ) async {
     try {
-      if (previewContainerKey.currentContext == null) {
-        print('截图容器上下文为空');
-        return null;
+      // 首先尝试从现有的previewContainerKey截图
+      if (previewContainerKey.currentContext != null) {
+        final boundary =
+            previewContainerKey.currentContext!.findRenderObject()
+                as RenderRepaintBoundary;
+        final image = await boundary.toImage(pixelRatio: 3.0);
+        final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+        return byteData?.buffer.asUint8List();
       }
 
-      final boundary =
-          previewContainerKey.currentContext!.findRenderObject()
-              as RenderRepaintBoundary;
-      final image = await boundary.toImage(pixelRatio: 3.0);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      return byteData?.buffer.asUint8List();
+      // 如果没有可截图的对象，创建虚拟图表
+      logger.info('未找到可截图的对象，创建虚拟图表...');
+      final screenshotController = ScreenshotController();
+
+      // 创建一个包含多个图表的虚拟容器
+      final virtualChartWidget = MediaQuery(
+        data: MediaQueryData.fromView(WidgetsBinding.instance.window),
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: Container(
+            width: 800,
+            height: 600,
+            color: Colors.white,
+            child: Column(
+              children: [
+                // 员工分布饼图
+                Expanded(
+                  child: SfCircularChart(
+                    title: ChartTitle(text: '各部门员工分布'),
+                    legend: Legend(isVisible: true),
+                    series: _getEmployeeDistributionSeries(departmentStats),
+                  ),
+                ),
+                SizedBox(height: 20),
+                // 工资区间柱状图
+                Expanded(
+                  child: SfCartesianChart(
+                    title: ChartTitle(text: '工资区间分布'),
+                    primaryXAxis: CategoryAxis(),
+                    primaryYAxis: NumericAxis(),
+                    legend: Legend(isVisible: true),
+                    series: _getSalaryRangeSeries(departmentStats),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // 使用screenshot包截图虚拟图表
+      final imageBytes = await screenshotController.captureFromWidget(
+        virtualChartWidget,
+        delay: const Duration(milliseconds: 200),
+        pixelRatio: 3.0,
+      );
+
+      return imageBytes;
     } catch (e) {
-      print('截图图表时出错: $e');
+      logger.info('截图图表时出错: $e');
       return null;
     }
+  }
+
+  /// 获取员工分布饼图数据系列
+  static List<PieSeries<Map<String, dynamic>, String>>
+  _getEmployeeDistributionSeries(List<DepartmentSalaryStats> departmentStats) {
+    final List<Map<String, dynamic>> employeeData = departmentStats.map((stat) {
+      return {'department': stat.department, 'count': stat.employeeCount};
+    }).toList();
+
+    return [
+      PieSeries<Map<String, dynamic>, String>(
+        dataSource: employeeData,
+        xValueMapper: (data, _) => data['department'] as String,
+        yValueMapper: (data, _) => data['count'] as int,
+        dataLabelMapper: (data, _) =>
+            '${data['department']}\n${data['count']}人',
+        dataLabelSettings: const DataLabelSettings(isVisible: true),
+        enableTooltip: true,
+      ),
+    ];
+  }
+
+  /// 获取工资区间柱状图数据系列
+  static List<ColumnSeries<Map<String, dynamic>, String>> _getSalaryRangeSeries(
+    List<DepartmentSalaryStats> departmentStats,
+  ) {
+    // 计算工资区间分布
+    final salaryRanges = <String, int>{};
+    for (final dept in departmentStats) {
+      final avgSalary = dept.averageNetSalary;
+      String range;
+      if (avgSalary < 3000) {
+        range = '少于3000';
+      } else if (avgSalary < 4000) {
+        range = '3000-4000';
+      } else if (avgSalary < 5000) {
+        range = '4000-5000';
+      } else if (avgSalary < 6000) {
+        range = '5000-6000';
+      } else if (avgSalary < 7000) {
+        range = '6000-7000';
+      } else if (avgSalary < 8000) {
+        range = '7000-8000';
+      } else if (avgSalary < 9000) {
+        range = '8000-9000';
+      } else if (avgSalary < 10000) {
+        range = '9000-10000';
+      } else {
+        range = '10000以上';
+      }
+
+      salaryRanges[range] = (salaryRanges[range] ?? 0) + dept.employeeCount;
+    }
+
+    final List<Map<String, dynamic>> salaryRangeData = salaryRanges.entries.map(
+      (entry) {
+        return {'range': entry.key, 'count': entry.value};
+      },
+    ).toList();
+
+    return [
+      ColumnSeries<Map<String, dynamic>, String>(
+        dataSource: salaryRangeData,
+        xValueMapper: (data, _) => data['range'] as String,
+        yValueMapper: (data, _) => data['count'] as int,
+        dataLabelMapper: (data, _) => '${data['range']}\n${data['count']}人',
+        dataLabelSettings: const DataLabelSettings(isVisible: true),
+        enableTooltip: true,
+      ),
+    ];
   }
 
   /// 准备报告数据
@@ -131,8 +255,15 @@ class SalaryReportGenerator {
     final currentTime = DateTime.now();
 
     // 报告时间范围
-    final reportTime =
-        '${startTime.year}年${startTime.month}月-${endTime.year}年${endTime.month}月';
+    String reportTime;
+
+    if (isMultiMonth) {
+      // 多个月份
+      reportTime = '$year年$month月至${currentTime.year}年${currentTime.month}月';
+    } else {
+      // 单个月份
+      reportTime = '$year年$month月';
+    }
 
     // 部门数量
     final departmentCount = departmentStats.length;
@@ -243,7 +374,7 @@ class SalaryReportGenerator {
     List<DepartmentSalaryStats> departmentStats,
   ) async {
     try {
-      print('开始生成报告文件...');
+      logger.info('开始生成报告文件...');
 
       // 获取应用文档目录
       final appDocDir = await getApplicationDocumentsDirectory();
@@ -252,8 +383,8 @@ class SalaryReportGenerator {
 
       // 模板文件路径
       final templatePath = 'salary_report_template.docx';
-      print('模板路径: $templatePath');
-      print('输出路径: $outputPath');
+      logger.info('模板路径: $templatePath');
+      logger.info('输出路径: $outputPath');
 
       // 检查模板文件是否存在
       final templateFile = File(templatePath);
@@ -262,11 +393,11 @@ class SalaryReportGenerator {
       }
 
       // 加载模板
-      print('正在加载模板...');
+      logger.info('正在加载模板...');
       final templateBytes = await templateFile.readAsBytes();
-      print('模板大小: ${templateBytes.length} 字节');
+      logger.info('模板大小: ${templateBytes.length} 字节');
       final docx = await DocxTemplate.fromBytes(templateBytes);
-      print('模板加载完成');
+      logger.info('模板加载完成');
 
       // 准备数据 - 根据模板中的实际占位符名称
       final content = Content();
@@ -352,52 +483,52 @@ class SalaryReportGenerator {
         // 尝试两个图表占位符
         try {
           content.add(ImageContent('chart_overall', chartImage));
-          print('成功添加整体图表');
+          logger.info('成功添加整体图表');
         } catch (e) {
-          print('添加整体图表失败: $e');
+          logger.info('添加整体图表失败: $e');
         }
 
         try {
           content.add(ImageContent('chart_department', chartImage));
-          print('成功添加部门图表');
+          logger.info('成功添加部门图表');
         } catch (e) {
-          print('添加部门图表失败: $e');
+          logger.info('添加部门图表失败: $e');
         }
 
         // 添加员工详情图表和工资区间图表
         try {
           content.add(ImageContent('employee_details_chart', chartImage));
-          print('成功添加员工详情图表');
+          logger.info('成功添加员工详情图表');
         } catch (e) {
-          print('添加员工详情图表失败: $e');
+          logger.info('添加员工详情图表失败: $e');
         }
 
         try {
           content.add(ImageContent('salary_range_chart', chartImage));
-          print('成功添加工资区间图表');
+          logger.info('成功添加工资区间图表');
         } catch (e) {
-          print('添加工资区间图表失败: $e');
+          logger.info('添加工资区间图表失败: $e');
         }
       }
 
-      print("keys: ${content.keys}");
+      logger.info("keys: ${content.keys}");
       // 生成报告
-      print('正在生成报告...');
+      logger.info('正在生成报告...');
       final bytes = await docx.generate(content);
       if (bytes == null) {
         throw Exception('生成报告失败，返回空字节');
       }
-      print('报告生成完成，大小: ${bytes.length} 字节');
+      logger.info('报告生成完成，大小: ${bytes.length} 字节');
 
       // 保存文件
       final outputFile = File(outputPath);
       await outputFile.writeAsBytes(bytes);
-      print('报告文件保存完成');
+      logger.info('报告文件保存完成');
 
       return outputPath;
     } catch (e, stackTrace) {
-      print('生成报告文件时出错: $e');
-      print('错误堆栈: $stackTrace');
+      logger.info('生成报告文件时出错: $e');
+      logger.info('错误堆栈: $stackTrace');
       rethrow;
     }
   }
