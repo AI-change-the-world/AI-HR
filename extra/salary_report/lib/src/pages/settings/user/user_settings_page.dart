@@ -29,10 +29,10 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
   void initState() {
     super.initState();
     // 初始化控制器
-    _baseUrlController = TextEditingController(text: _baseUrl);
-    _apiKeyController = TextEditingController(text: _apiKey);
-    _modelNameController = TextEditingController(text: _modelName);
-    _companyNameController = TextEditingController(text: _companyName);
+    _baseUrlController = TextEditingController();
+    _apiKeyController = TextEditingController();
+    _modelNameController = TextEditingController();
+    _companyNameController = TextEditingController();
     _loadSettings();
   }
 
@@ -47,12 +47,26 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
 
   // 加载设置
   Future<void> _loadSettings() async {
+    // 先从AIConfig获取当前设置
+    final aiEnabled = AIConfig.aiEnabled;
+    final baseUrl = AIConfig.baseUrl;
+    final apiKey = AIConfig.apiKey;
+    final modelName = AIConfig.modelName;
+    final companyName = AIConfig.companyName;
+
+    // 更新状态
     setState(() {
-      _aiEnabled = AIConfig.aiEnabled;
-      _baseUrl = AIConfig.baseUrl;
-      _apiKey = AIConfig.apiKey;
-      _modelName = AIConfig.modelName;
-      _companyName = AIConfig.companyName;
+      _aiEnabled = aiEnabled;
+      _baseUrl = baseUrl;
+      _apiKey = apiKey;
+      _modelName = modelName;
+      _companyName = companyName;
+
+      // 更新控制器文本
+      _baseUrlController.text = baseUrl;
+      _apiKeyController.text = apiKey;
+      _modelNameController.text = modelName;
+      _companyNameController.text = companyName;
     });
   }
 

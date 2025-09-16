@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:loading_indicator/loading_indicator.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/components/attendance_pagination.dart';
 import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
@@ -33,6 +34,7 @@ class QuarterlyAnalysisPage extends StatefulWidget {
 class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
   late Map<String, dynamic> _analysisData;
   final GlobalKey _chartContainerKey = GlobalKey();
+  bool _isGeneratingReport = false;
 
   @override
   void initState() {
@@ -106,6 +108,10 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
   /// 生成工资报告
   Future<void> _generateSalaryReport() async {
     try {
+      setState(() {
+        _isGeneratingReport = true;
+      });
+
       // 确定开始和结束时间
       final startMonth = (widget.quarter - 1) * 3 + 1;
       final endMonth = startMonth + 2;
@@ -152,6 +158,12 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
           autoCloseDuration: const Duration(seconds: 5),
         );
       }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGeneratingReport = false;
+        });
+      }
     }
   }
 
@@ -167,286 +179,344 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
-            onPressed: _generateSalaryReport,
+            onPressed: _isGeneratingReport ? null : _generateSalaryReport,
             tooltip: '生成报告',
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 关键指标卡片
-              const Text(
-                '季度关键指标',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildStatCard(
-                    '总人数',
-                    _analysisData['totalEmployees'].toString(),
-                    Icons.people,
+                  // 关键指标卡片
+                  const Text(
+                    '季度关键指标',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                  _buildStatCard(
-                    '工资总额',
-                    '¥${_analysisData['totalSalary'].toStringAsFixed(2)}',
-                    Icons.account_balance_wallet,
-                  ),
-                  _buildStatCard(
-                    '平均工资',
-                    '¥${_analysisData['averageSalary'].toStringAsFixed(2)}',
-                    Icons.trending_up,
-                  ),
-                  _buildStatCard(
-                    '最高工资',
-                    '¥${_analysisData['highestSalary'].toStringAsFixed(2)}',
-                    Icons.arrow_upward,
-                  ),
-                  _buildStatCard(
-                    '最低工资',
-                    '¥${_analysisData['lowestSalary'].toStringAsFixed(2)}',
-                    Icons.arrow_downward,
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // 月度分解
-              const Text(
-                '月度分解',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
                     children: [
-                      const Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              '月份',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(
-                              '工资总额',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(
-                              '人数',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ],
+                      _buildStatCard(
+                        '总人数',
+                        _analysisData['totalEmployees'].toString(),
+                        Icons.people,
                       ),
-                      const Divider(),
-                      ..._analysisData['monthlyBreakdown'].map<Widget>((
-                        monthData,
-                      ) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Row(
+                      _buildStatCard(
+                        '工资总额',
+                        '¥${_analysisData['totalSalary'].toStringAsFixed(2)}',
+                        Icons.account_balance_wallet,
+                      ),
+                      _buildStatCard(
+                        '平均工资',
+                        '¥${_analysisData['averageSalary'].toStringAsFixed(2)}',
+                        Icons.trending_up,
+                      ),
+                      _buildStatCard(
+                        '最高工资',
+                        '¥${_analysisData['highestSalary'].toStringAsFixed(2)}',
+                        Icons.arrow_upward,
+                      ),
+                      _buildStatCard(
+                        '最低工资',
+                        '¥${_analysisData['lowestSalary'].toStringAsFixed(2)}',
+                        Icons.arrow_downward,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // 月度分解
+                  const Text(
+                    '月度分解',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          const Row(
                             children: [
-                              Expanded(child: Text(monthData['month'])),
                               Expanded(
                                 child: Text(
-                                  '¥${(monthData['salary'] as double).toStringAsFixed(2)}',
+                                  '月份',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
                                 ),
                               ),
                               Expanded(
-                                child: Text(monthData['employees'].toString()),
+                                child: Text(
+                                  '工资总额',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  '员工数',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                               ),
                             ],
                           ),
-                        );
-                      }).toList(),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // 部门对比
-              const Text(
-                '部门对比',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      const Row(
-                        children: [
-                          Expanded(
-                            flex: 2,
-                            child: Text(
-                              '部门',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(
-                              '工资总额',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(
-                              '平均工资',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
+                          const Divider(),
+                          ..._analysisData['monthlyBreakdown'].map<Widget>((
+                            data,
+                          ) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8.0,
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(child: Text(data['month'])),
+                                  Expanded(
+                                    child: Text(
+                                      '¥${data['salary'].toStringAsFixed(2)}',
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(data['employees'].toString()),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
                         ],
                       ),
-                      const Divider(),
-                      ..._analysisData['departmentComparison'].map<Widget>((
-                        deptData,
-                      ) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Row(
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // 部门对比
+                  const Text(
+                    '部门对比',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          const Row(
                             children: [
-                              const SizedBox(width: 8),
                               Expanded(
                                 flex: 2,
-                                child: Text(deptData['department']),
-                              ),
-                              Expanded(
                                 child: Text(
-                                  '¥${(deptData['salary'] as double).toStringAsFixed(2)}',
+                                  '部门',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
                                 ),
                               ),
                               Expanded(
                                 child: Text(
-                                  '¥${(deptData['average'] as double).toStringAsFixed(2)}',
+                                  '工资总额',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  '平均工资',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ],
                           ),
-                        );
-                      }).toList(),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // 考勤统计
-              const Text(
-                '考勤统计',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      AttendancePagination(
-                        attendanceStats: widget.attendanceStats,
+                          const Divider(),
+                          ..._analysisData['departmentComparison'].map<Widget>((
+                            dept,
+                          ) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8.0,
+                              ),
+                              child: Row(
+                                children: [
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    flex: 2,
+                                    child: Text(dept['department']),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      '¥${dept['salary'].toStringAsFixed(2)}',
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      '¥${dept['average'].toStringAsFixed(2)}',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
 
-              const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-              // 请假比例统计
-              if (widget.leaveRatioStats != null) ...[
-                const Text(
-                  '请假比例统计',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        const Row(
+                  // 考勤统计
+                  const Text(
+                    '考勤统计',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          AttendancePagination(
+                            attendanceStats: widget.attendanceStats,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // 请假比例统计
+                  if (widget.leaveRatioStats != null) ...[
+                    const Text(
+                      '请假比例统计',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
                           children: [
-                            Expanded(
-                              child: Text(
-                                '统计项',
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                            const Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    '统计项',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    '数值',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Divider(),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8.0,
+                              ),
+                              child: Row(
+                                children: [
+                                  const Expanded(child: Text('总员工数')),
+                                  Expanded(
+                                    child: Text(
+                                      widget.leaveRatioStats!.totalEmployees
+                                          .toString(),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            Expanded(
-                              child: Text(
-                                '数值',
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8.0,
+                              ),
+                              child: Row(
+                                children: [
+                                  const Expanded(child: Text('平均病假天数/人')),
+                                  Expanded(
+                                    child: Text(
+                                      widget.leaveRatioStats!.sickLeaveRatio
+                                          .toStringAsFixed(2),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8.0,
+                              ),
+                              child: Row(
+                                children: [
+                                  const Expanded(child: Text('平均事假天数/人')),
+                                  Expanded(
+                                    child: Text(
+                                      widget.leaveRatioStats!.leaveRatio
+                                          .toStringAsFixed(2),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
-                        const Divider(),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Row(
-                            children: [
-                              const Expanded(child: Text('总员工数')),
-                              Expanded(
-                                child: Text(
-                                  widget.leaveRatioStats!.totalEmployees
-                                      .toString(),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Row(
-                            children: [
-                              const Expanded(child: Text('平均病假天数/人')),
-                              Expanded(
-                                child: Text(
-                                  widget.leaveRatioStats!.sickLeaveRatio
-                                      .toStringAsFixed(2),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Row(
-                            children: [
-                              const Expanded(child: Text('平均事假天数/人')),
-                              Expanded(
-                                child: Text(
-                                  widget.leaveRatioStats!.leaveRatio
-                                      .toStringAsFixed(2),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-              ],
-            ],
+                  ],
+                ],
+              ),
+            ),
           ),
-        ),
+          if (_isGeneratingReport)
+            Positioned(
+              bottom: 20,
+              right: 20,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: LoadingIndicator(
+                        indicatorType: Indicator.pacman,
+                        colors: [Colors.lightBlue],
+                        strokeWidth: 2,
+                        backgroundColor: Colors.white,
+                        pathBackgroundColor: Colors.black,
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Text('正在生成报告...'),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
