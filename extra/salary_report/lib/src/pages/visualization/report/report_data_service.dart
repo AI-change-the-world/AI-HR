@@ -224,7 +224,7 @@ class ReportDataService {
       employeeCount: employeeCount,
       employeeDetails: employeeDetails,
       departmentDetails: departmentDetails,
-      salaryRangeDescription: '$salaryRangeDesc，详见下图',
+      salaryRangeDescription: '$salaryRangeDesc，详见下图。',
       salaryRangeFeatureSummary: salaryFeatureSummary,
       departmentSalaryAnalysis: departmentAnalysisText,
       keySalaryPoint: keySalaryPointText,

@@ -162,6 +162,7 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
             onPressed: _isGeneratingReport ? null : _generateSalaryReport,
             tooltip: '生成报告',
           ),
+          SizedBox(width: 8),
         ],
       ),
       body: Stack(
