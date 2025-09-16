@@ -7,5 +7,14 @@ import '../frb_generated.dart';
 import '../salary_caculate/salary.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-Future<(String, SalarySummary?)> getCaculateResult({required String p}) =>
-    RustLib.instance.api.crateApiSalaryApiGetCaculateResult(p: p);
+/// 获取工资计算结果
+///
+/// # 参数
+/// * `file_path` - Excel文件路径
+///
+/// # 返回值
+/// 返回(错误信息, SalarySummary)元组，如果成功则错误信息为空
+Future<(String, SalarySummary?)> getCaculateResult({
+  required String filePath,
+}) =>
+    RustLib.instance.api.crateApiSalaryApiGetCaculateResult(filePath: filePath);

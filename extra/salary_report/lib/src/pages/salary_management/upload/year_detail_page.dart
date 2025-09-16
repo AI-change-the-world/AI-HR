@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -68,7 +70,7 @@ class _YearDetailPageState extends ConsumerState<YearDetailPage>
     }
 
     try {
-      final result = await getCaculateResult(p: filePath);
+      final result = await getCaculateResult(filePath: filePath);
       if (result.$1 == "") {
         logger.info(result.$2!.summaryData);
 
@@ -105,7 +107,8 @@ class _YearDetailPageState extends ConsumerState<YearDetailPage>
                 ..truancy = record.truancy
                 ..performanceScore = record.performanceScore;
             }).toList()
-            ..total = result.$2!.totalRecords.toString();
+            ..total = result.$2!.totalRecords.toString()
+            ..extraInfo = jsonEncode(result.$2!.summaryData);
 
           // 保存到数据库
           await isar.writeTxn(() async {

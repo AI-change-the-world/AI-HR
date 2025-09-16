@@ -20,6 +20,23 @@ pub struct SalaryRecord {
     pub absence: String,                // 缺勤/次
     pub truancy: String,                // 旷工/天
     pub performance_score: String,      // 绩效得分
+    // 工资明细字段（从基本工资到饭补）
+    pub basic_salary: String,              // 基本工资
+    pub position_salary: String,           // 岗位工资
+    pub performance_salary: String,        // 绩效工资
+    pub allowance_salary: String,          // 补贴工资
+    pub comprehensive_salary: String,      // 综合薪资标准
+    pub current_month_basic: String,       // 当月基本工资
+    pub current_month_position: String,    // 当月岗位工资
+    pub current_month_performance: String, // 当月绩效工资
+    pub current_month_allowance: String,   // 当月补贴工资
+    pub overtime_pay: String,              // 加班费
+    pub allowance: String,                 // 津贴
+    pub bonus: String,                     // 奖金
+    pub social_security_deduction: String, // 社保扣款
+    pub tax: String,                       // 个税
+    pub other_deductions: String,          // 其他扣款
+    pub meal_allowance: String,            // 饭补
 }
 
 /// 工资汇总信息
@@ -65,6 +82,23 @@ pub fn parse_salary_report(file_path: &str) -> Result<SalarySummary> {
         ("缺勤\n/次", "absence"),
         ("旷工\n/天", "truancy"),
         ("绩效得分", "performance_score"),
+        // 工资明细字段（从基本工资到饭补）
+        ("基本工资", "basic_salary"),
+        ("岗位工资", "position_salary"),
+        ("绩效工资", "performance_salary"),
+        ("补贴工资", "allowance_salary"),
+        ("综合薪资标准", "comprehensive_salary"),
+        ("当月\n基本工资", "current_month_basic"),
+        ("当月\n岗位工资", "current_month_position"),
+        ("当月\n绩效工资", "current_month_performance"),
+        ("当月\n补贴工资", "current_month_allowance"),
+        ("加班费", "overtime_pay"),
+        ("津贴", "allowance"),
+        ("奖金", "bonus"),
+        ("社保扣款", "social_security_deduction"),
+        ("个税", "tax"),
+        ("其他扣款", "other_deductions"),
+        ("饭补", "meal_allowance"),
     ];
 
     // 必需字段，如果这些字段不存在则返回错误
@@ -215,6 +249,22 @@ pub fn parse_salary_report(file_path: &str) -> Result<SalarySummary> {
                         "absence" => "缺勤/次".to_string(),
                         "truancy" => "旷工/天".to_string(),
                         "performance_score" => "绩效得分".to_string(),
+                        "basic_salary" => "基本工资".to_string(),
+                        "position_salary" => "岗位工资".to_string(),
+                        "performance_salary" => "绩效工资".to_string(),
+                        "allowance_salary" => "补贴工资".to_string(),
+                        "comprehensive_salary" => "综合薪资标准".to_string(),
+                        "current_month_basic" => "当月基本工资".to_string(),
+                        "current_month_position" => "当月岗位工资".to_string(),
+                        "current_month_performance" => "当月绩效工资".to_string(),
+                        "current_month_allowance" => "当月补贴工资".to_string(),
+                        "overtime_pay" => "加班费".to_string(),
+                        "allowance" => "津贴".to_string(),
+                        "bonus" => "奖金".to_string(),
+                        "social_security_deduction" => "社保扣款".to_string(),
+                        "tax" => "个税".to_string(),
+                        "other_deductions" => "其他扣款".to_string(),
+                        "meal_allowance" => "饭补".to_string(),
                         _ => field_name,
                     };
 
@@ -248,6 +298,23 @@ pub fn parse_salary_report(file_path: &str) -> Result<SalarySummary> {
             absence: String::new(),
             truancy: String::new(),
             performance_score: String::new(),
+            // 工资明细字段
+            basic_salary: String::new(),
+            position_salary: String::new(),
+            performance_salary: String::new(),
+            allowance_salary: String::new(),
+            comprehensive_salary: String::new(),
+            current_month_basic: String::new(),
+            current_month_position: String::new(),
+            current_month_performance: String::new(),
+            current_month_allowance: String::new(),
+            overtime_pay: String::new(),
+            allowance: String::new(),
+            bonus: String::new(),
+            social_security_deduction: String::new(),
+            tax: String::new(),
+            other_deductions: String::new(),
+            meal_allowance: String::new(),
         };
 
         // 特殊处理actual_attendance_days字段（与attendance字段相同）
@@ -281,6 +348,23 @@ pub fn parse_salary_report(file_path: &str) -> Result<SalarySummary> {
                     "absence" => record.absence = value,
                     "truancy" => record.truancy = value,
                     "performance_score" => record.performance_score = value,
+                    // 工资明细字段
+                    "basic_salary" => record.basic_salary = value,
+                    "position_salary" => record.position_salary = value,
+                    "performance_salary" => record.performance_salary = value,
+                    "allowance_salary" => record.allowance_salary = value,
+                    "comprehensive_salary" => record.comprehensive_salary = value,
+                    "current_month_basic" => record.current_month_basic = value,
+                    "current_month_position" => record.current_month_position = value,
+                    "current_month_performance" => record.current_month_performance = value,
+                    "current_month_allowance" => record.current_month_allowance = value,
+                    "overtime_pay" => record.overtime_pay = value,
+                    "allowance" => record.allowance = value,
+                    "bonus" => record.bonus = value,
+                    "social_security_deduction" => record.social_security_deduction = value,
+                    "tax" => record.tax = value,
+                    "other_deductions" => record.other_deductions = value,
+                    "meal_allowance" => record.meal_allowance = value,
                     _ => {}
                 }
             }

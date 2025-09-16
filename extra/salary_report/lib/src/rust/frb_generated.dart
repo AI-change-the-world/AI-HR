@@ -80,7 +80,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 
 abstract class RustLibApi extends BaseApi {
   Future<(String, SalarySummary?)> crateApiSalaryApiGetCaculateResult({
-    required String p,
+    required String filePath,
   });
 
   String crateApiSimpleGreet({required String name});
@@ -98,13 +98,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @override
   Future<(String, SalarySummary?)> crateApiSalaryApiGetCaculateResult({
-    required String p,
+    required String filePath,
   }) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(p, serializer);
+          sse_encode_String(filePath, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -118,14 +118,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: null,
         ),
         constMeta: kCrateApiSalaryApiGetCaculateResultConstMeta,
-        argValues: [p],
+        argValues: [filePath],
         apiImpl: this,
       ),
     );
   }
 
   TaskConstMeta get kCrateApiSalaryApiGetCaculateResultConstMeta =>
-      const TaskConstMeta(debugName: "get_caculate_result", argNames: ["p"]);
+      const TaskConstMeta(
+        debugName: "get_caculate_result",
+        argNames: ["filePath"],
+      );
 
   @override
   String crateApiSimpleGreet({required String name}) {
@@ -251,8 +254,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   SalaryRecord dco_decode_salary_record(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 14)
-      throw Exception('unexpected arr length: expect 14 but see ${arr.length}');
+    if (arr.length != 30)
+      throw Exception('unexpected arr length: expect 30 but see ${arr.length}');
     return SalaryRecord(
       name: dco_decode_String(arr[0]),
       department: dco_decode_String(arr[1]),
@@ -268,6 +271,22 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       absence: dco_decode_String(arr[11]),
       truancy: dco_decode_String(arr[12]),
       performanceScore: dco_decode_String(arr[13]),
+      basicSalary: dco_decode_String(arr[14]),
+      positionSalary: dco_decode_String(arr[15]),
+      performanceSalary: dco_decode_String(arr[16]),
+      allowanceSalary: dco_decode_String(arr[17]),
+      comprehensiveSalary: dco_decode_String(arr[18]),
+      currentMonthBasic: dco_decode_String(arr[19]),
+      currentMonthPosition: dco_decode_String(arr[20]),
+      currentMonthPerformance: dco_decode_String(arr[21]),
+      currentMonthAllowance: dco_decode_String(arr[22]),
+      overtimePay: dco_decode_String(arr[23]),
+      allowance: dco_decode_String(arr[24]),
+      bonus: dco_decode_String(arr[25]),
+      socialSecurityDeduction: dco_decode_String(arr[26]),
+      tax: dco_decode_String(arr[27]),
+      otherDeductions: dco_decode_String(arr[28]),
+      mealAllowance: dco_decode_String(arr[29]),
     );
   }
 
@@ -412,6 +431,22 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_absence = sse_decode_String(deserializer);
     var var_truancy = sse_decode_String(deserializer);
     var var_performanceScore = sse_decode_String(deserializer);
+    var var_basicSalary = sse_decode_String(deserializer);
+    var var_positionSalary = sse_decode_String(deserializer);
+    var var_performanceSalary = sse_decode_String(deserializer);
+    var var_allowanceSalary = sse_decode_String(deserializer);
+    var var_comprehensiveSalary = sse_decode_String(deserializer);
+    var var_currentMonthBasic = sse_decode_String(deserializer);
+    var var_currentMonthPosition = sse_decode_String(deserializer);
+    var var_currentMonthPerformance = sse_decode_String(deserializer);
+    var var_currentMonthAllowance = sse_decode_String(deserializer);
+    var var_overtimePay = sse_decode_String(deserializer);
+    var var_allowance = sse_decode_String(deserializer);
+    var var_bonus = sse_decode_String(deserializer);
+    var var_socialSecurityDeduction = sse_decode_String(deserializer);
+    var var_tax = sse_decode_String(deserializer);
+    var var_otherDeductions = sse_decode_String(deserializer);
+    var var_mealAllowance = sse_decode_String(deserializer);
     return SalaryRecord(
       name: var_name,
       department: var_department,
@@ -427,6 +462,22 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       absence: var_absence,
       truancy: var_truancy,
       performanceScore: var_performanceScore,
+      basicSalary: var_basicSalary,
+      positionSalary: var_positionSalary,
+      performanceSalary: var_performanceSalary,
+      allowanceSalary: var_allowanceSalary,
+      comprehensiveSalary: var_comprehensiveSalary,
+      currentMonthBasic: var_currentMonthBasic,
+      currentMonthPosition: var_currentMonthPosition,
+      currentMonthPerformance: var_currentMonthPerformance,
+      currentMonthAllowance: var_currentMonthAllowance,
+      overtimePay: var_overtimePay,
+      allowance: var_allowance,
+      bonus: var_bonus,
+      socialSecurityDeduction: var_socialSecurityDeduction,
+      tax: var_tax,
+      otherDeductions: var_otherDeductions,
+      mealAllowance: var_mealAllowance,
     );
   }
 
@@ -583,6 +634,22 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.absence, serializer);
     sse_encode_String(self.truancy, serializer);
     sse_encode_String(self.performanceScore, serializer);
+    sse_encode_String(self.basicSalary, serializer);
+    sse_encode_String(self.positionSalary, serializer);
+    sse_encode_String(self.performanceSalary, serializer);
+    sse_encode_String(self.allowanceSalary, serializer);
+    sse_encode_String(self.comprehensiveSalary, serializer);
+    sse_encode_String(self.currentMonthBasic, serializer);
+    sse_encode_String(self.currentMonthPosition, serializer);
+    sse_encode_String(self.currentMonthPerformance, serializer);
+    sse_encode_String(self.currentMonthAllowance, serializer);
+    sse_encode_String(self.overtimePay, serializer);
+    sse_encode_String(self.allowance, serializer);
+    sse_encode_String(self.bonus, serializer);
+    sse_encode_String(self.socialSecurityDeduction, serializer);
+    sse_encode_String(self.tax, serializer);
+    sse_encode_String(self.otherDeductions, serializer);
+    sse_encode_String(self.mealAllowance, serializer);
   }
 
   @protected

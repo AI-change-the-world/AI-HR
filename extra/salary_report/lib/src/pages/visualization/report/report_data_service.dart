@@ -7,8 +7,14 @@ import 'package:salary_report/src/pages/visualization/report/report_content_mode
 
 class ReportDataService {
   final AISummaryService _aiService;
+  DataAnalysisService? _dataService;
 
   ReportDataService(this._aiService);
+
+  // 设置数据服务的方法
+  void setDataService(DataAnalysisService dataService) {
+    _dataService = dataService;
+  }
 
   // A public method to calculate salary ranges, so it can be used by other services
   Map<String, int> calculateSalaryRanges(
@@ -40,6 +46,52 @@ class ReportDataService {
       ranges[range] = (ranges[range] ?? 0) + dept.employeeCount;
     }
     return ranges;
+  }
+
+  /// 生成薪资结构分析文本
+  String _generateSalaryStructureAnalysis(Map<String, dynamic>? summaryData) {
+    if (summaryData == null || summaryData.isEmpty) {
+      return "暂无薪资结构数据";
+    }
+
+    final buffer = StringBuffer();
+
+    // 定义需要显示的薪资结构字段及其显示名称
+    final salaryFields = {
+      "基本工资": "基本工资",
+      "岗位工资": "岗位工资",
+      "绩效工资": "绩效工资",
+      "补贴工资": "补贴工资",
+      "综合薪资标准": "综合薪资标准",
+      "当月基本工资": "当月基本工资",
+      "当月岗位工资": "当月岗位工资",
+      "当月绩效工资": "当月绩效工资",
+      "当月补贴工资": "当月补贴工资",
+      "加班费": "加班费",
+      "津贴": "津贴",
+      "奖金": "奖金",
+      "社保扣款": "社保扣款",
+      "个税": "个税",
+      "其他扣款": "其他扣款",
+      "饭补": "饭补",
+    };
+
+    // 按顺序添加薪资结构信息
+    salaryFields.forEach((key, displayName) {
+      if (summaryData.containsKey(key)) {
+        final value = summaryData[key];
+        if (value != null && value.toString().isNotEmpty) {
+          buffer.write("$displayName：$value；");
+        }
+      }
+    });
+
+    // 如果没有找到任何相关字段，返回默认信息
+    if (buffer.isEmpty) {
+      return "暂无薪资结构数据";
+    }
+
+    return buffer.toString();
   }
 
   Future<ReportContentModel> prepareReportData({
@@ -85,6 +137,29 @@ class ReportDataService {
 
     final departmentDetails =
         '${sortedDeptsByCount.map((dept) => '${dept.department}部门${dept.employeeCount}人').join('，')}，详见下图';
+
+    // 获取薪资结构数据
+    Map<String, dynamic>? summaryData;
+    if (_dataService != null) {
+      if (isMultiMonth) {
+        summaryData = await _dataService!.getMultiMonthSalarySummaryData(
+          startYear: startTime.year,
+          startMonth: startTime.month,
+          endYear: endTime.year,
+          endMonth: endTime.month,
+        );
+      } else {
+        summaryData = await _dataService!.getSalarySummaryData(
+          year: year,
+          month: month,
+        );
+      }
+    }
+
+    // 生成薪资结构分析
+    final salaryStructureAnalysis = _generateSalaryStructureAnalysis(
+      summaryData,
+    );
 
     // Get AI summaries
     final salaryFeatureSummary = await _aiService.generateSalaryFeatureSummary(
@@ -156,6 +231,7 @@ class ReportDataService {
       salaryRankings: salaryRankings,
       basicSalaryRate: 85.0, // Example value
       performanceSalaryRate: 15.0, // Example value
+      salaryStructure: salaryStructureAnalysis, // 薪资结构分析
       departmentStats: departmentStats,
     );
   }

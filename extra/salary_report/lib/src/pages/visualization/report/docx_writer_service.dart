@@ -64,7 +64,8 @@ class DocxWriterService {
           'performance_rate',
           data.performanceSalaryRate.toStringAsFixed(2),
         ),
-      );
+      )
+      ..add(TextContent('salary_structure', data.salaryStructure)); // 添加薪资结构分析
 
     // Add compare_last if it exists
     if (data.compareLast != null) {

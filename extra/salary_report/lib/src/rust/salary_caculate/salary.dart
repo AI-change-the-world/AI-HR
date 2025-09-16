@@ -22,6 +22,22 @@ class SalaryRecord {
   final String absence;
   final String truancy;
   final String performanceScore;
+  final String basicSalary;
+  final String positionSalary;
+  final String performanceSalary;
+  final String allowanceSalary;
+  final String comprehensiveSalary;
+  final String currentMonthBasic;
+  final String currentMonthPosition;
+  final String currentMonthPerformance;
+  final String currentMonthAllowance;
+  final String overtimePay;
+  final String allowance;
+  final String bonus;
+  final String socialSecurityDeduction;
+  final String tax;
+  final String otherDeductions;
+  final String mealAllowance;
 
   const SalaryRecord({
     required this.name,
@@ -38,6 +54,22 @@ class SalaryRecord {
     required this.absence,
     required this.truancy,
     required this.performanceScore,
+    required this.basicSalary,
+    required this.positionSalary,
+    required this.performanceSalary,
+    required this.allowanceSalary,
+    required this.comprehensiveSalary,
+    required this.currentMonthBasic,
+    required this.currentMonthPosition,
+    required this.currentMonthPerformance,
+    required this.currentMonthAllowance,
+    required this.overtimePay,
+    required this.allowance,
+    required this.bonus,
+    required this.socialSecurityDeduction,
+    required this.tax,
+    required this.otherDeductions,
+    required this.mealAllowance,
   });
 
   @override
@@ -55,7 +87,23 @@ class SalaryRecord {
       personalLeave.hashCode ^
       absence.hashCode ^
       truancy.hashCode ^
-      performanceScore.hashCode;
+      performanceScore.hashCode ^
+      basicSalary.hashCode ^
+      positionSalary.hashCode ^
+      performanceSalary.hashCode ^
+      allowanceSalary.hashCode ^
+      comprehensiveSalary.hashCode ^
+      currentMonthBasic.hashCode ^
+      currentMonthPosition.hashCode ^
+      currentMonthPerformance.hashCode ^
+      currentMonthAllowance.hashCode ^
+      overtimePay.hashCode ^
+      allowance.hashCode ^
+      bonus.hashCode ^
+      socialSecurityDeduction.hashCode ^
+      tax.hashCode ^
+      otherDeductions.hashCode ^
+      mealAllowance.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -75,7 +123,23 @@ class SalaryRecord {
           personalLeave == other.personalLeave &&
           absence == other.absence &&
           truancy == other.truancy &&
-          performanceScore == other.performanceScore;
+          performanceScore == other.performanceScore &&
+          basicSalary == other.basicSalary &&
+          positionSalary == other.positionSalary &&
+          performanceSalary == other.performanceSalary &&
+          allowanceSalary == other.allowanceSalary &&
+          comprehensiveSalary == other.comprehensiveSalary &&
+          currentMonthBasic == other.currentMonthBasic &&
+          currentMonthPosition == other.currentMonthPosition &&
+          currentMonthPerformance == other.currentMonthPerformance &&
+          currentMonthAllowance == other.currentMonthAllowance &&
+          overtimePay == other.overtimePay &&
+          allowance == other.allowance &&
+          bonus == other.bonus &&
+          socialSecurityDeduction == other.socialSecurityDeduction &&
+          tax == other.tax &&
+          otherDeductions == other.otherDeductions &&
+          mealAllowance == other.mealAllowance;
 }
 
 /// 工资汇总信息

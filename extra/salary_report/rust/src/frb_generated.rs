@@ -67,12 +67,13 @@ fn wire__crate__api__salary_api__get_caculate_result_impl(
             };
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_p = <String>::sse_decode(&mut deserializer);
+            let api_file_path = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, ()>((move || {
-                    let output_ok =
-                        Result::<_, ()>::Ok(crate::api::salary_api::get_caculate_result(api_p))?;
+                    let output_ok = Result::<_, ()>::Ok(
+                        crate::api::salary_api::get_caculate_result(api_file_path),
+                    )?;
                     Ok(output_ok)
                 })())
             }
@@ -254,6 +255,22 @@ impl SseDecode for crate::salary_caculate::salary::SalaryRecord {
         let mut var_absence = <String>::sse_decode(deserializer);
         let mut var_truancy = <String>::sse_decode(deserializer);
         let mut var_performanceScore = <String>::sse_decode(deserializer);
+        let mut var_basicSalary = <String>::sse_decode(deserializer);
+        let mut var_positionSalary = <String>::sse_decode(deserializer);
+        let mut var_performanceSalary = <String>::sse_decode(deserializer);
+        let mut var_allowanceSalary = <String>::sse_decode(deserializer);
+        let mut var_comprehensiveSalary = <String>::sse_decode(deserializer);
+        let mut var_currentMonthBasic = <String>::sse_decode(deserializer);
+        let mut var_currentMonthPosition = <String>::sse_decode(deserializer);
+        let mut var_currentMonthPerformance = <String>::sse_decode(deserializer);
+        let mut var_currentMonthAllowance = <String>::sse_decode(deserializer);
+        let mut var_overtimePay = <String>::sse_decode(deserializer);
+        let mut var_allowance = <String>::sse_decode(deserializer);
+        let mut var_bonus = <String>::sse_decode(deserializer);
+        let mut var_socialSecurityDeduction = <String>::sse_decode(deserializer);
+        let mut var_tax = <String>::sse_decode(deserializer);
+        let mut var_otherDeductions = <String>::sse_decode(deserializer);
+        let mut var_mealAllowance = <String>::sse_decode(deserializer);
         return crate::salary_caculate::salary::SalaryRecord {
             name: var_name,
             department: var_department,
@@ -269,6 +286,22 @@ impl SseDecode for crate::salary_caculate::salary::SalaryRecord {
             absence: var_absence,
             truancy: var_truancy,
             performance_score: var_performanceScore,
+            basic_salary: var_basicSalary,
+            position_salary: var_positionSalary,
+            performance_salary: var_performanceSalary,
+            allowance_salary: var_allowanceSalary,
+            comprehensive_salary: var_comprehensiveSalary,
+            current_month_basic: var_currentMonthBasic,
+            current_month_position: var_currentMonthPosition,
+            current_month_performance: var_currentMonthPerformance,
+            current_month_allowance: var_currentMonthAllowance,
+            overtime_pay: var_overtimePay,
+            allowance: var_allowance,
+            bonus: var_bonus,
+            social_security_deduction: var_socialSecurityDeduction,
+            tax: var_tax,
+            other_deductions: var_otherDeductions,
+            meal_allowance: var_mealAllowance,
         };
     }
 }
@@ -375,6 +408,22 @@ impl flutter_rust_bridge::IntoDart for crate::salary_caculate::salary::SalaryRec
             self.absence.into_into_dart().into_dart(),
             self.truancy.into_into_dart().into_dart(),
             self.performance_score.into_into_dart().into_dart(),
+            self.basic_salary.into_into_dart().into_dart(),
+            self.position_salary.into_into_dart().into_dart(),
+            self.performance_salary.into_into_dart().into_dart(),
+            self.allowance_salary.into_into_dart().into_dart(),
+            self.comprehensive_salary.into_into_dart().into_dart(),
+            self.current_month_basic.into_into_dart().into_dart(),
+            self.current_month_position.into_into_dart().into_dart(),
+            self.current_month_performance.into_into_dart().into_dart(),
+            self.current_month_allowance.into_into_dart().into_dart(),
+            self.overtime_pay.into_into_dart().into_dart(),
+            self.allowance.into_into_dart().into_dart(),
+            self.bonus.into_into_dart().into_dart(),
+            self.social_security_deduction.into_into_dart().into_dart(),
+            self.tax.into_into_dart().into_dart(),
+            self.other_deductions.into_into_dart().into_dart(),
+            self.meal_allowance.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -505,6 +554,22 @@ impl SseEncode for crate::salary_caculate::salary::SalaryRecord {
         <String>::sse_encode(self.absence, serializer);
         <String>::sse_encode(self.truancy, serializer);
         <String>::sse_encode(self.performance_score, serializer);
+        <String>::sse_encode(self.basic_salary, serializer);
+        <String>::sse_encode(self.position_salary, serializer);
+        <String>::sse_encode(self.performance_salary, serializer);
+        <String>::sse_encode(self.allowance_salary, serializer);
+        <String>::sse_encode(self.comprehensive_salary, serializer);
+        <String>::sse_encode(self.current_month_basic, serializer);
+        <String>::sse_encode(self.current_month_position, serializer);
+        <String>::sse_encode(self.current_month_performance, serializer);
+        <String>::sse_encode(self.current_month_allowance, serializer);
+        <String>::sse_encode(self.overtime_pay, serializer);
+        <String>::sse_encode(self.allowance, serializer);
+        <String>::sse_encode(self.bonus, serializer);
+        <String>::sse_encode(self.social_security_deduction, serializer);
+        <String>::sse_encode(self.tax, serializer);
+        <String>::sse_encode(self.other_deductions, serializer);
+        <String>::sse_encode(self.meal_allowance, serializer);
     }
 }
 

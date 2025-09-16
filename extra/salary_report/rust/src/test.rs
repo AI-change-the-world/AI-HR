@@ -198,4 +198,137 @@ mod tests {
         let result = debug_excel_structure("../test.xlsx");
         assert!(result.is_ok());
     }
+
+    #[test]
+    fn test_read_second_row_headers() -> anyhow::Result<()> {
+        let book = reader::xlsx::read("../test.xlsx")?;
+        let sheet = book
+            .get_sheet(&0)
+            .ok_or_else(|| anyhow::anyhow!("无法获取工作表"))?;
+
+        // 读取第二行（索引为1）作为表头
+        let header_row_num = 1;
+        let header_row = sheet.get_collection_by_row(&header_row_num);
+
+        println!("第二行表头信息（第{}行）:", header_row_num + 1);
+        for (index, cell) in header_row.iter().enumerate() {
+            let cell_value = cell.get_value().to_string();
+            let col_index = cell.get_coordinate().get_col_num();
+            println!("列{} (索引{}): {}", index + 1, col_index, cell_value);
+        }
+
+        // 查找"基本工资"到"饭补"之间的列
+        println!("\n查找工资明细字段:");
+        let mut found_salary_fields = false;
+        let mut salary_field_start = 0;
+        let mut salary_field_end = 0;
+
+        for (index, cell) in header_row.iter().enumerate() {
+            let cell_value = cell.get_value().to_string();
+            let col_index = cell.get_coordinate().get_col_num();
+
+            if cell_value.contains("基本工资") {
+                found_salary_fields = true;
+                salary_field_start = index;
+                println!(
+                    "开始字段 - 列{} (索引{}): {}",
+                    index + 1,
+                    col_index,
+                    cell_value
+                );
+            }
+
+            if found_salary_fields && cell_value.contains("饭补") {
+                salary_field_end = index;
+                println!(
+                    "结束字段 - 列{} (索引{}): {}",
+                    index + 1,
+                    col_index,
+                    cell_value
+                );
+                break;
+            }
+
+            if found_salary_fields {
+                println!(
+                    "工资字段 - 列{} (索引{}): {}",
+                    index + 1,
+                    col_index,
+                    cell_value
+                );
+            }
+        }
+
+        println!(
+            "从基本工资到饭补共有 {} 列",
+            salary_field_end - salary_field_start + 1
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_read_third_row_headers() -> anyhow::Result<()> {
+        let book = reader::xlsx::read("../test.xlsx")?;
+        let sheet = book
+            .get_sheet(&0)
+            .ok_or_else(|| anyhow::anyhow!("无法获取工作表"))?;
+
+        // 读取第三行（索引为2）作为表头，这与salary.rs中的逻辑一致
+        let header_row_num = 2;
+        let header_row = sheet.get_collection_by_row(&header_row_num);
+
+        println!("第三行表头信息（第{}行）:", header_row_num + 1);
+        for (index, cell) in header_row.iter().enumerate() {
+            let cell_value = cell.get_value().to_string();
+            let col_index = cell.get_coordinate().get_col_num();
+            println!("列{} (索引{}): '{}'", index + 1, col_index, cell_value);
+        }
+
+        // 查找"基本工资"到"饭补"之间的列
+        println!("\n查找工资明细字段:");
+        let mut found_salary_fields = false;
+        let mut salary_fields = Vec::new();
+
+        for (index, cell) in header_row.iter().enumerate() {
+            let cell_value = cell.get_value().to_string();
+            let col_index = cell.get_coordinate().get_col_num();
+
+            if cell_value.contains("基本工资") {
+                found_salary_fields = true;
+                println!(
+                    "开始字段 - 列{} (索引{}): '{}'",
+                    index + 1,
+                    col_index,
+                    cell_value
+                );
+                salary_fields.push((index, col_index, cell_value.clone()));
+            } else if found_salary_fields && cell_value.contains("饭补") {
+                println!(
+                    "结束字段 - 列{} (索引{}): '{}'",
+                    index + 1,
+                    col_index,
+                    cell_value
+                );
+                salary_fields.push((index, col_index, cell_value.clone()));
+                break;
+            } else if found_salary_fields {
+                println!(
+                    "工资字段 - 列{} (索引{}): '{}'",
+                    index + 1,
+                    col_index,
+                    cell_value
+                );
+                salary_fields.push((index, col_index, cell_value.clone()));
+            }
+        }
+
+        println!("\n从基本工资到饭补共有 {} 列", salary_fields.len());
+        println!("工资明细字段列表:");
+        for (index, col_index, field_name) in &salary_fields {
+            println!("  - 列{} (索引{}): {}", index + 1, col_index, field_name);
+        }
+
+        Ok(())
+    }
 }

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
+import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/pages/visualization/report/ai_summary_service.dart';
 import 'package:salary_report/src/pages/visualization/report/chart_generation_service.dart';
 import 'package:salary_report/src/pages/visualization/report/docx_writer_service.dart';
@@ -13,15 +14,18 @@ class SalaryReportGenerator {
   final ReportDataService _dataService;
   final ChartGenerationService _chartService;
   final DocxWriterService _docxService;
+  final DataAnalysisService _analysisService;
 
   // Use dependency injection for better testability
   SalaryReportGenerator({
     ReportDataService? dataService,
     ChartGenerationService? chartService,
     DocxWriterService? docxService,
+    DataAnalysisService? analysisService,
   }) : _dataService = dataService ?? ReportDataService(AISummaryService()),
        _chartService = chartService ?? ChartGenerationService(),
-       _docxService = docxService ?? DocxWriterService();
+       _docxService = docxService ?? DocxWriterService(),
+       _analysisService = analysisService ?? DataAnalysisService(IsarDatabase());
 
   Future<String> generateReport({
     required GlobalKey previewContainerKey,
@@ -36,6 +40,9 @@ class SalaryReportGenerator {
   }) async {
     try {
       logger.info('Starting salary report generation...');
+
+      // 设置数据服务
+      _dataService.setDataService(_analysisService);
 
       // 1. Prepare all data and text content using the data service.
       // This step also handles AI summaries.

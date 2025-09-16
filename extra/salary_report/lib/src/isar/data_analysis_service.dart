@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:isar_community/isar.dart';
 import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/isar/salary_list.dart';
@@ -337,6 +338,94 @@ class DataAnalysisService {
       leaveRatio: leaveRatio,
       totalEmployees: employeeCount,
     );
+  }
+
+  /// 获取指定年月的工资汇总数据
+  Future<Map<String, dynamic>?> getSalarySummaryData({
+    required int year,
+    required int month,
+  }) async {
+    final isar = _database.isar!;
+
+    // 查询指定年月的工资数据
+    final salaryList = await isar.salaryLists
+        .filter()
+        .yearEqualTo(year)
+        .monthEqualTo(month)
+        .findFirst();
+
+    if (salaryList != null && salaryList.extraInfo.isNotEmpty) {
+      try {
+        // 解析存储的汇总数据
+        final summaryData = jsonDecode(salaryList.extraInfo);
+        return summaryData is Map<String, dynamic> ? summaryData : null;
+      } catch (e) {
+        // 解析失败，返回null
+        return null;
+      }
+    }
+
+    return null;
+  }
+
+  /// 获取指定年份范围的工资汇总数据
+  Future<Map<String, dynamic>?> getMultiMonthSalarySummaryData({
+    required int startYear,
+    required int startMonth,
+    required int endYear,
+    required int endMonth,
+  }) async {
+    final isar = _database.isar!;
+
+    // 查询指定年份范围的工资数据
+    final salaryLists = await isar.salaryLists
+        .filter()
+        .yearBetween(startYear, endYear)
+        .findAll();
+
+    // 合并所有月份的汇总数据
+    final mergedSummaryData = <String, dynamic>{};
+
+    for (var salaryList in salaryLists) {
+      // 检查月份是否在范围内
+      bool monthInRange = false;
+      if (salaryList.year == startYear) {
+        monthInRange = salaryList.month >= startMonth;
+      } else if (salaryList.year == endYear) {
+        monthInRange = salaryList.month <= endMonth;
+      } else {
+        monthInRange = salaryList.year > startYear && salaryList.year < endYear;
+      }
+
+      if (monthInRange && salaryList.extraInfo.isNotEmpty) {
+        try {
+          // 解析存储的汇总数据
+          final summaryData = jsonDecode(salaryList.extraInfo);
+          if (summaryData is Map<String, dynamic>) {
+            // 合并数据
+            summaryData.forEach((key, value) {
+              // 如果是数值类型，进行累加
+              if (value is num) {
+                if (mergedSummaryData.containsKey(key)) {
+                  mergedSummaryData[key] =
+                      (mergedSummaryData[key] as num) + value;
+                } else {
+                  mergedSummaryData[key] = value;
+                }
+              } else {
+                // 非数值类型，直接覆盖（以最后一个为准）
+                mergedSummaryData[key] = value;
+              }
+            });
+          }
+        } catch (e) {
+          // 解析失败，跳过该条数据
+          continue;
+        }
+      }
+    }
+
+    return mergedSummaryData.isEmpty ? null : mergedSummaryData;
   }
 
   /// 按季度统计部门工资

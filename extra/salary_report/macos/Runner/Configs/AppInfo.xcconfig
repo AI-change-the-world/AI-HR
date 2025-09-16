@@ -8,7 +8,7 @@
 PRODUCT_NAME = salary_report
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.example.salaryReport
+PRODUCT_BUNDLE_IDENTIFIER = org.xiaoshuyui.salaryReport
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2025 com.example. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2025 org.xiaoshuyui. All rights reserved.
