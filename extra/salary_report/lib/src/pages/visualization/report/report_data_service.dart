@@ -230,6 +230,41 @@ class ReportDataService {
     // 提取薪资结构数据用于饼图
     final salaryStructureData = _extractSalaryStructureData(summaryData);
 
+    // 获取上月数据用于比较（仅对单月报告）
+    String compareLastText = ''; // 默认为空字符串
+    if (!isMultiMonth && _dataService != null) {
+      final lastMonthStats = await _dataService!
+          .getLastMonthEmployeeAndSalaryStats(year: year, month: month);
+
+      if (lastMonthStats != null) {
+        final lastTotalEmployees = lastMonthStats['totalEmployees'] as int;
+        final lastAverageSalary = lastMonthStats['averageSalary'] as double;
+
+        // 描述上月数据
+        final lastMonthDesc =
+            '上月员工${lastTotalEmployees}人，平均薪资${lastAverageSalary.toStringAsFixed(2)}元；';
+
+        // 计算员工数量变化
+        final employeeChange = employeeCount - lastTotalEmployees;
+        final employeeChangeText = employeeChange > 0
+            ? '本月员工数量增加${employeeChange}人'
+            : employeeChange < 0
+            ? '本月员工数量减少${employeeChange.abs()}人'
+            : '本月员工数量持平';
+
+        // 计算平均薪资变化
+        final salaryChange = analysisData['averageSalary'] - lastAverageSalary;
+        final salaryChangeText = salaryChange > 0
+            ? '平均薪资增长${salaryChange.toStringAsFixed(2)}元'
+            : salaryChange < 0
+            ? '平均薪资下降${salaryChange.abs().toStringAsFixed(2)}元'
+            : '平均薪资持平';
+
+        compareLastText =
+            '$lastMonthDesc$employeeChangeText，$salaryChangeText。';
+      }
+    }
+
     // Get AI summaries
     final salaryFeatureSummary = await _aiService.generateSalaryFeatureSummary(
       salaryRangeDesc,
@@ -285,7 +320,7 @@ class ReportDataService {
       reportTime: reportTime,
       startTime: startTimeStr,
       endTime: endTimeStr,
-      compareLast: isMultiMonth ? '与$startTimeStr对比' : null,
+      compareLast: compareLastText, // 直接使用compareLastText，不再需要null检查
       totalEmployees: analysisData['totalEmployees'],
       totalSalary: analysisData['totalSalary'],
       averageSalary: analysisData['averageSalary'],

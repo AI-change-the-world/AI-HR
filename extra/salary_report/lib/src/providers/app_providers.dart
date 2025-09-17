@@ -56,6 +56,8 @@ class SidebarNotifier extends Notifier<SidebarState> {
       selectedRoute = '/visualization';
     } else if (path.startsWith('/settings')) {
       selectedRoute = '/settings';
+    } else if (path.startsWith("/report-management")) {
+      selectedRoute = '/report-management';
     } else if (path == '/') {
       selectedRoute = '/salary'; // 主页默认选中薪资管理
     }

@@ -11,6 +11,7 @@ ReportContentModel _createMockReportContentModel() {
     reportTime: '2025年1月',
     startTime: '2025-01-01',
     endTime: '2025-01-31',
+    compareLast: '', // 添加compareLast参数
     totalEmployees: 100,
     totalSalary: 1000000.0,
     averageSalary: 10000.0,

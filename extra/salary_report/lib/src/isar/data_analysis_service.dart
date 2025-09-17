@@ -368,6 +368,100 @@ class DataAnalysisService {
     return null;
   }
 
+  /// 获取上月的工资汇总数据
+  Future<Map<String, dynamic>?> getLastMonthSalarySummaryData({
+    required int year,
+    required int month,
+  }) async {
+    // 计算上月的年份和月份
+    int lastYear = year;
+    int lastMonth = month - 1;
+
+    if (lastMonth == 0) {
+      // 如果是1月，上月就是去年的12月
+      lastYear = year - 1;
+      lastMonth = 12;
+    }
+
+    return await getSalarySummaryData(year: lastYear, month: lastMonth);
+  }
+
+  /// 获取上月的部门工资统计数据
+  Future<DepartmentSalaryStats?> getLastMonthDepartmentStats({
+    required int year,
+    required int month,
+    required String department,
+  }) async {
+    // 计算上月的年份和月份
+    int lastYear = year;
+    int lastMonth = month - 1;
+
+    if (lastMonth == 0) {
+      // 如果是1月，上月就是去年的12月
+      lastYear = year - 1;
+      lastMonth = 12;
+    }
+
+    // 获取上月该部门的统计数据
+    final stats = await getDepartmentSalaryStats(
+      year: lastYear,
+      month: lastMonth,
+      department: department,
+    );
+
+    // 返回匹配的部门统计数据
+    for (var stat in stats) {
+      if (stat.department == department) {
+        return stat;
+      }
+    }
+
+    return null;
+  }
+
+  /// 获取上月的总员工数和平均薪资
+  Future<Map<String, dynamic>?> getLastMonthEmployeeAndSalaryStats({
+    required int year,
+    required int month,
+  }) async {
+    // 计算上月的年份和月份
+    int lastYear = year;
+    int lastMonth = month - 1;
+
+    if (lastMonth == 0) {
+      // 如果是1月，上月就是去年的12月
+      lastYear = year - 1;
+      lastMonth = 12;
+    }
+
+    // 获取上月的部门统计数据
+    final stats = await getDepartmentSalaryStats(
+      year: lastYear,
+      month: lastMonth,
+    );
+
+    if (stats.isEmpty) {
+      return null;
+    }
+
+    // 计算总员工数和平均薪资
+    int totalEmployees = 0;
+    double totalSalary = 0;
+    int validDepartments = 0;
+
+    for (var stat in stats) {
+      totalEmployees += stat.employeeCount;
+      totalSalary += stat.totalNetSalary;
+      validDepartments++;
+    }
+
+    final averageSalary = validDepartments > 0
+        ? totalSalary / totalEmployees
+        : 0;
+
+    return {'totalEmployees': totalEmployees, 'averageSalary': averageSalary};
+  }
+
   /// 获取指定年份范围的工资汇总数据
   Future<Map<String, dynamic>?> getMultiMonthSalarySummaryData({
     required int startYear,

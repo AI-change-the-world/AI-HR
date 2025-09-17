@@ -120,11 +120,12 @@ class DocxWriterService {
           data.performanceSalaryRate.toStringAsFixed(2),
         ),
       )
+      ..add(TextContent('salary_structure_analysis', data.salaryStructure))
       ..add(TextContent('salary_structure', data.salaryStructure));
 
-    // 添加 compare_last 如果存在
-    if (data.compareLast != null) {
-      content.add(TextContent('compare_last', data.compareLast!));
+    // 添加 compare_last 如果不为空
+    if (data.compareLast.isNotEmpty) {
+      content.add(TextContent('compare_last', data.compareLast));
     }
   }
 

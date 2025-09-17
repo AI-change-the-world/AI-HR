@@ -26,7 +26,7 @@ class ReportContentModel {
   final String reportTime;
   final String startTime;
   final String endTime;
-  final String? compareLast;
+  final String compareLast; // 改为非空String类型
   final int totalEmployees;
   final double totalSalary;
   final double averageSalary;
@@ -53,7 +53,7 @@ class ReportContentModel {
     required this.reportTime,
     required this.startTime,
     required this.endTime,
-    this.compareLast,
+    required this.compareLast, // 改为required参数
     required this.totalEmployees,
     required this.totalSalary,
     required this.averageSalary,
