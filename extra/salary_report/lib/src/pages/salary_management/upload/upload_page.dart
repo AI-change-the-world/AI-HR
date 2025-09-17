@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/common/toast.dart';
+import 'package:salary_report/src/providers/app_providers.dart';
 import 'year_detail_page.dart';
 import '../../../providers/year_provider.dart';
 
@@ -121,6 +123,8 @@ class _UploadPageState extends ConsumerState<UploadPage>
   void _sendMessage() {
     if (_chatController.text.trim().isEmpty) return;
 
+    final String userQuery = _chatController.text.trim();
+
     setState(() {
       _chatMessages.add(
         ChatMessage(
@@ -131,13 +135,17 @@ class _UploadPageState extends ConsumerState<UploadPage>
       );
     });
 
-    // 模拟AI回复
-    Future.delayed(const Duration(milliseconds: 1000), () {
+    // 使用AI薪资服务处理用户查询
+    Future.delayed(const Duration(milliseconds: 500), () async {
+      logger.info('User Query: $userQuery');
       if (mounted) {
+        final aiSalaryService = ref.read(aiSalaryServiceProvider);
+        final response = await aiSalaryService.processUserQuery(userQuery);
+
         setState(() {
           _chatMessages.add(
             ChatMessage(
-              text: '感谢您的提问！我是工资分析助手，可以帮您解答关于薪资数据分析的相关问题。请告诉我您想了解什么？',
+              text: response,
               isUser: false,
               timestamp: DateTime.now(),
             ),

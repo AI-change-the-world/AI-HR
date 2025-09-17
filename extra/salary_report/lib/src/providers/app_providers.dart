@@ -1,10 +1,18 @@
 import 'package:riverpod/riverpod.dart';
+import 'package:salary_report/src/isar/ai_salary_service.dart';
+import 'package:salary_report/src/isar/database.dart';
 import '../components/smart_time_picker.dart';
 
 // 侧边栏状态管理
 final sidebarStateProvider = NotifierProvider<SidebarNotifier, SidebarState>(
   SidebarNotifier.new,
 );
+
+// AI薪资服务提供者
+final aiSalaryServiceProvider = Provider<AISalaryService>((ref) {
+  final database = IsarDatabase();
+  return AISalaryService(database);
+});
 
 class SidebarState {
   final String selectedRoute;

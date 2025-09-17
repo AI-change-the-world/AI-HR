@@ -16,7 +16,7 @@ class LLMClient {
     }
   }
 
-  Future<String> getAnswer(String question) async {
+  Future<String> getAnswer(String question, {ResponseFormat? format}) async {
     if (_client != null) {
       logger.info("getAnswer: $question");
       try {
@@ -29,6 +29,7 @@ class LLMClient {
           request: CreateChatCompletionRequest(
             model: ChatCompletionModel.modelId(AIConfig.modelName),
             messages: messages,
+            responseFormat: format,
           ),
         );
         return res.choices.first.message.content ?? "";
