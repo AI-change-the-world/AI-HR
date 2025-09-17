@@ -2,6 +2,11 @@
 
 import 'report_generator_interface.dart';
 import 'report_types.dart';
+import 'package:salary_report/src/pages/visualization/report/report_data_service.dart';
+import 'package:salary_report/src/pages/visualization/report/chart_generation_service.dart';
+import 'package:salary_report/src/pages/visualization/report/docx_writer_service.dart';
+import 'package:salary_report/src/pages/visualization/report/ai_summary_service.dart';
+import 'package:flutter/material.dart';
 
 /// 报告生成器工厂
 class ReportGeneratorFactory {
@@ -28,10 +33,45 @@ class MonthlyReportGenerator implements ReportGenerator {
     required ReportData data,
     required ReportOptions options,
   }) async {
-    // TODO: 实现单月报告生成逻辑
+    // 实现单月报告生成逻辑
     // 使用 salary_report_template_monthly.docx 模板
     // 执行单月报告特有的业务逻辑
-    throw UnimplementedError('Monthly report generation not implemented');
+
+    // 创建所需的服务
+    final dataService = ReportDataService(AISummaryService());
+    final chartService = ChartGenerationService();
+    final docxService = DocxWriterService();
+
+    // 准备报告数据
+    final reportContent = await dataService.prepareReportData(
+      departmentStats: data.departmentStats,
+      analysisData: data.analysisData,
+      year: data.year,
+      month: data.month,
+      isMultiMonth: data.isMultiMonth,
+      startTime: data.startTime,
+      endTime: data.endTime,
+    );
+
+    // 生成图表
+    final salaryRanges = dataService.calculateSalaryRanges(
+      data.departmentStats,
+    );
+    final chartImages = await chartService.generateAllCharts(
+      previewContainerKey: GlobalKey(), // 这里应该从实际的预览容器获取
+      departmentStats: data.departmentStats,
+      salaryRanges: salaryRanges,
+      salaryStructureData: reportContent.salaryStructureData,
+    );
+
+    // 生成报告文件
+    final reportPath = await docxService.writeReport(
+      data: reportContent,
+      images: chartImages,
+      reportType: ReportType.monthly,
+    );
+
+    return reportPath;
   }
 }
 
@@ -43,10 +83,45 @@ class MultiMonthReportGenerator implements ReportGenerator {
     required ReportData data,
     required ReportOptions options,
   }) async {
-    // TODO: 实现多月报告生成逻辑
+    // 实现多月报告生成逻辑
     // 使用 salary_report_template_multi_month.docx 模板
     // 执行多月报告特有的业务逻辑
-    throw UnimplementedError('Multi-month report generation not implemented');
+
+    // 创建所需的服务
+    final dataService = ReportDataService(AISummaryService());
+    final chartService = ChartGenerationService();
+    final docxService = DocxWriterService();
+
+    // 准备报告数据
+    final reportContent = await dataService.prepareReportData(
+      departmentStats: data.departmentStats,
+      analysisData: data.analysisData,
+      year: data.year,
+      month: data.month,
+      isMultiMonth: data.isMultiMonth,
+      startTime: data.startTime,
+      endTime: data.endTime,
+    );
+
+    // 生成图表
+    final salaryRanges = dataService.calculateSalaryRanges(
+      data.departmentStats,
+    );
+    final chartImages = await chartService.generateAllCharts(
+      previewContainerKey: GlobalKey(), // 这里应该从实际的预览容器获取
+      departmentStats: data.departmentStats,
+      salaryRanges: salaryRanges,
+      salaryStructureData: reportContent.salaryStructureData,
+    );
+
+    // 生成报告文件
+    final reportPath = await docxService.writeReport(
+      data: reportContent,
+      images: chartImages,
+      reportType: ReportType.multiMonth,
+    );
+
+    return reportPath;
   }
 }
 
@@ -58,10 +133,45 @@ class QuarterlyReportGenerator implements ReportGenerator {
     required ReportData data,
     required ReportOptions options,
   }) async {
-    // TODO: 实现季度报告生成逻辑
+    // 实现季度报告生成逻辑
     // 使用 salary_report_template_quarterly.docx 模板
     // 执行季度报告特有的业务逻辑
-    throw UnimplementedError('Quarterly report generation not implemented');
+
+    // 创建所需的服务
+    final dataService = ReportDataService(AISummaryService());
+    final chartService = ChartGenerationService();
+    final docxService = DocxWriterService();
+
+    // 准备报告数据
+    final reportContent = await dataService.prepareReportData(
+      departmentStats: data.departmentStats,
+      analysisData: data.analysisData,
+      year: data.year,
+      month: data.month,
+      isMultiMonth: data.isMultiMonth,
+      startTime: data.startTime,
+      endTime: data.endTime,
+    );
+
+    // 生成图表
+    final salaryRanges = dataService.calculateSalaryRanges(
+      data.departmentStats,
+    );
+    final chartImages = await chartService.generateAllCharts(
+      previewContainerKey: GlobalKey(), // 这里应该从实际的预览容器获取
+      departmentStats: data.departmentStats,
+      salaryRanges: salaryRanges,
+      salaryStructureData: reportContent.salaryStructureData,
+    );
+
+    // 生成报告文件
+    final reportPath = await docxService.writeReport(
+      data: reportContent,
+      images: chartImages,
+      reportType: ReportType.quarterly,
+    );
+
+    return reportPath;
   }
 }
 
@@ -73,9 +183,44 @@ class AnnualReportGenerator implements ReportGenerator {
     required ReportData data,
     required ReportOptions options,
   }) async {
-    // TODO: 实现年度报告生成逻辑
+    // 实现年度报告生成逻辑
     // 使用 salary_report_template_annual.docx 模板
     // 执行年度报告特有的业务逻辑
-    throw UnimplementedError('Annual report generation not implemented');
+
+    // 创建所需的服务
+    final dataService = ReportDataService(AISummaryService());
+    final chartService = ChartGenerationService();
+    final docxService = DocxWriterService();
+
+    // 准备报告数据
+    final reportContent = await dataService.prepareReportData(
+      departmentStats: data.departmentStats,
+      analysisData: data.analysisData,
+      year: data.year,
+      month: data.month,
+      isMultiMonth: data.isMultiMonth,
+      startTime: data.startTime,
+      endTime: data.endTime,
+    );
+
+    // 生成图表
+    final salaryRanges = dataService.calculateSalaryRanges(
+      data.departmentStats,
+    );
+    final chartImages = await chartService.generateAllCharts(
+      previewContainerKey: GlobalKey(), // 这里应该从实际的预览容器获取
+      departmentStats: data.departmentStats,
+      salaryRanges: salaryRanges,
+      salaryStructureData: reportContent.salaryStructureData,
+    );
+
+    // 生成报告文件
+    final reportPath = await docxService.writeReport(
+      data: reportContent,
+      images: chartImages,
+      reportType: ReportType.annual,
+    );
+
+    return reportPath;
   }
 }
