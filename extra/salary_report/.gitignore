@@ -46,4 +46,4 @@ app.*.map.json
 
 *.xlsx
 *.docx
-!salary_report_template.docx
+!salary_report_template_*.docx

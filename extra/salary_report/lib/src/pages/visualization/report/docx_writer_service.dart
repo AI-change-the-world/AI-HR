@@ -6,29 +6,36 @@ import 'package:path_provider/path_provider.dart';
 import 'package:docx_template_fork/docx_template_fork.dart';
 import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
+import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 
 class DocxWriterService {
+  /// 根据报告类型选择模板并写入报告
   Future<String> writeReport({
     required ReportContentModel data,
     required ReportChartImages images,
+    ReportType reportType = ReportType.monthly, // 默认为单月报告
   }) async {
-    final data0 = await rootBundle.load('assets/salary_report_template.docx');
+    // 根据报告类型选择模板
+    final templatePath = _getTemplatePath(reportType);
+
+    // 加载模板
+    final data0 = await rootBundle.load(templatePath);
     final bytes = data0.buffer.asUint8List();
 
     final docx = await DocxTemplate.fromBytes(bytes);
 
-    // Build content from the model
-    final content = _buildContent(data, images);
+    // 构建内容
+    final content = _buildContent(data, images, reportType);
 
     final generatedBytes = await docx.generate(content);
     if (generatedBytes == null) {
       throw Exception('Failed to generate DOCX file.');
     }
 
-    // Save the file
+    // 保存文件
     final dir = await getApplicationDocumentsDirectory();
-    final outputPath =
-        '${dir.path}/salary_report_${DateTime.now().millisecondsSinceEpoch}.docx';
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final outputPath = '${dir.path}/salary_report_$timestamp.docx';
     final outputFile = File(outputPath);
     await outputFile.writeAsBytes(generatedBytes);
 
@@ -36,10 +43,58 @@ class DocxWriterService {
     return outputPath;
   }
 
-  Content _buildContent(ReportContentModel data, ReportChartImages images) {
+  /// 根据报告类型获取模板路径
+  String _getTemplatePath(ReportType type) {
+    switch (type) {
+      case ReportType.monthly:
+        return 'assets/salary_report_template_monthly.docx';
+      case ReportType.multiMonth:
+        return 'assets/salary_report_template_multi_month.docx';
+      case ReportType.quarterly:
+        return 'assets/salary_report_template_quarterly.docx';
+      case ReportType.annual:
+        return 'assets/salary_report_template_annual.docx';
+    }
+  }
+
+  /// 构建内容，根据不同报告类型可能有不同的处理
+  Content _buildContent(
+    ReportContentModel data,
+    ReportChartImages images,
+    ReportType type,
+  ) {
     final content = Content();
 
-    // Plain text fields
+    // 添加通用文本字段
+    _addCommonTextFields(content, data);
+
+    // 根据报告类型添加特定字段
+    switch (type) {
+      case ReportType.monthly:
+        _addMonthlySpecificFields(content, data);
+        break;
+      case ReportType.multiMonth:
+        _addMultiMonthSpecificFields(content, data);
+        break;
+      case ReportType.quarterly:
+        _addQuarterlySpecificFields(content, data);
+        break;
+      case ReportType.annual:
+        _addAnnualSpecificFields(content, data);
+        break;
+    }
+
+    // 添加表格内容
+    _addTableContent(content, data);
+
+    // 添加图片内容
+    _addImageContent(content, images);
+
+    return content;
+  }
+
+  /// 添加通用文本字段
+  void _addCommonTextFields(Content content, ReportContentModel data) {
     content
       ..add(TextContent('company_name', data.companyName))
       ..add(TextContent('report_time', data.reportTime))
@@ -65,15 +120,40 @@ class DocxWriterService {
           data.performanceSalaryRate.toStringAsFixed(2),
         ),
       )
-      ..add(TextContent('salary_structure', data.salaryStructure)); // 添加薪资结构分析
+      ..add(TextContent('salary_structure', data.salaryStructure));
 
-    // Add compare_last if it exists
+    // 添加 compare_last 如果存在
     if (data.compareLast != null) {
       content.add(TextContent('compare_last', data.compareLast!));
     }
-    // ... add all other text fields
+  }
 
-    // Table content
+  /// 添加单月报告特定字段
+  void _addMonthlySpecificFields(Content content, ReportContentModel data) {
+    // 单月报告可能需要添加的一些特定字段
+    // 这里可以根据需要添加
+  }
+
+  /// 添加多月报告特定字段
+  void _addMultiMonthSpecificFields(Content content, ReportContentModel data) {
+    // 多月报告可能需要添加的一些特定字段
+    // 这里可以根据需要添加
+  }
+
+  /// 添加季度报告特定字段
+  void _addQuarterlySpecificFields(Content content, ReportContentModel data) {
+    // 季度报告可能需要添加的一些特定字段
+    // 这里可以根据需要添加
+  }
+
+  /// 添加年度报告特定字段
+  void _addAnnualSpecificFields(Content content, ReportContentModel data) {
+    // 年度报告可能需要添加的一些特定字段
+    // 这里可以根据需要添加
+  }
+
+  /// 添加表格内容
+  void _addTableContent(Content content, ReportContentModel data) {
     final departmentRows = data.departmentStats.map((stat) {
       return RowContent()
         ..add(TextContent('department_name', stat.department))
@@ -94,8 +174,10 @@ class DocxWriterService {
         );
     }).toList();
     content.add(TableContent('departments', departmentRows));
+  }
 
-    // Image content
+  /// 添加图片内容
+  void _addImageContent(Content content, ReportChartImages images) {
     if (images.mainChart != null) {
       content.add(ImageContent('chart_overall', images.mainChart!));
     }
@@ -116,7 +198,5 @@ class DocxWriterService {
         ImageContent('salary_structure_chart', images.salaryStructureChart!),
       );
     }
-
-    return content;
   }
 }
