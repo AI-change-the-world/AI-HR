@@ -1,6 +1,7 @@
 import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:salary_report/src/common/logger.dart';
+import 'package:salary_report/src/isar/report_generation_record.dart';
 import 'package:salary_report/src/isar/salary_list.dart';
 import 'package:salary_report/src/isar/years.dart';
 
@@ -26,5 +27,6 @@ class IsarDatabase {
   late List<CollectionSchema<Object>> schemas = [
     SalaryListSchema,
     ActivatedYearSchema,
+    ReportGenerationRecordSchema,
   ];
 }

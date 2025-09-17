@@ -13,6 +13,7 @@ import 'package:salary_report/src/pages/data_analysis/quarterly/quarterly_analys
 import 'package:salary_report/src/pages/visualization/chart/chart_page.dart';
 import 'package:salary_report/src/pages/visualization/report/report_page.dart';
 import 'package:salary_report/src/pages/visualization/report/comprehensive_report_page.dart';
+import 'package:salary_report/src/pages/report_management_page.dart';
 import 'package:salary_report/src/pages/settings/user/user_settings_page.dart';
 import 'package:salary_report/src/rust/frb_generated.dart';
 import 'package:toastification/toastification.dart';
@@ -177,6 +178,10 @@ class MyApp extends StatelessWidget {
                   builder: (context, state) => const ComprehensiveReportPage(),
                 ),
               ],
+            ),
+            GoRoute(
+              path: '/report-management',
+              builder: (context, state) => const ReportManagementPage(),
             ),
             GoRoute(
               path: '/settings',

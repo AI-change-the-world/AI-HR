@@ -102,9 +102,13 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 '配置系统参数',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
+                style: TextStyle(
+                  fontFamily: "ph",
+                  fontSize: 16,
+                  color: Colors.grey,
+                ),
               ),
               const SizedBox(height: 24),
 

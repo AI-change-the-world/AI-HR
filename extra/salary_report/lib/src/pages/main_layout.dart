@@ -44,101 +44,6 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
 
     return Scaffold(
       key: _scaffoldKey,
-      // appBar: PreferredSize(
-      //   preferredSize: const Size.fromHeight(70),
-      //   child: Container(
-      //     decoration: BoxDecoration(
-      //       gradient: LinearGradient(
-      //         begin: Alignment.topLeft,
-      //         end: Alignment.bottomRight,
-      //         colors: [AppColors.primary, AppColors.primaryLight],
-      //       ),
-      //       boxShadow: [
-      //         BoxShadow(
-      //           color: AppColors.cardShadow,
-      //           blurRadius: 10,
-      //           offset: const Offset(0, 2),
-      //         ),
-      //       ],
-      //     ),
-      //     child: AppBar(
-      //       title: Row(
-      //         children: [
-      //           Container(
-      //             padding: const EdgeInsets.all(8),
-      //             decoration: BoxDecoration(
-      //               color: Colors.white.withValues(alpha: 0.2),
-      //               borderRadius: BorderRadius.circular(12),
-      //             ),
-      //             child: const Icon(
-      //               Icons.analytics_outlined,
-      //               color: Colors.white,
-      //               size: 24,
-      //             ),
-      //           ),
-      //           const SizedBox(width: 12),
-      //           const Column(
-      //             crossAxisAlignment: CrossAxisAlignment.start,
-      //             mainAxisAlignment: MainAxisAlignment.center,
-      //             children: [
-      //               Text(
-      //                 '薪资智能分析',
-      //                 style: TextStyle(
-      //                   color: Colors.white,
-      //                   fontSize: 20,
-      //                   fontWeight: FontWeight.bold,
-      //                 ),
-      //               ),
-      //               Text(
-      //                 'Smart Salary Analytics',
-      //                 style: TextStyle(
-      //                   color: Colors.white70,
-      //                   fontSize: 12,
-      //                   fontWeight: FontWeight.w400,
-      //                 ),
-      //               ),
-      //             ],
-      //           ),
-      //         ],
-      //       ),
-      //       centerTitle: false,
-      //       leading: IconButton(
-      //         icon: Container(
-      //           padding: const EdgeInsets.all(8),
-      //           decoration: BoxDecoration(
-      //             color: Colors.white.withValues(alpha: 0.2),
-      //             borderRadius: BorderRadius.circular(10),
-      //           ),
-      //           child: const Icon(
-      //             Icons.menu_rounded,
-      //             color: Colors.white,
-      //             size: 20,
-      //           ),
-      //         ),
-      //         onPressed: () {
-      //           setState(() {
-      //             _isSidebarOpen = !_isSidebarOpen;
-      //           });
-      //         },
-      //       ),
-      //       backgroundColor: Colors.transparent,
-      //       elevation: 0,
-      //       actions: [
-      //         Padding(
-      //           padding: const EdgeInsets.only(right: 16),
-      //           child: CircleAvatar(
-      //             backgroundColor: Colors.white.withValues(alpha: 0.2),
-      //             child: const Icon(
-      //               Icons.person_outline,
-      //               color: Colors.white,
-      //               size: 20,
-      //             ),
-      //           ),
-      //         ),
-      //       ],
-      //     ),
-      //   ),
-      // ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -167,70 +72,6 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                 ),
                 child: Column(
                   children: [
-                    // 侧边栏头部
-                    // Container(
-                    //   padding: const EdgeInsets.all(24),
-                    //   decoration: BoxDecoration(
-                    //     gradient: LinearGradient(
-                    //       begin: Alignment.topLeft,
-                    //       end: Alignment.bottomRight,
-                    //       colors: [
-                    //         AppColors.primary.withValues(alpha: 0.1),
-                    //         AppColors.secondary.withValues(alpha: 0.1),
-                    //       ],
-                    //     ),
-                    //     borderRadius: const BorderRadius.only(
-                    //       bottomLeft: Radius.circular(30),
-                    //       bottomRight: Radius.circular(30),
-                    //     ),
-                    //   ),
-                    //   child: Column(
-                    //     children: [
-                    //       Container(
-                    //         padding: const EdgeInsets.all(16),
-                    //         decoration: BoxDecoration(
-                    //           gradient: LinearGradient(
-                    //             colors: [
-                    //               AppColors.primary,
-                    //               AppColors.primaryLight,
-                    //             ],
-                    //           ),
-                    //           borderRadius: BorderRadius.circular(20),
-                    //           boxShadow: [
-                    //             BoxShadow(
-                    //               color: AppColors.primary.withValues(alpha: 0.3),
-                    //               blurRadius: 15,
-                    //               offset: const Offset(0, 8),
-                    //             ),
-                    //           ],
-                    //         ),
-                    //         child: const Icon(
-                    //           Icons.trending_up_rounded,
-                    //           size: 32,
-                    //           color: Colors.white,
-                    //         ),
-                    //       ),
-                    //       const SizedBox(height: 16),
-                    //       const Text(
-                    //         '薪资分析中心',
-                    //         style: TextStyle(
-                    //           color: AppColors.primaryDark,
-                    //           fontSize: 18,
-                    //           fontWeight: FontWeight.bold,
-                    //         ),
-                    //       ),
-                    //       const SizedBox(height: 4),
-                    //       Text(
-                    //         'Salary Analytics Hub',
-                    //         style: TextStyle(
-                    //           color: Colors.grey[600],
-                    //           fontSize: 12,
-                    //           fontWeight: FontWeight.w400,
-                    //         ),
-                    //       ),
-                    //     ],
-                    //   ),
-                    // ),
                     // 导航菜单
                     Expanded(
                       child: ListView(
@@ -267,6 +108,16 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                             context: context,
                             screenWidth: screenWidth,
                             color: AppColors.accent,
+                          ),
+                          const SizedBox(height: 12),
+                          _buildSidebarItem(
+                            icon: Icons.folder_open_rounded,
+                            title: '报告管理',
+                            subtitle: '查看与删除',
+                            route: '/report-management',
+                            context: context,
+                            screenWidth: screenWidth,
+                            color: Colors.deepPurple,
                           ),
                           const SizedBox(height: 12),
                           _buildSidebarItem(
@@ -386,20 +237,19 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                       Text(
                         title,
                         style: TextStyle(
+                          fontFamily: 'ph',
                           fontSize: 15,
                           color: isSelected ? color : Colors.grey[800],
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w500,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
                         style: TextStyle(
+                          fontFamily: 'ph',
                           fontSize: 12,
                           color: Colors.grey[600],
-                          fontWeight: FontWeight.w400,
                         ),
                       ),
                     ],

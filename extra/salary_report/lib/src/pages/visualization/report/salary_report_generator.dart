@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart';
+import 'package:salary_report/src/isar/report_service.dart';
 import 'package:salary_report/src/pages/visualization/report/ai_summary_service.dart';
 import 'package:salary_report/src/pages/visualization/report/chart_generation_service.dart';
 import 'package:salary_report/src/pages/visualization/report/docx_writer_service.dart';
@@ -17,6 +18,7 @@ class SalaryReportGenerator {
   final ChartGenerationService _chartService;
   final DocxWriterService _docxService;
   final DataAnalysisService _analysisService;
+  final ReportService _reportService;
 
   // Use dependency injection for better testability
   SalaryReportGenerator({
@@ -24,11 +26,13 @@ class SalaryReportGenerator {
     ChartGenerationService? chartService,
     DocxWriterService? docxService,
     DataAnalysisService? analysisService,
+    ReportService? reportService,
   }) : _dataService = dataService ?? ReportDataService(AISummaryService()),
        _chartService = chartService ?? ChartGenerationService(),
        _docxService = docxService ?? DocxWriterService(),
        _analysisService =
-           analysisService ?? DataAnalysisService(IsarDatabase());
+           analysisService ?? DataAnalysisService(IsarDatabase()),
+       _reportService = reportService ?? ReportService();
 
   /// 生成报告的主方法，支持不同类型的报告
   Future<String> generateReport({
@@ -82,6 +86,9 @@ class SalaryReportGenerator {
         data: reportData,
         options: reportOptions,
       );
+
+      // 添加报告记录到数据库
+      await _reportService.addReportRecord(reportPath);
 
       logger.info('Report generation complete: $reportPath');
       return reportPath;
@@ -162,6 +169,10 @@ class SalaryReportGenerator {
         images: chartImages,
         reportType: ReportType.monthly, // 默认使用单月报告类型
       );
+
+      // 添加报告记录到数据库
+      await _reportService.addReportRecord(reportPath);
+
       logger.info('Report generation complete: $reportPath');
 
       return reportPath;
