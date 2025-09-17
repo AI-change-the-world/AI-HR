@@ -193,6 +193,7 @@ class MyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           title: '员工工资智能化分析系统',
           theme: ThemeData(
+            fontFamily: "ph",
             primarySwatch: Colors.lightBlue,
             useMaterial3: true,
             scaffoldBackgroundColor: Colors.lightBlue.shade50,

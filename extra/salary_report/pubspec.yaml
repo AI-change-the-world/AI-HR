@@ -50,6 +50,13 @@ flutter:
   assets:
     - assets/salary_report_template.docx
 
+  fonts:
+    - family: ph
+      fonts:
+        - asset: assets/fonts/AlibabaPuHuiTi-3-55-RegularL3.ttf
+        - asset: assets/fonts/AlibabaPuHuiTi-3-75-SemiBold.ttf
+          weight: 700
+
 icons_launcher:
   image_path: "../../aihr-icon.png"
   platforms:

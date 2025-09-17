@@ -32,6 +32,81 @@ class SalaryQueryService {
     return null;
   }
 
+  /// 查询某年所有月份中某员工的工资记录
+  Future<Map<int, SalaryListRecord>> getEmployeeSalaryByYear({
+    required int year,
+    required String employeeName,
+  }) async {
+    final isar = _database.isar!;
+
+    final salaryLists = await isar.salaryLists
+        .filter()
+        .yearEqualTo(year)
+        .findAll();
+
+    final results = <int, SalaryListRecord>{};
+
+    for (var salaryList in salaryLists) {
+      for (var record in salaryList.records) {
+        if (record.name == employeeName) {
+          results[salaryList.month] = record;
+        }
+      }
+    }
+
+    return results;
+  }
+
+  /// 查询所有年份中某月份某员工的工资记录
+  Future<Map<int, SalaryListRecord>> getEmployeeSalaryByMonth({
+    required int month,
+    required String employeeName,
+  }) async {
+    final isar = _database.isar!;
+
+    final salaryLists = await isar.salaryLists
+        .filter()
+        .monthEqualTo(month)
+        .findAll();
+
+    final results = <int, SalaryListRecord>{};
+
+    for (var salaryList in salaryLists) {
+      for (var record in salaryList.records) {
+        if (record.name == employeeName) {
+          results[salaryList.year] = record;
+        }
+      }
+    }
+
+    return results;
+  }
+
+  /// 查询所有记录中某员工的工资信息
+  Future<List<Map<String, dynamic>>> getAllEmployeeSalary({
+    required String employeeName,
+  }) async {
+    final isar = _database.isar!;
+
+    final salaryLists = await isar.salaryLists.where().findAll();
+
+    final results = <Map<String, dynamic>>[];
+
+    for (var salaryList in salaryLists) {
+      for (var record in salaryList.records) {
+        if (record.name == employeeName) {
+          results.add({
+            'year': salaryList.year,
+            'month': salaryList.month,
+            'record': record,
+          });
+        }
+      }
+    }
+
+    return results;
+  }
+
   /// 查询某年某月某部门的工资详情
   Future<List<SalaryListRecord>> getDepartmentSalaryByYearMonth({
     required int year,

@@ -4,13 +4,17 @@ import 'package:salary_report/src/common/llm_client.dart';
 import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/isar/salary_query_service.dart';
+import 'package:salary_report/src/isar/salary_list.dart';
+import 'package:isar_community/isar.dart';
 
 class AISalaryService {
   final SalaryQueryService _queryService;
+  final IsarDatabase _database;
   final LLMClient _llmClient;
 
   AISalaryService(IsarDatabase database)
     : _queryService = SalaryQueryService(database),
+      _database = database,
       _llmClient = LLMClient();
 
   /// 处理用户查询请求
@@ -162,17 +166,34 @@ class AISalaryService {
   Future<String> _handleEmployeeSalaryQuery(
     Map<String, dynamic> parameters,
   ) async {
-    final year = parameters['year'] as int?;
-    final month = parameters['month'] as int?;
+    final year = int.tryParse(parameters['year'].toString());
+    final month = int.tryParse(parameters['month'].toString());
     final employeeName = parameters['employeeName'] as String?;
 
-    if (year == null || month == null || employeeName == null) {
-      return '查询参数不完整，请提供年份、月份和员工姓名。';
+    // 如果没有提供员工姓名，无法进行查询
+    if (employeeName == null) {
+      return '请提供员工姓名进行查询。';
     }
 
+    // 如果提供了年份但没有提供月份，查询该年份的所有记录
+    if (year != null && month == null) {
+      return await _searchEmployeeSalaryByYear(year, employeeName);
+    }
+
+    // 如果提供了月份但没有提供年份，查询所有年份中该月份的记录
+    if (year == null && month != null) {
+      return await _searchEmployeeSalaryByMonth(month, employeeName);
+    }
+
+    // 如果既没有提供年份也没有提供月份，查询所有记录中该员工的信息
+    if (year == null && month == null) {
+      return await _searchEmployeeSalaryAll(employeeName);
+    }
+
+    // 如果提供了完整的年份和月份，按原逻辑查询
     final record = await _queryService.getEmployeeSalaryByYearMonth(
-      year: year,
-      month: month,
+      year: year!,
+      month: month!,
       employeeName: employeeName,
     );
 
@@ -194,6 +215,108 @@ class AISalaryService {
         '绩效得分: ${record.performanceScore ?? "未知"}';
   }
 
+  /// 查询某年所有月份中某员工的工资记录
+  Future<String> _searchEmployeeSalaryByYear(
+    int year,
+    String employeeName,
+  ) async {
+    final isar = _database.isar!;
+
+    // 查询指定年份的所有工资数据
+    final salaryLists = await isar.salaryLists
+        .filter()
+        .yearEqualTo(year)
+        .findAll();
+
+    if (salaryLists.isEmpty) {
+      return '未找到 $year 年的工资记录。';
+    }
+
+    final List<String> results = [];
+
+    for (var salaryList in salaryLists) {
+      for (var record in salaryList.records) {
+        if (record.name == employeeName) {
+          results.add(
+            '$year 年 ${salaryList.month} 月: ${record.netSalary ?? "未知工资"}',
+          );
+        }
+      }
+    }
+
+    if (results.isEmpty) {
+      return '未找到 $year 年员工 $employeeName 的工资记录。';
+    }
+
+    return '员工 $employeeName 在 $year 年的工资记录：\n${results.join('\n')}';
+  }
+
+  /// 查询所有年份中某月份某员工的工资记录
+  Future<String> _searchEmployeeSalaryByMonth(
+    int month,
+    String employeeName,
+  ) async {
+    final isar = _database.isar!;
+
+    // 查询所有工资数据，然后过滤月份
+    final salaryLists = await isar.salaryLists
+        .filter()
+        .monthEqualTo(month)
+        .findAll();
+
+    if (salaryLists.isEmpty) {
+      return '未找到 $month 月的工资记录。';
+    }
+
+    final List<String> results = [];
+
+    for (var salaryList in salaryLists) {
+      for (var record in salaryList.records) {
+        if (record.name == employeeName) {
+          results.add(
+            '${salaryList.year} 年 $month 月: ${record.netSalary ?? "未知工资"}',
+          );
+        }
+      }
+    }
+
+    if (results.isEmpty) {
+      return '未找到 $month 月员工 $employeeName 的工资记录。';
+    }
+
+    return '员工 $employeeName 在所有年份 $month 月的工资记录：\n${results.join('\n')}';
+  }
+
+  /// 查询所有记录中某员工的工资信息
+  Future<String> _searchEmployeeSalaryAll(String employeeName) async {
+    final isar = _database.isar!;
+
+    // 查询所有工资数据
+    final salaryLists = await isar.salaryLists.where().findAll();
+
+    if (salaryLists.isEmpty) {
+      return '未找到任何工资记录。';
+    }
+
+    final List<String> results = [];
+
+    for (var salaryList in salaryLists) {
+      for (var record in salaryList.records) {
+        if (record.name == employeeName) {
+          results.add(
+            '${salaryList.year} 年 ${salaryList.month} 月: ${record.netSalary ?? "未知工资"}',
+          );
+        }
+      }
+    }
+
+    if (results.isEmpty) {
+      return '未找到员工 $employeeName 的任何工资记录。';
+    }
+
+    return '员工 $employeeName 在所有时间的工资记录：\n${results.join('\n')}';
+  }
+
   /// 处理部门工资查询
   Future<String> _handleDepartmentSalaryQuery(
     Map<String, dynamic> parameters,
@@ -202,13 +325,30 @@ class AISalaryService {
     final month = parameters['month'] as int?;
     final department = parameters['department'] as String?;
 
-    if (year == null || month == null || department == null) {
-      return '查询参数不完整，请提供年份、月份和部门名称。';
+    // 如果没有提供部门名称，无法进行查询
+    if (department == null) {
+      return '请提供部门名称进行查询。';
     }
 
+    // 如果提供了年份但没有提供月份，查询该年份的所有记录
+    if (year != null && month == null) {
+      return await _searchDepartmentSalaryByYear(year, department);
+    }
+
+    // 如果提供了月份但没有提供年份，查询所有年份中该月份的记录
+    if (year == null && month != null) {
+      return await _searchDepartmentSalaryByMonth(month, department);
+    }
+
+    // 如果既没有提供年份也没有提供月份，查询所有记录中该部门的信息
+    if (year == null && month == null) {
+      return await _searchDepartmentSalaryAll(department);
+    }
+
+    // 如果提供了完整的年份和月份，按原逻辑查询
     final records = await _queryService.getDepartmentSalaryByYearMonth(
-      year: year,
-      month: month,
+      year: year!,
+      month: month!,
       department: department,
     );
 
@@ -230,19 +370,187 @@ class AISalaryService {
     return buffer.toString();
   }
 
+  /// 查询某年所有月份中某部门的工资记录
+  Future<String> _searchDepartmentSalaryByYear(
+    int year,
+    String department,
+  ) async {
+    final isar = _database.isar!;
+
+    // 查询指定年份的所有工资数据
+    final salaryLists = await isar.salaryLists
+        .filter()
+        .yearEqualTo(year)
+        .findAll();
+
+    if (salaryLists.isEmpty) {
+      return '未找到 $year 年的工资记录。';
+    }
+
+    final Map<int, List<SalaryListRecord>> results = {};
+
+    for (var salaryList in salaryLists) {
+      final List<SalaryListRecord> deptRecords = [];
+      for (var record in salaryList.records) {
+        if (record.department == department) {
+          deptRecords.add(record);
+        }
+      }
+      if (deptRecords.isNotEmpty) {
+        results[salaryList.month] = deptRecords;
+      }
+    }
+
+    if (results.isEmpty) {
+      return '未找到 $year 年 $department 部门的工资记录。';
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln('$year 年 $department 部门各月份工资记录：');
+
+    results.forEach((month, records) {
+      buffer.writeln('$month 月: ${records.length} 名员工');
+      for (int i = 0; i < records.length && i < 3; i++) {
+        final record = records[i];
+        buffer.writeln(
+          '  ${record.name ?? "未知员工"}: ${record.netSalary ?? "未知工资"}',
+        );
+      }
+      if (records.length > 3) {
+        buffer.writeln('  ... 还有 ${records.length - 3} 名员工');
+      }
+    });
+
+    return buffer.toString();
+  }
+
+  /// 查询所有年份中某月份某部门的工资记录
+  Future<String> _searchDepartmentSalaryByMonth(
+    int month,
+    String department,
+  ) async {
+    final isar = _database.isar!;
+
+    // 查询所有工资数据，然后过滤月份
+    final salaryLists = await isar.salaryLists
+        .filter()
+        .monthEqualTo(month)
+        .findAll();
+
+    if (salaryLists.isEmpty) {
+      return '未找到 $month 月的工资记录。';
+    }
+
+    final Map<int, List<SalaryListRecord>> results = {};
+
+    for (var salaryList in salaryLists) {
+      final List<SalaryListRecord> deptRecords = [];
+      for (var record in salaryList.records) {
+        if (record.department == department) {
+          deptRecords.add(record);
+        }
+      }
+      if (deptRecords.isNotEmpty) {
+        results[salaryList.year] = deptRecords;
+      }
+    }
+
+    if (results.isEmpty) {
+      return '未找到 $month 月 $department 部门的工资记录。';
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln('所有年份 $month 月 $department 部门工资记录：');
+
+    results.forEach((year, records) {
+      buffer.writeln('$year 年: ${records.length} 名员工');
+      for (int i = 0; i < records.length && i < 3; i++) {
+        final record = records[i];
+        buffer.writeln(
+          '  ${record.name ?? "未知员工"}: ${record.netSalary ?? "未知工资"}',
+        );
+      }
+      if (records.length > 3) {
+        buffer.writeln('  ... 还有 ${records.length - 3} 名员工');
+      }
+    });
+
+    return buffer.toString();
+  }
+
+  /// 查询所有记录中某部门的工资信息
+  Future<String> _searchDepartmentSalaryAll(String department) async {
+    final isar = _database.isar!;
+
+    // 查询所有工资数据
+    final salaryLists = await isar.salaryLists.where().findAll();
+
+    if (salaryLists.isEmpty) {
+      return '未找到任何工资记录。';
+    }
+
+    final Map<String, List<SalaryListRecord>> results = {};
+
+    for (var salaryList in salaryLists) {
+      final List<SalaryListRecord> deptRecords = [];
+      for (var record in salaryList.records) {
+        if (record.department == department) {
+          deptRecords.add(record);
+        }
+      }
+      if (deptRecords.isNotEmpty) {
+        results['${salaryList.year}年${salaryList.month}月'] = deptRecords;
+      }
+    }
+
+    if (results.isEmpty) {
+      return '未找到 $department 部门的任何工资记录。';
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln('$department 部门在所有时间的工资记录：');
+
+    results.forEach((period, records) {
+      buffer.writeln('$period: ${records.length} 名员工');
+      for (int i = 0; i < records.length && i < 3; i++) {
+        final record = records[i];
+        buffer.writeln(
+          '  ${record.name ?? "未知员工"}: ${record.netSalary ?? "未知工资"}',
+        );
+      }
+      if (records.length > 3) {
+        buffer.writeln('  ... 还有 ${records.length - 3} 名员工');
+      }
+    });
+
+    return buffer.toString();
+  }
+
   /// 处理最高工资查询
   Future<String> _handleTopSalaryQuery(Map<String, dynamic> parameters) async {
     final year = parameters['year'] as int?;
     final month = parameters['month'] as int?;
     final limit = parameters['limit'] as int? ?? 10;
 
-    if (year == null || month == null) {
-      return '查询参数不完整，请提供年份和月份。';
+    // 如果提供了年份但没有提供月份，查询该年份的所有记录
+    if (year != null && month == null) {
+      return await _searchTopSalaryByYear(year, limit);
     }
 
+    // 如果提供了月份但没有提供年份，查询所有年份中该月份的记录
+    if (year == null && month != null) {
+      return await _searchTopSalaryByMonth(month, limit);
+    }
+
+    // 如果既没有提供年份也没有提供月份，查询所有记录
+    if (year == null && month == null) {
+      return await _searchTopSalaryAll(limit);
+    }
+
+    // 如果提供了完整的年份和月份，按原逻辑查询
     final records = await _queryService.getTopSalaryEmployees(
-      year: year,
-      month: month,
+      year: year!,
+      month: month!,
       limit: limit,
     );
 
@@ -263,6 +571,159 @@ class AISalaryService {
     return buffer.toString();
   }
 
+  /// 查询某年所有月份中工资最高的员工
+  Future<String> _searchTopSalaryByYear(int year, int limit) async {
+    final isar = _database.isar!;
+
+    // 查询指定年份的所有工资数据
+    final salaryLists = await isar.salaryLists
+        .filter()
+        .yearEqualTo(year)
+        .findAll();
+
+    if (salaryLists.isEmpty) {
+      return '未找到 $year 年的工资记录。';
+    }
+
+    // 收集所有记录
+    final List<SalaryListRecord> allRecords = [];
+    for (var salaryList in salaryLists) {
+      for (var record in salaryList.records) {
+        if (record.name != null && record.netSalary != null) {
+          allRecords.add(record);
+        }
+      }
+    }
+
+    if (allRecords.isEmpty) {
+      return '未找到 $year 年的有效工资记录。';
+    }
+
+    // 按工资排序
+    allRecords.sort((a, b) {
+      final salaryA =
+          double.tryParse(a.netSalary!.replaceAll(RegExp(r'[^\d.-]'), '')) ?? 0;
+      final salaryB =
+          double.tryParse(b.netSalary!.replaceAll(RegExp(r'[^\d.-]'), '')) ?? 0;
+      return salaryB.compareTo(salaryA); // 降序排列
+    });
+
+    final topRecords = allRecords.take(limit).toList();
+
+    final buffer = StringBuffer();
+    buffer.writeln('$year 年工资排名前 ${topRecords.length} 名员工：');
+
+    for (int i = 0; i < topRecords.length; i++) {
+      final record = topRecords[i];
+      buffer.writeln(
+        '${i + 1}. ${record.name ?? "未知员工"} (${record.department ?? "未知部门"}): ${record.netSalary ?? "未知工资"}',
+      );
+    }
+
+    return buffer.toString();
+  }
+
+  /// 查询所有年份中某月份工资最高的员工
+  Future<String> _searchTopSalaryByMonth(int month, int limit) async {
+    final isar = _database.isar!;
+
+    // 查询所有工资数据，然后过滤月份
+    final salaryLists = await isar.salaryLists
+        .filter()
+        .monthEqualTo(month)
+        .findAll();
+
+    if (salaryLists.isEmpty) {
+      return '未找到 $month 月的工资记录。';
+    }
+
+    // 收集所有记录
+    final List<SalaryListRecord> allRecords = [];
+    for (var salaryList in salaryLists) {
+      for (var record in salaryList.records) {
+        if (record.name != null && record.netSalary != null) {
+          allRecords.add(record);
+        }
+      }
+    }
+
+    if (allRecords.isEmpty) {
+      return '未找到 $month 月的有效工资记录。';
+    }
+
+    // 按工资排序
+    allRecords.sort((a, b) {
+      final salaryA =
+          double.tryParse(a.netSalary!.replaceAll(RegExp(r'[^\d.-]'), '')) ?? 0;
+      final salaryB =
+          double.tryParse(b.netSalary!.replaceAll(RegExp(r'[^\d.-]'), '')) ?? 0;
+      return salaryB.compareTo(salaryA); // 降序排列
+    });
+
+    final topRecords = allRecords.take(limit).toList();
+
+    final buffer = StringBuffer();
+    buffer.writeln('所有年份 $month 月工资排名前 ${topRecords.length} 名员工：');
+
+    for (int i = 0; i < topRecords.length; i++) {
+      final record = topRecords[i];
+      buffer.writeln(
+        '${i + 1}. ${record.name ?? "未知员工"} (${record.department ?? "未知部门"}): ${record.netSalary ?? "未知工资"}',
+      );
+    }
+
+    return buffer.toString();
+  }
+
+  /// 查询所有记录中工资最高的员工
+  Future<String> _searchTopSalaryAll(int limit) async {
+    final isar = _database.isar!;
+
+    // 查询所有工资数据
+    final salaryLists = await isar.salaryLists.where().findAll();
+
+    if (salaryLists.isEmpty) {
+      return '未找到任何工资记录。';
+    }
+
+    // 收集所有记录
+    final List<SalaryListRecord> allRecords = [];
+    for (var salaryList in salaryLists) {
+      for (var record in salaryList.records) {
+        if (record.name != null && record.netSalary != null) {
+          allRecords.add(record);
+        }
+      }
+    }
+
+    if (allRecords.isEmpty) {
+      return '未找到任何有效工资记录。';
+    }
+
+    // 按工资排序
+    allRecords.sort((a, b) {
+      final salaryA =
+          double.tryParse(a.netSalary!.replaceAll(RegExp(r'[^\d.-]'), '')) ?? 0;
+      final salaryB =
+          double.tryParse(b.netSalary!.replaceAll(RegExp(r'[^\d.-]'), '')) ?? 0;
+      return salaryB.compareTo(salaryA); // 降序排列
+    });
+
+    final topRecords = allRecords.take(limit).toList();
+
+    final buffer = StringBuffer();
+    buffer.writeln('所有时间工资排名前 ${topRecords.length} 名员工：');
+
+    for (int i = 0; i < topRecords.length; i++) {
+      final record = topRecords[i];
+      buffer.writeln(
+        '${i + 1}. ${record.name ?? "未知员工"} (${record.department ?? "未知部门"}): ${record.netSalary ?? "未知工资"}',
+      );
+    }
+
+    return buffer.toString();
+  }
+
   /// 处理最低工资查询
   Future<String> _handleBottomSalaryQuery(
     Map<String, dynamic> parameters,
@@ -271,13 +732,25 @@ class AISalaryService {
     final month = parameters['month'] as int?;
     final limit = parameters['limit'] as int? ?? 10;
 
-    if (year == null || month == null) {
-      return '查询参数不完整，请提供年份和月份。';
+    // 如果提供了年份但没有提供月份，查询该年份的所有记录
+    if (year != null && month == null) {
+      return await _searchBottomSalaryByYear(year, limit);
     }
 
+    // 如果提供了月份但没有提供年份，查询所有年份中该月份的记录
+    if (year == null && month != null) {
+      return await _searchBottomSalaryByMonth(month, limit);
+    }
+
+    // 如果既没有提供年份也没有提供月份，查询所有记录
+    if (year == null && month == null) {
+      return await _searchBottomSalaryAll(limit);
+    }
+
+    // 如果提供了完整的年份和月份，按原逻辑查询
     final records = await _queryService.getBottomSalaryEmployees(
-      year: year,
-      month: month,
+      year: year!,
+      month: month!,
       limit: limit,
     );
 
@@ -298,6 +771,159 @@ class AISalaryService {
     return buffer.toString();
   }
 
+  /// 查询某年所有月份中工资最低的员工
+  Future<String> _searchBottomSalaryByYear(int year, int limit) async {
+    final isar = _database.isar!;
+
+    // 查询指定年份的所有工资数据
+    final salaryLists = await isar.salaryLists
+        .filter()
+        .yearEqualTo(year)
+        .findAll();
+
+    if (salaryLists.isEmpty) {
+      return '未找到 $year 年的工资记录。';
+    }
+
+    // 收集所有记录
+    final List<SalaryListRecord> allRecords = [];
+    for (var salaryList in salaryLists) {
+      for (var record in salaryList.records) {
+        if (record.name != null && record.netSalary != null) {
+          allRecords.add(record);
+        }
+      }
+    }
+
+    if (allRecords.isEmpty) {
+      return '未找到 $year 年的有效工资记录。';
+    }
+
+    // 按工资排序
+    allRecords.sort((a, b) {
+      final salaryA =
+          double.tryParse(a.netSalary!.replaceAll(RegExp(r'[^\d.-]'), '')) ?? 0;
+      final salaryB =
+          double.tryParse(b.netSalary!.replaceAll(RegExp(r'[^\d.-]'), '')) ?? 0;
+      return salaryA.compareTo(salaryB); // 升序排列
+    });
+
+    final bottomRecords = allRecords.take(limit).toList();
+
+    final buffer = StringBuffer();
+    buffer.writeln('$year 年工资最低的 ${bottomRecords.length} 名员工：');
+
+    for (int i = 0; i < bottomRecords.length; i++) {
+      final record = bottomRecords[i];
+      buffer.writeln(
+        '${i + 1}. ${record.name ?? "未知员工"} (${record.department ?? "未知部门"}): ${record.netSalary ?? "未知工资"}',
+      );
+    }
+
+    return buffer.toString();
+  }
+
+  /// 查询所有年份中某月份工资最低的员工
+  Future<String> _searchBottomSalaryByMonth(int month, int limit) async {
+    final isar = _database.isar!;
+
+    // 查询所有工资数据，然后过滤月份
+    final salaryLists = await isar.salaryLists
+        .filter()
+        .monthEqualTo(month)
+        .findAll();
+
+    if (salaryLists.isEmpty) {
+      return '未找到 $month 月的工资记录。';
+    }
+
+    // 收集所有记录
+    final List<SalaryListRecord> allRecords = [];
+    for (var salaryList in salaryLists) {
+      for (var record in salaryList.records) {
+        if (record.name != null && record.netSalary != null) {
+          allRecords.add(record);
+        }
+      }
+    }
+
+    if (allRecords.isEmpty) {
+      return '未找到 $month 月的有效工资记录。';
+    }
+
+    // 按工资排序
+    allRecords.sort((a, b) {
+      final salaryA =
+          double.tryParse(a.netSalary!.replaceAll(RegExp(r'[^\d.-]'), '')) ?? 0;
+      final salaryB =
+          double.tryParse(b.netSalary!.replaceAll(RegExp(r'[^\d.-]'), '')) ?? 0;
+      return salaryA.compareTo(salaryB); // 升序排列
+    });
+
+    final bottomRecords = allRecords.take(limit).toList();
+
+    final buffer = StringBuffer();
+    buffer.writeln('所有年份 $month 月工资最低的 ${bottomRecords.length} 名员工：');
+
+    for (int i = 0; i < bottomRecords.length; i++) {
+      final record = bottomRecords[i];
+      buffer.writeln(
+        '${i + 1}. ${record.name ?? "未知员工"} (${record.department ?? "未知部门"}): ${record.netSalary ?? "未知工资"}',
+      );
+    }
+
+    return buffer.toString();
+  }
+
+  /// 查询所有记录中工资最低的员工
+  Future<String> _searchBottomSalaryAll(int limit) async {
+    final isar = _database.isar!;
+
+    // 查询所有工资数据
+    final salaryLists = await isar.salaryLists.where().findAll();
+
+    if (salaryLists.isEmpty) {
+      return '未找到任何工资记录。';
+    }
+
+    // 收集所有记录
+    final List<SalaryListRecord> allRecords = [];
+    for (var salaryList in salaryLists) {
+      for (var record in salaryList.records) {
+        if (record.name != null && record.netSalary != null) {
+          allRecords.add(record);
+        }
+      }
+    }
+
+    if (allRecords.isEmpty) {
+      return '未找到任何有效工资记录。';
+    }
+
+    // 按工资排序
+    allRecords.sort((a, b) {
+      final salaryA =
+          double.tryParse(a.netSalary!.replaceAll(RegExp(r'[^\d.-]'), '')) ?? 0;
+      final salaryB =
+          double.tryParse(b.netSalary!.replaceAll(RegExp(r'[^\d.-]'), '')) ?? 0;
+      return salaryA.compareTo(salaryB); // 升序排列
+    });
+
+    final bottomRecords = allRecords.take(limit).toList();
+
+    final buffer = StringBuffer();
+    buffer.writeln('所有时间工资最低的 ${bottomRecords.length} 名员工：');
+
+    for (int i = 0; i < bottomRecords.length; i++) {
+      final record = bottomRecords[i];
+      buffer.writeln(
+        '${i + 1}. ${record.name ?? "未知员工"} (${record.department ?? "未知部门"}): ${record.netSalary ?? "未知工资"}',
+      );
+    }
+
+    return buffer.toString();
+  }
+
   /// 处理员工考勤查询
   Future<String> _handleEmployeeAttendanceQuery(
     Map<String, dynamic> parameters,
@@ -306,13 +932,30 @@ class AISalaryService {
     final month = parameters['month'] as int?;
     final employeeName = parameters['employeeName'] as String?;
 
-    if (year == null || month == null || employeeName == null) {
-      return '查询参数不完整，请提供年份、月份和员工姓名。';
+    // 如果没有提供员工姓名，无法进行查询
+    if (employeeName == null) {
+      return '请提供员工姓名进行查询。';
     }
 
+    // 如果提供了年份但没有提供月份，查询该年份的所有记录
+    if (year != null && month == null) {
+      return await _searchEmployeeAttendanceByYear(year, employeeName);
+    }
+
+    // 如果提供了月份但没有提供年份，查询所有年份中该月份的记录
+    if (year == null && month != null) {
+      return await _searchEmployeeAttendanceByMonth(month, employeeName);
+    }
+
+    // 如果既没有提供年份也没有提供月份，查询所有记录中该员工的信息
+    if (year == null && month == null) {
+      return await _searchEmployeeAttendanceAll(employeeName);
+    }
+
+    // 如果提供了完整的年份和月份，按原逻辑查询
     final attendance = await _queryService.getEmployeeAttendance(
-      year: year,
-      month: month,
+      year: year!,
+      month: month!,
       employeeName: employeeName,
     );
 
@@ -330,6 +973,117 @@ class AISalaryService {
         '旷工天数: ${attendance['truancy'] ?? "未知"}';
   }
 
+  /// 查询某年所有月份中某员工的考勤记录
+  Future<String> _searchEmployeeAttendanceByYear(
+    int year,
+    String employeeName,
+  ) async {
+    final isar = _database.isar!;
+
+    // 查询指定年份的所有工资数据
+    final salaryLists = await isar.salaryLists
+        .filter()
+        .yearEqualTo(year)
+        .findAll();
+
+    if (salaryLists.isEmpty) {
+      return '未找到 $year 年的考勤记录。';
+    }
+
+    final List<String> results = [];
+
+    for (var salaryList in salaryLists) {
+      for (var record in salaryList.records) {
+        if (record.name == employeeName) {
+          results.add(
+            '$year 年 ${salaryList.month} 月: '
+            '出勤情况=${record.attendance ?? "未知"}, '
+            '病假=${record.sickLeave ?? "未知"}, '
+            '事假=${record.leave ?? "未知"}',
+          );
+        }
+      }
+    }
+
+    if (results.isEmpty) {
+      return '未找到 $year 年员工 $employeeName 的考勤记录。';
+    }
+
+    return '员工 $employeeName 在 $year 年的考勤记录：\n${results.join('\n')}';
+  }
+
+  /// 查询所有年份中某月份某员工的考勤记录
+  Future<String> _searchEmployeeAttendanceByMonth(
+    int month,
+    String employeeName,
+  ) async {
+    final isar = _database.isar!;
+
+    // 查询所有工资数据，然后过滤月份
+    final salaryLists = await isar.salaryLists
+        .filter()
+        .monthEqualTo(month)
+        .findAll();
+
+    if (salaryLists.isEmpty) {
+      return '未找到 $month 月的考勤记录。';
+    }
+
+    final List<String> results = [];
+
+    for (var salaryList in salaryLists) {
+      for (var record in salaryList.records) {
+        if (record.name == employeeName) {
+          results.add(
+            '${salaryList.year} 年 $month 月: '
+            '出勤情况=${record.attendance ?? "未知"}, '
+            '病假=${record.sickLeave ?? "未知"}, '
+            '事假=${record.leave ?? "未知"}',
+          );
+        }
+      }
+    }
+
+    if (results.isEmpty) {
+      return '未找到 $month 月员工 $employeeName 的考勤记录。';
+    }
+
+    return '员工 $employeeName 在所有年份 $month 月的考勤记录：\n${results.join('\n')}';
+  }
+
+  /// 查询所有记录中某员工的考勤信息
+  Future<String> _searchEmployeeAttendanceAll(String employeeName) async {
+    final isar = _database.isar!;
+
+    // 查询所有工资数据
+    final salaryLists = await isar.salaryLists.where().findAll();
+
+    if (salaryLists.isEmpty) {
+      return '未找到任何考勤记录。';
+    }
+
+    final List<String> results = [];
+
+    for (var salaryList in salaryLists) {
+      for (var record in salaryList.records) {
+        if (record.name == employeeName) {
+          results.add(
+            '${salaryList.year} 年 ${salaryList.month} 月: '
+            '出勤情况=${record.attendance ?? "未知"}, '
+            '病假=${record.sickLeave ?? "未知"}, '
+            '事假=${record.leave ?? "未知"}',
+          );
+        }
+      }
+    }
+
+    if (results.isEmpty) {
+      return '未找到员工 $employeeName 的任何考勤记录。';
+    }
+
+    return '员工 $employeeName 在所有时间的考勤记录：\n${results.join('\n')}';
+  }
+
   /// 处理平均工资查询
   Future<String> _handleAverageSalaryQuery(
     Map<String, dynamic> parameters,
@@ -337,16 +1091,207 @@ class AISalaryService {
     final year = parameters['year'] as int?;
     final month = parameters['month'] as int?;
 
-    if (year == null || month == null) {
-      return '查询参数不完整，请提供年份和月份。';
+    // 如果提供了年份但没有提供月份，查询该年份的所有记录
+    if (year != null && month == null) {
+      return await _searchAverageSalaryByYear(year);
     }
 
+    // 如果提供了月份但没有提供年份，查询所有年份中该月份的记录
+    if (year == null && month != null) {
+      return await _searchAverageSalaryByMonth(month);
+    }
+
+    // 如果既没有提供年份也没有提供月份，查询所有记录
+    if (year == null && month == null) {
+      return await _searchAverageSalaryAll();
+    }
+
+    // 如果提供了完整的年份和月份，按原逻辑查询
     final averageSalary = await _queryService.getAverageSalary(
-      year: year,
-      month: month,
+      year: year!,
+      month: month!,
     );
 
     return '$year 年 $month 月所有员工的平均工资为: ${averageSalary.toStringAsFixed(2)} 元';
+  }
+
+  /// 查询某年所有月份的平均工资
+  Future<String> _searchAverageSalaryByYear(int year) async {
+    final isar = _database.isar!;
+
+    // 查询指定年份的所有工资数据
+    final salaryLists = await isar.salaryLists
+        .filter()
+        .yearEqualTo(year)
+        .findAll();
+
+    if (salaryLists.isEmpty) {
+      return '未找到 $year 年的工资记录。';
+    }
+
+    final Map<int, double> monthlyAverages = {};
+    double totalAverage = 0;
+    int validMonths = 0;
+
+    for (var salaryList in salaryLists) {
+      double totalSalary = 0;
+      int count = 0;
+
+      for (var record in salaryList.records) {
+        if (record.netSalary != null) {
+          final salary =
+              double.tryParse(
+                record.netSalary!.replaceAll(RegExp(r'[^\d.-]'), ''),
+              ) ??
+              0;
+          totalSalary += salary;
+          count++;
+        }
+      }
+
+      if (count > 0) {
+        final average = totalSalary / count;
+        monthlyAverages[salaryList.month] = average;
+        totalAverage += average;
+        validMonths++;
+      }
+    }
+
+    if (monthlyAverages.isEmpty) {
+      return '未找到 $year 年的有效工资记录。';
+    }
+
+    final overallAverage = totalAverage / validMonths;
+
+    final buffer = StringBuffer();
+    buffer.writeln('$year 年各月份平均工资：');
+
+    monthlyAverages.forEach((month, average) {
+      buffer.writeln('$month 月: ${average.toStringAsFixed(2)} 元');
+    });
+
+    buffer.writeln('全年平均工资: ${overallAverage.toStringAsFixed(2)} 元');
+
+    return buffer.toString();
+  }
+
+  /// 查询所有年份中某月份的平均工资
+  Future<String> _searchAverageSalaryByMonth(int month) async {
+    final isar = _database.isar!;
+
+    // 查询所有工资数据，然后过滤月份
+    final salaryLists = await isar.salaryLists
+        .filter()
+        .monthEqualTo(month)
+        .findAll();
+
+    if (salaryLists.isEmpty) {
+      return '未找到 $month 月的工资记录。';
+    }
+
+    final Map<int, double> yearlyAverages = {};
+    double totalAverage = 0;
+    int validYears = 0;
+
+    for (var salaryList in salaryLists) {
+      double totalSalary = 0;
+      int count = 0;
+
+      for (var record in salaryList.records) {
+        if (record.netSalary != null) {
+          final salary =
+              double.tryParse(
+                record.netSalary!.replaceAll(RegExp(r'[^\d.-]'), ''),
+              ) ??
+              0;
+          totalSalary += salary;
+          count++;
+        }
+      }
+
+      if (count > 0) {
+        final average = totalSalary / count;
+        yearlyAverages[salaryList.year] = average;
+        totalAverage += average;
+        validYears++;
+      }
+    }
+
+    if (yearlyAverages.isEmpty) {
+      return '未找到 $month 月的有效工资记录。';
+    }
+
+    final overallAverage = totalAverage / validYears;
+
+    final buffer = StringBuffer();
+    buffer.writeln('所有年份 $month 月平均工资：');
+
+    yearlyAverages.forEach((year, average) {
+      buffer.writeln('$year 年: ${average.toStringAsFixed(2)} 元');
+    });
+
+    buffer.writeln('该月份历年平均工资: ${overallAverage.toStringAsFixed(2)} 元');
+
+    return buffer.toString();
+  }
+
+  /// 查询所有记录的平均工资
+  Future<String> _searchAverageSalaryAll() async {
+    final isar = _database.isar!;
+
+    // 查询所有工资数据
+    final salaryLists = await isar.salaryLists.where().findAll();
+
+    if (salaryLists.isEmpty) {
+      return '未找到任何工资记录。';
+    }
+
+    double totalSalary = 0;
+    int totalCount = 0;
+    final Map<String, double> yearlyAverages = {};
+
+    // 按年份计算平均工资
+    final Map<int, List<double>> yearlySalaries = {};
+
+    for (var salaryList in salaryLists) {
+      double yearTotal = 0;
+      int yearCount = 0;
+
+      for (var record in salaryList.records) {
+        if (record.netSalary != null) {
+          final salary =
+              double.tryParse(
+                record.netSalary!.replaceAll(RegExp(r'[^\d.-]'), ''),
+              ) ??
+              0;
+          totalSalary += salary;
+          yearTotal += salary;
+          totalCount++;
+          yearCount++;
+        }
+      }
+
+      if (yearCount > 0) {
+        yearlyAverages['${salaryList.year}年'] = yearTotal / yearCount;
+      }
+    }
+
+    if (totalCount == 0) {
+      return '未找到任何有效工资记录。';
+    }
+
+    final overallAverage = totalSalary / totalCount;
+
+    final buffer = StringBuffer();
+    buffer.writeln('所有时间平均工资统计：');
+    buffer.writeln('总体平均工资: ${overallAverage.toStringAsFixed(2)} 元');
+
+    buffer.writeln('\n各年度平均工资：');
+    yearlyAverages.forEach((year, average) {
+      buffer.writeln('$year: ${average.toStringAsFixed(2)} 元');
+    });
+
+    return buffer.toString();
   }
 
   /// 处理工资总和查询
@@ -356,16 +1301,167 @@ class AISalaryService {
     final year = parameters['year'] as int?;
     final month = parameters['month'] as int?;
 
-    if (year == null || month == null) {
-      return '查询参数不完整，请提供年份和月份。';
+    // 如果提供了年份但没有提供月份，查询该年份的所有记录
+    if (year != null && month == null) {
+      return await _searchTotalSalaryByYear(year);
     }
 
+    // 如果提供了月份但没有提供年份，查询所有年份中该月份的记录
+    if (year == null && month != null) {
+      return await _searchTotalSalaryByMonth(month);
+    }
+
+    // 如果既没有提供年份也没有提供月份，查询所有记录
+    if (year == null && month == null) {
+      return await _searchTotalSalaryAll();
+    }
+
+    // 如果提供了完整的年份和月份，按原逻辑查询
     final totalSalary = await _queryService.getTotalSalary(
-      year: year,
-      month: month,
+      year: year!,
+      month: month!,
     );
 
     return '$year 年 $month 月所有员工的工资总和为: ${totalSalary.toStringAsFixed(2)} 元';
+  }
+
+  /// 查询某年所有月份的工资总和
+  Future<String> _searchTotalSalaryByYear(int year) async {
+    final isar = _database.isar!;
+
+    // 查询指定年份的所有工资数据
+    final salaryLists = await isar.salaryLists
+        .filter()
+        .yearEqualTo(year)
+        .findAll();
+
+    if (salaryLists.isEmpty) {
+      return '未找到 $year 年的工资记录。';
+    }
+
+    final Map<int, double> monthlyTotals = {};
+    double annualTotal = 0;
+
+    for (var salaryList in salaryLists) {
+      double monthTotal = 0;
+
+      for (var record in salaryList.records) {
+        if (record.netSalary != null) {
+          final salary =
+              double.tryParse(
+                record.netSalary!.replaceAll(RegExp(r'[^\d.-]'), ''),
+              ) ??
+              0;
+          monthTotal += salary;
+        }
+      }
+
+      monthlyTotals[salaryList.month] = monthTotal;
+      annualTotal += monthTotal;
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln('$year 年各月份工资总和：');
+
+    monthlyTotals.forEach((month, total) {
+      buffer.writeln('$month 月: ${total.toStringAsFixed(2)} 元');
+    });
+
+    buffer.writeln('全年工资总和: ${annualTotal.toStringAsFixed(2)} 元');
+
+    return buffer.toString();
+  }
+
+  /// 查询所有年份中某月份的工资总和
+  Future<String> _searchTotalSalaryByMonth(int month) async {
+    final isar = _database.isar!;
+
+    // 查询所有工资数据，然后过滤月份
+    final salaryLists = await isar.salaryLists
+        .filter()
+        .monthEqualTo(month)
+        .findAll();
+
+    if (salaryLists.isEmpty) {
+      return '未找到 $month 月的工资记录。';
+    }
+
+    final Map<int, double> yearlyTotals = {};
+    double monthTotal = 0;
+
+    for (var salaryList in salaryLists) {
+      double yearTotal = 0;
+
+      for (var record in salaryList.records) {
+        if (record.netSalary != null) {
+          final salary =
+              double.tryParse(
+                record.netSalary!.replaceAll(RegExp(r'[^\d.-]'), ''),
+              ) ??
+              0;
+          yearTotal += salary;
+        }
+      }
+
+      yearlyTotals[salaryList.year] = yearTotal;
+      monthTotal += yearTotal;
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln('所有年份 $month 月工资总和：');
+
+    yearlyTotals.forEach((year, total) {
+      buffer.writeln('$year 年: ${total.toStringAsFixed(2)} 元');
+    });
+
+    buffer.writeln('该月份历年工资总和: ${monthTotal.toStringAsFixed(2)} 元');
+
+    return buffer.toString();
+  }
+
+  /// 查询所有记录的工资总和
+  Future<String> _searchTotalSalaryAll() async {
+    final isar = _database.isar!;
+
+    // 查询所有工资数据
+    final salaryLists = await isar.salaryLists.where().findAll();
+
+    if (salaryLists.isEmpty) {
+      return '未找到任何工资记录。';
+    }
+
+    double grandTotal = 0;
+    final Map<String, double> yearlyTotals = {};
+
+    // 按年份计算工资总和
+    for (var salaryList in salaryLists) {
+      double yearTotal = 0;
+
+      for (var record in salaryList.records) {
+        if (record.netSalary != null) {
+          final salary =
+              double.tryParse(
+                record.netSalary!.replaceAll(RegExp(r'[^\d.-]'), ''),
+              ) ??
+              0;
+          yearTotal += salary;
+          grandTotal += salary;
+        }
+      }
+
+      yearlyTotals['${salaryList.year}年'] = yearTotal;
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln('所有时间工资总和统计：');
+    buffer.writeln('总体工资总和: ${grandTotal.toStringAsFixed(2)} 元');
+
+    buffer.writeln('\n各年度工资总和：');
+    yearlyTotals.forEach((year, total) {
+      buffer.writeln('$year: ${total.toStringAsFixed(2)} 元');
+    });
+
+    return buffer.toString();
   }
 
   /// 处理部门平均工资查询
@@ -375,12 +1471,24 @@ class AISalaryService {
     final year = parameters['year'] as int?;
     final month = parameters['month'] as int?;
 
-    if (year == null || month == null) {
-      return '查询参数不完整，请提供年份和月份。';
+    // 如果提供了年份但没有提供月份，查询该年份的所有记录
+    if (year != null && month == null) {
+      return await _searchDepartmentAverageByYear(year);
     }
 
+    // 如果提供了月份但没有提供年份，查询所有年份中该月份的记录
+    if (year == null && month != null) {
+      return await _searchDepartmentAverageByMonth(month);
+    }
+
+    // 如果既没有提供年份也没有提供月份，查询所有记录
+    if (year == null && month == null) {
+      return await _searchDepartmentAverageAll();
+    }
+
+    // 如果提供了完整的年份和月份，按原逻辑查询
     final departmentAverages = await _queryService
-        .getAverageSalaryByDepartments(year: year, month: month);
+        .getAverageSalaryByDepartments(year: year!, month: month!);
 
     if (departmentAverages.isEmpty) {
       return '未找到 $year 年 $month 月各部门的工资记录。';
@@ -392,6 +1500,217 @@ class AISalaryService {
     departmentAverages.forEach((department, average) {
       buffer.writeln('$department: ${average.toStringAsFixed(2)} 元');
     });
+
+    return buffer.toString();
+  }
+
+  /// 查询某年所有月份各部门的平均工资
+  Future<String> _searchDepartmentAverageByYear(int year) async {
+    final isar = _database.isar!;
+
+    // 查询指定年份的所有工资数据
+    final salaryLists = await isar.salaryLists
+        .filter()
+        .yearEqualTo(year)
+        .findAll();
+
+    if (salaryLists.isEmpty) {
+      return '未找到 $year 年的工资记录。';
+    }
+
+    // 按部门和月份收集数据
+    final Map<String, Map<int, List<double>>> deptMonthlyData = {};
+
+    for (var salaryList in salaryLists) {
+      for (var record in salaryList.records) {
+        if (record.department != null && record.netSalary != null) {
+          final salary =
+              double.tryParse(
+                record.netSalary!.replaceAll(RegExp(r'[^\d.-]'), ''),
+              ) ??
+              0;
+
+          final department = record.department!;
+          final month = salaryList.month;
+
+          if (!deptMonthlyData.containsKey(department)) {
+            deptMonthlyData[department] = {};
+          }
+
+          if (!deptMonthlyData[department]!.containsKey(month)) {
+            deptMonthlyData[department]![month] = [];
+          }
+
+          deptMonthlyData[department]![month]!.add(salary);
+        }
+      }
+    }
+
+    if (deptMonthlyData.isEmpty) {
+      return '未找到 $year 年各部门的有效工资记录。';
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln('$year 年各部门平均工资统计：');
+
+    deptMonthlyData.forEach((department, monthlyData) {
+      buffer.writeln('\n$department:');
+
+      double deptTotal = 0;
+      int deptCount = 0;
+      final monthlyAverages = <int, double>{};
+
+      monthlyData.forEach((month, salaries) {
+        final monthTotal = salaries.reduce((a, b) => a + b);
+        final monthAverage = monthTotal / salaries.length;
+        monthlyAverages[month] = monthAverage;
+        deptTotal += monthTotal;
+        deptCount += salaries.length;
+      });
+
+      final deptAverage = deptCount > 0 ? deptTotal / deptCount : 0;
+
+      monthlyAverages.forEach((month, average) {
+        buffer.writeln('  $month 月: ${average.toStringAsFixed(2)} 元');
+      });
+
+      buffer.writeln('  年度平均: ${deptAverage.toStringAsFixed(2)} 元');
+    });
+
+    return buffer.toString();
+  }
+
+  /// 查询所有年份中某月份各部门的平均工资
+  Future<String> _searchDepartmentAverageByMonth(int month) async {
+    final isar = _database.isar!;
+
+    // 查询所有工资数据，然后过滤月份
+    final salaryLists = await isar.salaryLists
+        .filter()
+        .monthEqualTo(month)
+        .findAll();
+
+    if (salaryLists.isEmpty) {
+      return '未找到 $month 月的工资记录。';
+    }
+
+    // 按部门和年份收集数据
+    final Map<String, Map<int, List<double>>> deptYearlyData = {};
+
+    for (var salaryList in salaryLists) {
+      for (var record in salaryList.records) {
+        if (record.department != null && record.netSalary != null) {
+          final salary =
+              double.tryParse(
+                record.netSalary!.replaceAll(RegExp(r'[^\d.-]'), ''),
+              ) ??
+              0;
+
+          final department = record.department!;
+          final year = salaryList.year;
+
+          if (!deptYearlyData.containsKey(department)) {
+            deptYearlyData[department] = {};
+          }
+
+          if (!deptYearlyData[department]!.containsKey(year)) {
+            deptYearlyData[department]![year] = [];
+          }
+
+          deptYearlyData[department]![year]!.add(salary);
+        }
+      }
+    }
+
+    if (deptYearlyData.isEmpty) {
+      return '未找到 $month 月各部门的有效工资记录。';
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln('所有年份 $month 月各部门平均工资统计：');
+
+    deptYearlyData.forEach((department, yearlyData) {
+      buffer.writeln('\n$department:');
+
+      double deptTotal = 0;
+      int deptCount = 0;
+      final yearlyAverages = <int, double>{};
+
+      yearlyData.forEach((year, salaries) {
+        final yearTotal = salaries.reduce((a, b) => a + b);
+        final yearAverage = yearTotal / salaries.length;
+        yearlyAverages[year] = yearAverage;
+        deptTotal += yearTotal;
+        deptCount += salaries.length;
+      });
+
+      final deptAverage = deptCount > 0 ? deptTotal / deptCount : 0;
+
+      yearlyAverages.forEach((year, average) {
+        buffer.writeln('  $year 年: ${average.toStringAsFixed(2)} 元');
+      });
+
+      buffer.writeln('  该月份历年平均: ${deptAverage.toStringAsFixed(2)} 元');
+    });
+
+    return buffer.toString();
+  }
+
+  /// 查询所有记录各部门的平均工资
+  Future<String> _searchDepartmentAverageAll() async {
+    final isar = _database.isar!;
+
+    // 查询所有工资数据
+    final salaryLists = await isar.salaryLists.where().findAll();
+
+    if (salaryLists.isEmpty) {
+      return '未找到任何工资记录。';
+    }
+
+    // 按部门收集所有数据
+    final Map<String, List<double>> deptAllData = {};
+
+    for (var salaryList in salaryLists) {
+      for (var record in salaryList.records) {
+        if (record.department != null && record.netSalary != null) {
+          final salary =
+              double.tryParse(
+                record.netSalary!.replaceAll(RegExp(r'[^\d.-]'), ''),
+              ) ??
+              0;
+
+          final department = record.department!;
+
+          if (!deptAllData.containsKey(department)) {
+            deptAllData[department] = [];
+          }
+
+          deptAllData[department]!.add(salary);
+        }
+      }
+    }
+
+    if (deptAllData.isEmpty) {
+      return '未找到各部门的有效工资记录。';
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln('所有时间各部门平均工资统计：');
+
+    final List<MapEntry<String, double>> sortedDepts = [];
+
+    deptAllData.forEach((department, salaries) {
+      final total = salaries.reduce((a, b) => a + b);
+      final average = total / salaries.length;
+      sortedDepts.add(MapEntry(department, average));
+    });
+
+    // 按平均工资排序
+    sortedDepts.sort((a, b) => b.value.compareTo(a.value));
+
+    for (var entry in sortedDepts) {
+      buffer.writeln('${entry.key}: ${entry.value.toStringAsFixed(2)} 元');
+    }
 
     return buffer.toString();
   }
