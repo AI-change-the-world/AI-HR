@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
+import 'package:salary_report/src/common/toast.dart';
 import 'package:salary_report/src/isar/report_generation_record.dart';
 import 'package:salary_report/src/isar/report_service.dart';
 
@@ -73,20 +74,17 @@ class _ReportManagementPageState extends State<ReportManagementPage> {
           // 刷新列表
           await _refreshReports();
           // 显示成功提示
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('报告已删除')));
-        } else {
-          // 显示错误提示
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('删除失败')));
+          // ScaffoldMessenger.of(
+          //   context,
+          // ).showSnackBar(const SnackBar(content: Text('报告已删除')));
+          ToastUtils.info(null, title: '报告已删除');
         }
       } catch (e) {
         // 显示错误提示
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('删除过程中发生错误')));
+        // ScaffoldMessenger.of(
+        //   context,
+        // ).showSnackBar(const SnackBar(content: Text('删除过程中发生错误')));
+        ToastUtils.error(null, title: '删除过程中发生错误');
       }
     }
   }

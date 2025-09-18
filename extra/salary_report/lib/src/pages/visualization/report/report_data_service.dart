@@ -1,6 +1,7 @@
 // src/report/services/report_data_service.dart
 
 import 'package:salary_report/src/common/ai_config.dart';
+import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/pages/visualization/report/ai_summary_service.dart';
 import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
@@ -206,6 +207,9 @@ class ReportDataService {
 
     // 获取薪资结构数据
     Map<String, dynamic>? summaryData;
+    logger.info(
+      'Analysis data isMultiMonth: $isMultiMonth  _dataService is null ${_dataService == null}',
+    );
     if (_dataService != null) {
       if (isMultiMonth) {
         summaryData = await _dataService!.getMultiMonthSalarySummaryData(
@@ -221,6 +225,8 @@ class ReportDataService {
         );
       }
     }
+
+    logger.info('Salary summary data: $summaryData');
 
     // 生成薪资结构分析
     final salaryStructureAnalysis = _generateSalaryStructureAnalysis(

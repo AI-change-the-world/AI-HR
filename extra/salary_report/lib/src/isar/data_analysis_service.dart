@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:isar_community/isar.dart';
+import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/isar/salary_list.dart';
 
@@ -353,6 +354,8 @@ class DataAnalysisService {
         .yearEqualTo(year)
         .monthEqualTo(month)
         .findFirst();
+
+    logger.info('Salary list info found: ${salaryList?.extraInfo}');
 
     if (salaryList != null && salaryList.extraInfo.isNotEmpty) {
       try {

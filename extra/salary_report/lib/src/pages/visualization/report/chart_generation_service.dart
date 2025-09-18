@@ -50,9 +50,16 @@ class ChartGenerationService {
 
   Future<Uint8List> _captureWidgetAsImage(Widget widget) {
     return _screenshotController.captureFromWidget(
-      MediaQuery(
-        data: MediaQueryData.fromView(WidgetsBinding.instance.window),
-        child: Directionality(textDirection: TextDirection.ltr, child: widget),
+      RepaintBoundary(
+        child: MediaQuery(
+          data: MediaQueryData.fromView(
+            ui.PlatformDispatcher.instance.views.first,
+          ),
+          child: Directionality(
+            textDirection: TextDirection.ltr,
+            child: widget,
+          ),
+        ),
       ),
       delay: const Duration(milliseconds: 200),
       pixelRatio: 3.0,

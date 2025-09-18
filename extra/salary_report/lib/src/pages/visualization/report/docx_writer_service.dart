@@ -124,9 +124,10 @@ class DocxWriterService {
       ..add(TextContent('salary_structure', data.salaryStructure));
 
     // 添加 compare_last 如果不为空
-    if (data.compareLast.isNotEmpty) {
-      content.add(TextContent('compare_last', data.compareLast));
+    if (data.compareLast.isEmpty) {
+      logger.warning('compare_last is empty');
     }
+    content.add(TextContent('compare_last', data.compareLast));
   }
 
   /// 添加单月报告特定字段

@@ -1,11 +1,13 @@
 // src/report/report_generator_factory.dart
 
-import 'report_generator_interface.dart';
-import 'report_types.dart';
+import 'package:salary_report/src/isar/database.dart';
+import 'package:salary_report/src/isar/data_analysis_service.dart';
+import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:salary_report/src/pages/visualization/report/report_data_service.dart';
 import 'package:salary_report/src/pages/visualization/report/chart_generation_service.dart';
 import 'package:salary_report/src/pages/visualization/report/docx_writer_service.dart';
 import 'package:salary_report/src/pages/visualization/report/ai_summary_service.dart';
+import 'package:salary_report/src/pages/visualization/report/report_generator_interface.dart';
 import 'package:flutter/material.dart';
 
 /// 报告生成器工厂
@@ -39,8 +41,12 @@ class MonthlyReportGenerator implements ReportGenerator {
 
     // 创建所需的服务
     final dataService = ReportDataService(AISummaryService());
+    final analysisService = DataAnalysisService(IsarDatabase());
     final chartService = ChartGenerationService();
     final docxService = DocxWriterService();
+
+    // 设置数据服务
+    dataService.setDataService(analysisService);
 
     // 准备报告数据
     final reportContent = await dataService.prepareReportData(
@@ -89,8 +95,12 @@ class MultiMonthReportGenerator implements ReportGenerator {
 
     // 创建所需的服务
     final dataService = ReportDataService(AISummaryService());
+    final analysisService = DataAnalysisService(IsarDatabase());
     final chartService = ChartGenerationService();
     final docxService = DocxWriterService();
+
+    // 设置数据服务
+    dataService.setDataService(analysisService);
 
     // 准备报告数据
     final reportContent = await dataService.prepareReportData(
@@ -139,8 +149,12 @@ class QuarterlyReportGenerator implements ReportGenerator {
 
     // 创建所需的服务
     final dataService = ReportDataService(AISummaryService());
+    final analysisService = DataAnalysisService(IsarDatabase());
     final chartService = ChartGenerationService();
     final docxService = DocxWriterService();
+
+    // 设置数据服务
+    dataService.setDataService(analysisService);
 
     // 准备报告数据
     final reportContent = await dataService.prepareReportData(
@@ -189,8 +203,12 @@ class AnnualReportGenerator implements ReportGenerator {
 
     // 创建所需的服务
     final dataService = ReportDataService(AISummaryService());
+    final analysisService = DataAnalysisService(IsarDatabase());
     final chartService = ChartGenerationService();
     final docxService = DocxWriterService();
+
+    // 设置数据服务
+    dataService.setDataService(analysisService);
 
     // 准备报告数据
     final reportContent = await dataService.prepareReportData(
