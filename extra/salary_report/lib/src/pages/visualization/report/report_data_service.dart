@@ -282,6 +282,15 @@ class ReportDataService {
       departmentStats,
     );
 
+    // 生成薪资结构合理性评估与优化建议
+    final salaryStructureAdvice = await _aiService
+        .generateSalaryStructureAdvice(
+          employeeDetails: employeeDetails,
+          departmentDetails: departmentDetails,
+          salaryRange: salaryRangeDesc,
+          salaryRangeFeature: salaryFeatureSummary,
+        );
+
     // Convert markdown format to plain text for salary analysis
     final departmentAnalysisText = departmentAnalysis
         .replaceAll(RegExp(r'\$1'), '') // Remove $1 markers
@@ -342,6 +351,7 @@ class ReportDataService {
       basicSalaryRate: 85.0, // Example value
       performanceSalaryRate: 15.0, // Example value
       salaryStructure: salaryStructureAnalysis, // 薪资结构分析
+      salaryStructureAdvice: salaryStructureAdvice, // 薪资结构合理性评估与优化建议
       salaryStructureData: salaryStructureData, // 薪资结构数据用于图表
       departmentStats: departmentStats,
     );

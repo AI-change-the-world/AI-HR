@@ -86,7 +86,52 @@ $departmentData
     }
   }
 
-  final String _salaryAnalysisPrompt = """
+  String formatContent(String content) {
+    content = content.replaceAll("\n\n", "\n"); // Remove extra newlines
+    List<String> lines = content.split('\n');
+    logger.info('Formatting content length: ${lines.length}');
+    StringBuffer sb = StringBuffer();
+    for (int i = 0; i < lines.length; i++) {
+      String line = lines[i];
+      if (line.trim().isEmpty || line.length < 3) {
+        continue;
+      }
+      if (i > 0) {
+        line = "\u00A0\u00A0$line";
+      }
+      sb.writeln(line);
+    }
+    return sb.toString();
+  }
+
+  /// 生成薪资结构合理性评估与优化建议
+  Future<String> generateSalaryStructureAdvice({
+    required String employeeDetails,
+    required String departmentDetails,
+    required String salaryRange,
+    required String salaryRangeFeature,
+  }) async {
+    if (!AIConfig.aiEnabled) return "";
+
+    try {
+      final prompt = _monthlySalaryAnalysisPrompt
+          .replaceAll('{{employee_details}}', employeeDetails)
+          .replaceAll('{{department_details}}', departmentDetails)
+          .replaceAll('{{salary_range}}', salaryRange)
+          .replaceAll('{{salary_range_feature}}', salaryRangeFeature);
+
+      final formatted = formatContent(await _llmClient.getAnswer(prompt));
+
+      logger.info('AI salary structure advice: $formatted');
+
+      return formatted;
+    } catch (e) {
+      logger.info('AI salary structure advice failed: $e');
+      return ""; // Fallback to empty
+    }
+  }
+
+  final String _monthlySalaryAnalysisPrompt = """
 请基于以下数据，对公司的薪资结构进行合理性评估，并提出优化建议。
 
 【数据说明】
@@ -96,23 +141,23 @@ $departmentData
 
 【任务要求】
 1. 对公司整体薪资结构进行评估，涵盖以下角度：
-   - 内部公平性：同层级、同岗位之间薪酬差异是否合理；
-   - 部门差异性：不同部门之间平均薪资差异是否符合职能定位；
-   - 纵向梯度：不同职级之间薪资层次是否清晰；
-   - 激励作用：薪酬结构是否能有效支持绩效导向与人才激励。
-
-2. 结合数据分析主要问题及潜在风险，例如：核心部门薪资偏低导致人才流失风险、部分支持部门薪酬过高导致成本压力等。
-
+   - 内部公平性
+   - 部门差异性
+   - 纵向梯度
+   - 激励作用
+2. 结合数据分析主要问题及潜在风险。
 3. 提出优化建议，包括但不限于：
-   - 调整固定薪酬与浮动薪酬比例；
-   - 建立分层级的薪酬带宽；
-   - 进行市场薪酬对标，优化核心岗位薪资水平；
-   - 控制人力成本占比，提升薪酬激励效果。
+   - 调整固定薪酬与浮动薪酬比例
+   - 建立分层级的薪酬带宽
+   - 进行市场薪酬对标
+   - 控制人力成本占比
 
 【输出要求】
-- 用报告风格，语言简洁严谨；
-- 输出分为两个部分：“合理性评估” 与 “优化建议”；
-- 仅输出评估内容和建议，不要包含解释性文字或额外说明。
+- 用报告风格，语言简洁严谨。
+- 输出分为两部分：“合理性评估” 与 “优化建议”,不需要添加额外的标题或段落标题，只需要两个段落即可。
+- 仅输出连续的纯文本，不要使用任何 Markdown 标记（如#、-、*）、列表符号或额外说明。
+- 按段落组织内容，而不是项目符号。
+
 
 【输入数据】
 员工详细信息： {{employee_details}}

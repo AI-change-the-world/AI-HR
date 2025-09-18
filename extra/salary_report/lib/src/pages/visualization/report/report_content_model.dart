@@ -42,6 +42,7 @@ class ReportContentModel {
   final double basicSalaryRate;
   final double performanceSalaryRate;
   final String salaryStructure; // 薪资结构分析
+  final String salaryStructureAdvice; // 薪资结构合理性评估与优化建议
   final List<Map<String, dynamic>> salaryStructureData; // 薪资结构数据用于图表
   final List<DepartmentSalaryStats> departmentStats;
   // ... add any other fields you need
@@ -69,6 +70,7 @@ class ReportContentModel {
     required this.basicSalaryRate,
     required this.performanceSalaryRate,
     required this.salaryStructure, // 薪资结构分析
+    required this.salaryStructureAdvice, // 薪资结构合理性评估与优化建议
     required this.salaryStructureData, // 薪资结构数据用于图表
     required this.departmentStats,
   });

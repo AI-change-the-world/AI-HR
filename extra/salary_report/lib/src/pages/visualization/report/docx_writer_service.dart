@@ -163,7 +163,10 @@ class DocxWriterService {
         ),
       )
       ..add(TextContent('salary_structure_analysis', data.salaryStructure))
-      ..add(TextContent('salary_structure', data.salaryStructure));
+      ..add(TextContent('salary_structure', data.salaryStructure))
+      ..add(
+        TextContent('salary_structure_advice', data.salaryStructureAdvice),
+      ); // 添加薪资结构建议
 
     // 添加 compare_last 如果不为空
     if (data.compareLast.isEmpty) {

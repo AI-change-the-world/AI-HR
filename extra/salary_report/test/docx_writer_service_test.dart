@@ -26,6 +26,7 @@ ReportContentModel _createMockReportContentModel() {
     basicSalaryRate: 0.7,
     performanceSalaryRate: 0.3,
     salaryStructure: 'Salary structure',
+    salaryStructureAdvice: 'Salary structure advice', // 添加薪资结构建议字段
     salaryStructureData: [],
     departmentStats: [],
   );
