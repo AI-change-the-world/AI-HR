@@ -32,15 +32,57 @@ class DocxWriterService {
       throw Exception('Failed to generate DOCX file.');
     }
 
-    // 保存文件
+    // 保存文件，使用更具描述性的文件名
     final dir = await getApplicationDocumentsDirectory();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final outputPath = '${dir.path}/salary_report_$timestamp.docx';
+    final formattedTime = _formatDateTime(DateTime.now());
+    final reportName = _generateReportName(data, reportType, formattedTime);
+    final outputPath = '${dir.path}/$reportName.docx';
     final outputFile = File(outputPath);
     await outputFile.writeAsBytes(generatedBytes);
 
     logger.info('Report successfully generated at: $outputPath');
     return outputPath;
+  }
+
+  /// 格式化日期时间
+  String _formatDateTime(DateTime dateTime) {
+    return '${dateTime.year}${dateTime.month.toString().padLeft(2, '0')}${dateTime.day.toString().padLeft(2, '0')}_${dateTime.hour.toString().padLeft(2, '0')}${dateTime.minute.toString().padLeft(2, '0')}${dateTime.second.toString().padLeft(2, '0')}';
+  }
+
+  /// 生成报告文件名
+  String _generateReportName(
+    ReportContentModel data,
+    ReportType type,
+    String timestamp,
+  ) {
+    final companyName = data.companyName;
+    final reportTime = data.reportTime;
+
+    // 根据报告类型生成相应的描述
+    String typeDescription;
+    switch (type) {
+      case ReportType.monthly:
+        typeDescription = '月度';
+        break;
+      case ReportType.multiMonth:
+        typeDescription = '多月';
+        break;
+      case ReportType.quarterly:
+        typeDescription = '季度';
+        break;
+      case ReportType.annual:
+        typeDescription = '年度';
+        break;
+    }
+
+    // 移除报告时间中的特殊字符，使其适合文件名
+    final cleanReportTime = reportTime.replaceAll(
+      RegExp(r'[^\w\u4e00-\u9fa5]'),
+      '',
+    );
+
+    return '${companyName}_${reportTime}_${typeDescription}报告_$timestamp';
   }
 
   /// 根据报告类型获取模板路径
