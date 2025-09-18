@@ -40,13 +40,13 @@ class MonthlyReportGenerator implements ReportGenerator {
     // 执行单月报告特有的业务逻辑
 
     // 创建所需的服务
-    final dataService = ReportDataService(AISummaryService());
     final analysisService = DataAnalysisService(IsarDatabase());
+    final dataService = ReportDataService(
+      aiService: AISummaryService(),
+      dataService: analysisService, // 通过构造函数注入dataService
+    );
     final chartService = ChartGenerationService();
     final docxService = DocxWriterService();
-
-    // 设置数据服务
-    dataService.setDataService(analysisService);
 
     // 准备报告数据
     final reportContent = await dataService.prepareReportData(
@@ -54,7 +54,7 @@ class MonthlyReportGenerator implements ReportGenerator {
       analysisData: data.analysisData,
       year: data.year,
       month: data.month,
-      isMultiMonth: data.isMultiMonth,
+      isMultiMonth: false, // 单月报告
       startTime: data.startTime,
       endTime: data.endTime,
     );
@@ -94,26 +94,26 @@ class MultiMonthReportGenerator implements ReportGenerator {
     // 执行多月报告特有的业务逻辑
 
     // 创建所需的服务
-    final dataService = ReportDataService(AISummaryService());
     final analysisService = DataAnalysisService(IsarDatabase());
+    final dataService = ReportDataService(
+      aiService: AISummaryService(),
+      dataService: analysisService, // 通过构造函数注入dataService
+    );
     final chartService = ChartGenerationService();
     final docxService = DocxWriterService();
 
-    // 设置数据服务
-    dataService.setDataService(analysisService);
-
-    // 准备报告数据
+    // 准备报告数据 - 多月报告需要特殊的处理
     final reportContent = await dataService.prepareReportData(
       departmentStats: data.departmentStats,
       analysisData: data.analysisData,
       year: data.year,
       month: data.month,
-      isMultiMonth: data.isMultiMonth,
+      isMultiMonth: true, // 明确设置为多月报告
       startTime: data.startTime,
       endTime: data.endTime,
     );
 
-    // 生成图表
+    // 生成图表 - 多月报告可能需要不同的图表类型
     final salaryRanges = dataService.calculateSalaryRanges(
       data.departmentStats,
     );
@@ -122,6 +122,18 @@ class MultiMonthReportGenerator implements ReportGenerator {
       departmentStats: data.departmentStats,
       salaryRanges: salaryRanges,
       salaryStructureData: reportContent.salaryStructureData,
+      // 多月报告专用图表数据
+      employeeCountPerMonth: reportContent.employeeCountPerMonth,
+      averageSalaryPerMonth: reportContent.averageSalaryPerMonth,
+      totalSalaryPerMonth: reportContent.totalSalaryPerMonth,
+      departmentDetailsPerMonth: reportContent.departmentDetailsPerMonth,
+      // 传递最后一个月的部门统计数据用于图表生成
+      lastMonthDepartmentStats:
+          data.analysisData.containsKey('lastMonthDepartmentStats')
+          ? List<Map<String, dynamic>>.from(
+              data.analysisData['lastMonthDepartmentStats'] as List,
+            )
+          : null,
     );
 
     // 生成报告文件
@@ -148,26 +160,26 @@ class QuarterlyReportGenerator implements ReportGenerator {
     // 执行季度报告特有的业务逻辑
 
     // 创建所需的服务
-    final dataService = ReportDataService(AISummaryService());
     final analysisService = DataAnalysisService(IsarDatabase());
+    final dataService = ReportDataService(
+      aiService: AISummaryService(),
+      dataService: analysisService, // 通过构造函数注入dataService
+    );
     final chartService = ChartGenerationService();
     final docxService = DocxWriterService();
 
-    // 设置数据服务
-    dataService.setDataService(analysisService);
-
-    // 准备报告数据
+    // 准备报告数据 - 季度报告需要特殊的处理
     final reportContent = await dataService.prepareReportData(
       departmentStats: data.departmentStats,
       analysisData: data.analysisData,
       year: data.year,
       month: data.month,
-      isMultiMonth: data.isMultiMonth,
+      isMultiMonth: true, // 季度报告也是多月报告的一种
       startTime: data.startTime,
       endTime: data.endTime,
     );
 
-    // 生成图表
+    // 生成图表 - 季度报告可能需要不同的图表类型
     final salaryRanges = dataService.calculateSalaryRanges(
       data.departmentStats,
     );
@@ -176,6 +188,18 @@ class QuarterlyReportGenerator implements ReportGenerator {
       departmentStats: data.departmentStats,
       salaryRanges: salaryRanges,
       salaryStructureData: reportContent.salaryStructureData,
+      // 季度报告也可以使用多月报告的图表数据
+      employeeCountPerMonth: reportContent.employeeCountPerMonth,
+      averageSalaryPerMonth: reportContent.averageSalaryPerMonth,
+      totalSalaryPerMonth: reportContent.totalSalaryPerMonth,
+      departmentDetailsPerMonth: reportContent.departmentDetailsPerMonth,
+      // 传递最后一个月的部门统计数据用于图表生成
+      lastMonthDepartmentStats:
+          data.analysisData.containsKey('lastMonthDepartmentStats')
+          ? List<Map<String, dynamic>>.from(
+              data.analysisData['lastMonthDepartmentStats'] as List,
+            )
+          : null,
     );
 
     // 生成报告文件
@@ -202,26 +226,26 @@ class AnnualReportGenerator implements ReportGenerator {
     // 执行年度报告特有的业务逻辑
 
     // 创建所需的服务
-    final dataService = ReportDataService(AISummaryService());
     final analysisService = DataAnalysisService(IsarDatabase());
+    final dataService = ReportDataService(
+      aiService: AISummaryService(),
+      dataService: analysisService, // 通过构造函数注入dataService
+    );
     final chartService = ChartGenerationService();
     final docxService = DocxWriterService();
 
-    // 设置数据服务
-    dataService.setDataService(analysisService);
-
-    // 准备报告数据
+    // 准备报告数据 - 年度报告需要特殊的处理
     final reportContent = await dataService.prepareReportData(
       departmentStats: data.departmentStats,
       analysisData: data.analysisData,
       year: data.year,
       month: data.month,
-      isMultiMonth: data.isMultiMonth,
+      isMultiMonth: true, // 年度报告也是多月报告的一种
       startTime: data.startTime,
       endTime: data.endTime,
     );
 
-    // 生成图表
+    // 生成图表 - 年度报告可能需要不同的图表类型
     final salaryRanges = dataService.calculateSalaryRanges(
       data.departmentStats,
     );
@@ -230,6 +254,18 @@ class AnnualReportGenerator implements ReportGenerator {
       departmentStats: data.departmentStats,
       salaryRanges: salaryRanges,
       salaryStructureData: reportContent.salaryStructureData,
+      // 年度报告也可以使用多月报告的图表数据
+      employeeCountPerMonth: reportContent.employeeCountPerMonth,
+      averageSalaryPerMonth: reportContent.averageSalaryPerMonth,
+      totalSalaryPerMonth: reportContent.totalSalaryPerMonth,
+      departmentDetailsPerMonth: reportContent.departmentDetailsPerMonth,
+      // 传递最后一个月的部门统计数据用于图表生成
+      lastMonthDepartmentStats:
+          data.analysisData.containsKey('lastMonthDepartmentStats')
+          ? List<Map<String, dynamic>>.from(
+              data.analysisData['lastMonthDepartmentStats'] as List,
+            )
+          : null,
     );
 
     // 生成报告文件

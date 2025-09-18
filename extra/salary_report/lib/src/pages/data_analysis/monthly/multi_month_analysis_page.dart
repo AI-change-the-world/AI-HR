@@ -4,10 +4,10 @@ import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/components/attendance_pagination.dart';
 import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
-import 'package:salary_report/src/pages/visualization/report/report_types.dart'; // 添加这一行导入
+import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:toastification/toastification.dart';
-// 添加数据库导入
-// 添加riverpod导入
+
+import 'package:salary_report/src/components/salary_charts.dart';
 
 class MultiMonthAnalysisPage extends StatefulWidget {
   const MultiMonthAnalysisPage({
@@ -19,7 +19,7 @@ class MultiMonthAnalysisPage extends StatefulWidget {
     this.departmentStats = const [],
     this.attendanceStats = const [],
     this.leaveRatioStats,
-    required this.dataAnalysisService, // 添加数据服务参数
+    required this.dataAnalysisService,
   });
 
   final int year;
@@ -29,7 +29,7 @@ class MultiMonthAnalysisPage extends StatefulWidget {
   final List<DepartmentSalaryStats> departmentStats;
   final List<AttendanceStats> attendanceStats;
   final LeaveRatioStats? leaveRatioStats;
-  final DataAnalysisService dataAnalysisService; // 添加数据服务字段
+  final DataAnalysisService dataAnalysisService;
 
   @override
   State<MultiMonthAnalysisPage> createState() => _MultiMonthAnalysisPageState();
@@ -39,8 +39,8 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
   late Map<String, dynamic> _analysisData;
   final GlobalKey _chartContainerKey = GlobalKey();
   bool _isGeneratingReport = false;
-  List<LeaveRatioStats> _monthlyLeaveRatioStats = []; // 添加每月请假比例统计数据
-  bool _isLoading = true; // 添加加载状态
+  List<LeaveRatioStats> _monthlyLeaveRatioStats = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -118,6 +118,41 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
       // 为多月情况准备月度数据
       final monthlyData = _generateMonthlyData(monthlyDepartmentStats);
 
+      // 计算每月人数变化数据（包含部门详情）
+      final employeeCountPerMonth = _calculateEmployeeCountPerMonth(
+        groupedDepartmentStats,
+      );
+
+      // 计算每月平均薪资变化数据
+      final averageSalaryPerMonth = _calculateAverageSalaryPerMonth(
+        groupedDepartmentStats,
+      );
+
+      // 计算每月总工资变化数据
+      final totalSalaryPerMonth = _calculateTotalSalaryPerMonth(
+        groupedDepartmentStats,
+      );
+
+      // 计算每月各部门详情数据
+      final departmentDetailsPerMonth = _calculateDepartmentDetailsPerMonth(
+        groupedDepartmentStats,
+      );
+
+      // 计算每月薪资区间分布数据
+      final monthlySalaryRanges = _calculateMonthlySalaryRanges(
+        groupedDepartmentStats,
+      );
+
+      // 计算每月薪资排名数据
+      final monthlySalaryRankings = _calculateMonthlySalaryRankings(
+        groupedDepartmentStats,
+      );
+
+      // 获取最后一个月的部门统计数据（用于图表生成）
+      final lastMonthDepartmentStats = _getLastMonthDepartmentStats(
+        groupedDepartmentStats,
+      );
+
       _analysisData = {
         'monthlyDepartmentStats': groupedDepartmentStats, // 每月部门统计数据
         'monthlyAttendanceStats': groupedAttendanceStats, // 每月考勤统计数据
@@ -130,6 +165,15 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
         'averageSalary': overallStats['averageSalary'],
         'highestSalary': overallStats['highestSalary'],
         'lowestSalary': overallStats['lowestSalary'],
+        // 多月报告专用数据
+        'monthlyEmployeeCount': employeeCountPerMonth, // 每月人数变化数据（包含部门详情）
+        'monthlyAverageSalary': averageSalaryPerMonth, // 每月平均薪资变化数据
+        'monthlyTotalSalary': totalSalaryPerMonth, // 每月总工资变化数据
+        'monthlyDepartmentDetails': departmentDetailsPerMonth, // 每月各部门详情数据
+        'monthlySalaryRanges': monthlySalaryRanges, // 每月薪资区间分布数据
+        'monthlySalaryRankings': monthlySalaryRankings, // 每月薪资排名数据
+        'lastMonthDepartmentStats':
+            lastMonthDepartmentStats, // 最后一个月部门统计数据（用于图表）
       };
 
       _isLoading = false;
@@ -365,7 +409,7 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
         month: widget.month,
         isMultiMonth: true,
         startTime: startTime,
-        reportType: ReportType.multiMonth, // 添加这一行来指定报告类型
+        reportType: ReportType.multiMonth, // 明确指定报告类型
       );
 
       if (mounted) {
@@ -474,6 +518,90 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
                   ),
                   const SizedBox(height: 12),
                   _buildMonthlyLeaveRatioStats(),
+
+                  const SizedBox(height: 24),
+
+                  // 每月人数变化趋势图
+                  const Text(
+                    '每月人数变化趋势',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Container(
+                      height: 300,
+                      padding: const EdgeInsets.all(16.0),
+                      child: MonthlyEmployeeCountChart(
+                        monthlyData: _calculateEmployeeCountPerMonth(
+                          _analysisData['monthlyDepartmentStats']
+                              as Map<String, List<Map<String, dynamic>>>,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // 每月平均薪资变化趋势图
+                  const Text(
+                    '每月平均薪资变化趋势',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Container(
+                      height: 300,
+                      padding: const EdgeInsets.all(16.0),
+                      child: MonthlyAverageSalaryChart(
+                        monthlyData: _calculateAverageSalaryPerMonth(
+                          _analysisData['monthlyDepartmentStats']
+                              as Map<String, List<Map<String, dynamic>>>,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // 每月总工资变化趋势图
+                  const Text(
+                    '每月总工资变化趋势',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Container(
+                      height: 300,
+                      padding: const EdgeInsets.all(16.0),
+                      child: MonthlyTotalSalaryChart(
+                        monthlyData: _calculateTotalSalaryPerMonth(
+                          _analysisData['monthlyDepartmentStats']
+                              as Map<String, List<Map<String, dynamic>>>,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // 各部门平均薪资趋势图
+                  const Text(
+                    '各部门平均薪资趋势',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Container(
+                      height: 300,
+                      padding: const EdgeInsets.all(16.0),
+                      child: MultiMonthDepartmentSalaryChart(
+                        departmentMonthlyData: _prepareDepartmentMonthlyData(
+                          _analysisData['monthlyDepartmentStats']
+                              as Map<String, List<Map<String, dynamic>>>,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -836,5 +964,347 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
         ),
       ),
     );
+  }
+
+  /// 计算每月人数变化数据（包含部门详情）
+  List<Map<String, dynamic>> _calculateEmployeeCountPerMonth(
+    Map<String, List<Map<String, dynamic>>> monthlyDepartmentStats,
+  ) {
+    final List<Map<String, dynamic>> employeeCountPerMonth = [];
+
+    monthlyDepartmentStats.forEach((monthKey, departmentStats) {
+      int totalEmployees = 0;
+
+      for (var stat in departmentStats) {
+        totalEmployees += stat['count'] as int;
+      }
+
+      // 解析月份信息
+      final parts = monthKey.split('-');
+      final year = parts[0];
+      final month = parts[1];
+
+      // 添加部门详情信息
+      employeeCountPerMonth.add({
+        'month': '$year年$month月',
+        'year': int.parse(year),
+        'monthNum': int.parse(month),
+        'employeeCount': totalEmployees,
+        'departments': departmentStats, // 添加部门详情
+      });
+    });
+
+    // 按时间排序
+    employeeCountPerMonth.sort((a, b) {
+      if (a['year'] != b['year']) {
+        return (a['year'] as int).compareTo(b['year'] as int);
+      }
+      return (a['monthNum'] as int).compareTo(b['monthNum'] as int);
+    });
+
+    return employeeCountPerMonth;
+  }
+
+  /// 计算每月平均薪资变化数据
+  List<Map<String, dynamic>> _calculateAverageSalaryPerMonth(
+    Map<String, List<Map<String, dynamic>>> monthlyDepartmentStats,
+  ) {
+    final List<Map<String, dynamic>> averageSalaryPerMonth = [];
+
+    monthlyDepartmentStats.forEach((monthKey, departmentStats) {
+      int totalEmployees = 0;
+      double totalSalary = 0;
+
+      for (var stat in departmentStats) {
+        totalEmployees += stat['count'] as int;
+        totalSalary += stat['total'] as double;
+      }
+
+      final averageSalary = totalEmployees > 0
+          ? totalSalary / totalEmployees
+          : 0;
+
+      // 解析月份信息
+      final parts = monthKey.split('-');
+      final year = parts[0];
+      final month = parts[1];
+
+      averageSalaryPerMonth.add({
+        'month': '$year年$month月',
+        'year': int.parse(year),
+        'monthNum': int.parse(month),
+        'averageSalary': averageSalary,
+      });
+    });
+
+    // 按时间排序
+    averageSalaryPerMonth.sort((a, b) {
+      if (a['year'] != b['year']) {
+        return (a['year'] as int).compareTo(b['year'] as int);
+      }
+      return (a['monthNum'] as int).compareTo(b['monthNum'] as int);
+    });
+
+    return averageSalaryPerMonth;
+  }
+
+  /// 计算每月总工资变化数据
+  List<Map<String, dynamic>> _calculateTotalSalaryPerMonth(
+    Map<String, List<Map<String, dynamic>>> monthlyDepartmentStats,
+  ) {
+    final List<Map<String, dynamic>> totalSalaryPerMonth = [];
+
+    monthlyDepartmentStats.forEach((monthKey, departmentStats) {
+      double totalSalary = 0;
+
+      for (var stat in departmentStats) {
+        totalSalary += stat['total'] as double;
+      }
+
+      // 解析月份信息
+      final parts = monthKey.split('-');
+      final year = parts[0];
+      final month = parts[1];
+
+      totalSalaryPerMonth.add({
+        'month': '$year年$month月',
+        'year': int.parse(year),
+        'monthNum': int.parse(month),
+        'totalSalary': totalSalary,
+      });
+    });
+
+    // 按时间排序
+    totalSalaryPerMonth.sort((a, b) {
+      if (a['year'] != b['year']) {
+        return (a['year'] as int).compareTo(b['year'] as int);
+      }
+      return (a['monthNum'] as int).compareTo(b['monthNum'] as int);
+    });
+
+    return totalSalaryPerMonth;
+  }
+
+  /// 计算每月各部门详情数据
+  List<Map<String, dynamic>> _calculateDepartmentDetailsPerMonth(
+    Map<String, List<Map<String, dynamic>>> monthlyDepartmentStats,
+  ) {
+    final List<Map<String, dynamic>> departmentDetailsPerMonth = [];
+
+    monthlyDepartmentStats.forEach((monthKey, departmentStats) {
+      // 解析月份信息
+      final parts = monthKey.split('-');
+      final year = parts[0];
+      final month = parts[1];
+
+      final monthData = {
+        'month': '$year年$month月',
+        'year': int.parse(year),
+        'monthNum': int.parse(month),
+        'departments': <Map<String, dynamic>>[],
+      };
+
+      for (var stat in departmentStats) {
+        (monthData['departments'] as List<Map<String, dynamic>>).add({
+          'department': stat['department'] as String,
+          'employeeCount': stat['count'] as int,
+          'averageSalary': stat['average'] as double,
+          'totalSalary': stat['total'] as double,
+        });
+      }
+
+      departmentDetailsPerMonth.add(monthData);
+    });
+
+    // 按时间排序
+    departmentDetailsPerMonth.sort((a, b) {
+      if (a['year'] != b['year']) {
+        return (a['year'] as int).compareTo(b['year'] as int);
+      }
+      return (a['monthNum'] as int).compareTo(b['monthNum'] as int);
+    });
+
+    return departmentDetailsPerMonth;
+  }
+
+  /// 计算每月薪资区间分布数据
+  List<Map<String, dynamic>> _calculateMonthlySalaryRanges(
+    Map<String, List<Map<String, dynamic>>> monthlyDepartmentStats,
+  ) {
+    final List<Map<String, dynamic>> monthlySalaryRanges = [];
+
+    monthlyDepartmentStats.forEach((monthKey, departmentStats) {
+      // 计算该月份的薪资区间分布
+      final ranges = <String, int>{};
+      for (var stat in departmentStats) {
+        final salary = stat['average'] as double;
+        String range;
+        if (salary < 3000) {
+          range = '< 3000';
+        } else if (salary < 4000) {
+          range = '3000-4000';
+        } else if (salary < 5000) {
+          range = '4000-5000';
+        } else if (salary < 6000) {
+          range = '5000-6000';
+        } else if (salary < 7000) {
+          range = '6000-7000';
+        } else if (salary < 8000) {
+          range = '7000-8000';
+        } else if (salary < 9000) {
+          range = '8000-9000';
+        } else if (salary < 10000) {
+          range = '9000-10000';
+        } else {
+          range = '> 10000';
+        }
+        ranges[range] = (ranges[range] ?? 0) + (stat['count'] as int);
+      }
+
+      // 解析月份信息
+      final parts = monthKey.split('-');
+      final year = parts[0];
+      final month = parts[1];
+
+      monthlySalaryRanges.add({
+        'month': '$year年$month月',
+        'year': int.parse(year),
+        'monthNum': int.parse(month),
+        'salaryRanges': ranges,
+      });
+    });
+
+    // 按时间排序
+    monthlySalaryRanges.sort((a, b) {
+      if (a['year'] != b['year']) {
+        return (a['year'] as int).compareTo(b['year'] as int);
+      }
+      return (a['monthNum'] as int).compareTo(b['monthNum'] as int);
+    });
+
+    return monthlySalaryRanges;
+  }
+
+  /// 计算每月薪资排名数据
+  List<Map<String, dynamic>> _calculateMonthlySalaryRankings(
+    Map<String, List<Map<String, dynamic>>> monthlyDepartmentStats,
+  ) {
+    final List<Map<String, dynamic>> monthlySalaryRankings = [];
+
+    monthlyDepartmentStats.forEach((monthKey, departmentStats) {
+      // 按平均薪资排序
+      final sortedDepts = List<Map<String, dynamic>>.from(departmentStats)
+        ..sort(
+          (a, b) => (b['average'] as double).compareTo(a['average'] as double),
+        );
+
+      // 解析月份信息
+      final parts = monthKey.split('-');
+      final year = parts[0];
+      final month = parts[1];
+
+      monthlySalaryRankings.add({
+        'month': '$year年$month月',
+        'year': int.parse(year),
+        'monthNum': int.parse(month),
+        'rankings': sortedDepts,
+      });
+    });
+
+    // 按时间排序
+    monthlySalaryRankings.sort((a, b) {
+      if (a['year'] != b['year']) {
+        return (a['year'] as int).compareTo(b['year'] as int);
+      }
+      return (a['monthNum'] as int).compareTo(b['monthNum'] as int);
+    });
+
+    return monthlySalaryRankings;
+  }
+
+  /// 获取最后一个月的部门统计数据（用于图表生成）
+  List<Map<String, dynamic>> _getLastMonthDepartmentStats(
+    Map<String, List<Map<String, dynamic>>> monthlyDepartmentStats,
+  ) {
+    if (monthlyDepartmentStats.isEmpty) {
+      return [];
+    }
+
+    // 按时间排序，获取最后一个月的数据
+    final sortedEntries = monthlyDepartmentStats.entries.toList()
+      ..sort((a, b) {
+        final aParts = a.key.split('-');
+        final bParts = b.key.split('-');
+        final aYear = int.parse(aParts[0]);
+        final aMonth = int.parse(aParts[1]);
+        final bYear = int.parse(bParts[0]);
+        final bMonth = int.parse(bParts[1]);
+
+        if (aYear != bYear) {
+          return aYear.compareTo(bYear);
+        }
+        return aMonth.compareTo(bMonth);
+      });
+
+    // 获取最后一个月的数据
+    final lastMonthEntry = sortedEntries.last;
+    final departmentStats = lastMonthEntry.value;
+
+    // 转换为图表所需格式
+    return departmentStats.map((stat) {
+      return {
+        'department': stat['department'] as String,
+        'employeeCount': stat['count'] as int,
+        'averageSalary': stat['average'] as double,
+        'totalSalary': stat['total'] as double,
+      };
+    }).toList();
+  }
+
+  /// 准备部门月度数据用于图表显示
+  List<Map<String, dynamic>> _prepareDepartmentMonthlyData(
+    Map<String, List<Map<String, dynamic>>> monthlyDepartmentStats,
+  ) {
+    final List<Map<String, dynamic>> result = [];
+
+    monthlyDepartmentStats.forEach((monthKey, departmentStats) {
+      // 解析月份信息
+      final parts = monthKey.split('-');
+      final year = parts[0];
+      final month = parts[1];
+      final monthLabel = '$year年$month月';
+
+      // 构建部门数据映射
+      final departmentData = <String, double>{};
+      for (var stat in departmentStats) {
+        departmentData[stat['department'] as String] =
+            stat['average'] as double;
+      }
+
+      result.add({'month': monthLabel, 'departments': departmentData});
+    });
+
+    // 按时间排序
+    result.sort((a, b) {
+      final aParts = (a['month'] as String)
+          .replaceAll('年', '-')
+          .replaceAll('月', '')
+          .split('-');
+      final bParts = (b['month'] as String)
+          .replaceAll('年', '-')
+          .replaceAll('月', '')
+          .split('-');
+      final aYear = int.parse(aParts[0]);
+      final aMonth = int.parse(aParts[1]);
+      final bYear = int.parse(bParts[0]);
+      final bMonth = int.parse(bParts[1]);
+
+      if (aYear != bYear) {
+        return aYear.compareTo(bYear);
+      }
+      return aMonth.compareTo(bMonth);
+    });
+
+    return result;
   }
 }

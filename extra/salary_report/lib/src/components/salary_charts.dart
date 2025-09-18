@@ -128,3 +128,87 @@ class MultiMonthDepartmentSalaryChart extends StatelessWidget {
     return series;
   }
 }
+
+/// 每月人数变化图表
+class MonthlyEmployeeCountChart extends StatelessWidget {
+  final List<Map<String, dynamic>> monthlyData;
+
+  const MonthlyEmployeeCountChart({super.key, required this.monthlyData});
+
+  @override
+  Widget build(BuildContext context) {
+    return SfCartesianChart(
+      title: ChartTitle(text: '每月人数变化'),
+      primaryXAxis: CategoryAxis(),
+      primaryYAxis: NumericAxis(),
+      tooltipBehavior: TooltipBehavior(enable: true),
+      series: <LineSeries<Map<String, dynamic>, String>>[
+        LineSeries<Map<String, dynamic>, String>(
+          dataSource: monthlyData,
+          xValueMapper: (Map<String, dynamic> data, _) =>
+              data['month'] as String,
+          yValueMapper: (Map<String, dynamic> data, _) =>
+              data['employeeCount'] as int,
+          dataLabelSettings: const DataLabelSettings(isVisible: true),
+          enableTooltip: true,
+        ),
+      ],
+    );
+  }
+}
+
+/// 每月平均薪资变化图表
+class MonthlyAverageSalaryChart extends StatelessWidget {
+  final List<Map<String, dynamic>> monthlyData;
+
+  const MonthlyAverageSalaryChart({super.key, required this.monthlyData});
+
+  @override
+  Widget build(BuildContext context) {
+    return SfCartesianChart(
+      title: ChartTitle(text: '每月平均薪资变化'),
+      primaryXAxis: CategoryAxis(),
+      primaryYAxis: NumericAxis(numberFormat: NumberFormat.simpleCurrency()),
+      tooltipBehavior: TooltipBehavior(enable: true),
+      series: <LineSeries<Map<String, dynamic>, String>>[
+        LineSeries<Map<String, dynamic>, String>(
+          dataSource: monthlyData,
+          xValueMapper: (Map<String, dynamic> data, _) =>
+              data['month'] as String,
+          yValueMapper: (Map<String, dynamic> data, _) =>
+              data['averageSalary'] as double,
+          dataLabelSettings: const DataLabelSettings(isVisible: true),
+          enableTooltip: true,
+        ),
+      ],
+    );
+  }
+}
+
+/// 每月总工资变化图表
+class MonthlyTotalSalaryChart extends StatelessWidget {
+  final List<Map<String, dynamic>> monthlyData;
+
+  const MonthlyTotalSalaryChart({super.key, required this.monthlyData});
+
+  @override
+  Widget build(BuildContext context) {
+    return SfCartesianChart(
+      title: ChartTitle(text: '每月总工资变化'),
+      primaryXAxis: CategoryAxis(),
+      primaryYAxis: NumericAxis(numberFormat: NumberFormat.simpleCurrency()),
+      tooltipBehavior: TooltipBehavior(enable: true),
+      series: <LineSeries<Map<String, dynamic>, String>>[
+        LineSeries<Map<String, dynamic>, String>(
+          dataSource: monthlyData,
+          xValueMapper: (Map<String, dynamic> data, _) =>
+              data['month'] as String,
+          yValueMapper: (Map<String, dynamic> data, _) =>
+              data['totalSalary'] as double,
+          dataLabelSettings: const DataLabelSettings(isVisible: true),
+          enableTooltip: true,
+        ),
+      ],
+    );
+  }
+}

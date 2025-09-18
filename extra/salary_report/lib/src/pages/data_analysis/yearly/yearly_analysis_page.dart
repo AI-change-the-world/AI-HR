@@ -4,6 +4,7 @@ import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/components/attendance_pagination.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
 import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
+import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:toastification/toastification.dart';
 
 class YearlyAnalysisPage extends StatefulWidget {
@@ -117,6 +118,7 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
         month: 0, // 年度报告没有月份
         isMultiMonth: widget.isMultiYear,
         startTime: startTime,
+        reportType: ReportType.annual, // 明确指定报告类型为年度报告
       );
 
       if (mounted) {

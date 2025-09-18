@@ -3,6 +3,7 @@ import 'package:loading_indicator/loading_indicator.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/components/attendance_pagination.dart';
 import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
+import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:toastification/toastification.dart';
 
 class QuarterlyAnalysisPage extends StatefulWidget {
@@ -134,6 +135,7 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
         month: widget.quarter,
         isMultiMonth: widget.isMultiQuarter,
         startTime: startTime,
+        reportType: ReportType.quarterly, // 明确指定报告类型为季度报告
       );
 
       if (mounted) {

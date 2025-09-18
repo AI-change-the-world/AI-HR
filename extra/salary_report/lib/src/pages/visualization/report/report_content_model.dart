@@ -9,12 +9,21 @@ class ReportChartImages {
   final Uint8List? departmentDetailsChart;
   final Uint8List? salaryRangeChart;
   final Uint8List? salaryStructureChart; // 薪资结构饼图
+  // 多月报告专用图表
+  final Uint8List? employeeCountPerMonthChart; // 每月人数变化图表
+  final Uint8List? averageSalaryPerMonthChart; // 每月平均薪资变化图表
+  final Uint8List? totalSalaryPerMonthChart; // 每月总工资变化图表
+  final Uint8List? departmentDetailsPerMonthChart; // 每月各部门详情图表
 
   ReportChartImages({
     this.mainChart,
     this.departmentDetailsChart,
     this.salaryRangeChart,
     this.salaryStructureChart, // 薪资结构饼图
+    this.employeeCountPerMonthChart, // 每月人数变化图表
+    this.averageSalaryPerMonthChart, // 每月平均薪资变化图表
+    this.totalSalaryPerMonthChart, // 每月总工资变化图表
+    this.departmentDetailsPerMonthChart, // 每月各部门详情图表
   });
 }
 
@@ -45,7 +54,12 @@ class ReportContentModel {
   final String salaryStructureAdvice; // 薪资结构合理性评估与优化建议
   final List<Map<String, dynamic>> salaryStructureData; // 薪资结构数据用于图表
   final List<DepartmentSalaryStats> departmentStats;
-  // ... add any other fields you need
+
+  // 多月报告专用字段
+  final List<Map<String, dynamic>>? employeeCountPerMonth; // 每月人数变化数据
+  final List<Map<String, dynamic>>? averageSalaryPerMonth; // 每月平均薪资变化数据
+  final List<Map<String, dynamic>>? totalSalaryPerMonth; // 每月总工资变化数据
+  final List<Map<String, dynamic>>? departmentDetailsPerMonth; // 每月各部门详情数据
 
   ReportContentModel({
     required this.reportTitle,
@@ -73,5 +87,10 @@ class ReportContentModel {
     required this.salaryStructureAdvice, // 薪资结构合理性评估与优化建议
     required this.salaryStructureData, // 薪资结构数据用于图表
     required this.departmentStats,
+    // 多月报告专用字段
+    this.employeeCountPerMonth, // 每月人数变化数据
+    this.averageSalaryPerMonth, // 每月平均薪资变化数据
+    this.totalSalaryPerMonth, // 每月总工资变化数据
+    this.departmentDetailsPerMonth, // 每月各部门详情数据
   });
 }
