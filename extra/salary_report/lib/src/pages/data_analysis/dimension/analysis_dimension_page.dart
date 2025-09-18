@@ -629,7 +629,7 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
       // 记录数据
       _logAnalysisResults(departmentStats, attendanceStats, leaveRatioStats);
 
-      // 导航到月度对比分析页面（需要创建一个新的页面来处理多个月份的对比）
+      // 导航到多月分析页面
       context.push(
         '/analysis/monthly?year=${timeRange.startDate.year}&month=${timeRange.startDate.month}&endYear=${timeRange.endDate.year}&endMonth=${timeRange.endDate.month}',
         extra: {

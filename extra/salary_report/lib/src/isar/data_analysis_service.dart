@@ -10,12 +10,16 @@ class DepartmentSalaryStats {
   final double totalNetSalary;
   final double averageNetSalary;
   final int employeeCount;
+  final int? year; // 添加年份字段
+  final int? month; // 添加月份字段
 
   DepartmentSalaryStats({
     required this.department,
     required this.totalNetSalary,
     required this.averageNetSalary,
     required this.employeeCount,
+    this.year,
+    this.month,
   });
 }
 
@@ -146,6 +150,9 @@ class DataAnalysisService {
             totalNetSalary: totalSalary,
             averageNetSalary: totalSalary / validRecordCount,
             employeeCount: validRecordCount,
+            // 添加年份和月份信息（如果是单月查询）
+            year: (year != null && month != null) ? year : null,
+            month: (year != null && month != null) ? month : null,
           ),
         );
       }

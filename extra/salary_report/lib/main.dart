@@ -8,6 +8,7 @@ import 'package:salary_report/src/pages/salary_management/upload/upload_page.dar
 import 'package:salary_report/src/pages/salary_management/detail/salary_detail_page.dart';
 import 'package:salary_report/src/pages/data_analysis/dimension/analysis_dimension_page.dart';
 import 'package:salary_report/src/pages/data_analysis/monthly/monthly_analysis_page.dart';
+import 'package:salary_report/src/pages/data_analysis/monthly/multi_month_analysis_page.dart';
 import 'package:salary_report/src/pages/data_analysis/yearly/yearly_analysis_page.dart';
 import 'package:salary_report/src/pages/data_analysis/quarterly/quarterly_analysis_page.dart';
 import 'package:salary_report/src/pages/visualization/chart/chart_page.dart';
@@ -77,6 +78,39 @@ class MyApp extends StatelessWidget {
                     // 获取传递的额外数据
                     final extra = state.extra as Map<String, dynamic>?;
 
+                    // 检查是否是多月分析
+                    final isMultiMonth =
+                        extra?['isMultiMonth'] as bool? ?? false;
+                    if (isMultiMonth) {
+                      final endYear = int.parse(
+                        state.uri.queryParameters['endYear'] ??
+                            state.uri.queryParameters['year'] ??
+                            '2023',
+                      );
+                      final endMonth = int.parse(
+                        state.uri.queryParameters['endMonth'] ??
+                            state.uri.queryParameters['month'] ??
+                            '8',
+                      );
+
+                      return MultiMonthAnalysisPage(
+                        year: year,
+                        month: month,
+                        endYear: endYear,
+                        endMonth: endMonth,
+                        departmentStats:
+                            extra?['departmentStats']
+                                as List<DepartmentSalaryStats>? ??
+                            [],
+                        attendanceStats:
+                            extra?['attendanceStats']
+                                as List<AttendanceStats>? ??
+                            [],
+                        leaveRatioStats:
+                            extra?['leaveRatioStats'] as LeaveRatioStats?,
+                      );
+                    }
+
                     return MonthlyAnalysisPage(
                       year: year,
                       month: month,
@@ -89,7 +123,7 @@ class MyApp extends StatelessWidget {
                           [],
                       leaveRatioStats:
                           extra?['leaveRatioStats'] as LeaveRatioStats?,
-                      isMultiMonth: extra?['isMultiMonth'] as bool? ?? false,
+                      isMultiMonth: isMultiMonth,
                     );
                   },
                 ),
