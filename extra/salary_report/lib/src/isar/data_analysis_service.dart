@@ -262,6 +262,121 @@ class DataAnalysisService {
     return stats;
   }
 
+  /// 获取多月部门工资统计数据（按月份分组）
+  Future<List<DepartmentSalaryStats>> getMonthlyDepartmentSalaryStats({
+    required int startYear,
+    required int startMonth,
+    required int endYear,
+    required int endMonth,
+    String? department,
+    String? name,
+  }) async {
+    final isar = _database.isar!;
+
+    // 构建查询
+    var queryBuilder = isar.salaryLists.where();
+
+    // 获取所有数据，然后在内存中过滤
+    final salaryLists = await queryBuilder.findAll();
+
+    // 在内存中过滤年份和月份
+    final filteredSalaryLists = <SalaryList>[];
+    for (var salaryList in salaryLists) {
+      bool yearMatch = true;
+      bool monthMatch = true;
+
+      // 年份过滤
+      if (startYear != null && endYear != null) {
+        yearMatch = salaryList.year >= startYear && salaryList.year <= endYear;
+      }
+
+      // 月份过滤
+      if (startMonth != null && endMonth != null) {
+        monthMatch =
+            salaryList.month >= startMonth && salaryList.month <= endMonth;
+      }
+
+      if (yearMatch && monthMatch) {
+        filteredSalaryLists.add(salaryList);
+      }
+    }
+
+    // 按月份分组计算
+    final stats = <DepartmentSalaryStats>[];
+
+    // 按月份分组计算
+    final monthlyData = <String, List<SalaryListRecord>>{};
+
+    for (var salaryList in filteredSalaryLists) {
+      final monthKey = '${salaryList.year}-${salaryList.month}';
+      if (!monthlyData.containsKey(monthKey)) {
+        monthlyData[monthKey] = [];
+      }
+
+      for (var record in salaryList.records) {
+        // 过滤条件
+        if (department != null && record.department != department) continue;
+        if (name != null && record.name != name) continue;
+        if (record.department == null || record.netSalary == null) continue;
+
+        monthlyData[monthKey]!.add(record);
+      }
+    }
+
+    // 为每个月份计算部门统计数据
+    monthlyData.forEach((monthKey, records) {
+      // 按部门分组
+      final deptMap = <String, List<SalaryListRecord>>{};
+      for (var record in records) {
+        final dept = record.department!;
+        if (!deptMap.containsKey(dept)) {
+          deptMap[dept] = [];
+        }
+        deptMap[dept]!.add(record);
+      }
+
+      // 计算每个部门的统计数据
+      deptMap.forEach((dept, deptRecords) {
+        double totalSalary = 0;
+        int validRecordCount = 0;
+
+        for (var record in deptRecords) {
+          if (record.netSalary != null) {
+            // 尝试解析实发工资字符串
+            final salaryStr = record.netSalary!.replaceAll(
+              RegExp(r'[^\d.-]'),
+              '',
+            );
+            if (double.tryParse(salaryStr) != null) {
+              totalSalary += double.parse(salaryStr);
+              validRecordCount++;
+            }
+          }
+        }
+
+        if (validRecordCount > 0) {
+          // 解析月份键
+          final parts = monthKey.split('-');
+          final statYear = int.parse(parts[0]);
+          final statMonth = int.parse(parts[1]);
+
+          stats.add(
+            DepartmentSalaryStats(
+              department: dept,
+              totalNetSalary: totalSalary,
+              averageNetSalary: totalSalary / validRecordCount,
+              employeeCount: validRecordCount,
+              year: statYear,
+              month: statMonth,
+            ),
+          );
+        }
+      });
+    });
+
+    return stats;
+  }
+
   /// 按月关注缺勤情况
   Future<List<AttendanceStats>> getMonthlyAttendanceStats({
     int? year,

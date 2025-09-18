@@ -4,6 +4,7 @@ import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/components/attendance_pagination.dart';
 import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
+import 'package:salary_report/src/pages/visualization/report/report_types.dart'; // 添加这一行导入
 import 'package:toastification/toastification.dart';
 // 添加数据库导入
 // 添加riverpod导入
@@ -48,52 +49,79 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
   }
 
   void _initAnalysisData() async {
-    // 获取每月请假比例统计数据
+    // 获取每月部门统计数据
+    List<DepartmentSalaryStats> monthlyDepartmentStats = [];
     try {
-      final monthlyLeaveRatioStats = await widget.dataAnalysisService
+      monthlyDepartmentStats = await widget.dataAnalysisService
+          .getMonthlyDepartmentSalaryStats(
+            startYear: widget.year,
+            startMonth: widget.month,
+            endYear: widget.endYear,
+            endMonth: widget.endMonth,
+          );
+    } catch (e) {
+      logger.severe('获取每月部门统计数据失败: $e');
+    }
+
+    // 获取每月考勤统计数据
+    List<AttendanceStats> monthlyAttendanceStats = [];
+    try {
+      monthlyAttendanceStats = await widget.dataAnalysisService
+          .getMonthlyAttendanceStats(
+            startYear: widget.year,
+            startMonth: widget.month,
+            endYear: widget.endYear,
+            endMonth: widget.endMonth,
+          );
+    } catch (e) {
+      logger.severe('获取每月考勤统计数据失败: $e');
+    }
+
+    // 获取每月请假比例统计数据
+    List<LeaveRatioStats> monthlyLeaveRatioStats = [];
+    try {
+      monthlyLeaveRatioStats = await widget.dataAnalysisService
           .getMonthlyLeaveRatioStats(
             startYear: widget.year,
             startMonth: widget.month,
             endYear: widget.endYear,
             endMonth: widget.endMonth,
           );
-
-      setState(() {
-        _monthlyLeaveRatioStats = monthlyLeaveRatioStats;
-        _isLoading = false;
-      });
     } catch (e) {
       logger.severe('获取每月请假比例统计数据失败: $e');
-      setState(() {
-        _isLoading = false;
-      });
     }
 
-    // 按月份分组部门统计数据
-    final monthlyDepartmentStats = _groupDepartmentStatsByMonth();
-
-    // 按月份分组考勤统计数据
-    final monthlyAttendanceStats = _groupAttendanceStatsByMonth();
-
-    // 按月份分组请假比例统计数据
-    final monthlyLeaveRatioStatsGrouped = _groupLeaveRatioStatsByMonth();
-
-    // 计算每个月的关键指标
-    final monthlyKeyMetrics = _calculateMonthlyKeyMetrics(
-      monthlyDepartmentStats,
-    );
-
-    // 构建整体统计数据（所有月份的汇总）
-    final overallStats = _calculateOverallStats(monthlyDepartmentStats);
-
-    // 为多月情况准备月度数据
-    final monthlyData = _generateMonthlyData();
-
     setState(() {
+      // 按月份分组部门统计数据
+      final groupedDepartmentStats = _groupDepartmentStatsByMonth(
+        monthlyDepartmentStats,
+      );
+
+      // 按月份分组考勤统计数据
+      final groupedAttendanceStats = _groupAttendanceStatsByMonth(
+        monthlyAttendanceStats,
+      );
+
+      // 按月份分组请假比例统计数据
+      final groupedLeaveRatioStats = _groupLeaveRatioStatsByMonth(
+        monthlyLeaveRatioStats,
+      );
+
+      // 计算每个月的关键指标
+      final monthlyKeyMetrics = _calculateMonthlyKeyMetrics(
+        groupedDepartmentStats,
+      );
+
+      // 构建整体统计数据（所有月份的汇总）
+      final overallStats = _calculateOverallStats(groupedDepartmentStats);
+
+      // 为多月情况准备月度数据
+      final monthlyData = _generateMonthlyData(monthlyDepartmentStats);
+
       _analysisData = {
-        'monthlyDepartmentStats': monthlyDepartmentStats, // 每月部门统计数据
-        'monthlyAttendanceStats': monthlyAttendanceStats, // 每月考勤统计数据
-        'monthlyLeaveRatioStats': monthlyLeaveRatioStatsGrouped, // 每月请假比例统计数据
+        'monthlyDepartmentStats': groupedDepartmentStats, // 每月部门统计数据
+        'monthlyAttendanceStats': groupedAttendanceStats, // 每月考勤统计数据
+        'monthlyLeaveRatioStats': groupedLeaveRatioStats, // 每月请假比例统计数据
         'monthlyKeyMetrics': monthlyKeyMetrics, // 每月关键指标
         'overallStats': overallStats, // 整体统计数据
         'monthlyData': monthlyData, // 用于图表的月度数据
@@ -103,15 +131,19 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
         'highestSalary': overallStats['highestSalary'],
         'lowestSalary': overallStats['lowestSalary'],
       };
+
+      _isLoading = false;
     });
   }
 
   /// 按月份分组部门统计数据
-  Map<String, List<Map<String, dynamic>>> _groupDepartmentStatsByMonth() {
+  Map<String, List<Map<String, dynamic>>> _groupDepartmentStatsByMonth(
+    List<DepartmentSalaryStats> departmentStats,
+  ) {
     final Map<String, List<Map<String, dynamic>>> monthlyStats = {};
 
     // 根据部门统计数据中的年月信息进行分组
-    for (var stat in widget.departmentStats) {
+    for (var stat in departmentStats) {
       if (stat.year != null && stat.month != null) {
         final monthKey =
             '${stat.year}-${stat.month.toString().padLeft(2, '0')}';
@@ -133,11 +165,13 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
   }
 
   /// 按月份分组考勤统计数据
-  Map<String, List<AttendanceStats>> _groupAttendanceStatsByMonth() {
+  Map<String, List<AttendanceStats>> _groupAttendanceStatsByMonth(
+    List<AttendanceStats> attendanceStats,
+  ) {
     final Map<String, List<AttendanceStats>> monthlyAttendanceStats = {};
 
     // 根据考勤统计数据中的年月信息进行分组
-    for (var stat in widget.attendanceStats) {
+    for (var stat in attendanceStats) {
       if (stat.year != null && stat.month != null) {
         final monthKey =
             '${stat.year}-${stat.month.toString().padLeft(2, '0')}';
@@ -154,11 +188,13 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
   }
 
   /// 按月份分组请假比例统计数据
-  Map<String, LeaveRatioStats> _groupLeaveRatioStatsByMonth() {
+  Map<String, LeaveRatioStats> _groupLeaveRatioStatsByMonth(
+    List<LeaveRatioStats> leaveRatioStats,
+  ) {
     final Map<String, LeaveRatioStats> monthlyLeaveRatioStats = {};
 
     // 根据请假比例统计数据中的年月信息进行分组
-    for (var stat in _monthlyLeaveRatioStats) {
+    for (var stat in leaveRatioStats) {
       if (stat.year != null && stat.month != null) {
         final monthKey =
             '${stat.year}-${stat.month.toString().padLeft(2, '0')}';
@@ -257,7 +293,9 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
   }
 
   /// 生成多月数据（用于图表）
-  List<Map<String, dynamic>> _generateMonthlyData() {
+  List<Map<String, dynamic>> _generateMonthlyData(
+    List<DepartmentSalaryStats> departmentStats,
+  ) {
     final List<Map<String, dynamic>> monthlyData = [];
 
     // 计算月份范围
@@ -268,7 +306,7 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
     final monthlyGroupedData = <String, double>{};
 
     // 根据部门统计数据中的年月信息进行分组
-    for (var stat in widget.departmentStats) {
+    for (var stat in departmentStats) {
       if (stat.year != null && stat.month != null) {
         final monthKey =
             '${stat.year}-${stat.month.toString().padLeft(2, '0')}';
@@ -327,6 +365,7 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
         month: widget.month,
         isMultiMonth: true,
         startTime: startTime,
+        reportType: ReportType.multiMonth, // 添加这一行来指定报告类型
       );
 
       if (mounted) {
