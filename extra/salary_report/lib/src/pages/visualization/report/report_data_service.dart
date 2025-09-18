@@ -48,44 +48,116 @@ class ReportDataService {
     return ranges;
   }
 
+  /// 生成薪资结构分析文本
   String _generateSalaryStructureAnalysis(Map<String, dynamic>? summaryData) {
-    if (summaryData == null) return '暂无薪资结构分析数据';
+    if (summaryData == null || summaryData.isEmpty) {
+      return "暂无薪资结构数据";
+    }
 
-    final basicSalary = summaryData['basicSalary'] as double? ?? 0;
-    final performanceSalary = summaryData['performanceSalary'] as double? ?? 0;
-    final allowance = summaryData['allowance'] as double? ?? 0;
-    final bonus = summaryData['bonus'] as double? ?? 0;
+    final buffer = StringBuffer();
 
-    final total = basicSalary + performanceSalary + allowance + bonus;
-    if (total == 0) return '暂无薪资结构分析数据';
+    // 定义需要显示的薪资结构字段及其显示名称
+    final salaryFields = {
+      "基本工资": "基本工资",
+      "岗位工资": "岗位工资",
+      "绩效工资": "绩效工资",
+      "补贴工资": "补贴工资",
+      "综合薪资标准": "综合薪资标准",
+      "当月基本工资": "当月基本工资",
+      "当月岗位工资": "当月岗位工资",
+      "当月绩效工资": "当月绩效工资",
+      "当月补贴工资": "当月补贴工资",
+      "加班费": "加班费",
+      "津贴": "津贴",
+      "奖金": "奖金",
+      "社保扣款": "社保扣款",
+      "个税": "个税",
+      "其他扣款": "其他扣款",
+      "饭补": "饭补",
+    };
 
-    final basicRate = (basicSalary / total * 100).toStringAsFixed(1);
-    final performanceRate = (performanceSalary / total * 100).toStringAsFixed(
-      1,
-    );
-    final allowanceRate = (allowance / total * 100).toStringAsFixed(1);
-    final bonusRate = (bonus / total * 100).toStringAsFixed(1);
+    // 按顺序添加薪资结构信息
+    salaryFields.forEach((key, displayName) {
+      if (summaryData.containsKey(key)) {
+        final value = summaryData[key];
+        if (value != null && value.toString().isNotEmpty) {
+          buffer.write("$displayName：$value；");
+        }
+      }
+    });
 
-    return '基本工资占比${basicRate}%，绩效工资占比${performanceRate}%，'
-        '津贴补贴占比${allowanceRate}%，奖金占比${bonusRate}%。';
+    // 如果没有找到任何相关字段，返回默认信息
+    if (buffer.isEmpty) {
+      return "暂无薪资结构数据";
+    }
+
+    // 优化表述，将最后一个分号替换为句号
+    String result = buffer.toString();
+    if (result.endsWith("；")) {
+      result = result.substring(0, result.length - 1) + "。";
+    }
+
+    return result;
   }
 
+  /// 提取薪资结构数据用于生成饼图
   List<Map<String, dynamic>> _extractSalaryStructureData(
     Map<String, dynamic>? summaryData,
   ) {
-    if (summaryData == null) return [];
+    final List<Map<String, dynamic>> salaryStructureData = [];
 
-    final basicSalary = summaryData['basicSalary'] as double? ?? 0;
-    final performanceSalary = summaryData['performanceSalary'] as double? ?? 0;
-    final allowance = summaryData['allowance'] as double? ?? 0;
-    final bonus = summaryData['bonus'] as double? ?? 0;
+    if (summaryData == null || summaryData.isEmpty) {
+      return salaryStructureData;
+    }
 
-    return [
-      {'category': '基本工资', 'value': basicSalary},
-      {'category': '绩效工资', 'value': performanceSalary},
-      {'category': '津贴补贴', 'value': allowance},
-      {'category': '奖金', 'value': bonus},
-    ];
+    // 定义需要显示的薪资结构字段及其显示名称（仅包含收入项）
+    final incomeFields = {
+      "基本工资": "基本工资",
+      "岗位工资": "岗位工资",
+      "绩效工资": "绩效工资",
+      "补贴工资": "补贴工资",
+      "综合薪资标准": "综合薪资标准",
+      "当月基本工资": "当月基本工资",
+      "当月岗位工资": "当月岗位工资",
+      "当月绩效工资": "当月绩效工资",
+      "当月补贴工资": "当月补贴工资",
+      "加班费": "加班费",
+      "津贴": "津贴",
+      "奖金": "奖金",
+      "饭补": "饭补",
+    };
+
+    // 提取收入项数据
+    incomeFields.forEach((key, displayName) {
+      if (summaryData.containsKey(key)) {
+        final value = summaryData[key];
+        if (value != null && value.toString().isNotEmpty) {
+          // 尝试解析数值
+          final numericValue = _parseNumericValue(value.toString());
+          if (numericValue != null && numericValue > 0) {
+            salaryStructureData.add({
+              'category': displayName,
+              'value': numericValue,
+            });
+          }
+        }
+      }
+    });
+
+    return salaryStructureData;
+  }
+
+  /// 解析字符串中的数值
+  double? _parseNumericValue(String value) {
+    // 移除非数字字符（保留数字、小数点和负号）
+    final numericString = value.replaceAll(RegExp(r'[^\d.-]'), '');
+    if (numericString.isEmpty) return null;
+
+    try {
+      return double.parse(numericString);
+    } catch (e) {
+      return null;
+    }
   }
 
   Future<ReportContentModel> prepareReportData({

@@ -136,7 +136,7 @@ class _UploadPageState extends ConsumerState<UploadPage>
     });
 
     // 使用AI薪资服务处理用户查询
-    Future.delayed(const Duration(milliseconds: 500), () async {
+    Future.delayed(const Duration(milliseconds: 200), () async {
       logger.info('User Query: $userQuery');
       if (mounted) {
         final aiSalaryService = ref.read(aiSalaryServiceProvider);

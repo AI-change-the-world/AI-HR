@@ -9,6 +9,10 @@ import 'package:salary_report/src/pages/visualization/report/docx_writer_service
 import 'package:salary_report/src/pages/visualization/report/ai_summary_service.dart';
 import 'package:salary_report/src/pages/visualization/report/report_generator_interface.dart';
 import 'package:flutter/material.dart';
+import 'package:salary_report/src/pages/visualization/report/monthly_report_generator.dart';
+import 'package:salary_report/src/pages/visualization/report/multi_month_report_generator.dart';
+import 'package:salary_report/src/pages/visualization/report/quarterly_report_generator.dart';
+import 'package:salary_report/src/pages/visualization/report/annual_report_generator.dart';
 
 /// 报告生成器工厂
 class ReportGeneratorFactory {
