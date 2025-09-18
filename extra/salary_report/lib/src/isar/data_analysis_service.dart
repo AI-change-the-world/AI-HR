@@ -31,6 +31,8 @@ class AttendanceStats {
   final double leaveDays;
   final int absenceCount;
   final int truancyDays;
+  final int? year; // 添加年份字段
+  final int? month; // 添加月份字段
 
   AttendanceStats({
     required this.name,
@@ -39,6 +41,8 @@ class AttendanceStats {
     required this.leaveDays,
     required this.absenceCount,
     required this.truancyDays,
+    this.year,
+    this.month,
   });
 }
 
@@ -47,11 +51,15 @@ class LeaveRatioStats {
   final double sickLeaveRatio;
   final double leaveRatio;
   final int totalEmployees;
+  final int? year; // 添加年份字段
+  final int? month; // 添加月份字段
 
   LeaveRatioStats({
     required this.sickLeaveRatio,
     required this.leaveRatio,
     required this.totalEmployees,
+    this.year,
+    this.month,
   });
 }
 
@@ -144,19 +152,112 @@ class DataAnalysisService {
       }
 
       if (validRecordCount > 0) {
+        // 确定年份和月份信息
+        int? statYear;
+        int? statMonth;
+
+        // 如果是单月查询，使用查询参数
+        if (year != null && month != null) {
+          statYear = year;
+          statMonth = month;
+        }
+        // 如果是多月查询，从第一条记录中获取年月信息
+        else if (filteredSalaryLists.isNotEmpty) {
+          statYear = filteredSalaryLists[0].year;
+          statMonth = filteredSalaryLists[0].month;
+        }
+
         stats.add(
           DepartmentSalaryStats(
             department: dept,
             totalNetSalary: totalSalary,
             averageNetSalary: totalSalary / validRecordCount,
             employeeCount: validRecordCount,
-            // 添加年份和月份信息（如果是单月查询）
-            year: (year != null && month != null) ? year : null,
-            month: (year != null && month != null) ? month : null,
+            year: statYear,
+            month: statMonth,
           ),
         );
       }
     });
+
+    // 如果是多月查询，需要为每个月份分别计算统计数据
+    if (startYear != null &&
+        endYear != null &&
+        startMonth != null &&
+        endMonth != null) {
+      // 清空之前的统计数据
+      stats.clear();
+
+      // 按月份分组计算
+      final monthlyData = <String, List<SalaryListRecord>>{};
+
+      for (var salaryList in filteredSalaryLists) {
+        final monthKey = '${salaryList.year}-${salaryList.month}';
+        if (!monthlyData.containsKey(monthKey)) {
+          monthlyData[monthKey] = [];
+        }
+
+        for (var record in salaryList.records) {
+          // 过滤条件
+          if (department != null && record.department != department) continue;
+          if (name != null && record.name != name) continue;
+          if (record.department == null || record.netSalary == null) continue;
+
+          monthlyData[monthKey]!.add(record);
+        }
+      }
+
+      // 为每个月份计算部门统计数据
+      monthlyData.forEach((monthKey, records) {
+        // 按部门分组
+        final deptMap = <String, List<SalaryListRecord>>{};
+        for (var record in records) {
+          final dept = record.department!;
+          if (!deptMap.containsKey(dept)) {
+            deptMap[dept] = [];
+          }
+          deptMap[dept]!.add(record);
+        }
+
+        // 计算每个部门的统计数据
+        deptMap.forEach((dept, deptRecords) {
+          double totalSalary = 0;
+          int validRecordCount = 0;
+
+          for (var record in deptRecords) {
+            if (record.netSalary != null) {
+              // 尝试解析实发工资字符串
+              final salaryStr = record.netSalary!.replaceAll(
+                RegExp(r'[^\d.-]'),
+                '',
+              );
+              if (double.tryParse(salaryStr) != null) {
+                totalSalary += double.parse(salaryStr);
+                validRecordCount++;
+              }
+            }
+          }
+
+          if (validRecordCount > 0) {
+            // 解析月份键
+            final parts = monthKey.split('-');
+            final statYear = int.parse(parts[0]);
+            final statMonth = int.parse(parts[1]);
+
+            stats.add(
+              DepartmentSalaryStats(
+                department: dept,
+                totalNetSalary: totalSalary,
+                averageNetSalary: totalSalary / validRecordCount,
+                employeeCount: validRecordCount,
+                year: statYear,
+                month: statMonth,
+              ),
+            );
+          }
+        });
+      });
+    }
 
     return stats;
   }
@@ -253,6 +354,8 @@ class DataAnalysisService {
             leaveDays: leave,
             absenceCount: absence,
             truancyDays: truancy,
+            year: salaryList.year, // 设置年份
+            month: salaryList.month, // 设置月份
           ),
         );
       }
@@ -341,11 +444,140 @@ class DataAnalysisService {
         : 0.0;
     final leaveRatio = employeeCount > 0 ? totalLeave / employeeCount : 0.0;
 
+    // 确定年份和月份信息
+    int? statYear;
+    int? statMonth;
+
+    // 如果是单月查询，使用查询参数
+    if (year != null && month != null) {
+      statYear = year;
+      statMonth = month;
+    }
+    // 如果是多月查询，从第一条记录中获取年月信息
+    else if (filteredSalaryLists.isNotEmpty) {
+      statYear = filteredSalaryLists[0].year;
+      statMonth = filteredSalaryLists[0].month;
+    }
+
     return LeaveRatioStats(
       sickLeaveRatio: sickLeaveRatio,
       leaveRatio: leaveRatio,
       totalEmployees: employeeCount,
+      year: statYear,
+      month: statMonth,
     );
+  }
+
+  /// 获取多月病假和事假的比例统计
+  Future<List<LeaveRatioStats>> getMonthlyLeaveRatioStats({
+    int? startYear,
+    int? endYear,
+    int? startMonth,
+    int? endMonth,
+    String? department,
+    String? name,
+  }) async {
+    final isar = _database.isar!;
+
+    // 构建查询
+    var queryBuilder = isar.salaryLists.where();
+
+    // 获取所有数据，然后在内存中过滤
+    final salaryLists = await queryBuilder.findAll();
+
+    // 在内存中过滤年份和月份
+    final filteredSalaryLists = <SalaryList>[];
+    for (var salaryList in salaryLists) {
+      bool yearMatch = true;
+      bool monthMatch = true;
+
+      // 年份过滤
+      if (startYear != null && endYear != null) {
+        yearMatch = salaryList.year >= startYear && salaryList.year <= endYear;
+      }
+
+      // 月份过滤
+      if (startMonth != null && endMonth != null) {
+        monthMatch =
+            salaryList.month >= startMonth && salaryList.month <= endMonth;
+      }
+
+      if (yearMatch && monthMatch) {
+        filteredSalaryLists.add(salaryList);
+      }
+    }
+
+    // 按月份分组统计病假和事假数据
+    final monthlyStats = <String, Map<String, dynamic>>{};
+
+    for (var salaryList in filteredSalaryLists) {
+      final monthKey = '${salaryList.year}-${salaryList.month}';
+
+      // 初始化月份统计数据
+      if (!monthlyStats.containsKey(monthKey)) {
+        monthlyStats[monthKey] = {
+          'totalSickLeave': 0.0,
+          'totalLeave': 0.0,
+          'employeeCount': 0,
+        };
+      }
+
+      for (var record in salaryList.records) {
+        // 过滤条件
+        if (department != null && record.department != department) continue;
+        if (name != null && record.name != name) continue;
+
+        // 更新员工计数
+        monthlyStats[monthKey]!['employeeCount'] =
+            monthlyStats[monthKey]!['employeeCount']! + 1;
+
+        if (record.sickLeave != null) {
+          final sickLeaveStr = record.sickLeave!.replaceAll(
+            RegExp(r'[^\d.-]'),
+            '',
+          );
+          monthlyStats[monthKey]!['totalSickLeave'] =
+              monthlyStats[monthKey]!['totalSickLeave']! +
+              (double.tryParse(sickLeaveStr) ?? 0);
+        }
+
+        if (record.leave != null) {
+          final leaveStr = record.leave!.replaceAll(RegExp(r'[^\d.-]'), '');
+          monthlyStats[monthKey]!['totalLeave'] =
+              monthlyStats[monthKey]!['totalLeave']! +
+              (double.tryParse(leaveStr) ?? 0);
+        }
+      }
+    }
+
+    // 计算每个月份的比例统计
+    final leaveRatioStatsList = <LeaveRatioStats>[];
+    monthlyStats.forEach((monthKey, stats) {
+      final sickLeaveRatio = (stats['employeeCount']! as int) > 0
+          ? (stats['totalSickLeave']! as double) /
+                (stats['employeeCount']! as int)
+          : 0.0;
+      final leaveRatio = (stats['employeeCount']! as int) > 0
+          ? (stats['totalLeave']! as double) / (stats['employeeCount']! as int)
+          : 0.0;
+
+      // 解析月份键
+      final parts = monthKey.split('-');
+      final statYear = int.parse(parts[0]);
+      final statMonth = int.parse(parts[1]);
+
+      leaveRatioStatsList.add(
+        LeaveRatioStats(
+          sickLeaveRatio: sickLeaveRatio,
+          leaveRatio: leaveRatio,
+          totalEmployees: stats['employeeCount']! as int,
+          year: statYear,
+          month: statMonth,
+        ),
+      );
+    });
+
+    return leaveRatioStatsList;
   }
 
   /// 获取指定年月的工资汇总数据
