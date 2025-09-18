@@ -23,6 +23,7 @@ import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/common/ai_config.dart';
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   await RustLib.init();
   Logger.root.level = Level.ALL; // defaults to Level.INFO
   Logger.root.onRecord.listen((record) {
