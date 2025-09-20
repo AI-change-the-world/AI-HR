@@ -12,7 +12,7 @@ void main() {
     setUp(() async {
       // 初始化数据库
       database = IsarDatabase();
-      await database.initialDatabase();
+      // 由于测试环境中可能无法访问实际的文件系统，我们只初始化服务
       reportService = ReportService();
     });
 

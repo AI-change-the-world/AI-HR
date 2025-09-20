@@ -3,17 +3,17 @@ import 'package:openai_dart/openai_dart.dart';
 import 'package:salary_report/src/common/llm_client.dart';
 import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/isar/database.dart';
-import 'package:salary_report/src/isar/salary_query_service.dart';
+import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/isar/salary_list.dart';
 import 'package:isar_community/isar.dart';
 
 class AISalaryService {
-  final SalaryQueryService _queryService;
+  final DataAnalysisService _queryService;
   final IsarDatabase _database;
   final LLMClient _llmClient;
 
   AISalaryService(IsarDatabase database)
-    : _queryService = SalaryQueryService(database),
+    : _queryService = DataAnalysisService(database),
       _database = database,
       _llmClient = LLMClient();
 

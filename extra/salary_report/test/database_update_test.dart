@@ -20,11 +20,11 @@ void main() {
     test('Should verify report record is saved to database', () async {
       // 创建报告生成器
       final generator = ReportGeneratorFactory.createGenerator(
-        ReportType.monthly,
+        ReportType.singleMonth,
       );
 
       // 验证生成器已正确创建
-      expect(generator, isA<MonthlyReportGenerator>());
+      expect(generator.runtimeType.toString(), 'MonthlyReportGenerator');
 
       // 注意：实际的报告生成测试需要更多设置，这里只是验证结构
       expect(reportService, isA<ReportService>());

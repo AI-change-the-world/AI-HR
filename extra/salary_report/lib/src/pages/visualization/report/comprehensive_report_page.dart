@@ -3,6 +3,7 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart';
+
 // ignore: depend_on_referenced_packages
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

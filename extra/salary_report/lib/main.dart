@@ -109,9 +109,6 @@ class MyApp extends StatelessWidget {
                             [],
                         leaveRatioStats:
                             extra?['leaveRatioStats'] as LeaveRatioStats?,
-                        dataAnalysisService: DataAnalysisService(
-                          IsarDatabase(),
-                        ), // 添加数据服务参数
                       );
                     }
 

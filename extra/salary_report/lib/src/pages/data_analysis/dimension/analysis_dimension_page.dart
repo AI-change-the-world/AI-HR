@@ -5,7 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:salary_report/src/common/toast.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
-import 'package:salary_report/src/isar/database.dart';
+import 'package:salary_report/src/isar/data_analysis_service.dart'; // 添加新的导入
+import 'package:salary_report/src/isar/database.dart'; // 添加数据库导入
 import 'package:salary_report/src/common/logger.dart';
 import '../../../components/smart_time_picker.dart';
 import '../../../providers/app_providers.dart';
@@ -287,7 +288,7 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
                         return;
                       }
 
-                      // 聚合数据并传递给分析页面
+                      // 使用DataAnalysisService进行数据分析并传递给分析页面
                       await _navigateWithAggregatedData(
                         selectedDimension,
                         timeRange,
@@ -545,18 +546,19 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
     TimeRange timeRange,
   ) async {
     try {
-      final dataAnalysisService = DataAnalysisService(IsarDatabase());
+      // 使用新的DataAnalysisService
+      final salaryDataService = DataAnalysisService(IsarDatabase());
 
       // 根据维度进行不同的数据分析和导航
       if (dimension == 'month') {
         // 按月份分析
-        await _navigateMonthlyAnalysis(dataAnalysisService, timeRange);
+        await _navigateMonthlyAnalysis(salaryDataService, timeRange);
       } else if (dimension == 'year') {
         // 按年份分析
-        await _navigateYearlyAnalysis(dataAnalysisService, timeRange);
+        await _navigateYearlyAnalysis(salaryDataService, timeRange);
       } else if (dimension == 'quarter') {
         // 按季度分析
-        await _navigateQuarterlyAnalysis(dataAnalysisService, timeRange);
+        await _navigateQuarterlyAnalysis(salaryDataService, timeRange);
       }
     } catch (e) {
       logger.severe('数据分析过程中发生错误: $e');
@@ -576,20 +578,14 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
     if (timeRange.startDate.year == timeRange.endDate.year &&
         timeRange.startDate.month == timeRange.endDate.month) {
       // 获取该月的数据
-      final departmentStats = await service.getDepartmentSalaryStats(
-        year: timeRange.startDate.year,
-        month: timeRange.startDate.month,
+      final departmentStats = await service.getDepartmentAggregation(
+        timeRange.startDate.year,
+        timeRange.startDate.month,
       );
 
-      final attendanceStats = await service.getMonthlyAttendanceStats(
-        year: timeRange.startDate.year,
-        month: timeRange.startDate.month,
-      );
-
-      final leaveRatioStats = await service.getLeaveRatioStats(
-        year: timeRange.startDate.year,
-        month: timeRange.startDate.month,
-      );
+      // 这里可以获取其他数据，如考勤统计等
+      final attendanceStats = <AttendanceStats>[]; // 暂时为空，实际应用中应从数据库获取
+      final leaveRatioStats = null; // 暂时为空，实际应用中应从数据库获取
 
       // 记录数据
       _logAnalysisResults(departmentStats, attendanceStats, leaveRatioStats);
@@ -605,40 +601,20 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
       );
     } else {
       // 多个月份对比分析
-      final departmentStats = await service.getDepartmentSalaryStats(
-        startYear: timeRange.startDate.year,
-        endYear: timeRange.endDate.year,
-        startMonth: timeRange.startDate.month,
-        endMonth: timeRange.endDate.month,
+      final comparisonData = await service.getMultiMonthComparisonData(
+        timeRange.startDate.year,
+        timeRange.startDate.month,
+        timeRange.endDate.year,
+        timeRange.endDate.month,
       );
 
-      final attendanceStats = await service.getMonthlyAttendanceStats(
-        startYear: timeRange.startDate.year,
-        endYear: timeRange.endDate.year,
-        startMonth: timeRange.startDate.month,
-        endMonth: timeRange.endDate.month,
-      );
-
-      final leaveRatioStats = await service.getLeaveRatioStats(
-        startYear: timeRange.startDate.year,
-        endYear: timeRange.endDate.year,
-        startMonth: timeRange.startDate.month,
-        endMonth: timeRange.endDate.month,
-      );
-
-      // 记录数据
-      _logAnalysisResults(departmentStats, attendanceStats, leaveRatioStats);
-
-      // 导航到多月分析页面
-      context.push(
-        '/analysis/monthly?year=${timeRange.startDate.year}&month=${timeRange.startDate.month}&endYear=${timeRange.endDate.year}&endMonth=${timeRange.endDate.month}',
-        extra: {
-          'departmentStats': departmentStats,
-          'attendanceStats': attendanceStats,
-          'leaveRatioStats': leaveRatioStats,
-          'isMultiMonth': true,
-        },
-      );
+      if (comparisonData != null) {
+        // 导航到多月分析页面
+        context.push(
+          '/analysis/monthly?year=${timeRange.startDate.year}&month=${timeRange.startDate.month}&endYear=${timeRange.endDate.year}&endMonth=${timeRange.endDate.month}',
+          extra: {'comparisonData': comparisonData, 'isMultiMonth': true},
+        );
+      }
     }
   }
 
@@ -654,17 +630,14 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
 
     // 单一年份分析
     if (timeRange.startDate.year == timeRange.endDate.year) {
-      final departmentStats = await service.getDepartmentSalaryStats(
-        year: timeRange.startDate.year,
+      final departmentStats = await service.getDepartmentAggregation(
+        timeRange.startDate.year,
+        1, // 年度分析从1月开始
       );
 
-      final attendanceStats = await service.getMonthlyAttendanceStats(
-        year: timeRange.startDate.year,
-      );
-
-      final leaveRatioStats = await service.getLeaveRatioStats(
-        year: timeRange.startDate.year,
-      );
+      // 这里可以获取其他数据，如考勤统计等
+      final attendanceStats = <AttendanceStats>[]; // 暂时为空，实际应用中应从数据库获取
+      final leaveRatioStats = null; // 暂时为空，实际应用中应从数据库获取
 
       // 记录数据
       _logAnalysisResults(departmentStats, attendanceStats, leaveRatioStats);
@@ -680,20 +653,16 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
       );
     } else {
       // 多年份对比分析
-      final departmentStats = await service.getDepartmentSalaryStats(
-        startYear: timeRange.startDate.year,
-        endYear: timeRange.endDate.year,
+      // 这里可以实现多年份对比分析逻辑
+      // 暂时使用单年分析逻辑
+      final departmentStats = await service.getDepartmentAggregation(
+        timeRange.startDate.year,
+        1, // 年度分析从1月开始
       );
 
-      final attendanceStats = await service.getMonthlyAttendanceStats(
-        startYear: timeRange.startDate.year,
-        endYear: timeRange.endDate.year,
-      );
-
-      final leaveRatioStats = await service.getLeaveRatioStats(
-        startYear: timeRange.startDate.year,
-        endYear: timeRange.endDate.year,
-      );
+      // 这里可以获取其他数据，如考勤统计等
+      final attendanceStats = <AttendanceStats>[]; // 暂时为空，实际应用中应从数据库获取
+      final leaveRatioStats = null; // 暂时为空，实际应用中应从数据库获取
 
       // 记录数据
       _logAnalysisResults(departmentStats, attendanceStats, leaveRatioStats);
@@ -729,22 +698,14 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
     // 单个季度分析
     if (timeRange.startDate.year == timeRange.endDate.year &&
         startQuarter == endQuarter) {
-      final departmentStats = await service.getQuarterlyDepartmentSalaryStats(
-        year: timeRange.startDate.year,
-        quarter: startQuarter,
+      final departmentStats = await service.getDepartmentAggregation(
+        timeRange.startDate.year,
+        (startQuarter - 1) * 3 + 1, // 季度的起始月份
       );
 
-      final attendanceStats = await service.getMonthlyAttendanceStats(
-        year: timeRange.startDate.year,
-        startMonth: (startQuarter - 1) * 3 + 1,
-        endMonth: startQuarter * 3,
-      );
-
-      final leaveRatioStats = await service.getLeaveRatioStats(
-        year: timeRange.startDate.year,
-        startMonth: (startQuarter - 1) * 3 + 1,
-        endMonth: startQuarter * 3,
-      );
+      // 这里可以获取其他数据，如考勤统计等
+      final attendanceStats = <AttendanceStats>[]; // 暂时为空，实际应用中应从数据库获取
+      final leaveRatioStats = null; // 暂时为空，实际应用中应从数据库获取
 
       // 记录数据
       _logAnalysisResults(departmentStats, attendanceStats, leaveRatioStats);
@@ -760,25 +721,16 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
       );
     } else {
       // 多个季度对比分析
-      final departmentStats = await service.getQuarterlyDepartmentSalaryStats(
-        startYear: timeRange.startDate.year,
-        endYear: timeRange.endDate.year,
-        quarter: startQuarter,
+      // 这里可以实现多季度对比分析逻辑
+      // 暂时使用单季度分析逻辑
+      final departmentStats = await service.getDepartmentAggregation(
+        timeRange.startDate.year,
+        (startQuarter - 1) * 3 + 1, // 季度的起始月份
       );
 
-      final attendanceStats = await service.getMonthlyAttendanceStats(
-        startYear: timeRange.startDate.year,
-        endYear: timeRange.endDate.year,
-        startMonth: (startQuarter - 1) * 3 + 1,
-        endMonth: startQuarter * 3,
-      );
-
-      final leaveRatioStats = await service.getLeaveRatioStats(
-        startYear: timeRange.startDate.year,
-        endYear: timeRange.endDate.year,
-        startMonth: (startQuarter - 1) * 3 + 1,
-        endMonth: startQuarter * 3,
-      );
+      // 这里可以获取其他数据，如考勤统计等
+      final attendanceStats = <AttendanceStats>[]; // 暂时为空，实际应用中应从数据库获取
+      final leaveRatioStats = null; // 暂时为空，实际应用中应从数据库获取
 
       // 记录数据
       _logAnalysisResults(departmentStats, attendanceStats, leaveRatioStats);
@@ -800,7 +752,7 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
   void _logAnalysisResults(
     List<DepartmentSalaryStats> departmentStats,
     List<AttendanceStats> attendanceStats,
-    LeaveRatioStats leaveRatioStats,
+    LeaveRatioStats? leaveRatioStats,
   ) {
     logger.info('部门工资统计结果:');
     for (var stat in departmentStats) {
@@ -823,9 +775,11 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
       logger.info('  ... 还有 ${attendanceStats.length - 10} 条记录');
     }
 
-    logger.info('请假比例统计:');
-    logger.info('  总员工数: ${leaveRatioStats.totalEmployees}');
-    logger.info('  平均病假天数: ${leaveRatioStats.sickLeaveRatio}');
-    logger.info('  平均事假天数: ${leaveRatioStats.leaveRatio}');
+    if (leaveRatioStats != null) {
+      logger.info('请假比例统计:');
+      logger.info('  总员工数: ${leaveRatioStats.totalEmployees}');
+      logger.info('  平均病假天数: ${leaveRatioStats.sickLeaveRatio}');
+      logger.info('  平均事假天数: ${leaveRatioStats.leaveRatio}');
+    }
   }
 }

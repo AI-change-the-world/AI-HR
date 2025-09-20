@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:docx_template_fork/docx_template_fork.dart';
 import 'package:salary_report/src/common/logger.dart';
+import 'package:salary_report/src/isar/data_analysis_service.dart';
+
 import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 
@@ -13,7 +15,7 @@ class DocxWriterService {
   Future<String> writeReport({
     required ReportContentModel data,
     required ReportChartImages images,
-    ReportType reportType = ReportType.monthly, // 默认为单月报告
+    ReportType reportType = ReportType.singleMonth, // 默认为单月报告
   }) async {
     // 根据报告类型选择模板
     final templatePath = _getTemplatePath(reportType);
@@ -64,17 +66,23 @@ class DocxWriterService {
     // 根据报告类型生成相应的描述
     String typeDescription;
     switch (type) {
-      case ReportType.monthly:
+      case ReportType.singleMonth:
         typeDescription = '月度';
         break;
       case ReportType.multiMonth:
         typeDescription = '多月';
         break;
-      case ReportType.quarterly:
+      case ReportType.singleQuarter:
         typeDescription = '季度';
         break;
-      case ReportType.annual:
+      case ReportType.multiQuarter:
+        typeDescription = '多季度';
+        break;
+      case ReportType.singleYear:
         typeDescription = '年度';
+        break;
+      case ReportType.multiYear:
+        typeDescription = '多年';
         break;
     }
 
@@ -90,13 +98,17 @@ class DocxWriterService {
   /// 根据报告类型获取模板路径
   String _getTemplatePath(ReportType type) {
     switch (type) {
-      case ReportType.monthly:
+      case ReportType.singleMonth:
         return 'assets/salary_report_template_monthly.docx';
       case ReportType.multiMonth:
         return 'assets/salary_report_template_multi_month.docx';
-      case ReportType.quarterly:
+      case ReportType.singleQuarter:
         return 'assets/salary_report_template_quarterly.docx';
-      case ReportType.annual:
+      case ReportType.multiQuarter:
+        return 'assets/salary_report_template_quarterly.docx';
+      case ReportType.singleYear:
+        return 'assets/salary_report_template_annual.docx';
+      case ReportType.multiYear:
         return 'assets/salary_report_template_annual.docx';
     }
   }
@@ -114,16 +126,22 @@ class DocxWriterService {
 
     // 根据报告类型添加特定字段
     switch (type) {
-      case ReportType.monthly:
+      case ReportType.singleMonth:
         _addMonthlySpecificFields(content, data);
         break;
       case ReportType.multiMonth:
         _addMultiMonthSpecificFields(content, data);
         break;
-      case ReportType.quarterly:
+      case ReportType.singleQuarter:
         _addQuarterlySpecificFields(content, data);
         break;
-      case ReportType.annual:
+      case ReportType.multiQuarter:
+        _addQuarterlySpecificFields(content, data);
+        break;
+      case ReportType.singleYear:
+        _addAnnualSpecificFields(content, data);
+        break;
+      case ReportType.multiYear:
         _addAnnualSpecificFields(content, data);
         break;
     }
@@ -342,7 +360,9 @@ class DocxWriterService {
 
   /// 添加表格内容
   void _addTableContent(Content content, ReportContentModel data) {
-    final departmentRows = data.departmentStats.map((stat) {
+    final departmentRows = data.departmentStats.map<RowContent>((
+      DepartmentSalaryStats stat,
+    ) {
       return RowContent()
         ..add(TextContent('department_name', stat.department))
         ..add(

@@ -5,13 +5,14 @@ import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/isar/report_service.dart';
+
 import 'package:salary_report/src/pages/visualization/report/ai_summary_service.dart';
 import 'package:salary_report/src/pages/visualization/report/chart_generation_service.dart';
 import 'package:salary_report/src/pages/visualization/report/docx_writer_service.dart';
-import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
 import 'package:salary_report/src/pages/visualization/report/report_data_service.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:salary_report/src/pages/visualization/report/report_generator_factory.dart';
+import 'package:salary_report/src/pages/visualization/report/analysis_data.dart';
 
 class SalaryReportGenerator {
   // Dependencies are provided, making the class easier to test
@@ -29,7 +30,11 @@ class SalaryReportGenerator {
     DataAnalysisService? analysisService,
     ReportService? reportService,
   }) : _dataService =
-           dataService ?? ReportDataService(aiService: AISummaryService()),
+           dataService ??
+           ReportDataService(
+             aiService: AISummaryService(),
+             dataService: DataAnalysisService(IsarDatabase()),
+           ),
        _chartService = chartService ?? ChartGenerationService(),
        _docxService = docxService ?? DocxWriterService(),
        _analysisService =
@@ -47,7 +52,7 @@ class SalaryReportGenerator {
     required bool isMultiMonth,
     required DateTime startTime,
     required DateTime endTime,
-    ReportType reportType = ReportType.monthly, // 默认为单月报告
+    ReportType reportType = ReportType.singleMonth, // 默认为单月报告
     // Note: other stats like attendance can be passed into _dataService if needed
   }) async {
     try {
@@ -103,14 +108,13 @@ class SalaryReportGenerator {
 
       // 1. Prepare all data and text content using the data service.
       // This step also handles AI summaries.
-      final reportContent = await _dataService.prepareReportData(
-        departmentStats: departmentStats,
-        analysisData: analysisData,
-        year: year,
-        month: month,
-        isMultiMonth: isMultiMonth,
-        startTime: startTime,
-        endTime: endTime,
+      final reportContent = await _dataService.prepareReportDataForSingleMonth(
+        SingleMonthAnalysisData(
+          year: year,
+          month: month,
+          departmentStats: departmentStats,
+          analysisData: analysisData,
+        ),
       );
       logger.info('Report data prepared.');
 
@@ -121,7 +125,7 @@ class SalaryReportGenerator {
       final chartImages = await _chartService.generateAllCharts(
         previewContainerKey: previewContainerKey,
         departmentStats: departmentStats,
-        salaryRanges: salaryRanges,
+        salaryRanges: salaryRanges, // 取第一个薪资区间数据
         salaryStructureData: reportContent.salaryStructureData,
         // generateReportOld方法默认为单月报告，不传递多月数据
       );
@@ -132,7 +136,7 @@ class SalaryReportGenerator {
       final reportPath = await _docxService.writeReport(
         data: reportContent,
         images: chartImages,
-        reportType: ReportType.monthly, // generateReportOld方法默认使用单月报告类型
+        reportType: ReportType.singleMonth, // generateReportOld方法默认使用单月报告类型
       );
 
       // 添加报告记录到数据库

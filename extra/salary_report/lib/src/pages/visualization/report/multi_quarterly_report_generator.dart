@@ -1,13 +1,14 @@
-// src/report/annual_report_generator.dart
+// src/report/multi_quarterly_report_generator.dart
 
 import 'package:flutter/material.dart';
 import 'package:salary_report/src/common/logger.dart';
+
 import 'package:salary_report/src/pages/visualization/report/analysis_data.dart';
 import 'package:salary_report/src/pages/visualization/report/base_report_generator.dart';
 import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 
-class AnnualReportGenerator extends BaseReportGenerator {
+class MultiQuarterlyReportGenerator extends BaseReportGenerator {
   @override
   Future<String> generateReport({
     required ReportType reportType,
@@ -15,29 +16,38 @@ class AnnualReportGenerator extends BaseReportGenerator {
     required ReportOptions options,
   }) async {
     // 验证报告类型
-    if (reportType != ReportType.singleYear) {
-      throw ArgumentError('AnnualReportGenerator 只支持单年报告类型');
+    if (reportType != ReportType.multiQuarter) {
+      throw ArgumentError('MultiQuarterlyReportGenerator 只支持多季度报告类型');
     }
 
     try {
-      logger.info('Starting single year report generation...');
+      logger.info('Starting multi quarter report generation...');
 
-      // 构造SingleYearAnalysisData对象
-      final singleYearData = SingleYearAnalysisData(
-        year: data.year,
-        departmentStats: data.departmentStats,
-        analysisData: data.analysisData,
+      // 构造MultiQuarterAnalysisData对象
+      final quarterlyData = [
+        QuarterlyAnalysisData(
+          year: data.year,
+          quarter: ((data.month - 1) ~/ 3) + 1,
+          departmentStats: data.departmentStats,
+          analysisData: data.analysisData,
+        ),
+      ];
+
+      final multiQuarterData = MultiQuarterAnalysisData(
+        startTime: data.startTime,
+        endTime: data.endTime,
+        quarterlyData: quarterlyData,
       );
 
       // 1. 准备报告数据
-      final reportContent = await prepareReportDataForSingleYear(
-        singleYearData,
+      final reportContent = await prepareReportDataForMultiQuarter(
+        multiQuarterData,
       );
       logger.info('Report data prepared.');
 
       // 2. 生成图表
-      final chartImages = await generateChartsForSingleYear(
-        singleYearData,
+      final chartImages = await generateChartsForMultiQuarter(
+        multiQuarterData,
         reportContent,
       );
       logger.info('Chart images generated.');
@@ -57,7 +67,7 @@ class AnnualReportGenerator extends BaseReportGenerator {
       return reportPath;
     } catch (e, stackTrace) {
       logger.severe(
-        'Error during single year report generation: $e',
+        'Error during multi quarter report generation: $e',
         e,
         stackTrace,
       );
@@ -65,29 +75,30 @@ class AnnualReportGenerator extends BaseReportGenerator {
     }
   }
 
-  /// 单年报告特定的数据准备逻辑
+  /// 多季度报告特定的数据准备逻辑
   @override
-  Future<ReportContentModel> prepareReportDataForSingleYear(
-    SingleYearAnalysisData data,
+  Future<ReportContentModel> prepareReportDataForMultiQuarter(
+    MultiQuarterAnalysisData data,
   ) async {
     // 调用父类方法准备基础数据
-    return await super.prepareReportDataForSingleYear(data);
+    return await super.prepareReportDataForMultiQuarter(data);
   }
 
-  /// 单年报告特定的图表生成逻辑
+  /// 多季度报告特定的图表生成逻辑
   @override
-  Future<ReportChartImages> generateChartsForSingleYear(
-    SingleYearAnalysisData data,
+  Future<ReportChartImages> generateChartsForMultiQuarter(
+    MultiQuarterAnalysisData data,
     ReportContentModel reportContent,
   ) async {
-    // 计算薪资区间
+    // 使用最后一个季度的数据计算薪资区间
+    final lastQuarterData = data.quarterlyData.last;
     final salaryRanges = dataService.calculateSalaryRanges(
-      data.departmentStats,
+      lastQuarterData.departmentStats,
     );
 
     return await chartService.generateAllCharts(
       previewContainerKey: GlobalKey(),
-      departmentStats: data.departmentStats,
+      departmentStats: lastQuarterData.departmentStats,
       salaryRanges: salaryRanges,
       salaryStructureData: reportContent.salaryStructureData,
     );

@@ -1,165 +1,69 @@
-import 'dart:typed_data';
-import 'package:salary_report/src/isar/data_analysis_service.dart';
-import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
-import 'package:salary_report/src/common/logger.dart';
-import 'package:salary_report/src/common/ai_config.dart';
-import 'ai_summary_service.dart';
+// src/report/report_data_service.dart
 
+import 'package:salary_report/src/isar/data_analysis_service.dart';
+
+import 'package:salary_report/src/pages/visualization/report/ai_summary_service.dart';
+import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
+import 'package:salary_report/src/pages/visualization/report/analysis_data.dart';
+import 'package:salary_report/src/common/logger.dart';
+// ignore: depend_on_referenced_packages
+import 'package:intl/intl.dart';
+
+/// 报告数据服务
+/// 负责准备报告所需的所有数据和文本内容
 class ReportDataService {
   final AISummaryService _aiService;
-  final DataAnalysisService? _dataService;
+  final DataAnalysisService _dataService;
 
   ReportDataService({
     required AISummaryService aiService,
-    DataAnalysisService? dataService,
+    required DataAnalysisService dataService,
   }) : _aiService = aiService,
        _dataService = dataService;
 
-  Map<String, int> calculateSalaryRanges(
+  /// 计算薪资区间分布
+  List<Map<String, int>> calculateSalaryRanges(
     List<DepartmentSalaryStats> departmentStats,
   ) {
-    final ranges = <String, int>{};
+    // 定义薪资范围
+    final salaryRanges = [
+      {'min': 0.0, 'max': 3000.0, 'label': '< 3000'},
+      {'min': 3000.0, 'max': 4000.0, 'label': '3000-4000'},
+      {'min': 4000.0, 'max': 5000.0, 'label': '4000-5000'},
+      {'min': 5000.0, 'max': 6000.0, 'label': '5000-6000'},
+      {'min': 6000.0, 'max': 7000.0, 'label': '6000-7000'},
+      {'min': 7000.0, 'max': 8000.0, 'label': '7000-8000'},
+      {'min': 8000.0, 'max': 9000.0, 'label': '8000-9000'},
+      {'min': 9000.0, 'max': 10000.0, 'label': '9000-10000'},
+      {'min': 10000.0, 'max': double.infinity, 'label': '> 10000'},
+    ];
 
+    final rangeCounts = <String, int>{};
+
+    // 初始化计数器
+    for (var range in salaryRanges) {
+      rangeCounts[range['label'] as String] = 0;
+    }
+
+    // 统计每个薪资范围的人数
     for (var stat in departmentStats) {
-      final salary = stat.averageNetSalary;
-      String range;
-      if (salary < 3000) {
-        range = '< 3000';
-      } else if (salary < 4000) {
-        range = '3000-4000';
-      } else if (salary < 5000) {
-        range = '4000-5000';
-      } else if (salary < 6000) {
-        range = '5000-6000';
-      } else if (salary < 7000) {
-        range = '6000-7000';
-      } else if (salary < 8000) {
-        range = '7000-8000';
-      } else if (salary < 9000) {
-        range = '8000-9000';
-      } else if (salary < 10000) {
-        range = '9000-10000';
-      } else {
-        range = '> 10000';
-      }
-      ranges[range] = (ranges[range] ?? 0) + stat.employeeCount;
-    }
-
-    return ranges;
-  }
-
-  /// 生成薪资结构分析文本
-  String _generateSalaryStructureAnalysis(Map<String, dynamic>? summaryData) {
-    if (summaryData == null || summaryData.isEmpty) {
-      return "暂无薪资结构数据";
-    }
-
-    final buffer = StringBuffer();
-
-    // 定义需要显示的薪资结构字段及其显示名称
-    final salaryFields = {
-      "基本工资": "基本工资",
-      "岗位工资": "岗位工资",
-      "绩效工资": "绩效工资",
-      "补贴工资": "补贴工资",
-      "综合薪资标准": "综合薪资标准",
-      "当月基本工资": "当月基本工资",
-      "当月岗位工资": "当月岗位工资",
-      "当月绩效工资": "当月绩效工资",
-      "当月补贴工资": "当月补贴工资",
-      "加班费": "加班费",
-      "津贴": "津贴",
-      "奖金": "奖金",
-      "社保扣款": "社保扣款",
-      "个税": "个税",
-      "其他扣款": "其他扣款",
-      "饭补": "饭补",
-    };
-
-    // 按顺序添加薪资结构信息
-    salaryFields.forEach((key, displayName) {
-      if (summaryData.containsKey(key)) {
-        final value = summaryData[key];
-        if (value != null && value.toString().isNotEmpty) {
-          buffer.write("$displayName：$value；");
+      for (var range in salaryRanges) {
+        final min = range['min'] as double;
+        final max = range['max'] as double;
+        if (stat.averageNetSalary >= min && stat.averageNetSalary < max) {
+          final label = range['label'] as String;
+          rangeCounts[label] = rangeCounts[label]! + stat.employeeCount;
+          break;
         }
       }
-    });
-
-    // 如果没有找到任何相关字段，返回默认信息
-    if (buffer.isEmpty) {
-      return "暂无薪资结构数据";
     }
 
-    // 优化表述，将最后一个分号替换为句号
-    String result = buffer.toString();
-    if (result.endsWith("；")) {
-      result = result.substring(0, result.length - 1) + "。";
-    }
-
-    return result;
+    return rangeCounts.entries
+        .map((entry) => {entry.key: entry.value})
+        .toList();
   }
 
-  /// 提取薪资结构数据用于生成饼图
-  List<Map<String, dynamic>> _extractSalaryStructureData(
-    Map<String, dynamic>? summaryData,
-  ) {
-    final List<Map<String, dynamic>> salaryStructureData = [];
-
-    if (summaryData == null || summaryData.isEmpty) {
-      return salaryStructureData;
-    }
-
-    // 定义需要显示的薪资结构字段及其显示名称（仅包含收入项）
-    final incomeFields = {
-      "基本工资": "基本工资",
-      "岗位工资": "岗位工资",
-      "绩效工资": "绩效工资",
-      "补贴工资": "补贴工资",
-      "综合薪资标准": "综合薪资标准",
-      "当月基本工资": "当月基本工资",
-      "当月岗位工资": "当月岗位工资",
-      "当月绩效工资": "当月绩效工资",
-      "当月补贴工资": "当月补贴工资",
-      "加班费": "加班费",
-      "津贴": "津贴",
-      "奖金": "奖金",
-      "饭补": "饭补",
-    };
-
-    // 提取收入项数据
-    incomeFields.forEach((key, displayName) {
-      if (summaryData.containsKey(key)) {
-        final value = summaryData[key];
-        if (value != null && value.toString().isNotEmpty) {
-          // 尝试解析数值
-          final numericValue = _parseNumericValue(value.toString());
-          if (numericValue != null && numericValue > 0) {
-            salaryStructureData.add({
-              'category': displayName,
-              'value': numericValue,
-            });
-          }
-        }
-      }
-    });
-
-    return salaryStructureData;
-  }
-
-  /// 解析字符串中的数值
-  double? _parseNumericValue(String value) {
-    // 移除非数字字符（保留数字、小数点和负号）
-    final numericString = value.replaceAll(RegExp(r'[^\d.-]'), '');
-    if (numericString.isEmpty) return null;
-
-    try {
-      return double.parse(numericString);
-    } catch (e) {
-      return null;
-    }
-  }
-
+  /// 通用的报告数据准备方法
   Future<ReportContentModel> prepareReportData({
     required List<DepartmentSalaryStats> departmentStats,
     required Map<String, dynamic> analysisData,
@@ -169,363 +73,832 @@ class ReportDataService {
     required DateTime startTime,
     required DateTime endTime,
   }) async {
-    final currentTime = DateTime.now();
-
-    // Perform calculations
-    final salaryRanges = calculateSalaryRanges(departmentStats);
-    final sortedDeptsByCount = List<DepartmentSalaryStats>.from(departmentStats)
-      ..sort((a, b) => b.employeeCount.compareTo(a.employeeCount));
-    final sortedDeptsBySalary = List<DepartmentSalaryStats>.from(
-      departmentStats,
-    )..sort((a, b) => b.averageNetSalary.compareTo(a.averageNetSalary));
-
-    // Prepare text descriptions based on report type
-    String reportTime;
+    // 根据是否为多月报告调用相应的方法
     if (isMultiMonth) {
-      // 对于多月报告，显示起止时间
-      reportTime =
-          '${startTime.year}年${startTime.month}月-${endTime.year}年${endTime.month}月';
-    } else {
-      // 对于单月报告，显示具体月份
-      reportTime = '$year年$month月';
-    }
-
-    final currentTimeStr =
-        '${currentTime.year}年${currentTime.month}月${currentTime.day}日';
-    final startTimeStr = '${startTime.year}年${startTime.month}月';
-    final endTimeStr = '${endTime.year}年${endTime.month}月';
-
-    final salaryRangeDesc = salaryRanges.entries
-        .map((e) => '${e.key}元区间有${e.value}人')
-        .join('，');
-
-    final employeeCount = departmentStats.fold(
-      0,
-      (sum, stat) => sum + stat.employeeCount,
-    );
-
-    // 优化employeeDetails的格式，确保不重复显示部门信息
-    // 对于多月报告，只使用最后一个月的数据
-    String employeeDetails;
-    String departmentDetails;
-
-    if (isMultiMonth && analysisData.containsKey('lastMonthDepartmentStats')) {
-      // 多月报告使用最后一个月的数据
-      final lastMonthStats = List<Map<String, dynamic>>.from(
-        analysisData['lastMonthDepartmentStats'] as List,
-      );
-
-      // 按员工数量排序
-      lastMonthStats.sort(
-        (a, b) =>
-            (b['employeeCount'] as int).compareTo(a['employeeCount'] as int),
-      );
-
-      final employeeDetailsList = lastMonthStats
-          .map((dept) => '${dept['department']}${dept['employeeCount']}人')
-          .join('，');
-      employeeDetails = '${employeeDetailsList}。';
-
-      // 计算总员工数
-      final totalEmployeeCount = lastMonthStats.fold(
-        0,
-        (sum, stat) => sum + (stat['employeeCount'] as int),
-      );
-
-      departmentDetails =
-          '涉及${lastMonthStats.length}个部门，共计${totalEmployeeCount}人。${employeeDetailsList}。';
-    } else {
-      // 单月报告或其他情况使用原有逻辑
-      final employeeDetailsList = sortedDeptsByCount
-          .map((dept) => '${dept.department}${dept.employeeCount}人')
-          .join('，');
-      employeeDetails = '${employeeDetailsList}。';
-
-      departmentDetails =
-          '涉及${departmentStats.length}个部门，共计${employeeCount}人。${employeeDetailsList}。';
-    }
-
-    // 获取薪资结构数据
-    Map<String, dynamic>? summaryData;
-    logger.info(
-      'Analysis data isMultiMonth: $isMultiMonth  _dataService is null ${_dataService == null}',
-    );
-    if (_dataService != null) {
-      if (isMultiMonth) {
-        summaryData = await _dataService!.getMultiMonthSalarySummaryData(
-          startYear: startTime.year,
-          startMonth: startTime.month,
-          endYear: endTime.year,
-          endMonth: endTime.month,
-        );
-      } else {
-        summaryData = await _dataService!.getSalarySummaryData(
+      // 对于多月报告，创建一个简单的MultiMonthAnalysisData对象
+      final monthlyData = [
+        MonthlyAnalysisData(
           year: year,
           month: month,
-        );
+          departmentStats: departmentStats,
+          analysisData: analysisData,
+        ),
+      ];
+
+      final multiMonthData = MultiMonthAnalysisData(
+        startTime: startTime,
+        endTime: endTime,
+        monthlyData: monthlyData,
+      );
+
+      return await prepareReportDataForMultiMonth(multiMonthData);
+    } else {
+      // 对于单月报告
+      final singleMonthData = SingleMonthAnalysisData(
+        year: year,
+        month: month,
+        departmentStats: departmentStats,
+        analysisData: analysisData,
+      );
+
+      return await prepareReportDataForSingleMonth(singleMonthData);
+    }
+  }
+
+  /// 为单月报告准备数据
+  Future<ReportContentModel> prepareReportDataForSingleMonth(
+    SingleMonthAnalysisData data,
+  ) async {
+    // 计算基本统计数据
+    double totalEmployees = 0.0;
+    double totalSalary = 0.0;
+    double highestSalary = 0.0;
+    double lowestSalary = double.infinity;
+
+    for (var stat in data.departmentStats) {
+      totalEmployees += stat.employeeCount;
+      totalSalary += stat.totalNetSalary;
+      if (stat.averageNetSalary > highestSalary) {
+        highestSalary = stat.averageNetSalary;
+      }
+      if (stat.averageNetSalary < lowestSalary) {
+        lowestSalary = stat.averageNetSalary;
       }
     }
 
-    logger.info('Salary summary data: $summaryData');
+    if (lowestSalary == double.infinity) {
+      lowestSalary = 0.0;
+    }
+
+    final double averageSalary = totalEmployees > 0
+        ? totalSalary / totalEmployees.toDouble()
+        : 0.0;
+
+    // 生成部门详情
+    final departmentDetails = StringBuffer();
+    for (var stat in data.departmentStats) {
+      departmentDetails.writeln(
+        '${stat.department}: ${stat.employeeCount}人, 平均工资¥${stat.averageNetSalary.toStringAsFixed(2)}',
+      );
+    }
+
+    // 生成员工详情（这里简化处理，实际应用中可能需要更多数据）
+    final employeeDetails = '总员工数: $totalEmployees人';
+
+    // 生成薪资区间描述
+    final salaryRanges = calculateSalaryRanges(data.departmentStats);
+    final salaryRangeDescription = _generateSalaryRangeDescription(
+      salaryRanges, // 将Map转换为List<Map<String, int>>
+    );
+
+    // 生成薪资结构数据（用于图表）
+    final salaryStructureData = _generateSalaryStructureData(
+      data.departmentStats,
+    );
+
+    // 生成报告标题和时间信息
+    final reportTitle = '${data.year}年${data.month}月工资分析报告';
+    final reportDate = DateFormat('yyyy年MM月dd日').format(DateTime.now());
+    final reportTime = DateFormat('HH:mm:ss').format(DateTime.now());
+    final startTime = '${data.year}年${data.month}月01日';
+    final endTime =
+        '${data.year}年${data.month}月${_getLastDayOfMonth(data.year, data.month)}日';
 
     // 生成薪资结构分析
-    final salaryStructureAnalysis = _generateSalaryStructureAnalysis(
-      summaryData,
+    final salaryStructure = _generateSalaryStructureAnalysis(
+      data.departmentStats,
     );
 
-    // 提取薪资结构数据用于饼图
-    final salaryStructureData = _extractSalaryStructureData(summaryData);
-
-    // 获取上月数据用于比较（仅对单月报告）
-    String compareLastText = ''; // 默认为空字符串
-    if (!isMultiMonth && _dataService != null) {
-      final lastMonthStats = await _dataService!
-          .getLastMonthEmployeeAndSalaryStats(year: year, month: month);
-
-      if (lastMonthStats != null) {
-        final lastTotalEmployees = lastMonthStats['totalEmployees'] as int;
-        final lastAverageSalary = lastMonthStats['averageSalary'] as double;
-
-        // 描述上月数据
-        final lastMonthDesc =
-            '上月员工${lastTotalEmployees}人，平均薪资${lastAverageSalary.toStringAsFixed(2)}元；';
-
-        // 计算员工数量变化
-        final employeeChange = employeeCount - lastTotalEmployees;
-        final employeeChangeText = employeeChange > 0
-            ? '本月员工数量增加${employeeChange}人'
-            : employeeChange < 0
-            ? '本月员工数量减少${employeeChange.abs()}人'
-            : '本月员工数量持平';
-
-        // 计算平均薪资变化
-        final salaryChange = analysisData['averageSalary'] - lastAverageSalary;
-        final salaryChangeText = salaryChange > 0
-            ? '平均薪资增长${salaryChange.toStringAsFixed(2)}元'
-            : salaryChange < 0
-            ? '平均薪资下降${salaryChange.abs().toStringAsFixed(2)}元'
-            : '平均薪资持平';
-
-        compareLastText =
-            '$lastMonthDesc$employeeChangeText，$salaryChangeText。';
-      }
-    }
-
-    // 多月报告专用数据
-    List<Map<String, dynamic>>? employeeCountPerMonth;
-    List<Map<String, dynamic>>? averageSalaryPerMonth;
-    List<Map<String, dynamic>>? totalSalaryPerMonth;
-    List<Map<String, dynamic>>? departmentDetailsPerMonth;
-    List<Map<String, dynamic>>? monthlySalaryRanges;
-    List<Map<String, dynamic>>? monthlySalaryRankings;
-
-    // 如果是多月报告，计算月度变化数据
-    if (isMultiMonth) {
-      // 从analysisData中提取月度数据（这里假设analysisData包含这些信息）
-      // 实际实现中，这些数据应该从数据服务中获取
-      if (analysisData.containsKey('monthlyEmployeeCount')) {
-        employeeCountPerMonth = List<Map<String, dynamic>>.from(
-          analysisData['monthlyEmployeeCount'] as List,
-        );
-      }
-
-      if (analysisData.containsKey('monthlyAverageSalary')) {
-        averageSalaryPerMonth = List<Map<String, dynamic>>.from(
-          analysisData['monthlyAverageSalary'] as List,
-        );
-      }
-
-      if (analysisData.containsKey('monthlyTotalSalary')) {
-        totalSalaryPerMonth = List<Map<String, dynamic>>.from(
-          analysisData['monthlyTotalSalary'] as List,
-        );
-      }
-
-      if (analysisData.containsKey('monthlyDepartmentDetails')) {
-        departmentDetailsPerMonth = List<Map<String, dynamic>>.from(
-          analysisData['monthlyDepartmentDetails'] as List,
-        );
-      }
-
-      if (analysisData.containsKey('monthlySalaryRanges')) {
-        monthlySalaryRanges = List<Map<String, dynamic>>.from(
-          analysisData['monthlySalaryRanges'] as List,
-        );
-      }
-
-      if (analysisData.containsKey('monthlySalaryRankings')) {
-        monthlySalaryRankings = List<Map<String, dynamic>>.from(
-          analysisData['monthlySalaryRankings'] as List,
-        );
-      }
-    }
-
-    // Get AI summaries
-    final salaryFeatureSummary = await _aiService.generateSalaryFeatureSummary(
-      salaryRangeDesc,
-    );
-    final departmentAnalysis = await _aiService
-        .analyzeDepartmentSalaryDifferences(departmentStats);
-
-    final keySalaryPointAnalysis = await _aiService.analyzeKeySalaryPositions(
-      departmentStats,
+    // 生成薪资结构优化建议
+    final salaryStructureAdvice = _generateSalaryStructureAdvice(
+      data.departmentStats,
     );
 
-    // 生成薪资结构合理性评估与优化建议
-    final salaryStructureAdvice = await _aiService
-        .generateSalaryStructureAdvice(
-          employeeDetails: employeeDetails,
-          departmentDetails: departmentDetails,
-          salaryRange: salaryRangeDesc,
-          salaryRangeFeature: salaryFeatureSummary,
-        );
+    // 生成AI分析内容
+    final salaryRangeFeatureSummary = await _aiService
+        .generateSalaryRangeFeatureSummary(
+          salaryRanges,
+          data.departmentStats,
+        ); // 传递List<Map<String, int>>
 
-    // Convert markdown format to plain text for salary analysis
-    final departmentAnalysisText = departmentAnalysis
-        .replaceAll(RegExp(r'\$1'), '') // Remove $1 markers
-        .replaceAll(RegExp(r'\#\$1'), '') // Remove #$1 markers
-        .replaceAll(RegExp(r'\*\*([^*]+)\*\*'), r'$1') // Remove bold
-        .replaceAll(RegExp(r'\* ([^\n]+)'), r'• $1') // Convert list items
-        .replaceAll(RegExp(r'\#\#\# ([^\n]+)'), r'$1') // Remove headings
-        .replaceAll(RegExp(r'\#\# ([^\n]+)'), r'$1')
-        .replaceAll(RegExp(r'\# ([^\n]+)'), r'$1')
-        .replaceAll(RegExp(r'\n\s*\n'), r'\n') // Remove extra newlines
-        .trim(); // Remove leading/trailing whitespace
+    final departmentSalaryAnalysis = await _aiService
+        .generateDepartmentSalaryAnalysis(data.departmentStats);
 
-    // Convert markdown format to plain text for key salary point analysis
-    final keySalaryPointText = keySalaryPointAnalysis
-        .replaceAll(RegExp(r'\$1'), '') // Remove $1 markers
-        .replaceAll(RegExp(r'\#\$1'), '') // Remove #$1 markers
-        .replaceAll(RegExp(r'\*\*([^*]+)\*\*'), r'$1') // Remove bold
-        .replaceAll(RegExp(r'\* ([^\n]+)'), r'• $1') // Convert list items
-        .replaceAll(RegExp(r'\#\#\# ([^\n]+)'), r'$1') // Remove headings
-        .replaceAll(RegExp(r'\#\# ([^\n]+)'), r'$1')
-        .replaceAll(RegExp(r'\# ([^\n]+)'), r'$1')
-        .replaceAll(RegExp(r'\n\s*\n'), r'\n') // Remove extra newlines
-        .trim(); // Remove leading/trailing whitespace
+    final keySalaryPoint = await _aiService.generateKeySalaryPoint(
+      data.departmentStats,
+      salaryRanges, // 传递List<Map<String, int>>
+    );
 
-    // Salary rankings
-    String salaryRankings;
-    if (isMultiMonth &&
-        monthlySalaryRankings != null &&
-        monthlySalaryRankings.isNotEmpty) {
-      // 对于多月报告，使用每月薪资排名数据
-      final buffer = StringBuffer();
-      for (var monthRanking in monthlySalaryRankings) {
-        final month = monthRanking['month'];
-        final rankings = monthRanking['rankings'] as List;
-        buffer.write('$month，');
-        for (var i = 0; i < rankings.length; i++) {
-          final dept = rankings[i];
-          buffer.write(
-            '第${i + 1}名${dept['department']}部门平均薪资${(dept['average'] as double).toStringAsFixed(2)}元',
-          );
-          if (i < rankings.length - 1) {
-            buffer.write('；');
-          }
-        }
-        buffer.write('；');
-      }
-      salaryRankings = buffer.toString();
-      // 移除最后的分号
-      salaryRankings = salaryRankings.substring(0, salaryRankings.length - 1);
-    } else {
-      // 单月报告使用原有逻辑
-      salaryRankings = sortedDeptsBySalary
-          .asMap()
-          .entries
-          .map(
-            (e) =>
-                '第${e.key + 1}名${e.value.department}部门平均薪资${e.value.averageNetSalary.toStringAsFixed(2)}元',
-          )
-          .join('；');
-    }
+    // 生成薪资排名
+    final salaryRankings = _generateSalaryRankings(data.departmentStats);
 
-    // Salary ranges for multi-month reports
-    String salaryRangesDesc;
-    if (isMultiMonth &&
-        monthlySalaryRanges != null &&
-        monthlySalaryRanges.isNotEmpty) {
-      // 对于多月报告，使用每月薪资区间分布数据
-      final buffer = StringBuffer();
-      for (var monthRange in monthlySalaryRanges) {
-        final month = monthRange['month'];
-        final ranges = monthRange['salaryRanges'] as Map<String, int>;
-        buffer.write('$month，');
-        final rangeEntries = ranges.entries.toList();
-        for (var i = 0; i < rangeEntries.length; i++) {
-          final entry = rangeEntries[i];
-          buffer.write('${entry.key}元区间有${entry.value}人');
-          if (i < rangeEntries.length - 1) {
-            buffer.write('，');
-          }
-        }
-        buffer.write(';');
-      }
-      salaryRangesDesc = buffer.toString();
-      // 移除最后的分号
-      salaryRangesDesc = salaryRangesDesc.substring(
-        0,
-        salaryRangesDesc.length - 1,
-      );
-    } else {
-      // 单月报告使用原有逻辑
-      salaryRangesDesc = salaryRangeDesc;
-    }
+    // 计算基础工资和绩效工资比例（这里简化处理）
+    final basicSalaryRate = 0.7; // 假设基础工资占70%
+    final performanceSalaryRate = 0.3; // 假设绩效工资占30%
 
-    // Build the model with appropriate title based on report type
-    String reportTitle;
-    if (isMultiMonth) {
-      // 根据起止时间确定报告标题
-      if (startTime.year == endTime.year && startTime.month == endTime.month) {
-        // 同一个月
-        reportTitle = '$year年$month月工资分析报告';
-      } else if (startTime.year == endTime.year) {
-        // 同一年度
-        reportTitle =
-            '${startTime.year}年${startTime.month}月-${endTime.month}月工资分析报告';
-      } else {
-        // 跨年度
-        reportTitle =
-            '${startTime.year}年${startTime.month}月-${endTime.year}年${endTime.month}月工资分析报告';
-      }
-    } else {
-      // 单月报告
-      reportTitle = '$year年$month月工资分析报告';
-    }
-
-    // Build the model
     return ReportContentModel(
       reportTitle: reportTitle,
-      reportDate: currentTimeStr,
-      companyName: AIConfig.companyName,
+      reportDate: reportDate,
+      companyName: '示例公司',
       reportTime: reportTime,
-      startTime: startTimeStr,
-      endTime: endTimeStr,
-      compareLast: compareLastText, // 直接使用compareLastText，不再需要null检查
-      totalEmployees: analysisData['totalEmployees'],
-      totalSalary: analysisData['totalSalary'],
-      averageSalary: analysisData['averageSalary'],
-      departmentCount: departmentStats.length,
-      employeeCount: employeeCount,
+      startTime: startTime,
+      endTime: endTime,
+      compareLast: '与上月相比', // 简化处理
+      totalEmployees: totalEmployees.toInt(),
+      totalSalary: totalSalary,
+      averageSalary: averageSalary,
+      departmentCount: data.departmentStats.length,
+      employeeCount: totalEmployees.toInt(),
       employeeDetails: employeeDetails,
-      departmentDetails: departmentDetails,
-      salaryRangeDescription: '$salaryRangesDesc，详见下图。',
-      salaryRangeFeatureSummary: salaryFeatureSummary,
-      departmentSalaryAnalysis: departmentAnalysisText,
-      keySalaryPoint: keySalaryPointText,
+      departmentDetails: departmentDetails.toString(),
+      salaryRangeDescription: salaryRangeDescription,
+      salaryRangeFeatureSummary: salaryRangeFeatureSummary,
+      departmentSalaryAnalysis: departmentSalaryAnalysis,
+      keySalaryPoint: keySalaryPoint,
       salaryRankings: salaryRankings,
-      basicSalaryRate: 85.0, // Example value
-      performanceSalaryRate: 15.0, // Example value
-      salaryStructure: salaryStructureAnalysis, // 薪资结构分析
-      salaryStructureAdvice: salaryStructureAdvice, // 薪资结构合理性评估与优化建议
-      salaryStructureData: salaryStructureData, // 薪资结构数据用于图表
-      departmentStats: departmentStats,
-      // 多月报告专用数据
-      employeeCountPerMonth: employeeCountPerMonth, // 每月人数变化数据
-      averageSalaryPerMonth: averageSalaryPerMonth, // 每月平均薪资变化数据
-      totalSalaryPerMonth: totalSalaryPerMonth, // 每月总工资变化数据
-      departmentDetailsPerMonth: departmentDetailsPerMonth, // 每月各部门详情数据
+      basicSalaryRate: basicSalaryRate,
+      performanceSalaryRate: performanceSalaryRate,
+      salaryStructure: salaryStructure,
+      salaryStructureAdvice: salaryStructureAdvice,
+      salaryStructureData: salaryStructureData,
+      departmentStats: data.departmentStats,
     );
+  }
+
+  /// 为多月报告准备数据
+  Future<ReportContentModel> prepareReportDataForMultiMonth(
+    MultiMonthAnalysisData data,
+  ) async {
+    // 获取最后一个月的数据用于基础统计
+    final lastMonthData = data.monthlyData.last;
+
+    // 计算基本统计数据
+    double totalEmployees = 0.0;
+    double totalSalary = 0.0;
+    double highestSalary = 0.0;
+    double lowestSalary = double.infinity;
+
+    for (var stat in lastMonthData.departmentStats) {
+      totalEmployees += stat.employeeCount;
+      totalSalary += stat.totalNetSalary;
+      if (stat.averageNetSalary > highestSalary) {
+        highestSalary = stat.averageNetSalary;
+      }
+      if (stat.averageNetSalary < lowestSalary) {
+        lowestSalary = stat.averageNetSalary;
+      }
+    }
+
+    if (lowestSalary == double.infinity) {
+      lowestSalary = 0;
+    }
+
+    final double averageSalary = totalEmployees > 0
+        ? totalSalary / totalEmployees
+        : 0.0;
+
+    // 生成部门详情
+    final departmentDetails = StringBuffer();
+    for (var stat in lastMonthData.departmentStats) {
+      departmentDetails.writeln(
+        '${stat.department}: ${stat.employeeCount}人, 平均工资¥${stat.averageNetSalary.toStringAsFixed(2)}',
+      );
+    }
+
+    // 生成员工详情（这里简化处理，实际应用中可能需要更多数据）
+    final employeeDetails = '总员工数: $totalEmployees人';
+
+    // 生成薪资区间描述
+    final salaryRanges = calculateSalaryRanges(lastMonthData.departmentStats);
+    final salaryRangeDescription = _generateSalaryRangeDescription(
+      salaryRanges, // 将Map转换为List<Map<String, int>>
+    );
+
+    // 生成薪资结构数据（用于图表）
+    final salaryStructureData = _generateSalaryStructureData(
+      lastMonthData.departmentStats,
+    );
+
+    // 生成报告标题和时间信息
+    final reportTitle =
+        '${data.startTime.year}年${data.startTime.month}月至${data.endTime.year}年${data.endTime.month}月工资分析报告';
+    final reportDate = DateFormat('yyyy年MM月dd日').format(DateTime.now());
+    final reportTime = DateFormat('HH:mm:ss').format(DateTime.now());
+    final startTime =
+        '${data.startTime.year}年${data.startTime.month}月${data.startTime.day}日';
+    final endTime =
+        '${data.endTime.year}年${data.endTime.month}月${data.endTime.day}日';
+
+    // 生成薪资结构分析
+    final salaryStructure = _generateSalaryStructureAnalysis(
+      lastMonthData.departmentStats,
+    );
+
+    // 生成薪资结构优化建议
+    final salaryStructureAdvice = _generateSalaryStructureAdvice(
+      lastMonthData.departmentStats,
+    );
+
+    // 生成AI分析内容
+    final salaryRangeFeatureSummary = await _aiService
+        .generateSalaryRangeFeatureSummary(
+          salaryRanges, // 传递List<Map<String, int>>
+          lastMonthData.departmentStats,
+        );
+
+    final departmentSalaryAnalysis = await _aiService
+        .generateDepartmentSalaryAnalysis(lastMonthData.departmentStats);
+
+    final keySalaryPoint = await _aiService.generateKeySalaryPoint(
+      lastMonthData.departmentStats,
+      salaryRanges, // 传递List<Map<String, int>>
+    );
+
+    // 生成薪资排名
+    final salaryRankings = _generateSalaryRankings(
+      lastMonthData.departmentStats,
+    );
+
+    // 计算基础工资和绩效工资比例（这里简化处理）
+    final basicSalaryRate = 0.7; // 假设基础工资占70%
+    final performanceSalaryRate = 0.3; // 假设绩效工资占30%
+
+    // 多月报告专用数据
+    final employeeCountPerMonth = _calculateEmployeeCountPerMonth(data);
+    final averageSalaryPerMonth = _calculateAverageSalaryPerMonth(data);
+    final totalSalaryPerMonth = _calculateTotalSalaryPerMonth(data);
+    final departmentDetailsPerMonth = _calculateDepartmentDetailsPerMonth(data);
+
+    return ReportContentModel(
+      reportTitle: reportTitle,
+      reportDate: reportDate,
+      companyName: '示例公司',
+      reportTime: reportTime,
+      startTime: startTime,
+      endTime: endTime,
+      compareLast: '与上期相比', // 简化处理
+      totalEmployees: totalEmployees.toInt(),
+      totalSalary: totalSalary,
+      averageSalary: averageSalary,
+      departmentCount: lastMonthData.departmentStats.length,
+      employeeCount: totalEmployees.toInt(),
+      employeeDetails: employeeDetails,
+      departmentDetails: departmentDetails.toString(),
+      salaryRangeDescription: salaryRangeDescription,
+      salaryRangeFeatureSummary: salaryRangeFeatureSummary,
+      departmentSalaryAnalysis: departmentSalaryAnalysis,
+      keySalaryPoint: keySalaryPoint,
+      salaryRankings: salaryRankings,
+      basicSalaryRate: basicSalaryRate,
+      performanceSalaryRate: performanceSalaryRate,
+      salaryStructure: salaryStructure,
+      salaryStructureAdvice: salaryStructureAdvice,
+      salaryStructureData: salaryStructureData,
+      departmentStats: lastMonthData.departmentStats,
+      // 多月报告专用字段
+      employeeCountPerMonth: employeeCountPerMonth,
+      averageSalaryPerMonth: averageSalaryPerMonth,
+      totalSalaryPerMonth: totalSalaryPerMonth,
+      departmentDetailsPerMonth: departmentDetailsPerMonth,
+    );
+  }
+
+  /// 为单季度报告准备数据
+  Future<ReportContentModel> prepareReportDataForSingleQuarter(
+    SingleQuarterAnalysisData data,
+  ) async {
+    // 复用单月报告的逻辑，因为数据结构相似
+    final singleMonthData = SingleMonthAnalysisData(
+      year: data.year,
+      month: (data.quarter - 1) * 3 + 1, // 季度的第一个月
+      departmentStats: data.departmentStats,
+      analysisData: data.analysisData,
+    );
+
+    return await prepareReportDataForSingleMonth(singleMonthData);
+  }
+
+  /// 为多季度报告准备数据
+  Future<ReportContentModel> prepareReportDataForMultiQuarter(
+    MultiQuarterAnalysisData data,
+  ) async {
+    // 获取最后一个季度的数据用于基础统计
+    final lastQuarterData = data.quarterlyData.last;
+
+    // 计算基本统计数据
+    double totalEmployees = 0.0;
+    double totalSalary = 0.0;
+    double highestSalary = 0.0;
+    double lowestSalary = double.infinity;
+
+    for (var stat in lastQuarterData.departmentStats) {
+      totalEmployees += stat.employeeCount;
+      totalSalary += stat.totalNetSalary;
+      if (stat.averageNetSalary > highestSalary) {
+        highestSalary = stat.averageNetSalary;
+      }
+      if (stat.averageNetSalary < lowestSalary) {
+        lowestSalary = stat.averageNetSalary;
+      }
+    }
+
+    if (lowestSalary == double.infinity) {
+      lowestSalary = 0;
+    }
+
+    final double averageSalary = totalEmployees > 0
+        ? totalSalary / totalEmployees
+        : 0.0;
+
+    // 生成部门详情
+    final departmentDetails = StringBuffer();
+    for (var stat in lastQuarterData.departmentStats) {
+      departmentDetails.writeln(
+        '${stat.department}: ${stat.employeeCount}人, 平均工资¥${stat.averageNetSalary.toStringAsFixed(2)}',
+      );
+    }
+
+    // 生成员工详情（这里简化处理，实际应用中可能需要更多数据）
+    final employeeDetails = '总员工数: $totalEmployees人';
+
+    // 生成薪资区间描述
+    final salaryRanges = calculateSalaryRanges(lastQuarterData.departmentStats);
+    final salaryRangeDescription = _generateSalaryRangeDescription(
+      salaryRanges, // 将Map转换为List<Map<String, int>>
+    );
+
+    // 生成薪资结构数据（用于图表）
+    final salaryStructureData = _generateSalaryStructureData(
+      lastQuarterData.departmentStats,
+    );
+
+    // 生成报告标题和时间信息
+    final reportTitle =
+        '${data.startTime.year}年第${((data.startTime.month - 1) ~/ 3) + 1}季度至${data.endTime.year}年第${((data.endTime.month - 1) ~/ 3) + 1}季度工资分析报告';
+    final reportDate = DateFormat('yyyy年MM月dd日').format(DateTime.now());
+    final reportTime = DateFormat('HH:mm:ss').format(DateTime.now());
+    final startTime =
+        '${data.startTime.year}年${data.startTime.month}月${data.startTime.day}日';
+    final endTime =
+        '${data.endTime.year}年${data.endTime.month}月${data.endTime.day}日';
+
+    // 生成薪资结构分析
+    final salaryStructure = _generateSalaryStructureAnalysis(
+      lastQuarterData.departmentStats,
+    );
+
+    // 生成薪资结构优化建议
+    final salaryStructureAdvice = _generateSalaryStructureAdvice(
+      lastQuarterData.departmentStats,
+    );
+
+    // 生成AI分析内容
+    final salaryRangeFeatureSummary = await _aiService
+        .generateSalaryRangeFeatureSummary(
+          salaryRanges, // 传递List<Map<String, int>>
+          lastQuarterData.departmentStats,
+        );
+
+    final departmentSalaryAnalysis = await _aiService
+        .generateDepartmentSalaryAnalysis(lastQuarterData.departmentStats);
+
+    final keySalaryPoint = await _aiService.generateKeySalaryPoint(
+      lastQuarterData.departmentStats,
+      salaryRanges, // 传递List<Map<String, int>>
+    );
+
+    // 生成薪资排名
+    final salaryRankings = _generateSalaryRankings(
+      lastQuarterData.departmentStats,
+    );
+
+    // 计算基础工资和绩效工资比例（这里简化处理）
+    final basicSalaryRate = 0.7; // 假设基础工资占70%
+    final performanceSalaryRate = 0.3; // 假设绩效工资占30%
+
+    return ReportContentModel(
+      reportTitle: reportTitle,
+      reportDate: reportDate,
+      companyName: '示例公司',
+      reportTime: reportTime,
+      startTime: startTime,
+      endTime: endTime,
+      compareLast: '与上期相比', // 简化处理
+      totalEmployees: totalEmployees.toInt(),
+      totalSalary: totalSalary,
+      averageSalary: averageSalary,
+      departmentCount: lastQuarterData.departmentStats.length,
+      employeeCount: totalEmployees.toInt(),
+      employeeDetails: employeeDetails,
+      departmentDetails: departmentDetails.toString(),
+      salaryRangeDescription: salaryRangeDescription,
+      salaryRangeFeatureSummary: salaryRangeFeatureSummary,
+      departmentSalaryAnalysis: departmentSalaryAnalysis,
+      keySalaryPoint: keySalaryPoint,
+      salaryRankings: salaryRankings,
+      basicSalaryRate: basicSalaryRate,
+      performanceSalaryRate: performanceSalaryRate,
+      salaryStructure: salaryStructure,
+      salaryStructureAdvice: salaryStructureAdvice,
+      salaryStructureData: salaryStructureData,
+      departmentStats: lastQuarterData.departmentStats,
+    );
+  }
+
+  /// 为单年报告准备数据
+  Future<ReportContentModel> prepareReportDataForSingleYear(
+    SingleYearAnalysisData data,
+  ) async {
+    // 计算基本统计数据
+    double totalEmployees = 0.0;
+    double totalSalary = 0.0;
+    double highestSalary = 0.0;
+    double lowestSalary = double.infinity;
+
+    for (var stat in data.departmentStats) {
+      totalEmployees += stat.employeeCount;
+      totalSalary += stat.totalNetSalary;
+      if (stat.averageNetSalary > highestSalary) {
+        highestSalary = stat.averageNetSalary;
+      }
+      if (stat.averageNetSalary < lowestSalary) {
+        lowestSalary = stat.averageNetSalary;
+      }
+    }
+
+    if (lowestSalary == double.infinity) {
+      lowestSalary = 0;
+    }
+
+    final double averageSalary = totalEmployees > 0
+        ? totalSalary / totalEmployees
+        : 0.0;
+
+    // 生成部门详情
+    final departmentDetails = StringBuffer();
+    for (var stat in data.departmentStats) {
+      departmentDetails.writeln(
+        '${stat.department}: ${stat.employeeCount}人, 平均工资¥${stat.averageNetSalary.toStringAsFixed(2)}',
+      );
+    }
+
+    // 生成员工详情（这里简化处理，实际应用中可能需要更多数据）
+    final employeeDetails = '总员工数: $totalEmployees人';
+
+    // 生成薪资区间描述
+    final salaryRanges = calculateSalaryRanges(data.departmentStats);
+    final salaryRangeDescription = _generateSalaryRangeDescription(
+      salaryRanges, // 将Map转换为List<Map<String, int>>
+    );
+
+    // 生成薪资结构数据（用于图表）
+    final salaryStructureData = _generateSalaryStructureData(
+      data.departmentStats,
+    );
+
+    // 生成报告标题和时间信息
+    final reportTitle = '${data.year}年度工资分析报告';
+    final reportDate = DateFormat('yyyy年MM月dd日').format(DateTime.now());
+    final reportTime = DateFormat('HH:mm:ss').format(DateTime.now());
+    final startTime = '${data.year}年01月01日';
+    final endTime = '${data.year}年12月31日';
+
+    // 生成薪资结构分析
+    final salaryStructure = _generateSalaryStructureAnalysis(
+      data.departmentStats,
+    );
+
+    // 生成薪资结构优化建议
+    final salaryStructureAdvice = _generateSalaryStructureAdvice(
+      data.departmentStats,
+    );
+
+    // 生成AI分析内容
+    final salaryRangeFeatureSummary = await _aiService
+        .generateSalaryRangeFeatureSummary(
+          salaryRanges,
+          data.departmentStats,
+        ); // 传递List<Map<String, int>>
+
+    final departmentSalaryAnalysis = await _aiService
+        .generateDepartmentSalaryAnalysis(data.departmentStats);
+
+    final keySalaryPoint = await _aiService.generateKeySalaryPoint(
+      data.departmentStats,
+      salaryRanges, // 传递List<Map<String, int>>
+    );
+
+    // 生成薪资排名
+    final salaryRankings = _generateSalaryRankings(data.departmentStats);
+
+    // 计算基础工资和绩效工资比例（这里简化处理）
+    final basicSalaryRate = 0.7; // 假设基础工资占70%
+    final performanceSalaryRate = 0.3; // 假设绩效工资占30%
+
+    return ReportContentModel(
+      reportTitle: reportTitle,
+      reportDate: reportDate,
+      companyName: '示例公司',
+      reportTime: reportTime,
+      startTime: startTime,
+      endTime: endTime,
+      compareLast: '与上年相比', // 简化处理
+      totalEmployees: totalEmployees.toInt(),
+      totalSalary: totalSalary,
+      averageSalary: averageSalary,
+      departmentCount: data.departmentStats.length,
+      employeeCount: totalEmployees.toInt(),
+      employeeDetails: employeeDetails,
+      departmentDetails: departmentDetails.toString(),
+      salaryRangeDescription: salaryRangeDescription,
+      salaryRangeFeatureSummary: salaryRangeFeatureSummary,
+      departmentSalaryAnalysis: departmentSalaryAnalysis,
+      keySalaryPoint: keySalaryPoint,
+      salaryRankings: salaryRankings,
+      basicSalaryRate: basicSalaryRate,
+      performanceSalaryRate: performanceSalaryRate,
+      salaryStructure: salaryStructure,
+      salaryStructureAdvice: salaryStructureAdvice,
+      salaryStructureData: salaryStructureData,
+      departmentStats: data.departmentStats,
+    );
+  }
+
+  /// 为多年报告准备数据
+  Future<ReportContentModel> prepareReportDataForMultiYear(
+    MultiYearAnalysisData data,
+  ) async {
+    // 获取最后一年的数据用于基础统计
+    final lastYearData = data.annualData.last;
+
+    // 计算基本统计数据
+    double totalEmployees = 0.0;
+    double totalSalary = 0.0;
+    double highestSalary = 0.0;
+    double lowestSalary = double.infinity;
+
+    for (var stat in lastYearData.departmentStats) {
+      totalEmployees += stat.employeeCount;
+      totalSalary += stat.totalNetSalary;
+      if (stat.averageNetSalary > highestSalary) {
+        highestSalary = stat.averageNetSalary;
+      }
+      if (stat.averageNetSalary < lowestSalary) {
+        lowestSalary = stat.averageNetSalary;
+      }
+    }
+
+    if (lowestSalary == double.infinity) {
+      lowestSalary = 0;
+    }
+
+    final double averageSalary = totalEmployees > 0
+        ? totalSalary / totalEmployees
+        : 0.0;
+
+    // 生成部门详情
+    final departmentDetails = StringBuffer();
+    for (var stat in lastYearData.departmentStats) {
+      departmentDetails.writeln(
+        '${stat.department}: ${stat.employeeCount}人, 平均工资¥${stat.averageNetSalary.toStringAsFixed(2)}',
+      );
+    }
+
+    // 生成员工详情（这里简化处理，实际应用中可能需要更多数据）
+    final employeeDetails = '总员工数: $totalEmployees人';
+
+    // 生成薪资区间描述
+    final salaryRanges = calculateSalaryRanges(lastYearData.departmentStats);
+    final salaryRangeDescription = _generateSalaryRangeDescription(
+      salaryRanges, // 将Map转换为List<Map<String, int>>
+    );
+
+    // 生成薪资结构数据（用于图表）
+    final salaryStructureData = _generateSalaryStructureData(
+      lastYearData.departmentStats,
+    );
+
+    // 生成报告标题和时间信息
+    final reportTitle = '${data.startYear}年至${data.endYear}年工资分析报告';
+    final reportDate = DateFormat('yyyy年MM月dd日').format(DateTime.now());
+    final reportTime = DateFormat('HH:mm:ss').format(DateTime.now());
+    final startTime = '${data.startYear}年01月01日';
+    final endTime = '${data.endYear}年12月31日';
+
+    // 生成薪资结构分析
+    final salaryStructure = _generateSalaryStructureAnalysis(
+      lastYearData.departmentStats,
+    );
+
+    // 生成薪资结构优化建议
+    final salaryStructureAdvice = _generateSalaryStructureAdvice(
+      lastYearData.departmentStats,
+    );
+
+    // 生成AI分析内容
+    final salaryRangeFeatureSummary = await _aiService
+        .generateSalaryRangeFeatureSummary(
+          salaryRanges, // 传递List<Map<String, int>>
+          lastYearData.departmentStats,
+        );
+
+    final departmentSalaryAnalysis = await _aiService
+        .generateDepartmentSalaryAnalysis(lastYearData.departmentStats);
+
+    final keySalaryPoint = await _aiService.generateKeySalaryPoint(
+      lastYearData.departmentStats,
+      salaryRanges, // 传递List<Map<String, int>>
+    );
+
+    // 生成薪资排名
+    final salaryRankings = _generateSalaryRankings(
+      lastYearData.departmentStats,
+    );
+
+    // 计算基础工资和绩效工资比例（这里简化处理）
+    final basicSalaryRate = 0.7; // 假设基础工资占70%
+    final performanceSalaryRate = 0.3; // 假设绩效工资占30%
+
+    return ReportContentModel(
+      reportTitle: reportTitle,
+      reportDate: reportDate,
+      companyName: '示例公司',
+      reportTime: reportTime,
+      startTime: startTime,
+      endTime: endTime,
+      compareLast: '与上年相比', // 简化处理
+      totalEmployees: totalEmployees.toInt(),
+      totalSalary: totalSalary,
+      averageSalary: averageSalary,
+      departmentCount: lastYearData.departmentStats.length,
+      employeeCount: totalEmployees.toInt(),
+      employeeDetails: employeeDetails,
+      departmentDetails: departmentDetails.toString(),
+      salaryRangeDescription: salaryRangeDescription,
+      salaryRangeFeatureSummary: salaryRangeFeatureSummary,
+      departmentSalaryAnalysis: departmentSalaryAnalysis,
+      keySalaryPoint: keySalaryPoint,
+      salaryRankings: salaryRankings,
+      basicSalaryRate: basicSalaryRate,
+      performanceSalaryRate: performanceSalaryRate,
+      salaryStructure: salaryStructure,
+      salaryStructureAdvice: salaryStructureAdvice,
+      salaryStructureData: salaryStructureData,
+      departmentStats: lastYearData.departmentStats,
+    );
+  }
+
+  /// 计算每月员工数量
+  List<Map<String, dynamic>> _calculateEmployeeCountPerMonth(
+    MultiMonthAnalysisData data,
+  ) {
+    final result = <Map<String, dynamic>>[];
+    for (var monthlyData in data.monthlyData) {
+      double totalEmployees = 0.0;
+      for (var stat in monthlyData.departmentStats) {
+        totalEmployees += stat.employeeCount;
+      }
+      result.add({
+        'year': monthlyData.year,
+        'month': monthlyData.month,
+        'employeeCount': totalEmployees,
+      });
+    }
+    return result;
+  }
+
+  /// 计算每月平均薪资
+  List<Map<String, dynamic>> _calculateAverageSalaryPerMonth(
+    MultiMonthAnalysisData data,
+  ) {
+    final result = <Map<String, dynamic>>[];
+    for (var monthlyData in data.monthlyData) {
+      double totalEmployees = 0.0;
+      double totalSalary = 0.0;
+      for (var stat in monthlyData.departmentStats) {
+        totalEmployees += stat.employeeCount;
+        totalSalary += stat.totalNetSalary;
+      }
+      final averageSalary = totalEmployees > 0
+          ? totalSalary / totalEmployees
+          : 0.0;
+      result.add({
+        'year': monthlyData.year,
+        'month': monthlyData.month,
+        'averageSalary': averageSalary,
+      });
+    }
+    return result;
+  }
+
+  /// 计算每月总薪资
+  List<Map<String, dynamic>> _calculateTotalSalaryPerMonth(
+    MultiMonthAnalysisData data,
+  ) {
+    final result = <Map<String, dynamic>>[];
+    for (var monthlyData in data.monthlyData) {
+      double totalSalary = 0.0;
+      for (var stat in monthlyData.departmentStats) {
+        totalSalary += stat.totalNetSalary;
+      }
+      result.add({
+        'year': monthlyData.year,
+        'month': monthlyData.month,
+        'totalSalary': totalSalary,
+      });
+    }
+    return result;
+  }
+
+  /// 计算每月部门详情
+  List<Map<String, dynamic>> _calculateDepartmentDetailsPerMonth(
+    MultiMonthAnalysisData data,
+  ) {
+    final result = <Map<String, dynamic>>[];
+    for (var monthlyData in data.monthlyData) {
+      final departmentDetails = <Map<String, dynamic>>[];
+      for (var stat in monthlyData.departmentStats) {
+        departmentDetails.add({
+          'department': stat.department,
+          'employeeCount': stat.employeeCount,
+          'averageSalary': stat.averageNetSalary,
+          'totalSalary': stat.totalNetSalary,
+        });
+      }
+      result.add({
+        'year': monthlyData.year,
+        'month': monthlyData.month,
+        'departmentDetails': departmentDetails,
+      });
+    }
+    return result;
+  }
+
+  /// 生成薪资区间描述
+  String _generateSalaryRangeDescription(
+    List<Map<String, int>> salaryRangesList,
+  ) {
+    final buffer = StringBuffer();
+    for (var salaryRanges in salaryRangesList) {
+      salaryRanges.forEach((label, count) {
+        if (count > 0) {
+          buffer.writeln('$label: $count人');
+        }
+      });
+    }
+    return buffer.toString();
+  }
+
+  /// 生成薪资结构数据（用于图表）
+  List<Map<String, dynamic>> _generateSalaryStructureData(
+    List<DepartmentSalaryStats> departmentStats,
+  ) {
+    final data = <Map<String, dynamic>>[];
+    for (var stat in departmentStats) {
+      data.add({
+        'department': stat.department,
+        'averageSalary': stat.averageNetSalary,
+        'employeeCount': stat.employeeCount,
+      });
+    }
+    return data;
+  }
+
+  /// 获取指定年月的最后一天
+  int _getLastDayOfMonth(int year, int month) {
+    final date = DateTime(year, month + 1, 0);
+    return date.day;
+  }
+
+  /// 生成薪资结构分析
+  String _generateSalaryStructureAnalysis(
+    List<DepartmentSalaryStats> departmentStats,
+  ) {
+    // 这里简化处理，实际应用中可能需要更复杂的分析
+    return '薪资结构分析内容...';
+  }
+
+  /// 生成薪资结构优化建议
+  String _generateSalaryStructureAdvice(
+    List<DepartmentSalaryStats> departmentStats,
+  ) {
+    // 这里简化处理，实际应用中可能需要更复杂的分析
+    return '薪资结构优化建议内容...';
+  }
+
+  /// 生成薪资排名
+  String _generateSalaryRankings(List<DepartmentSalaryStats> departmentStats) {
+    // 按平均薪资排序
+    final sortedStats = List<DepartmentSalaryStats>.from(departmentStats)
+      ..sort((a, b) => b.averageNetSalary.compareTo(a.averageNetSalary));
+
+    final buffer = StringBuffer();
+    for (int i = 0; i < sortedStats.length && i < 10; i++) {
+      final stat = sortedStats[i];
+      buffer.writeln(
+        '${i + 1}. ${stat.department}: ¥${stat.averageNetSalary.toStringAsFixed(2)}',
+      );
+    }
+    return buffer.toString();
   }
 }

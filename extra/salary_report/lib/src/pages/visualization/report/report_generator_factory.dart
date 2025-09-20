@@ -9,24 +9,26 @@ import 'package:salary_report/src/pages/visualization/report/docx_writer_service
 import 'package:salary_report/src/pages/visualization/report/ai_summary_service.dart';
 import 'package:salary_report/src/pages/visualization/report/report_generator_interface.dart';
 import 'package:flutter/material.dart';
-import 'package:salary_report/src/pages/visualization/report/monthly_report_generator.dart';
-import 'package:salary_report/src/pages/visualization/report/multi_month_report_generator.dart';
-import 'package:salary_report/src/pages/visualization/report/quarterly_report_generator.dart';
-import 'package:salary_report/src/pages/visualization/report/annual_report_generator.dart';
+import 'package:salary_report/src/pages/visualization/report/multi_annual_report_generator.dart';
+import 'package:salary_report/src/pages/visualization/report/multi_quarterly_report_generator.dart';
 
 /// 报告生成器工厂
 class ReportGeneratorFactory {
   /// 根据报告类型创建相应的报告生成器
   static ReportGenerator createGenerator(ReportType type) {
     switch (type) {
-      case ReportType.monthly:
+      case ReportType.singleMonth:
         return MonthlyReportGenerator();
       case ReportType.multiMonth:
         return MultiMonthReportGenerator();
-      case ReportType.quarterly:
+      case ReportType.singleQuarter:
         return QuarterlyReportGenerator();
-      case ReportType.annual:
+      case ReportType.multiQuarter:
+        return MultiQuarterlyReportGenerator();
+      case ReportType.singleYear:
         return AnnualReportGenerator();
+      case ReportType.multiYear:
+        return MultiAnnualReportGenerator();
     }
   }
 }
@@ -67,6 +69,7 @@ class MonthlyReportGenerator implements ReportGenerator {
     final salaryRanges = dataService.calculateSalaryRanges(
       data.departmentStats,
     );
+
     final chartImages = await chartService.generateAllCharts(
       previewContainerKey: GlobalKey(), // 这里应该从实际的预览容器获取
       departmentStats: data.departmentStats,
@@ -78,7 +81,7 @@ class MonthlyReportGenerator implements ReportGenerator {
     final reportPath = await docxService.writeReport(
       data: reportContent,
       images: chartImages,
-      reportType: ReportType.monthly,
+      reportType: ReportType.singleMonth,
     );
 
     return reportPath;
@@ -121,6 +124,7 @@ class MultiMonthReportGenerator implements ReportGenerator {
     final salaryRanges = dataService.calculateSalaryRanges(
       data.departmentStats,
     );
+
     final chartImages = await chartService.generateAllCharts(
       previewContainerKey: GlobalKey(), // 这里应该从实际的预览容器获取
       departmentStats: data.departmentStats,
@@ -187,6 +191,7 @@ class QuarterlyReportGenerator implements ReportGenerator {
     final salaryRanges = dataService.calculateSalaryRanges(
       data.departmentStats,
     );
+
     final chartImages = await chartService.generateAllCharts(
       previewContainerKey: GlobalKey(), // 这里应该从实际的预览容器获取
       departmentStats: data.departmentStats,
@@ -210,7 +215,7 @@ class QuarterlyReportGenerator implements ReportGenerator {
     final reportPath = await docxService.writeReport(
       data: reportContent,
       images: chartImages,
-      reportType: ReportType.quarterly,
+      reportType: ReportType.singleQuarter,
     );
 
     return reportPath;
@@ -253,6 +258,7 @@ class AnnualReportGenerator implements ReportGenerator {
     final salaryRanges = dataService.calculateSalaryRanges(
       data.departmentStats,
     );
+
     final chartImages = await chartService.generateAllCharts(
       previewContainerKey: GlobalKey(), // 这里应该从实际的预览容器获取
       departmentStats: data.departmentStats,
@@ -276,7 +282,7 @@ class AnnualReportGenerator implements ReportGenerator {
     final reportPath = await docxService.writeReport(
       data: reportContent,
       images: chartImages,
-      reportType: ReportType.annual,
+      reportType: ReportType.singleYear,
     );
 
     return reportPath;
