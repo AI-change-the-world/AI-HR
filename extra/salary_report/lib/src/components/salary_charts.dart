@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
-import 'package:salary_report/src/isar/salary_data_models.dart';
+
 import 'package:intl/intl.dart';
 
 class DepartmentSalaryChart extends StatelessWidget {
