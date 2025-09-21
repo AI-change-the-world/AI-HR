@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:docx_template_fork/docx_template_fork.dart';
 import 'package:salary_report/src/common/logger.dart';
-import 'package:salary_report/src/isar/global_analysis_models.dart';
+import 'package:salary_report/src/services/global_analysis_models.dart';
 
 import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';

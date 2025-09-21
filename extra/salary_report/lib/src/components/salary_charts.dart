@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:salary_report/src/isar/global_analysis_models.dart';
+import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 // ignore: depend_on_referenced_packages
 import 'package:intl/intl.dart';

@@ -3,7 +3,7 @@
 import 'package:salary_report/src/common/ai_config.dart';
 import 'package:salary_report/src/common/llm_client.dart';
 import 'package:salary_report/src/common/logger.dart';
-import 'package:salary_report/src/isar/global_analysis_models.dart';
+import 'package:salary_report/src/services/global_analysis_models.dart';
 
 class AISummaryService {
   final LLMClient _llmClient;

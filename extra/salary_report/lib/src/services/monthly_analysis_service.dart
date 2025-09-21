@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:isar_community/isar.dart';
 import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/isar/database.dart';
-import 'package:salary_report/src/isar/global_analysis_models.dart';
+import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/isar/salary_list.dart';
 
 class MonthlyAnalysisService {

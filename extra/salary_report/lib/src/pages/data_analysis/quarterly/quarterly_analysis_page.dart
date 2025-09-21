@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
-import 'package:salary_report/src/isar/data_analysis_service.dart';
+import 'package:salary_report/src/services/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/components/attendance_pagination.dart';
-import 'package:salary_report/src/isar/global_analysis_models.dart';
+import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:toastification/toastification.dart';
@@ -712,8 +712,7 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                                     ],
                                   ),
                                 );
-                              })
-                              ,
+                              }),
                         ],
                       ),
                     ),

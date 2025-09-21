@@ -3,7 +3,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:salary_report/src/pages/visualization/report/report_generator_factory.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
-import 'package:salary_report/src/isar/report_service.dart';
+import 'package:salary_report/src/services/report_service.dart';
 import 'package:salary_report/src/isar/database.dart';
 
 void main() {

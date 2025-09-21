@@ -1,6 +1,6 @@
 // src/pages/visualization/report/analysis_data.dart
 
-import 'package:salary_report/src/isar/global_analysis_models.dart';
+import 'package:salary_report/src/services/global_analysis_models.dart';
 
 /// 单月分析数据模型
 class SingleMonthAnalysisData {

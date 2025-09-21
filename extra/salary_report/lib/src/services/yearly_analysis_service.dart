@@ -1,7 +1,7 @@
 import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/isar/database.dart';
-import 'package:salary_report/src/isar/global_analysis_models.dart';
-import 'package:salary_report/src/isar/monthly_analysis_service.dart';
+import 'package:salary_report/src/services/global_analysis_models.dart';
+import 'package:salary_report/src/services/monthly_analysis_service.dart';
 
 class YearlyAnalysisService {
   final IsarDatabase _database;

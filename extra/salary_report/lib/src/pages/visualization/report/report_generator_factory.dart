@@ -1,7 +1,7 @@
 // src/report/report_generator_factory.dart
 
 import 'package:salary_report/src/isar/database.dart';
-import 'package:salary_report/src/isar/data_analysis_service.dart';
+import 'package:salary_report/src/services/data_analysis_service.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:salary_report/src/pages/visualization/report/report_data_service.dart';
 import 'package:salary_report/src/pages/visualization/report/chart_generation_service.dart';

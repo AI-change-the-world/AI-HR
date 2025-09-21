@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:salary_report/src/isar/database.dart';
-import 'package:salary_report/src/isar/report_service.dart';
+import 'package:salary_report/src/services/report_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

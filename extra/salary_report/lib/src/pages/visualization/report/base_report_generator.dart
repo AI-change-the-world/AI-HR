@@ -2,9 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:salary_report/src/common/logger.dart';
-import 'package:salary_report/src/isar/data_analysis_service.dart';
+import 'package:salary_report/src/services/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart';
-import 'package:salary_report/src/isar/report_service.dart';
+import 'package:salary_report/src/services/report_service.dart';
 
 import 'package:salary_report/src/pages/visualization/report/ai_summary_service.dart';
 import 'package:salary_report/src/pages/visualization/report/chart_generation_service.dart';

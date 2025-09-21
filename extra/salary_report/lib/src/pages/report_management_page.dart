@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 import 'package:salary_report/src/common/toast.dart';
 import 'package:salary_report/src/isar/report_generation_record.dart';
-import 'package:salary_report/src/isar/report_service.dart';
+import 'package:salary_report/src/services/report_service.dart';
 
 class ReportManagementPage extends StatefulWidget {
   const ReportManagementPage({super.key});
