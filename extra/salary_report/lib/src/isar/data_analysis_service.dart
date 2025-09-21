@@ -209,6 +209,34 @@ class DataAnalysisService {
     }
   }
 
+  /// 生成月份列表
+  List<Map<String, int>> _generateMonthList(
+    int startYear,
+    int startMonth,
+    int endYear,
+    int endMonth,
+  ) {
+    final monthList = <Map<String, int>>[];
+
+    int currentYear = startYear;
+    int currentMonth = startMonth;
+
+    while (currentYear < endYear ||
+        (currentYear == endYear && currentMonth <= endMonth)) {
+      monthList.add({'year': currentYear, 'month': currentMonth});
+
+      // 移动到下一个月
+      if (currentMonth == 12) {
+        currentYear++;
+        currentMonth = 1;
+      } else {
+        currentMonth++;
+      }
+    }
+
+    return monthList;
+  }
+
   /// 多月数据查询功能
   Future<MultiMonthSalaryData?> getMultiMonthSalaryData(
     int startYear,
@@ -217,37 +245,37 @@ class DataAnalysisService {
     int endMonth,
   ) async {
     try {
-      final startDate = DateTime(startYear, startMonth);
-      final endDate = DateTime(endYear, endMonth);
-
       // 验证日期范围
-      if (startDate.isAfter(endDate)) {
+      if (startYear > endYear ||
+          (startYear == endYear && startMonth > endMonth)) {
         logger.warning('Start date is after end date');
         return null;
       }
 
+      // 生成需要查询的月份列表
+      final monthList = _generateMonthList(
+        startYear,
+        startMonth,
+        endYear,
+        endMonth,
+      );
       final monthlyData = <MonthlySalaryData>[];
 
-      // 遍历年月范围
-      DateTime currentDate = startDate;
-      while (!currentDate.isAfter(endDate)) {
-        final year = currentDate.year;
-        final month = currentDate.month;
-
-        // 获取月度数据
-        final monthlySalaryData = await getMonthlySalaryData(year, month);
+      // 遍历月份列表获取数据
+      for (var monthInfo in monthList) {
+        final monthlySalaryData = await getMonthlySalaryData(
+          monthInfo['year']!,
+          monthInfo['month']!,
+        );
         if (monthlySalaryData != null) {
           monthlyData.add(monthlySalaryData);
         }
-
-        // 移动到下一个月
-        currentDate = DateTime(currentDate.year, currentDate.month + 1);
       }
 
       return MultiMonthSalaryData(
         monthlyData: monthlyData,
-        startDate: startDate,
-        endDate: endDate,
+        startDate: DateTime(startYear, startMonth),
+        endDate: DateTime(endYear, endMonth),
       );
     } catch (e) {
       logger.severe('Error getting multi-month salary data: $e');
@@ -446,22 +474,28 @@ class DataAnalysisService {
     int endMonth,
   ) async {
     try {
-      final startDate = DateTime(startYear, startMonth);
-      final endDate = DateTime(endYear, endMonth);
-
       // 验证日期范围
-      if (startDate.isAfter(endDate)) {
+      if (startYear > endYear ||
+          (startYear == endYear && startMonth > endMonth)) {
         logger.warning('Start date is after end date');
         return null;
       }
 
+      // 生成需要查询的月份列表
+      final monthList = _generateMonthList(
+        startYear,
+        startMonth,
+        endYear,
+        endMonth,
+      );
+
+      logger.info('Generated month list: $monthList');
       final monthlyComparisons = <MonthlyComparisonData>[];
 
-      // 遍历年月范围
-      DateTime currentDate = startDate;
-      while (!currentDate.isAfter(endDate)) {
-        final year = currentDate.year;
-        final month = currentDate.month;
+      // 遍历月份列表获取数据
+      for (var monthInfo in monthList) {
+        final year = monthInfo['year']!;
+        final month = monthInfo['month']!;
 
         // 获取部门统计数据
         final departmentStatsList = await getDepartmentAggregation(year, month);
@@ -505,15 +539,14 @@ class DataAnalysisService {
             salaryRangeStats: salaryRangeStatsMap,
           ),
         );
-
-        // 移动到下一个月
-        currentDate = DateTime(currentDate.year, currentDate.month + 1);
       }
+
+      logger.info('Returning monthly comparison data');
 
       return MultiMonthComparisonData(
         monthlyComparisons: monthlyComparisons,
-        startDate: startDate,
-        endDate: endDate,
+        startDate: DateTime(startYear, startMonth),
+        endDate: DateTime(endYear, endMonth),
       );
     } catch (e) {
       logger.severe('Error getting multi-month comparison data: $e');
@@ -602,18 +635,30 @@ class DataAnalysisService {
   }) async {
     final isar = _database.isar!;
 
+    // 获取所有包含该员工的工资列表，避免全表扫描
+    // 使用 Isar 的查询功能来优化性能
     final salaryLists = await isar.salaryLists.where().findAll();
 
     final results = <Map<String, dynamic>>[];
 
     for (var salaryList in salaryLists) {
+      bool hasEmployee = false;
       for (var record in salaryList.records) {
         if (record.name == employeeName) {
-          results.add({
-            'year': salaryList.year,
-            'month': salaryList.month,
-            'record': record,
-          });
+          hasEmployee = true;
+          break;
+        }
+      }
+
+      if (hasEmployee) {
+        for (var record in salaryList.records) {
+          if (record.name == employeeName) {
+            results.add({
+              'year': salaryList.year,
+              'month': salaryList.month,
+              'record': record,
+            });
+          }
         }
       }
     }
@@ -876,42 +921,86 @@ class DataAnalysisService {
   }) async {
     final isar = _database.isar!;
 
-    // 构建查询
-    var queryBuilder = isar.salaryLists.where();
+    // 获取符合时间范围的数据
+    List<SalaryList> salaryLists = [];
 
-    // 获取所有数据，然后在内存中过滤
-    final salaryLists = await queryBuilder.findAll();
+    // 如果指定了具体的年月，直接查询
+    if (year != null && month != null) {
+      final salaryList = await isar.salaryLists
+          .filter()
+          .yearEqualTo(year)
+          .monthEqualTo(month)
+          .findFirst();
 
-    // 在内存中过滤年份和月份
-    final filteredSalaryLists = <SalaryList>[];
-    for (var salaryList in salaryLists) {
-      bool yearMatch = true;
-      bool monthMatch = true;
-
-      // 年份过滤
-      if (year != null) {
-        yearMatch = salaryList.year == year;
-      } else if (startYear != null && endYear != null) {
-        yearMatch = salaryList.year >= startYear && salaryList.year <= endYear;
+      if (salaryList != null) {
+        salaryLists = [salaryList];
       }
+    }
+    // 如果指定了年份范围和月份范围
+    else if (startYear != null &&
+        endYear != null &&
+        startMonth != null &&
+        endMonth != null) {
+      // 生成需要查询的月份列表
+      final monthList = _generateMonthList(
+        startYear,
+        startMonth,
+        endYear,
+        endMonth,
+      );
 
-      // 月份过滤
-      if (month != null) {
-        monthMatch = salaryList.month == month;
-      } else if (startMonth != null && endMonth != null) {
-        monthMatch =
-            salaryList.month >= startMonth && salaryList.month <= endMonth;
-      }
+      // 遍历月份列表获取数据
+      for (var monthInfo in monthList) {
+        final salaryList = await isar.salaryLists
+            .filter()
+            .yearEqualTo(monthInfo['year']!)
+            .monthEqualTo(monthInfo['month']!)
+            .findFirst();
 
-      if (yearMatch && monthMatch) {
-        filteredSalaryLists.add(salaryList);
+        if (salaryList != null) {
+          salaryLists.add(salaryList);
+        }
       }
+    }
+    // 如果只指定了年份
+    else if (year != null) {
+      salaryLists = await isar.salaryLists.filter().yearEqualTo(year).findAll();
+    }
+    // 如果只指定了月份
+    else if (month != null) {
+      salaryLists = await isar.salaryLists
+          .filter()
+          .monthEqualTo(month)
+          .findAll();
+    }
+    // 如果指定了年份范围
+    else if (startYear != null && endYear != null) {
+      salaryLists = await isar.salaryLists
+          .filter()
+          .yearBetween(startYear, endYear)
+          .findAll();
+    }
+    // 如果指定了月份范围
+    else if (startMonth != null && endMonth != null) {
+      // 由于 Isar 的 monthBetween 可能无法正确处理跨年的月份查询
+      // 我们获取所有数据然后在内存中过滤
+      final allSalaryLists = await isar.salaryLists.where().findAll();
+
+      for (var salaryList in allSalaryLists) {
+        if (salaryList.month >= startMonth && salaryList.month <= endMonth) {
+          salaryLists.add(salaryList);
+        }
+      }
+    }
+    // 如果没有指定时间范围，获取所有数据
+    else {
+      salaryLists = await isar.salaryLists.where().findAll();
     }
 
     // 按部门聚合数据
     final departmentMap = <String, List<SalaryListRecord>>{};
 
-    for (var salaryList in filteredSalaryLists) {
+    for (var salaryList in salaryLists) {
       for (var record in salaryList.records) {
         // 过滤条件
         if (department != null && record.department != department) continue;
@@ -957,9 +1046,9 @@ class DataAnalysisService {
           statMonth = month;
         }
         // 如果是多月查询，从第一条记录中获取年月信息
-        else if (filteredSalaryLists.isNotEmpty) {
-          statYear = filteredSalaryLists[0].year;
-          statMonth = filteredSalaryLists[0].month;
+        else if (salaryLists.isNotEmpty) {
+          statYear = salaryLists[0].year;
+          statMonth = salaryLists[0].month;
         }
 
         stats.add(
@@ -986,7 +1075,7 @@ class DataAnalysisService {
       // 按月份分组计算
       final monthlyData = <String, List<SalaryListRecord>>{};
 
-      for (var salaryList in filteredSalaryLists) {
+      for (var salaryList in salaryLists) {
         final monthKey = '${salaryList.year}-${salaryList.month}';
         if (!monthlyData.containsKey(monthKey)) {
           monthlyData[monthKey] = [];
@@ -1181,42 +1270,86 @@ class DataAnalysisService {
   }) async {
     final isar = _database.isar!;
 
-    // 构建查询
-    var queryBuilder = isar.salaryLists.where();
+    // 获取符合时间范围的数据
+    List<SalaryList> salaryLists = [];
 
-    // 获取所有数据，然后在内存中过滤
-    final salaryLists = await queryBuilder.findAll();
+    // 如果指定了具体的年月，直接查询
+    if (year != null && month != null) {
+      final salaryList = await isar.salaryLists
+          .filter()
+          .yearEqualTo(year)
+          .monthEqualTo(month)
+          .findFirst();
 
-    // 在内存中过滤年份和月份
-    final filteredSalaryLists = <SalaryList>[];
-    for (var salaryList in salaryLists) {
-      bool yearMatch = true;
-      bool monthMatch = true;
-
-      // 年份过滤
-      if (year != null) {
-        yearMatch = salaryList.year == year;
-      } else if (startYear != null && endYear != null) {
-        yearMatch = salaryList.year >= startYear && salaryList.year <= endYear;
+      if (salaryList != null) {
+        salaryLists = [salaryList];
       }
+    }
+    // 如果指定了年份范围和月份范围
+    else if (startYear != null &&
+        endYear != null &&
+        startMonth != null &&
+        endMonth != null) {
+      // 生成需要查询的月份列表
+      final monthList = _generateMonthList(
+        startYear,
+        startMonth,
+        endYear,
+        endMonth,
+      );
 
-      // 月份过滤
-      if (month != null) {
-        monthMatch = salaryList.month == month;
-      } else if (startMonth != null && endMonth != null) {
-        monthMatch =
-            salaryList.month >= startMonth && salaryList.month <= endMonth;
-      }
+      // 遍历月份列表获取数据
+      for (var monthInfo in monthList) {
+        final salaryList = await isar.salaryLists
+            .filter()
+            .yearEqualTo(monthInfo['year']!)
+            .monthEqualTo(monthInfo['month']!)
+            .findFirst();
 
-      if (yearMatch && monthMatch) {
-        filteredSalaryLists.add(salaryList);
+        if (salaryList != null) {
+          salaryLists.add(salaryList);
+        }
       }
+    }
+    // 如果只指定了年份
+    else if (year != null) {
+      salaryLists = await isar.salaryLists.filter().yearEqualTo(year).findAll();
+    }
+    // 如果只指定了月份
+    else if (month != null) {
+      salaryLists = await isar.salaryLists
+          .filter()
+          .monthEqualTo(month)
+          .findAll();
+    }
+    // 如果指定了年份范围
+    else if (startYear != null && endYear != null) {
+      salaryLists = await isar.salaryLists
+          .filter()
+          .yearBetween(startYear, endYear)
+          .findAll();
+    }
+    // 如果指定了月份范围
+    else if (startMonth != null && endMonth != null) {
+      // 由于 Isar 的 monthBetween 可能无法正确处理跨年的月份查询
+      // 我们获取所有数据然后在内存中过滤
+      final allSalaryLists = await isar.salaryLists.where().findAll();
+
+      for (var salaryList in allSalaryLists) {
+        if (salaryList.month >= startMonth && salaryList.month <= endMonth) {
+          salaryLists.add(salaryList);
+        }
+      }
+    }
+    // 如果没有指定时间范围，获取所有数据
+    else {
+      salaryLists = await isar.salaryLists.where().findAll();
     }
 
     // 收集考勤数据
     final attendanceStats = <AttendanceStats>[];
 
-    for (var salaryList in filteredSalaryLists) {
+    for (var salaryList in salaryLists) {
       for (var record in salaryList.records) {
         // 过滤条件
         if (department != null && record.department != department) continue;
@@ -1286,36 +1419,80 @@ class DataAnalysisService {
   }) async {
     final isar = _database.isar!;
 
-    // 构建查询
-    var queryBuilder = isar.salaryLists.where();
+    // 获取符合时间范围的数据
+    List<SalaryList> salaryLists = [];
 
-    // 获取所有数据，然后在内存中过滤
-    final salaryLists = await queryBuilder.findAll();
+    // 如果指定了具体的年月，直接查询
+    if (year != null && month != null) {
+      final salaryList = await isar.salaryLists
+          .filter()
+          .yearEqualTo(year)
+          .monthEqualTo(month)
+          .findFirst();
 
-    // 在内存中过滤年份和月份
-    final filteredSalaryLists = <SalaryList>[];
-    for (var salaryList in salaryLists) {
-      bool yearMatch = true;
-      bool monthMatch = true;
-
-      // 年份过滤
-      if (year != null) {
-        yearMatch = salaryList.year == year;
-      } else if (startYear != null && endYear != null) {
-        yearMatch = salaryList.year >= startYear && salaryList.year <= endYear;
+      if (salaryList != null) {
+        salaryLists = [salaryList];
       }
+    }
+    // 如果指定了年份范围和月份范围
+    else if (startYear != null &&
+        endYear != null &&
+        startMonth != null &&
+        endMonth != null) {
+      // 生成需要查询的月份列表
+      final monthList = _generateMonthList(
+        startYear,
+        startMonth,
+        endYear,
+        endMonth,
+      );
 
-      // 月份过滤
-      if (month != null) {
-        monthMatch = salaryList.month == month;
-      } else if (startMonth != null && endMonth != null) {
-        monthMatch =
-            salaryList.month >= startMonth && salaryList.month <= endMonth;
-      }
+      // 遍历月份列表获取数据
+      for (var monthInfo in monthList) {
+        final salaryList = await isar.salaryLists
+            .filter()
+            .yearEqualTo(monthInfo['year']!)
+            .monthEqualTo(monthInfo['month']!)
+            .findFirst();
 
-      if (yearMatch && monthMatch) {
-        filteredSalaryLists.add(salaryList);
+        if (salaryList != null) {
+          salaryLists.add(salaryList);
+        }
       }
+    }
+    // 如果只指定了年份
+    else if (year != null) {
+      salaryLists = await isar.salaryLists.filter().yearEqualTo(year).findAll();
+    }
+    // 如果只指定了月份
+    else if (month != null) {
+      salaryLists = await isar.salaryLists
+          .filter()
+          .monthEqualTo(month)
+          .findAll();
+    }
+    // 如果指定了年份范围
+    else if (startYear != null && endYear != null) {
+      salaryLists = await isar.salaryLists
+          .filter()
+          .yearBetween(startYear, endYear)
+          .findAll();
+    }
+    // 如果指定了月份范围
+    else if (startMonth != null && endMonth != null) {
+      // 由于 Isar 的 monthBetween 可能无法正确处理跨年的月份查询
+      // 我们获取所有数据然后在内存中过滤
+      final allSalaryLists = await isar.salaryLists.where().findAll();
+
+      for (var salaryList in allSalaryLists) {
+        if (salaryList.month >= startMonth && salaryList.month <= endMonth) {
+          salaryLists.add(salaryList);
+        }
+      }
+    }
+    // 如果没有指定时间范围，获取所有数据
+    else {
+      salaryLists = await isar.salaryLists.where().findAll();
     }
 
     // 统计病假和事假数据
@@ -1323,7 +1500,7 @@ class DataAnalysisService {
     double totalLeave = 0;
     int employeeCount = 0;
 
-    for (var salaryList in filteredSalaryLists) {
+    for (var salaryList in salaryLists) {
       for (var record in salaryList.records) {
         // 过滤条件
         if (department != null && record.department != department) continue;
@@ -1366,9 +1543,9 @@ class DataAnalysisService {
       statMonth = month;
     }
     // 如果是多月查询，从第一条记录中获取年月信息
-    else if (filteredSalaryLists.isNotEmpty) {
-      statYear = filteredSalaryLists[0].year;
-      statMonth = filteredSalaryLists[0].month;
+    else if (salaryLists.isNotEmpty) {
+      statYear = salaryLists[0].year;
+      statMonth = salaryLists[0].month;
     }
 
     return LeaveRatioStats(
@@ -1391,38 +1568,63 @@ class DataAnalysisService {
   }) async {
     final isar = _database.isar!;
 
-    // 构建查询
-    var queryBuilder = isar.salaryLists.where();
+    // 获取符合时间范围的数据
+    List<SalaryList> salaryLists = [];
 
-    // 获取所有数据，然后在内存中过滤
-    final salaryLists = await queryBuilder.findAll();
+    // 如果指定了年份范围和月份范围
+    if (startYear != null &&
+        endYear != null &&
+        startMonth != null &&
+        endMonth != null) {
+      // 生成需要查询的月份列表
+      final monthList = _generateMonthList(
+        startYear,
+        startMonth,
+        endYear,
+        endMonth,
+      );
 
-    // 在内存中过滤年份和月份
-    final filteredSalaryLists = <SalaryList>[];
-    for (var salaryList in salaryLists) {
-      bool yearMatch = true;
-      bool monthMatch = true;
+      // 遍历月份列表获取数据
+      for (var monthInfo in monthList) {
+        final salaryList = await isar.salaryLists
+            .filter()
+            .yearEqualTo(monthInfo['year']!)
+            .monthEqualTo(monthInfo['month']!)
+            .findFirst();
 
-      // 年份过滤
-      if (startYear != null && endYear != null) {
-        yearMatch = salaryList.year >= startYear && salaryList.year <= endYear;
+        if (salaryList != null) {
+          salaryLists.add(salaryList);
+        }
       }
+    }
+    // 如果指定了年份范围
+    else if (startYear != null && endYear != null) {
+      salaryLists = await isar.salaryLists
+          .filter()
+          .yearBetween(startYear, endYear)
+          .findAll();
+    }
+    // 如果指定了月份范围
+    else if (startMonth != null && endMonth != null) {
+      // 由于 Isar 的 monthBetween 可能无法正确处理跨年的月份查询
+      // 我们获取所有数据然后在内存中过滤
+      final allSalaryLists = await isar.salaryLists.where().findAll();
 
-      // 月份过滤
-      if (startMonth != null && endMonth != null) {
-        monthMatch =
-            salaryList.month >= startMonth && salaryList.month <= endMonth;
+      for (var salaryList in allSalaryLists) {
+        if (salaryList.month >= startMonth && salaryList.month <= endMonth) {
+          salaryLists.add(salaryList);
+        }
       }
-
-      if (yearMatch && monthMatch) {
-        filteredSalaryLists.add(salaryList);
-      }
+    }
+    // 如果没有指定时间范围，获取所有数据
+    else {
+      salaryLists = await isar.salaryLists.where().findAll();
     }
 
     // 按月份分组统计病假和事假数据
     final monthlyStats = <String, Map<String, dynamic>>{};
 
-    for (var salaryList in filteredSalaryLists) {
+    for (var salaryList in salaryLists) {
       final monthKey = '${salaryList.year}-${salaryList.month}';
 
       // 初始化月份统计数据
@@ -1697,40 +1899,82 @@ class DataAnalysisService {
       endMonth = quarter * 3;
     }
 
-    // 构建查询
-    var queryBuilder = isar.salaryLists.where();
+    // 获取符合时间范围的数据
+    List<SalaryList> salaryLists = [];
 
-    // 获取所有数据，然后在内存中过滤
-    final salaryLists = await queryBuilder.findAll();
+    // 如果指定了具体的年份和季度，直接查询
+    if (year != null && quarter != null) {
+      // 生成需要查询的月份列表
+      final monthList = _generateMonthList(year, startMonth!, year, endMonth!);
 
-    // 在内存中过滤年份和月份
-    final filteredSalaryLists = <SalaryList>[];
-    for (var salaryList in salaryLists) {
-      bool yearMatch = true;
-      bool monthMatch = true;
+      // 遍历月份列表获取数据
+      for (var monthInfo in monthList) {
+        final salaryList = await isar.salaryLists
+            .filter()
+            .yearEqualTo(monthInfo['year']!)
+            .monthEqualTo(monthInfo['month']!)
+            .findFirst();
 
-      // 年份过滤
-      if (year != null) {
-        yearMatch = salaryList.year == year;
-      } else if (startYear != null && endYear != null) {
-        yearMatch = salaryList.year >= startYear && salaryList.year <= endYear;
+        if (salaryList != null) {
+          salaryLists.add(salaryList);
+        }
+      }
+    }
+    // 如果指定了年份范围
+    else if (startYear != null && endYear != null && quarter != null) {
+      // 生成需要查询的月份列表
+      final monthList = <Map<String, int>>[];
+
+      // 为每年生成该季度的月份
+      for (int y = startYear; y <= endYear; y++) {
+        final quarterMonths = _generateMonthList(y, startMonth!, y, endMonth!);
+        monthList.addAll(quarterMonths);
       }
 
-      // 季度月份过滤
-      if (startMonth != null && endMonth != null) {
-        monthMatch =
-            salaryList.month >= startMonth && salaryList.month <= endMonth;
-      }
+      // 遍历月份列表获取数据
+      for (var monthInfo in monthList) {
+        final salaryList = await isar.salaryLists
+            .filter()
+            .yearEqualTo(monthInfo['year']!)
+            .monthEqualTo(monthInfo['month']!)
+            .findFirst();
 
-      if (yearMatch && monthMatch) {
-        filteredSalaryLists.add(salaryList);
+        if (salaryList != null) {
+          salaryLists.add(salaryList);
+        }
       }
+    }
+    // 如果只指定了年份
+    else if (year != null) {
+      salaryLists = await isar.salaryLists.filter().yearEqualTo(year).findAll();
+    }
+    // 如果指定了年份范围
+    else if (startYear != null && endYear != null) {
+      salaryLists = await isar.salaryLists
+          .filter()
+          .yearBetween(startYear, endYear)
+          .findAll();
+    }
+    // 如果指定了季度但没有指定年份
+    else if (quarter != null) {
+      // 获取所有数据然后在内存中过滤
+      final allSalaryLists = await isar.salaryLists.where().findAll();
+
+      for (var salaryList in allSalaryLists) {
+        if (salaryList.month >= startMonth! && salaryList.month <= endMonth!) {
+          salaryLists.add(salaryList);
+        }
+      }
+    }
+    // 如果没有指定时间范围，获取所有数据
+    else {
+      salaryLists = await isar.salaryLists.where().findAll();
     }
 
     // 按部门聚合数据
     final departmentMap = <String, List<SalaryListRecord>>{};
 
-    for (var salaryList in filteredSalaryLists) {
+    for (var salaryList in salaryLists) {
       for (var record in salaryList.records) {
         // 过滤条件
         if (department != null && record.department != department) continue;
@@ -1775,13 +2019,13 @@ class DataAnalysisService {
           statYear = year;
         }
         // 如果有具体的月份范围，从第一条记录中获取月份信息
-        if (filteredSalaryLists.isNotEmpty) {
-          statMonth = filteredSalaryLists[0].month;
+        if (salaryLists.isNotEmpty) {
+          statMonth = salaryLists[0].month;
         }
         // 如果是多月查询，从第一条记录中获取年月信息
-        else if (filteredSalaryLists.isNotEmpty) {
-          statYear = filteredSalaryLists[0].year;
-          statMonth = filteredSalaryLists[0].month;
+        else if (salaryLists.isNotEmpty) {
+          statYear = salaryLists[0].year;
+          statMonth = salaryLists[0].month;
         }
 
         stats.add(

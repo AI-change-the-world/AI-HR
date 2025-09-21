@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
-import 'package:salary_report/src/isar/database.dart';
-import 'package:salary_report/src/components/attendance_pagination.dart';
 import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:toastification/toastification.dart';
@@ -321,6 +319,7 @@ class _MultiMonthAnalysisPageState
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
+
                   Card(
                     child: Container(
                       height: 300,
@@ -330,7 +329,6 @@ class _MultiMonthAnalysisPageState
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 24),
 
                   // 分页控制
@@ -444,8 +442,18 @@ class MonthlyEmployeeCountChartComponent extends ConsumerWidget {
 
         final List<Map<String, dynamic>> employeeCountPerMonth = [];
 
-        for (var monthlyComparison
-            in chartData.comparisonData!.monthlyComparisons) {
+        // 按时间排序月度数据
+        final sortedMonthlyData =
+            List<MonthlyComparisonData>.from(
+              chartData.comparisonData!.monthlyComparisons,
+            )..sort((a, b) {
+              if (a.year != b.year) {
+                return a.year.compareTo(b.year);
+              }
+              return a.month.compareTo(b.month);
+            });
+
+        for (var monthlyComparison in sortedMonthlyData) {
           int totalEmployees = monthlyComparison.employeeCount;
 
           employeeCountPerMonth.add({
@@ -488,10 +496,20 @@ class MonthlyAverageSalaryChartComponent extends ConsumerWidget {
           return const Center(child: Text('暂无数据'));
         }
 
-        final List<Map<String, dynamic>> averageSalaryPerMonth = [];
+        List<Map<String, dynamic>> averageSalaryPerMonth = [];
 
-        for (var monthlyComparison
-            in chartData.comparisonData!.monthlyComparisons) {
+        // 按时间排序月度数据
+        final sortedMonthlyData =
+            List<MonthlyComparisonData>.from(
+              chartData.comparisonData!.monthlyComparisons,
+            )..sort((a, b) {
+              if (a.year != b.year) {
+                return a.year.compareTo(b.year);
+              }
+              return a.month.compareTo(b.month);
+            });
+
+        for (var monthlyComparison in sortedMonthlyData) {
           final averageSalary = monthlyComparison.averageSalary;
 
           averageSalaryPerMonth.add({
@@ -509,6 +527,8 @@ class MonthlyAverageSalaryChartComponent extends ConsumerWidget {
           }
           return (a['monthNum'] as int).compareTo(b['monthNum'] as int);
         });
+
+        logger.info('averageSalaryPerMonth: $averageSalaryPerMonth');
 
         return MonthlyAverageSalaryChart(monthlyData: averageSalaryPerMonth);
       },
@@ -536,8 +556,18 @@ class MonthlyTotalSalaryChartComponent extends ConsumerWidget {
 
         final List<Map<String, dynamic>> totalSalaryPerMonth = [];
 
-        for (var monthlyComparison
-            in chartData.comparisonData!.monthlyComparisons) {
+        // 按时间排序月度数据
+        final sortedMonthlyData =
+            List<MonthlyComparisonData>.from(
+              chartData.comparisonData!.monthlyComparisons,
+            )..sort((a, b) {
+              if (a.year != b.year) {
+                return a.year.compareTo(b.year);
+              }
+              return a.month.compareTo(b.month);
+            });
+
+        for (var monthlyComparison in sortedMonthlyData) {
           final totalSalary = monthlyComparison.totalSalary;
 
           totalSalaryPerMonth.add({
@@ -602,11 +632,14 @@ class MultiMonthDepartmentSalaryChartComponent extends ConsumerWidget {
           // 构建部门数据映射
           final departmentData = <String, double>{};
           monthlyData.departmentStats.forEach((deptName, stat) {
+            // 确保使用正确的部门统计数据
             departmentData[deptName] = stat.averageNetSalary;
           });
 
           result.add({'month': monthLabel, 'departments': departmentData});
         }
+
+        logger.info('MultiMonthDepartmentSalaryChartComponent: $result');
 
         return MultiMonthDepartmentSalaryChart(departmentMonthlyData: result);
       },

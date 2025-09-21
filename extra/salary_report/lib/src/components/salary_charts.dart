@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
+// ignore: depend_on_referenced_packages
 import 'package:intl/intl.dart';
 
 class DepartmentSalaryChart extends StatelessWidget {
@@ -18,7 +19,8 @@ class DepartmentSalaryChart extends StatelessWidget {
         PieSeries<DepartmentSalaryStats, String>(
           dataSource: departmentStats,
           xValueMapper: (DepartmentSalaryStats data, _) => data.department,
-          yValueMapper: (DepartmentSalaryStats data, _) => data.totalNetSalary,
+          yValueMapper: (DepartmentSalaryStats data, _) =>
+              data.totalNetSalary.toInt(), // 转为int
           dataLabelMapper: (DepartmentSalaryStats data, _) =>
               '${data.department}\n¥${data.totalNetSalary.toStringAsFixed(0)}',
           dataLabelSettings: const DataLabelSettings(isVisible: true),
@@ -39,7 +41,9 @@ class MonthlySalaryTrendChart extends StatelessWidget {
     return SfCartesianChart(
       title: ChartTitle(text: '月度工资趋势'),
       primaryXAxis: CategoryAxis(),
-      primaryYAxis: NumericAxis(numberFormat: NumberFormat.simpleCurrency()),
+      primaryYAxis: NumericAxis(
+        numberFormat: NumberFormat.simpleCurrency(locale: 'zh_CN'),
+      ),
       legend: Legend(isVisible: true),
       tooltipBehavior: TooltipBehavior(enable: true),
       series: <LineSeries<Map<String, dynamic>, String>>[
@@ -48,7 +52,7 @@ class MonthlySalaryTrendChart extends StatelessWidget {
           xValueMapper: (Map<String, dynamic> data, _) =>
               data['month'] as String,
           yValueMapper: (Map<String, dynamic> data, _) =>
-              data['salary'] as double,
+              (data['salary'] as double).toInt(), // 转为int
           name: '工资总额',
           dataLabelSettings: const DataLabelSettings(isVisible: false),
         ),
@@ -70,7 +74,9 @@ class MultiMonthDepartmentSalaryChart extends StatelessWidget {
     return SfCartesianChart(
       title: ChartTitle(text: '各部门月度工资趋势'),
       primaryXAxis: CategoryAxis(),
-      primaryYAxis: NumericAxis(numberFormat: NumberFormat.simpleCurrency()),
+      primaryYAxis: NumericAxis(
+        numberFormat: NumberFormat.simpleCurrency(locale: 'zh_CN'),
+      ),
       legend: Legend(isVisible: true),
       tooltipBehavior: TooltipBehavior(enable: true),
       series: _getDepartmentSeries(),
@@ -78,16 +84,18 @@ class MultiMonthDepartmentSalaryChart extends StatelessWidget {
   }
 
   List<LineSeries<Map<String, dynamic>, String>> _getDepartmentSeries() {
-    // 获取所有部门名称
+    // 统一收集所有部门，去掉空格
     final departments = <String>{};
     for (var data in departmentMonthlyData) {
       if (data['departments'] is Map<String, dynamic>) {
-        departments.addAll((data['departments'] as Map<String, dynamic>).keys);
+        (data['departments'] as Map<String, dynamic>).keys
+            .map((e) => e.toString().trim()) // 去掉前后空格
+            .forEach(departments.add);
       }
     }
 
-    // 为每个部门创建一个系列
     final series = <LineSeries<Map<String, dynamic>, String>>[];
+    // 添加更多颜色选项以适应部门较多的公司
     final colors = [
       Colors.lightBlue,
       Colors.orange,
@@ -95,17 +103,42 @@ class MultiMonthDepartmentSalaryChart extends StatelessWidget {
       Colors.purple,
       Colors.red,
       Colors.teal,
+      Colors.pink,
+      Colors.yellow,
+      Colors.cyan,
+      Colors.lime,
+      Colors.amber,
+      Colors.deepOrange,
+      Colors.brown,
+      Colors.grey,
+      Colors.blueGrey,
+      Colors.indigo,
+      Colors.deepPurple,
+      Colors.lightGreen,
+      Colors.blue,
+      Colors.redAccent,
     ];
 
     int colorIndex = 0;
     for (var department in departments) {
       final departmentData = <Map<String, dynamic>>[];
+
       for (var data in departmentMonthlyData) {
         final month = data['month'] as String;
         final deptData = data['departments'] as Map<String, dynamic>;
+
+        // 尝试用 trim 后的 key 找数据
+        final matchedKey = deptData.keys.firstWhere(
+          (k) => k.toString().trim() == department,
+          orElse: () => '',
+        );
+        // 转为int以提高性能
+        final salary = ((deptData[matchedKey] as num?)?.toDouble() ?? 0.0)
+            .toInt();
+
         departmentData.add({
           'month': month,
-          'salary': deptData[department] as double? ?? 0,
+          'salary': salary,
           'department': department,
         });
       }
@@ -117,9 +150,9 @@ class MultiMonthDepartmentSalaryChart extends StatelessWidget {
           xValueMapper: (Map<String, dynamic> data, _) =>
               data['month'] as String,
           yValueMapper: (Map<String, dynamic> data, _) =>
-              data['salary'] as double,
+              data['salary'] as int, // 使用int类型
           dataLabelSettings: const DataLabelSettings(isVisible: false),
-          color: colors[colorIndex % colors.length],
+          color: colors[colorIndex % colors.length], // 循环使用颜色
         ),
       );
 
@@ -168,16 +201,23 @@ class MonthlyAverageSalaryChart extends StatelessWidget {
   Widget build(BuildContext context) {
     return SfCartesianChart(
       title: ChartTitle(text: '每月平均薪资变化'),
-      primaryXAxis: CategoryAxis(),
-      primaryYAxis: NumericAxis(numberFormat: NumberFormat.simpleCurrency()),
+      primaryXAxis: CategoryAxis(
+        // 用 monthNum 排序更稳妥
+        arrangeByIndex: true,
+      ),
+      primaryYAxis: NumericAxis(
+        numberFormat: NumberFormat.simpleCurrency(locale: 'zh_CN'),
+      ),
       tooltipBehavior: TooltipBehavior(enable: true),
       series: <LineSeries<Map<String, dynamic>, String>>[
         LineSeries<Map<String, dynamic>, String>(
+          animationDuration: 0,
+          animationDelay: 0,
           dataSource: monthlyData,
           xValueMapper: (Map<String, dynamic> data, _) =>
               data['month'] as String,
           yValueMapper: (Map<String, dynamic> data, _) =>
-              data['averageSalary'] as double,
+              (data['averageSalary'] as num).toInt(), // 转为int
           dataLabelSettings: const DataLabelSettings(isVisible: true),
           enableTooltip: true,
         ),
@@ -197,7 +237,9 @@ class MonthlyTotalSalaryChart extends StatelessWidget {
     return SfCartesianChart(
       title: ChartTitle(text: '每月总工资变化'),
       primaryXAxis: CategoryAxis(),
-      primaryYAxis: NumericAxis(numberFormat: NumberFormat.simpleCurrency()),
+      primaryYAxis: NumericAxis(
+        numberFormat: NumberFormat.simpleCurrency(locale: 'zh_CN'),
+      ),
       tooltipBehavior: TooltipBehavior(enable: true),
       series: <LineSeries<Map<String, dynamic>, String>>[
         LineSeries<Map<String, dynamic>, String>(
@@ -205,7 +247,7 @@ class MonthlyTotalSalaryChart extends StatelessWidget {
           xValueMapper: (Map<String, dynamic> data, _) =>
               data['month'] as String,
           yValueMapper: (Map<String, dynamic> data, _) =>
-              data['totalSalary'] as double,
+              (data['totalSalary'] as double).toInt(), // 转为int
           dataLabelSettings: const DataLabelSettings(isVisible: true),
           enableTooltip: true,
         ),

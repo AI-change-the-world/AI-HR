@@ -194,9 +194,9 @@ class DateRangeParams {
   }
 }
 
-// 关键指标提供者 - 使用 family
-final keyMetricsProvider =
-    FutureProvider.family<KeyMetricsState, DateRangeParams>((
+// 核心数据提供者 - 只调用一次 getMultiMonthComparisonData
+final coreDataProvider =
+    FutureProvider.family<MultiMonthComparisonData?, DateRangeParams>((
       ref,
       params,
     ) async {
@@ -207,36 +207,12 @@ final keyMetricsProvider =
         params.endYear,
         params.endMonth,
       );
-
-      return KeyMetricsState(
-        isLoading: false,
-        monthlyData: comparisonData?.monthlyComparisons,
-      );
+      return comparisonData;
     });
 
-// 部门统计提供者 - 使用 family
-final departmentStatsProvider =
-    FutureProvider.family<DepartmentStatsState, DateRangeParams>((
-      ref,
-      params,
-    ) async {
-      final dataService = DataAnalysisService(IsarDatabase());
-      final comparisonData = await dataService.getMultiMonthComparisonData(
-        params.startYear,
-        params.startMonth,
-        params.endYear,
-        params.endMonth,
-      );
-
-      return DepartmentStatsState(
-        isLoading: false,
-        monthlyData: comparisonData?.monthlyComparisons,
-      );
-    });
-
-// 考勤统计提供者 - 使用 family
-final attendanceStatsProvider =
-    FutureProvider.family<AttendanceStatsState, DateRangeParams>((
+// 考勤统计核心数据提供者 - 独立获取考勤数据
+final coreAttendanceDataProvider =
+    FutureProvider.family<Map<String, List<AttendanceStats>>, DateRangeParams>((
       ref,
       params,
     ) async {
@@ -245,14 +221,18 @@ final attendanceStatsProvider =
       // 按月份获取考勤数据
       final attendanceData = <String, List<AttendanceStats>>{};
 
-      // 遍历每个月份获取考勤数据
-      DateTime currentDate = DateTime(params.startYear, params.startMonth);
-      DateTime endDate = DateTime(params.endYear, params.endMonth);
+      // 使用更简单的方式生成月份列表
+      final monthList = _generateMonthList(
+        params.startYear,
+        params.startMonth,
+        params.endYear,
+        params.endMonth,
+      );
 
-      while (currentDate.isBefore(endDate) ||
-          currentDate.isAtSameMomentAs(endDate)) {
-        final year = currentDate.year;
-        final month = currentDate.month;
+      // 遍历每个月份获取考勤数据
+      for (var monthInfo in monthList) {
+        final year = monthInfo['year']!;
+        final month = monthInfo['month']!;
 
         final attendanceStats = await dataService.getMonthlyAttendanceStats(
           year: year,
@@ -261,10 +241,76 @@ final attendanceStatsProvider =
 
         final monthKey = '$year-${month.toString().padLeft(2, '0')}';
         attendanceData[monthKey] = attendanceStats;
-
-        // 移动到下一个月
-        currentDate = DateTime(currentDate.year, currentDate.month + 1);
       }
+
+      return attendanceData;
+    });
+
+// 生成月份列表的辅助函数
+List<Map<String, int>> _generateMonthList(
+  int startYear,
+  int startMonth,
+  int endYear,
+  int endMonth,
+) {
+  final monthList = <Map<String, int>>[];
+
+  int currentYear = startYear;
+  int currentMonth = startMonth;
+
+  while (currentYear < endYear ||
+      (currentYear == endYear && currentMonth <= endMonth)) {
+    monthList.add({'year': currentYear, 'month': currentMonth});
+
+    // 移动到下一个月
+    if (currentMonth == 12) {
+      currentYear++;
+      currentMonth = 1;
+    } else {
+      currentMonth++;
+    }
+  }
+
+  return monthList;
+}
+
+// 关键指标提供者 - 复用核心数据
+final keyMetricsProvider =
+    FutureProvider.family<KeyMetricsState, DateRangeParams>((
+      ref,
+      params,
+    ) async {
+      final coreData = await ref.watch(coreDataProvider(params).future);
+
+      return KeyMetricsState(
+        isLoading: false,
+        monthlyData: coreData?.monthlyComparisons,
+      );
+    });
+
+// 部门统计提供者 - 复用核心数据
+final departmentStatsProvider =
+    FutureProvider.family<DepartmentStatsState, DateRangeParams>((
+      ref,
+      params,
+    ) async {
+      final coreData = await ref.watch(coreDataProvider(params).future);
+
+      return DepartmentStatsState(
+        isLoading: false,
+        monthlyData: coreData?.monthlyComparisons,
+      );
+    });
+
+// 考勤统计提供者 - 复用考勤核心数据
+final attendanceStatsProvider =
+    FutureProvider.family<AttendanceStatsState, DateRangeParams>((
+      ref,
+      params,
+    ) async {
+      final attendanceData = await ref.watch(
+        coreAttendanceDataProvider(params).future,
+      );
 
       return AttendanceStatsState(
         isLoading: false,
@@ -272,58 +318,37 @@ final attendanceStatsProvider =
       );
     });
 
-// 请假比例统计提供者 - 使用 family
+// 请假比例统计提供者 - 复用核心数据
 final leaveRatioStatsProvider =
     FutureProvider.family<LeaveRatioStatsState, DateRangeParams>((
       ref,
       params,
     ) async {
-      final dataService = DataAnalysisService(IsarDatabase());
-      final comparisonData = await dataService.getMultiMonthComparisonData(
-        params.startYear,
-        params.startMonth,
-        params.endYear,
-        params.endMonth,
-      );
+      final coreData = await ref.watch(coreDataProvider(params).future);
 
       return LeaveRatioStatsState(
         isLoading: false,
-        monthlyData: comparisonData?.monthlyComparisons,
+        monthlyData: coreData?.monthlyComparisons,
       );
     });
 
-// 部门变化提供者 - 使用 family
+// 部门变化提供者 - 复用核心数据
 final departmentChangesProvider =
     FutureProvider.family<DepartmentChangesState, DateRangeParams>((
       ref,
       params,
     ) async {
-      final dataService = DataAnalysisService(IsarDatabase());
-      final comparisonData = await dataService.getMultiMonthComparisonData(
-        params.startYear,
-        params.startMonth,
-        params.endYear,
-        params.endMonth,
-      );
+      final coreData = await ref.watch(coreDataProvider(params).future);
 
-      return DepartmentChangesState(
-        isLoading: false,
-        comparisonData: comparisonData,
-      );
+      return DepartmentChangesState(isLoading: false, comparisonData: coreData);
     });
 
-// 图表数据提供者 - 使用 family
+// 图表数据提供者 - 复用核心数据
 final chartDataProvider =
     FutureProvider.family<ChartDataState, DateRangeParams>((ref, params) async {
-      final dataService = DataAnalysisService(IsarDatabase());
-      final comparisonData = await dataService.getMultiMonthComparisonData(
-        params.startYear,
-        params.startMonth,
-        params.endYear,
-        params.endMonth,
-      );
+      final coreData = await ref.watch(coreDataProvider(params).future);
 
-      return ChartDataState(isLoading: false, comparisonData: comparisonData);
+      return ChartDataState(isLoading: false, comparisonData: coreData);
     });
 
 // 分页状态模型
