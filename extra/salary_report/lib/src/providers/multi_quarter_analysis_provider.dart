@@ -1,8 +1,7 @@
-import 'dart:async';
 import 'package:riverpod/riverpod.dart';
-import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart';
+import 'package:salary_report/src/isar/global_analysis_models.dart';
 
 // 季度范围参数
 class QuarterRangeParams {

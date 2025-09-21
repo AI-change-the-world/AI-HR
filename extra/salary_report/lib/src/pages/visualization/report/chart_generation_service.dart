@@ -3,10 +3,10 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:salary_report/src/isar/global_analysis_models.dart';
 import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
-import 'package:salary_report/src/isar/data_analysis_service.dart';
 
 import 'dart:ui' as ui;
 

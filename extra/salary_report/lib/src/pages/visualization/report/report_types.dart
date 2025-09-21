@@ -1,6 +1,6 @@
 // src/report/report_types.dart
 
-import 'package:salary_report/src/isar/data_analysis_service.dart';
+import 'package:salary_report/src/isar/global_analysis_models.dart';
 
 /// 报告类型枚举
 enum ReportType {

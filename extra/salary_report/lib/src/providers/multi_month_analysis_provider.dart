@@ -1,8 +1,8 @@
-import 'dart:async';
 import 'package:riverpod/riverpod.dart';
-import 'package:salary_report/src/common/logger.dart';
+
 import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart';
+import 'package:salary_report/src/isar/global_analysis_models.dart';
 
 // 多月分析数据模型 - 拆分成独立的状态
 class MultiMonthAnalysisState {

@@ -1,0 +1,248 @@
+// 考勤统计结果
+import 'package:salary_report/src/isar/salary_list.dart';
+
+class AttendanceStats {
+  final String name;
+  final String department;
+  final double sickLeaveDays;
+  final double leaveDays;
+  final int absenceCount;
+  final int truancyDays;
+  final int? year; // 添加年份字段
+  final int? month; // 添加月份字段
+
+  AttendanceStats({
+    required this.name,
+    required this.department,
+    required this.sickLeaveDays,
+    required this.leaveDays,
+    required this.absenceCount,
+    required this.truancyDays,
+    this.year,
+    this.month,
+  });
+}
+
+// 病假事假比例统计
+class LeaveRatioStats {
+  final double sickLeaveRatio;
+  final double leaveRatio;
+  final int totalEmployees;
+  final int? year; // 添加年份字段
+  final int? month; // 添加月份字段
+
+  LeaveRatioStats({
+    required this.sickLeaveRatio,
+    required this.leaveRatio,
+    required this.totalEmployees,
+    this.year,
+    this.month,
+  });
+}
+
+// 月度工资数据模型
+class MonthlySalaryData {
+  final int year;
+  final int month;
+  final List<SalaryListRecord> records;
+  final Map<String, dynamic> summaryData;
+
+  MonthlySalaryData({
+    required this.year,
+    required this.month,
+    required this.records,
+    required this.summaryData,
+  });
+}
+
+// 多月工资数据模型
+class MultiMonthSalaryData {
+  final List<MonthlySalaryData> monthlyData;
+  final DateTime startDate;
+  final DateTime endDate;
+
+  MultiMonthSalaryData({
+    required this.monthlyData,
+    required this.startDate,
+    required this.endDate,
+  });
+}
+
+// 部门工资统计结果
+class DepartmentSalaryStats {
+  final String department;
+  final double totalNetSalary;
+  final double averageNetSalary;
+  final int employeeCount;
+  final int year;
+  final int month;
+
+  DepartmentSalaryStats({
+    required this.department,
+    required this.totalNetSalary,
+    required this.averageNetSalary,
+    required this.employeeCount,
+    required this.year,
+    required this.month,
+  });
+}
+
+// 薪资范围统计结果
+class SalaryRangeStats {
+  final String range;
+  final int employeeCount;
+  final double totalSalary;
+  final double averageSalary;
+  final int year;
+  final int month;
+
+  SalaryRangeStats({
+    required this.range,
+    required this.employeeCount,
+    required this.totalSalary,
+    required this.averageSalary,
+    required this.year,
+    required this.month,
+  });
+}
+
+// 部门和薪资范围联合统计结果
+class DepartmentSalaryRangeStats {
+  final String department;
+  final String salaryRange;
+  final int employeeCount;
+  final double totalSalary;
+  final double averageSalary;
+  final int year;
+  final int month;
+
+  DepartmentSalaryRangeStats({
+    required this.department,
+    required this.salaryRange,
+    required this.employeeCount,
+    required this.totalSalary,
+    required this.averageSalary,
+    required this.year,
+    required this.month,
+  });
+}
+
+// 月度对比数据模型
+class MonthlyComparisonData {
+  final int year;
+  final int month;
+  final int employeeCount;
+  final double totalSalary;
+  final double averageSalary;
+  final double highestSalary; // 添加最高工资字段
+  final double lowestSalary; // 添加最低工资字段
+  final Map<String, DepartmentSalaryStats> departmentStats;
+  final Map<String, SalaryRangeStats> salaryRangeStats;
+
+  MonthlyComparisonData({
+    required this.year,
+    required this.month,
+    required this.employeeCount,
+    required this.totalSalary,
+    required this.averageSalary,
+    required this.highestSalary, // 添加最高工资字段
+    required this.lowestSalary, // 添加最低工资字段
+    required this.departmentStats,
+    required this.salaryRangeStats,
+  });
+}
+
+// 多月对比数据模型
+class MultiMonthComparisonData {
+  final List<MonthlyComparisonData> monthlyComparisons;
+  final DateTime startDate;
+  final DateTime endDate;
+
+  MultiMonthComparisonData({
+    required this.monthlyComparisons,
+    required this.startDate,
+    required this.endDate,
+  });
+}
+
+/*=============================================================================*/
+
+// 季度对比数据模型
+class QuarterlyComparisonData {
+  final int year;
+  final int quarter;
+  final int employeeCount;
+  final double totalSalary;
+  final double averageSalary;
+  final double highestSalary;
+  final double lowestSalary;
+  final Map<String, DepartmentSalaryStats> departmentStats;
+  final Map<String, SalaryRangeStats> salaryRangeStats;
+
+  QuarterlyComparisonData({
+    required this.year,
+    required this.quarter,
+    required this.employeeCount,
+    required this.totalSalary,
+    required this.averageSalary,
+    required this.highestSalary,
+    required this.lowestSalary,
+    required this.departmentStats,
+    required this.salaryRangeStats,
+  });
+}
+
+// 多季度对比数据模型
+class MultiQuarterComparisonData {
+  final List<QuarterlyComparisonData> quarterlyComparisons;
+  final DateTime startDate;
+  final DateTime endDate;
+
+  MultiQuarterComparisonData({
+    required this.quarterlyComparisons,
+    required this.startDate,
+    required this.endDate,
+  });
+}
+
+/*=============================================================================*/
+
+// 年度对比数据模型
+class YearlyComparisonData {
+  final int year;
+  final int employeeCount;
+  final double totalSalary;
+  final double averageSalary;
+  final double highestSalary;
+  final double lowestSalary;
+  final Map<String, DepartmentSalaryStats> departmentStats;
+  final Map<String, SalaryRangeStats> salaryRangeStats;
+  final Map<String, List<String>> uniqueEmployees; // 每个月的员工姓名
+  final int totalEmployeeCount; // 全年去重后的员工总数
+
+  YearlyComparisonData({
+    required this.year,
+    required this.employeeCount,
+    required this.totalSalary,
+    required this.averageSalary,
+    required this.highestSalary,
+    required this.lowestSalary,
+    required this.departmentStats,
+    required this.salaryRangeStats,
+    required this.uniqueEmployees,
+    required this.totalEmployeeCount,
+  });
+}
+
+// 多年对比数据模型
+class MultiYearComparisonData {
+  final List<YearlyComparisonData> yearlyComparisons;
+  final DateTime startDate;
+  final DateTime endDate;
+
+  MultiYearComparisonData({
+    required this.yearlyComparisons,
+    required this.startDate,
+    required this.endDate,
+  });
+}

@@ -1,7 +1,7 @@
 // src/report/models/report_content_model.dart
 
 import 'dart:typed_data';
-import 'package:salary_report/src/isar/data_analysis_service.dart';
+import 'package:salary_report/src/isar/global_analysis_models.dart';
 
 // A container for the generated chart images
 class ReportChartImages {

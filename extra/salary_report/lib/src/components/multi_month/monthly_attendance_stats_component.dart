@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:salary_report/src/providers/multi_month_analysis_provider.dart';
-import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/components/attendance_pagination.dart';
 
 class MonthlyAttendanceStatsComponent extends ConsumerWidget {

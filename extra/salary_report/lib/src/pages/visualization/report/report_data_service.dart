@@ -1,11 +1,11 @@
 // src/report/report_data_service.dart
 
 import 'package:salary_report/src/isar/data_analysis_service.dart';
+import 'package:salary_report/src/isar/global_analysis_models.dart';
 
 import 'package:salary_report/src/pages/visualization/report/ai_summary_service.dart';
 import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
 import 'package:salary_report/src/pages/visualization/report/analysis_data.dart';
-import 'package:salary_report/src/common/logger.dart';
 // ignore: depend_on_referenced_packages
 import 'package:intl/intl.dart';
 

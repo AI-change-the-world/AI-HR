@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:salary_report/src/isar/data_analysis_service.dart';
+import 'package:salary_report/src/isar/global_analysis_models.dart';
 
 class AttendancePagination extends StatefulWidget {
   final List<AttendanceStats> attendanceStats;

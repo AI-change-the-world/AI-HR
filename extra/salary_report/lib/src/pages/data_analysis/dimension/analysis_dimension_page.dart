@@ -5,9 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:salary_report/src/common/toast.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
-import 'package:salary_report/src/isar/data_analysis_service.dart'; // 添加新的导入
 import 'package:salary_report/src/isar/database.dart'; // 添加数据库导入
 import 'package:salary_report/src/common/logger.dart';
+import 'package:salary_report/src/isar/global_analysis_models.dart';
 import '../../../components/smart_time_picker.dart';
 import '../../../providers/app_providers.dart';
 
