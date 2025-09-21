@@ -36,7 +36,7 @@ Future<void> main() async {
   // 初始化AI配置
   await AIConfig.init();
 
-  runApp(const MyApp());
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -189,41 +189,39 @@ class MyApp extends StatelessWidget {
       ],
     );
 
-    return ProviderScope(
-      child: ToastificationWrapper(
-        child: MaterialApp.router(
-          debugShowCheckedModeBanner: false,
-          title: '员工工资智能化分析系统',
-          theme: ThemeData(
-            fontFamily: "ph",
-            primarySwatch: Colors.lightBlue,
-            useMaterial3: true,
-            scaffoldBackgroundColor: Colors.lightBlue.shade50,
-            appBarTheme: const AppBarTheme(
-              backgroundColor: Colors.lightBlue,
+    return ToastificationWrapper(
+      child: MaterialApp.router(
+        debugShowCheckedModeBanner: false,
+        title: '员工工资智能化分析系统',
+        theme: ThemeData(
+          fontFamily: "ph",
+          primarySwatch: Colors.lightBlue,
+          useMaterial3: true,
+          scaffoldBackgroundColor: Colors.lightBlue.shade50,
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Colors.lightBlue,
+            foregroundColor: Colors.white,
+            elevation: 2,
+          ),
+          cardTheme: CardThemeData(
+            color: Colors.white,
+            elevation: 2,
+            shadowColor: Colors.lightBlue.withValues(alpha: 0.1),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.lightBlue.shade400,
               foregroundColor: Colors.white,
-              elevation: 2,
-            ),
-            cardTheme: CardThemeData(
-              color: Colors.white,
-              elevation: 2,
-              shadowColor: Colors.lightBlue.withValues(alpha: 0.1),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            elevatedButtonTheme: ElevatedButtonThemeData(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.lightBlue.shade400,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
           ),
-          routerConfig: router,
         ),
+        routerConfig: router,
       ),
     );
   }
