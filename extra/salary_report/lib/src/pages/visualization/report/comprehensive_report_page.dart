@@ -107,7 +107,7 @@ class _ComprehensiveReportPageState
         totalSalary += stat.totalNetSalary;
       }
 
-      monthlyData.add({'month': '${month}月', 'salary': totalSalary});
+      monthlyData.add({'month': '$month月', 'salary': totalSalary});
     }
 
     return monthlyData;
@@ -158,7 +158,7 @@ class _ComprehensiveReportPageState
       }
 
       departmentMonthlyData.add({
-        'month': '${month}月',
+        'month': '$month月',
         'departments': departmentData,
       });
     }

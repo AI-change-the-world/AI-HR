@@ -307,7 +307,7 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
                                 ],
                               ),
                             );
-                          }).toList(),
+                          }),
                         ],
                       ),
                     ),

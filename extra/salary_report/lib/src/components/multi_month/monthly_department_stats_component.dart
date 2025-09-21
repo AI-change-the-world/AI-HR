@@ -114,7 +114,7 @@ class MonthlyDepartmentStatsComponent extends ConsumerWidget {
                   ],
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),

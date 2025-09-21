@@ -471,7 +471,7 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
                                   ),
                                 );
                               })
-                              .toList(),
+                              ,
                         ],
                       ),
                     ),
@@ -562,7 +562,7 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
                                   ),
                                 );
                               })
-                              .toList(),
+                              ,
                         ],
                       ),
                     ),
@@ -641,7 +641,7 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
                                 }
                                 return const SizedBox.shrink();
                               })
-                              .toList(),
+                              ,
                         ],
                       ),
                     ),
@@ -720,7 +720,7 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
                                 }
                                 return const SizedBox.shrink();
                               })
-                              .toList(),
+                              ,
                         ],
                       ),
                     ),

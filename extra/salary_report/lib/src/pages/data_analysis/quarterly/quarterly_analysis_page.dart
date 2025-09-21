@@ -611,7 +611,7 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                                 ],
                               ),
                             );
-                          }).toList(),
+                          }),
                         ],
                       ),
                     ),
@@ -713,7 +713,7 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                                   ),
                                 );
                               })
-                              .toList(),
+                              ,
                         ],
                       ),
                     ),
@@ -753,7 +753,7 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                                 const SizedBox(height: 16),
                               ],
                             );
-                          }).toList(),
+                          }),
                         ],
                       ),
                     ),
@@ -862,7 +862,7 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                                 ),
                               ],
                             );
-                          }).toList(),
+                          }),
                         ],
                       ),
                     ),

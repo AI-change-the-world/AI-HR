@@ -5,7 +5,6 @@ import 'package:salary_report/src/common/logger.dart';
 
 import 'package:salary_report/src/pages/visualization/report/analysis_data.dart';
 import 'package:salary_report/src/pages/visualization/report/base_report_generator.dart';
-import 'package:salary_report/src/pages/visualization/report/chart_generation_service.dart';
 import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 

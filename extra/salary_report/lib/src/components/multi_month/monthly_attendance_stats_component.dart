@@ -65,7 +65,7 @@ class MonthlyAttendanceStatsComponent extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${year}年${month}月考勤统计',
+                      '$year年$month月考勤统计',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

@@ -126,7 +126,7 @@ class DepartmentChangesComponent extends ConsumerWidget {
                           ],
                         ),
                       );
-                    }).toList(),
+                    }),
                   ],
                 ),
               ),

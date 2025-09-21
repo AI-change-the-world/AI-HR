@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:salary_report/src/pages/visualization/report/docx_writer_service.dart';
 import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
-import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 
 ReportContentModel _createMockReportContentModel() {
   return ReportContentModel(

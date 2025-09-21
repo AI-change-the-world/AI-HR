@@ -92,7 +92,7 @@ class DocxWriterService {
       '',
     );
 
-    return '${companyName}_${reportTime}_${typeDescription}报告_$timestamp';
+    return '${companyName}_${reportTime}_$typeDescription报告_$timestamp';
   }
 
   /// 根据报告类型获取模板路径

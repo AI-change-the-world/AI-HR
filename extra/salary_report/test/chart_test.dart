@@ -16,6 +16,8 @@ class MyApp extends StatelessWidget {
 }
 
 class SalaryChartExample extends StatelessWidget {
+  const SalaryChartExample({super.key});
+
   @override
   Widget build(BuildContext context) {
     final salaryRanges = {'5000-6000': 26}; // 你的数据

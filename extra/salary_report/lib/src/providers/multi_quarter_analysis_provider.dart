@@ -284,7 +284,7 @@ final coreAttendanceDataProvider =
           attendanceStats.addAll(monthAttendance);
         }
 
-        final quarterKey = '$year-Q${quarter}';
+        final quarterKey = '$year-Q$quarter';
         attendanceData[quarterKey] = attendanceStats;
       }
 

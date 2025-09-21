@@ -110,7 +110,7 @@ class _AttendancePaginationState extends State<AttendancePagination> {
               ],
             ),
           );
-        }).toList(),
+        }),
         // 分页控件
         if (_totalPages > 1) ...[
           const SizedBox(height: 16),

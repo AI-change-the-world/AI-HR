@@ -114,7 +114,7 @@ class QuarterlyDepartmentStatsComponent extends ConsumerWidget {
                   ],
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),

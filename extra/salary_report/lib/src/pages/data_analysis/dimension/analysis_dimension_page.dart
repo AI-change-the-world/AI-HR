@@ -674,7 +674,7 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
     final endQuarter = ((timeRange.endDate.month - 1) ~/ 3) + 1;
 
     logger.info(
-      '时间范围: ${timeRange.startDate.year} 年第${startQuarter}季度 到 ${timeRange.endDate.year} 年第${endQuarter}季度',
+      '时间范围: ${timeRange.startDate.year} 年第$startQuarter季度 到 ${timeRange.endDate.year} 年第$endQuarter季度',
     );
 
     // 单个季度分析
