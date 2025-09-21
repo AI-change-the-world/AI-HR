@@ -12,11 +12,20 @@ class SalaryRecord {
   final String department;
   final String position;
   final String attendance;
-  final String salaryComponents;
+  final String preTaxSalary;
   final String socialSecurityTax;
   final String netSalary;
+  final String serialNumber;
+  final String hireDate;
+  final String terminationDate;
+  final String gender;
+  final String idNumber;
+  final String regularizationDate;
+  final String contractType;
+  final String financialAggregation;
+  final String secondaryDepartment;
+  final String jobLevel;
   final String payrollDays;
-  final String actualAttendanceDays;
   final String sickLeave;
   final String personalLeave;
   final String absence;
@@ -31,24 +40,45 @@ class SalaryRecord {
   final String currentMonthPosition;
   final String currentMonthPerformance;
   final String currentMonthAllowance;
-  final String overtimePay;
-  final String allowance;
-  final String bonus;
-  final String socialSecurityDeduction;
-  final String tax;
-  final String otherDeductions;
+  final String currentMonthSickDeduction;
+  final String currentMonthPersonalLeaveDeduction;
+  final String currentMonthAbsenceDeduction;
+  final String currentMonthTruancyDeduction;
   final String mealAllowance;
+  final String computerAllowance;
+  final String otherAdjustments;
+  final String monthlyPayrollSalary;
+  final String socialSecurityBase;
+  final String providentFundBase;
+  final String personalPension;
+  final String personalMedical;
+  final String personalUnemployment;
+  final String personalProvidentFund;
+  final String monthlyPersonalIncomeTax;
+  final String severancePay;
+  final String postTaxAdjustments;
+  final String bank;
+  final String bankAccount;
 
   const SalaryRecord({
     required this.name,
     required this.department,
     required this.position,
     required this.attendance,
-    required this.salaryComponents,
+    required this.preTaxSalary,
     required this.socialSecurityTax,
     required this.netSalary,
+    required this.serialNumber,
+    required this.hireDate,
+    required this.terminationDate,
+    required this.gender,
+    required this.idNumber,
+    required this.regularizationDate,
+    required this.contractType,
+    required this.financialAggregation,
+    required this.secondaryDepartment,
+    required this.jobLevel,
     required this.payrollDays,
-    required this.actualAttendanceDays,
     required this.sickLeave,
     required this.personalLeave,
     required this.absence,
@@ -63,13 +93,25 @@ class SalaryRecord {
     required this.currentMonthPosition,
     required this.currentMonthPerformance,
     required this.currentMonthAllowance,
-    required this.overtimePay,
-    required this.allowance,
-    required this.bonus,
-    required this.socialSecurityDeduction,
-    required this.tax,
-    required this.otherDeductions,
+    required this.currentMonthSickDeduction,
+    required this.currentMonthPersonalLeaveDeduction,
+    required this.currentMonthAbsenceDeduction,
+    required this.currentMonthTruancyDeduction,
     required this.mealAllowance,
+    required this.computerAllowance,
+    required this.otherAdjustments,
+    required this.monthlyPayrollSalary,
+    required this.socialSecurityBase,
+    required this.providentFundBase,
+    required this.personalPension,
+    required this.personalMedical,
+    required this.personalUnemployment,
+    required this.personalProvidentFund,
+    required this.monthlyPersonalIncomeTax,
+    required this.severancePay,
+    required this.postTaxAdjustments,
+    required this.bank,
+    required this.bankAccount,
   });
 
   @override
@@ -78,11 +120,20 @@ class SalaryRecord {
       department.hashCode ^
       position.hashCode ^
       attendance.hashCode ^
-      salaryComponents.hashCode ^
+      preTaxSalary.hashCode ^
       socialSecurityTax.hashCode ^
       netSalary.hashCode ^
+      serialNumber.hashCode ^
+      hireDate.hashCode ^
+      terminationDate.hashCode ^
+      gender.hashCode ^
+      idNumber.hashCode ^
+      regularizationDate.hashCode ^
+      contractType.hashCode ^
+      financialAggregation.hashCode ^
+      secondaryDepartment.hashCode ^
+      jobLevel.hashCode ^
       payrollDays.hashCode ^
-      actualAttendanceDays.hashCode ^
       sickLeave.hashCode ^
       personalLeave.hashCode ^
       absence.hashCode ^
@@ -97,13 +148,25 @@ class SalaryRecord {
       currentMonthPosition.hashCode ^
       currentMonthPerformance.hashCode ^
       currentMonthAllowance.hashCode ^
-      overtimePay.hashCode ^
-      allowance.hashCode ^
-      bonus.hashCode ^
-      socialSecurityDeduction.hashCode ^
-      tax.hashCode ^
-      otherDeductions.hashCode ^
-      mealAllowance.hashCode;
+      currentMonthSickDeduction.hashCode ^
+      currentMonthPersonalLeaveDeduction.hashCode ^
+      currentMonthAbsenceDeduction.hashCode ^
+      currentMonthTruancyDeduction.hashCode ^
+      mealAllowance.hashCode ^
+      computerAllowance.hashCode ^
+      otherAdjustments.hashCode ^
+      monthlyPayrollSalary.hashCode ^
+      socialSecurityBase.hashCode ^
+      providentFundBase.hashCode ^
+      personalPension.hashCode ^
+      personalMedical.hashCode ^
+      personalUnemployment.hashCode ^
+      personalProvidentFund.hashCode ^
+      monthlyPersonalIncomeTax.hashCode ^
+      severancePay.hashCode ^
+      postTaxAdjustments.hashCode ^
+      bank.hashCode ^
+      bankAccount.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -114,11 +177,20 @@ class SalaryRecord {
           department == other.department &&
           position == other.position &&
           attendance == other.attendance &&
-          salaryComponents == other.salaryComponents &&
+          preTaxSalary == other.preTaxSalary &&
           socialSecurityTax == other.socialSecurityTax &&
           netSalary == other.netSalary &&
+          serialNumber == other.serialNumber &&
+          hireDate == other.hireDate &&
+          terminationDate == other.terminationDate &&
+          gender == other.gender &&
+          idNumber == other.idNumber &&
+          regularizationDate == other.regularizationDate &&
+          contractType == other.contractType &&
+          financialAggregation == other.financialAggregation &&
+          secondaryDepartment == other.secondaryDepartment &&
+          jobLevel == other.jobLevel &&
           payrollDays == other.payrollDays &&
-          actualAttendanceDays == other.actualAttendanceDays &&
           sickLeave == other.sickLeave &&
           personalLeave == other.personalLeave &&
           absence == other.absence &&
@@ -133,13 +205,26 @@ class SalaryRecord {
           currentMonthPosition == other.currentMonthPosition &&
           currentMonthPerformance == other.currentMonthPerformance &&
           currentMonthAllowance == other.currentMonthAllowance &&
-          overtimePay == other.overtimePay &&
-          allowance == other.allowance &&
-          bonus == other.bonus &&
-          socialSecurityDeduction == other.socialSecurityDeduction &&
-          tax == other.tax &&
-          otherDeductions == other.otherDeductions &&
-          mealAllowance == other.mealAllowance;
+          currentMonthSickDeduction == other.currentMonthSickDeduction &&
+          currentMonthPersonalLeaveDeduction ==
+              other.currentMonthPersonalLeaveDeduction &&
+          currentMonthAbsenceDeduction == other.currentMonthAbsenceDeduction &&
+          currentMonthTruancyDeduction == other.currentMonthTruancyDeduction &&
+          mealAllowance == other.mealAllowance &&
+          computerAllowance == other.computerAllowance &&
+          otherAdjustments == other.otherAdjustments &&
+          monthlyPayrollSalary == other.monthlyPayrollSalary &&
+          socialSecurityBase == other.socialSecurityBase &&
+          providentFundBase == other.providentFundBase &&
+          personalPension == other.personalPension &&
+          personalMedical == other.personalMedical &&
+          personalUnemployment == other.personalUnemployment &&
+          personalProvidentFund == other.personalProvidentFund &&
+          monthlyPersonalIncomeTax == other.monthlyPersonalIncomeTax &&
+          severancePay == other.severancePay &&
+          postTaxAdjustments == other.postTaxAdjustments &&
+          bank == other.bank &&
+          bankAccount == other.bankAccount;
 }
 
 /// 工资汇总信息

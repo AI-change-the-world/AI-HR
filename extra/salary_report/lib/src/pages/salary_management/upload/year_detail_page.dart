@@ -100,7 +100,7 @@ class _YearDetailPageState extends ConsumerState<YearDetailPage>
                 ..attendance = record.attendance
                 ..netSalary = record.netSalary
                 ..payDays = record.payrollDays
-                ..actualPayDays = record.actualAttendanceDays
+                ..actualPayDays = record.attendance
                 ..sickLeave = record.sickLeave
                 ..leave = record.personalLeave
                 ..absence = record.absence

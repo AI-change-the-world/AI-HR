@@ -245,11 +245,20 @@ impl SseDecode for crate::salary_caculate::salary::SalaryRecord {
         let mut var_department = <String>::sse_decode(deserializer);
         let mut var_position = <String>::sse_decode(deserializer);
         let mut var_attendance = <String>::sse_decode(deserializer);
-        let mut var_salaryComponents = <String>::sse_decode(deserializer);
+        let mut var_preTaxSalary = <String>::sse_decode(deserializer);
         let mut var_socialSecurityTax = <String>::sse_decode(deserializer);
         let mut var_netSalary = <String>::sse_decode(deserializer);
+        let mut var_serialNumber = <String>::sse_decode(deserializer);
+        let mut var_hireDate = <String>::sse_decode(deserializer);
+        let mut var_terminationDate = <String>::sse_decode(deserializer);
+        let mut var_gender = <String>::sse_decode(deserializer);
+        let mut var_idNumber = <String>::sse_decode(deserializer);
+        let mut var_regularizationDate = <String>::sse_decode(deserializer);
+        let mut var_contractType = <String>::sse_decode(deserializer);
+        let mut var_financialAggregation = <String>::sse_decode(deserializer);
+        let mut var_secondaryDepartment = <String>::sse_decode(deserializer);
+        let mut var_jobLevel = <String>::sse_decode(deserializer);
         let mut var_payrollDays = <String>::sse_decode(deserializer);
-        let mut var_actualAttendanceDays = <String>::sse_decode(deserializer);
         let mut var_sickLeave = <String>::sse_decode(deserializer);
         let mut var_personalLeave = <String>::sse_decode(deserializer);
         let mut var_absence = <String>::sse_decode(deserializer);
@@ -264,23 +273,44 @@ impl SseDecode for crate::salary_caculate::salary::SalaryRecord {
         let mut var_currentMonthPosition = <String>::sse_decode(deserializer);
         let mut var_currentMonthPerformance = <String>::sse_decode(deserializer);
         let mut var_currentMonthAllowance = <String>::sse_decode(deserializer);
-        let mut var_overtimePay = <String>::sse_decode(deserializer);
-        let mut var_allowance = <String>::sse_decode(deserializer);
-        let mut var_bonus = <String>::sse_decode(deserializer);
-        let mut var_socialSecurityDeduction = <String>::sse_decode(deserializer);
-        let mut var_tax = <String>::sse_decode(deserializer);
-        let mut var_otherDeductions = <String>::sse_decode(deserializer);
+        let mut var_currentMonthSickDeduction = <String>::sse_decode(deserializer);
+        let mut var_currentMonthPersonalLeaveDeduction = <String>::sse_decode(deserializer);
+        let mut var_currentMonthAbsenceDeduction = <String>::sse_decode(deserializer);
+        let mut var_currentMonthTruancyDeduction = <String>::sse_decode(deserializer);
         let mut var_mealAllowance = <String>::sse_decode(deserializer);
+        let mut var_computerAllowance = <String>::sse_decode(deserializer);
+        let mut var_otherAdjustments = <String>::sse_decode(deserializer);
+        let mut var_monthlyPayrollSalary = <String>::sse_decode(deserializer);
+        let mut var_socialSecurityBase = <String>::sse_decode(deserializer);
+        let mut var_providentFundBase = <String>::sse_decode(deserializer);
+        let mut var_personalPension = <String>::sse_decode(deserializer);
+        let mut var_personalMedical = <String>::sse_decode(deserializer);
+        let mut var_personalUnemployment = <String>::sse_decode(deserializer);
+        let mut var_personalProvidentFund = <String>::sse_decode(deserializer);
+        let mut var_monthlyPersonalIncomeTax = <String>::sse_decode(deserializer);
+        let mut var_severancePay = <String>::sse_decode(deserializer);
+        let mut var_postTaxAdjustments = <String>::sse_decode(deserializer);
+        let mut var_bank = <String>::sse_decode(deserializer);
+        let mut var_bankAccount = <String>::sse_decode(deserializer);
         return crate::salary_caculate::salary::SalaryRecord {
             name: var_name,
             department: var_department,
             position: var_position,
             attendance: var_attendance,
-            salary_components: var_salaryComponents,
+            pre_tax_salary: var_preTaxSalary,
             social_security_tax: var_socialSecurityTax,
             net_salary: var_netSalary,
+            serial_number: var_serialNumber,
+            hire_date: var_hireDate,
+            termination_date: var_terminationDate,
+            gender: var_gender,
+            id_number: var_idNumber,
+            regularization_date: var_regularizationDate,
+            contract_type: var_contractType,
+            financial_aggregation: var_financialAggregation,
+            secondary_department: var_secondaryDepartment,
+            job_level: var_jobLevel,
             payroll_days: var_payrollDays,
-            actual_attendance_days: var_actualAttendanceDays,
             sick_leave: var_sickLeave,
             personal_leave: var_personalLeave,
             absence: var_absence,
@@ -295,13 +325,25 @@ impl SseDecode for crate::salary_caculate::salary::SalaryRecord {
             current_month_position: var_currentMonthPosition,
             current_month_performance: var_currentMonthPerformance,
             current_month_allowance: var_currentMonthAllowance,
-            overtime_pay: var_overtimePay,
-            allowance: var_allowance,
-            bonus: var_bonus,
-            social_security_deduction: var_socialSecurityDeduction,
-            tax: var_tax,
-            other_deductions: var_otherDeductions,
+            current_month_sick_deduction: var_currentMonthSickDeduction,
+            current_month_personal_leave_deduction: var_currentMonthPersonalLeaveDeduction,
+            current_month_absence_deduction: var_currentMonthAbsenceDeduction,
+            current_month_truancy_deduction: var_currentMonthTruancyDeduction,
             meal_allowance: var_mealAllowance,
+            computer_allowance: var_computerAllowance,
+            other_adjustments: var_otherAdjustments,
+            monthly_payroll_salary: var_monthlyPayrollSalary,
+            social_security_base: var_socialSecurityBase,
+            provident_fund_base: var_providentFundBase,
+            personal_pension: var_personalPension,
+            personal_medical: var_personalMedical,
+            personal_unemployment: var_personalUnemployment,
+            personal_provident_fund: var_personalProvidentFund,
+            monthly_personal_income_tax: var_monthlyPersonalIncomeTax,
+            severance_pay: var_severancePay,
+            post_tax_adjustments: var_postTaxAdjustments,
+            bank: var_bank,
+            bank_account: var_bankAccount,
         };
     }
 }
@@ -398,11 +440,20 @@ impl flutter_rust_bridge::IntoDart for crate::salary_caculate::salary::SalaryRec
             self.department.into_into_dart().into_dart(),
             self.position.into_into_dart().into_dart(),
             self.attendance.into_into_dart().into_dart(),
-            self.salary_components.into_into_dart().into_dart(),
+            self.pre_tax_salary.into_into_dart().into_dart(),
             self.social_security_tax.into_into_dart().into_dart(),
             self.net_salary.into_into_dart().into_dart(),
+            self.serial_number.into_into_dart().into_dart(),
+            self.hire_date.into_into_dart().into_dart(),
+            self.termination_date.into_into_dart().into_dart(),
+            self.gender.into_into_dart().into_dart(),
+            self.id_number.into_into_dart().into_dart(),
+            self.regularization_date.into_into_dart().into_dart(),
+            self.contract_type.into_into_dart().into_dart(),
+            self.financial_aggregation.into_into_dart().into_dart(),
+            self.secondary_department.into_into_dart().into_dart(),
+            self.job_level.into_into_dart().into_dart(),
             self.payroll_days.into_into_dart().into_dart(),
-            self.actual_attendance_days.into_into_dart().into_dart(),
             self.sick_leave.into_into_dart().into_dart(),
             self.personal_leave.into_into_dart().into_dart(),
             self.absence.into_into_dart().into_dart(),
@@ -417,13 +468,35 @@ impl flutter_rust_bridge::IntoDart for crate::salary_caculate::salary::SalaryRec
             self.current_month_position.into_into_dart().into_dart(),
             self.current_month_performance.into_into_dart().into_dart(),
             self.current_month_allowance.into_into_dart().into_dart(),
-            self.overtime_pay.into_into_dart().into_dart(),
-            self.allowance.into_into_dart().into_dart(),
-            self.bonus.into_into_dart().into_dart(),
-            self.social_security_deduction.into_into_dart().into_dart(),
-            self.tax.into_into_dart().into_dart(),
-            self.other_deductions.into_into_dart().into_dart(),
+            self.current_month_sick_deduction
+                .into_into_dart()
+                .into_dart(),
+            self.current_month_personal_leave_deduction
+                .into_into_dart()
+                .into_dart(),
+            self.current_month_absence_deduction
+                .into_into_dart()
+                .into_dart(),
+            self.current_month_truancy_deduction
+                .into_into_dart()
+                .into_dart(),
             self.meal_allowance.into_into_dart().into_dart(),
+            self.computer_allowance.into_into_dart().into_dart(),
+            self.other_adjustments.into_into_dart().into_dart(),
+            self.monthly_payroll_salary.into_into_dart().into_dart(),
+            self.social_security_base.into_into_dart().into_dart(),
+            self.provident_fund_base.into_into_dart().into_dart(),
+            self.personal_pension.into_into_dart().into_dart(),
+            self.personal_medical.into_into_dart().into_dart(),
+            self.personal_unemployment.into_into_dart().into_dart(),
+            self.personal_provident_fund.into_into_dart().into_dart(),
+            self.monthly_personal_income_tax
+                .into_into_dart()
+                .into_dart(),
+            self.severance_pay.into_into_dart().into_dart(),
+            self.post_tax_adjustments.into_into_dart().into_dart(),
+            self.bank.into_into_dart().into_dart(),
+            self.bank_account.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -544,11 +617,20 @@ impl SseEncode for crate::salary_caculate::salary::SalaryRecord {
         <String>::sse_encode(self.department, serializer);
         <String>::sse_encode(self.position, serializer);
         <String>::sse_encode(self.attendance, serializer);
-        <String>::sse_encode(self.salary_components, serializer);
+        <String>::sse_encode(self.pre_tax_salary, serializer);
         <String>::sse_encode(self.social_security_tax, serializer);
         <String>::sse_encode(self.net_salary, serializer);
+        <String>::sse_encode(self.serial_number, serializer);
+        <String>::sse_encode(self.hire_date, serializer);
+        <String>::sse_encode(self.termination_date, serializer);
+        <String>::sse_encode(self.gender, serializer);
+        <String>::sse_encode(self.id_number, serializer);
+        <String>::sse_encode(self.regularization_date, serializer);
+        <String>::sse_encode(self.contract_type, serializer);
+        <String>::sse_encode(self.financial_aggregation, serializer);
+        <String>::sse_encode(self.secondary_department, serializer);
+        <String>::sse_encode(self.job_level, serializer);
         <String>::sse_encode(self.payroll_days, serializer);
-        <String>::sse_encode(self.actual_attendance_days, serializer);
         <String>::sse_encode(self.sick_leave, serializer);
         <String>::sse_encode(self.personal_leave, serializer);
         <String>::sse_encode(self.absence, serializer);
@@ -563,13 +645,25 @@ impl SseEncode for crate::salary_caculate::salary::SalaryRecord {
         <String>::sse_encode(self.current_month_position, serializer);
         <String>::sse_encode(self.current_month_performance, serializer);
         <String>::sse_encode(self.current_month_allowance, serializer);
-        <String>::sse_encode(self.overtime_pay, serializer);
-        <String>::sse_encode(self.allowance, serializer);
-        <String>::sse_encode(self.bonus, serializer);
-        <String>::sse_encode(self.social_security_deduction, serializer);
-        <String>::sse_encode(self.tax, serializer);
-        <String>::sse_encode(self.other_deductions, serializer);
+        <String>::sse_encode(self.current_month_sick_deduction, serializer);
+        <String>::sse_encode(self.current_month_personal_leave_deduction, serializer);
+        <String>::sse_encode(self.current_month_absence_deduction, serializer);
+        <String>::sse_encode(self.current_month_truancy_deduction, serializer);
         <String>::sse_encode(self.meal_allowance, serializer);
+        <String>::sse_encode(self.computer_allowance, serializer);
+        <String>::sse_encode(self.other_adjustments, serializer);
+        <String>::sse_encode(self.monthly_payroll_salary, serializer);
+        <String>::sse_encode(self.social_security_base, serializer);
+        <String>::sse_encode(self.provident_fund_base, serializer);
+        <String>::sse_encode(self.personal_pension, serializer);
+        <String>::sse_encode(self.personal_medical, serializer);
+        <String>::sse_encode(self.personal_unemployment, serializer);
+        <String>::sse_encode(self.personal_provident_fund, serializer);
+        <String>::sse_encode(self.monthly_personal_income_tax, serializer);
+        <String>::sse_encode(self.severance_pay, serializer);
+        <String>::sse_encode(self.post_tax_adjustments, serializer);
+        <String>::sse_encode(self.bank, serializer);
+        <String>::sse_encode(self.bank_account, serializer);
     }
 }
 
