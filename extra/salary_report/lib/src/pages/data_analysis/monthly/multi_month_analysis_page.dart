@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
-import 'package:salary_report/src/isar/data_analysis_service.dart'; // 添加新的导入
 import 'package:salary_report/src/isar/database.dart'; // 添加数据库导入
 import 'package:salary_report/src/components/attendance_pagination.dart';
 import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
@@ -18,18 +17,12 @@ class MultiMonthAnalysisPage extends StatefulWidget {
     required this.month,
     required this.endYear,
     required this.endMonth,
-    this.departmentStats = const [],
-    this.attendanceStats = const [],
-    this.leaveRatioStats,
   });
 
   final int year;
   final int month;
   final int endYear;
   final int endMonth;
-  final List<DepartmentSalaryStats> departmentStats;
-  final List<AttendanceStats> attendanceStats;
-  final LeaveRatioStats? leaveRatioStats;
 
   @override
   State<MultiMonthAnalysisPage> createState() => _MultiMonthAnalysisPageState();
@@ -39,7 +32,6 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
   late Map<String, dynamic> _analysisData;
   final GlobalKey _chartContainerKey = GlobalKey();
   bool _isGeneratingReport = false;
-  List<LeaveRatioStats> _monthlyLeaveRatioStats = [];
   bool _isLoading = true;
   late DataAnalysisService _salaryDataService; // 添加新的服务实例
 
@@ -52,6 +44,10 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
 
   void _initAnalysisData() async {
     try {
+      setState(() {
+        _isLoading = true;
+      });
+
       // 使用DataAnalysisService获取多月对比数据
       final comparisonData = await _salaryDataService
           .getMultiMonthComparisonData(
@@ -121,6 +117,9 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
           comparisonData,
         );
 
+        // 计算部门人数变化情况
+        final departmentChanges = _calculateDepartmentChanges(comparisonData);
+
         setState(() {
           _analysisData = {
             'monthlyDepartmentStats': groupedDepartmentStats, // 每月部门统计数据
@@ -143,6 +142,7 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
             'monthlySalaryRankings': monthlySalaryRankings, // 每月薪资排名数据
             'lastMonthDepartmentStats':
                 lastMonthDepartmentStats, // 最后一个月部门统计数据（用于图表）
+            'departmentChanges': departmentChanges, // 部门人数变化情况
           };
 
           _isLoading = false;
@@ -207,9 +207,6 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
 
       // 这里应该从数据库查询实际的考勤数据
       // 暂时使用传入的数据
-      if (widget.attendanceStats.isNotEmpty) {
-        monthlyAttendanceStats[monthKey] = widget.attendanceStats;
-      }
     }
 
     return monthlyAttendanceStats;
@@ -336,7 +333,7 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
       final generator = SalaryReportGenerator();
       final reportPath = await generator.generateReport(
         previewContainerKey: _chartContainerKey,
-        departmentStats: widget.departmentStats,
+        departmentStats: [],
         analysisData: _analysisData,
         endTime: endTime,
         year: widget.year,
@@ -435,6 +432,16 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
 
                   const SizedBox(height: 24),
 
+                  // 部门人数变化说明
+                  const Text(
+                    '部门人数变化说明',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildDepartmentChanges(),
+
+                  const SizedBox(height: 24),
+
                   // 每月考勤统计
                   const Text(
                     '每月考勤统计',
@@ -466,20 +473,9 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
                       height: 300,
                       padding: const EdgeInsets.all(16.0),
                       child: MonthlyEmployeeCountChart(
-                        monthlyData: _calculateEmployeeCountPerMonth(
-                          // 这里需要传入正确的数据
-                          _analysisData.containsKey('monthlyDepartmentStats')
-                              ? MultiMonthComparisonData(
-                                  monthlyComparisons: [],
-                                  startDate: DateTime.now(),
-                                  endDate: DateTime.now(),
-                                )
-                              : MultiMonthComparisonData(
-                                  monthlyComparisons: [],
-                                  startDate: DateTime.now(),
-                                  endDate: DateTime.now(),
-                                ),
-                        ),
+                        monthlyData:
+                            _analysisData['monthlyEmployeeCount']
+                                as List<Map<String, dynamic>>,
                       ),
                     ),
                   ),
@@ -497,14 +493,9 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
                       height: 300,
                       padding: const EdgeInsets.all(16.0),
                       child: MonthlyAverageSalaryChart(
-                        monthlyData: _calculateAverageSalaryPerMonth(
-                          // 这里需要传入正确的数据
-                          MultiMonthComparisonData(
-                            monthlyComparisons: [],
-                            startDate: DateTime.now(),
-                            endDate: DateTime.now(),
-                          ),
-                        ),
+                        monthlyData:
+                            _analysisData['monthlyAverageSalary']
+                                as List<Map<String, dynamic>>,
                       ),
                     ),
                   ),
@@ -522,14 +513,9 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
                       height: 300,
                       padding: const EdgeInsets.all(16.0),
                       child: MonthlyTotalSalaryChart(
-                        monthlyData: _calculateTotalSalaryPerMonth(
-                          // 这里需要传入正确的数据
-                          MultiMonthComparisonData(
-                            monthlyComparisons: [],
-                            startDate: DateTime.now(),
-                            endDate: DateTime.now(),
-                          ),
-                        ),
+                        monthlyData:
+                            _analysisData['monthlyTotalSalary']
+                                as List<Map<String, dynamic>>,
                       ),
                     ),
                   ),
@@ -1172,6 +1158,96 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
     return result;
   }
 
+  /// 计算部门人数变化情况
+  Map<String, List<Map<String, dynamic>>> _calculateDepartmentChanges(
+    MultiMonthComparisonData comparisonData,
+  ) {
+    final Map<String, List<Map<String, dynamic>>> departmentChanges = {};
+
+    // 按时间顺序排列月份数据
+    final sortedMonths =
+        List<MonthlyComparisonData>.from(comparisonData.monthlyComparisons)
+          ..sort((a, b) {
+            if (a.year != b.year) {
+              return a.year.compareTo(b.year);
+            }
+            return a.month.compareTo(b.month);
+          });
+
+    // 遍历每个月份，比较与前一个月的部门人数变化
+    for (int i = 0; i < sortedMonths.length; i++) {
+      final currentMonth = sortedMonths[i];
+      final monthKey =
+          '${currentMonth.year}-${currentMonth.month.toString().padLeft(2, '0')}';
+
+      if (!departmentChanges.containsKey(monthKey)) {
+        departmentChanges[monthKey] = [];
+      }
+
+      // 如果不是第一个月份，比较与前一个月的变化
+      if (i > 0) {
+        final previousMonth = sortedMonths[i - 1];
+        final currentDepartments = currentMonth.departmentStats;
+        final previousDepartments = previousMonth.departmentStats;
+
+        // 检查现有部门的人数变化
+        currentDepartments.forEach((deptName, currentStat) {
+          if (previousDepartments.containsKey(deptName)) {
+            final previousStat = previousDepartments[deptName]!;
+            final countChange =
+                currentStat.employeeCount - previousStat.employeeCount;
+
+            if (countChange != 0) {
+              departmentChanges[monthKey]!.add({
+                'department': deptName,
+                'change': countChange,
+                'type': 'change', // 人数变化
+                'currentCount': currentStat.employeeCount,
+                'previousCount': previousStat.employeeCount,
+              });
+            }
+          } else {
+            // 新增部门
+            departmentChanges[monthKey]!.add({
+              'department': deptName,
+              'change': currentStat.employeeCount,
+              'type': 'new', // 新增部门
+              'currentCount': currentStat.employeeCount,
+              'previousCount': 0,
+            });
+          }
+        });
+
+        // 检查消失的部门
+        previousDepartments.forEach((deptName, previousStat) {
+          if (!currentDepartments.containsKey(deptName)) {
+            // 部门消失
+            departmentChanges[monthKey]!.add({
+              'department': deptName,
+              'change': -previousStat.employeeCount,
+              'type': 'removed', // 部门消失
+              'currentCount': 0,
+              'previousCount': previousStat.employeeCount,
+            });
+          }
+        });
+      } else {
+        // 第一个月，记录所有部门为新增
+        currentMonth.departmentStats.forEach((deptName, stat) {
+          departmentChanges[monthKey]!.add({
+            'department': deptName,
+            'change': stat.employeeCount,
+            'type': 'new', // 新增部门
+            'currentCount': stat.employeeCount,
+            'previousCount': 0,
+          });
+        });
+      }
+    }
+
+    return departmentChanges;
+  }
+
   /// 准备部门月度数据用于图表显示
   List<Map<String, dynamic>> _prepareDepartmentMonthlyData(
     Map<String, List<Map<String, dynamic>>> monthlyDepartmentStats,
@@ -1217,5 +1293,122 @@ class _MultiMonthAnalysisPageState extends State<MultiMonthAnalysisPage> {
     });
 
     return result;
+  }
+
+  /// 构建部门人数变化说明
+  Widget _buildDepartmentChanges() {
+    final departmentChanges =
+        _analysisData['departmentChanges']
+            as Map<String, List<Map<String, dynamic>>>;
+
+    // 检查是否有任何变化
+    bool hasChanges = false;
+    departmentChanges.forEach((month, changes) {
+      if (changes.isNotEmpty) {
+        hasChanges = true;
+      }
+    });
+
+    if (!hasChanges) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text(
+            '各部门人数在统计期间内无变化',
+            style: TextStyle(fontSize: 16, color: Colors.grey),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: departmentChanges.entries.map((entry) {
+        final monthKey = entry.key;
+        final changes = entry.value;
+
+        if (changes.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        // 解析月份信息
+        final parts = monthKey.split('-');
+        final year = parts[0];
+        final month = parts[1];
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$year年$month月部门人数变化',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ...changes.map<Widget>((change) {
+                  final department = change['department'] as String;
+                  final countChange = change['change'] as int;
+                  final type = change['type'] as String;
+                  final currentCount = change['currentCount'] as int;
+                  final previousCount = change['previousCount'] as int;
+
+                  String changeText;
+                  Color changeColor;
+
+                  if (type == 'new') {
+                    changeText = '新增部门，当前人数：$currentCount';
+                    changeColor = Colors.green;
+                  } else if (type == 'removed') {
+                    changeText = '部门消失，原有人数：$previousCount';
+                    changeColor = Colors.red;
+                  } else {
+                    if (countChange > 0) {
+                      changeText =
+                          '人数增加 $countChange 人，从 $previousCount 人增加到 $currentCount 人';
+                      changeColor = Colors.green;
+                    } else {
+                      changeText =
+                          '人数减少 ${-countChange} 人，从 $previousCount 人减少到 $currentCount 人';
+                      changeColor = Colors.red;
+                    }
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Row(
+                      children: [
+                        Icon(
+                          type == 'new'
+                              ? Icons.add_circle
+                              : type == 'removed'
+                              ? Icons.remove_circle
+                              : countChange > 0
+                              ? Icons.arrow_upward
+                              : Icons.arrow_downward,
+                          color: changeColor,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '$department: $changeText',
+                            style: TextStyle(color: changeColor),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
   }
 }

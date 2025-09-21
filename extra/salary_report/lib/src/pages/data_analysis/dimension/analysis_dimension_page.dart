@@ -577,27 +577,9 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
     // 如果是单个月份
     if (timeRange.startDate.year == timeRange.endDate.year &&
         timeRange.startDate.month == timeRange.endDate.month) {
-      // 获取该月的数据
-      final departmentStats = await service.getDepartmentAggregation(
-        timeRange.startDate.year,
-        timeRange.startDate.month,
-      );
-
-      // 这里可以获取其他数据，如考勤统计等
-      final attendanceStats = <AttendanceStats>[]; // 暂时为空，实际应用中应从数据库获取
-      final leaveRatioStats = null; // 暂时为空，实际应用中应从数据库获取
-
-      // 记录数据
-      _logAnalysisResults(departmentStats, attendanceStats, leaveRatioStats);
-
       // 导航到月度分析页面
       context.push(
         '/analysis/monthly?year=${timeRange.startDate.year}&month=${timeRange.startDate.month}',
-        extra: {
-          'departmentStats': departmentStats,
-          'attendanceStats': attendanceStats,
-          'leaveRatioStats': leaveRatioStats,
-        },
       );
     } else {
       // 多个月份对比分析

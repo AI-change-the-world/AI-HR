@@ -19,7 +19,6 @@ import 'package:salary_report/src/pages/settings/user/user_settings_page.dart';
 import 'package:salary_report/src/rust/frb_generated.dart';
 import 'package:toastification/toastification.dart';
 import 'package:logging/logging.dart';
-import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/common/ai_config.dart';
 
 Future<void> main() async {
