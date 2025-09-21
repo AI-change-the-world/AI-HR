@@ -99,31 +99,12 @@ class MyApp extends StatelessWidget {
                         month: month,
                         endYear: endYear,
                         endMonth: endMonth,
-                        departmentStats:
-                            extra?['departmentStats']
-                                as List<DepartmentSalaryStats>? ??
-                            [],
-                        attendanceStats:
-                            extra?['attendanceStats']
-                                as List<AttendanceStats>? ??
-                            [],
-                        leaveRatioStats:
-                            extra?['leaveRatioStats'] as LeaveRatioStats?,
                       );
                     }
 
                     return MonthlyAnalysisPage(
                       year: year,
                       month: month,
-                      departmentStats:
-                          extra?['departmentStats']
-                              as List<DepartmentSalaryStats>? ??
-                          [],
-                      attendanceStats:
-                          extra?['attendanceStats'] as List<AttendanceStats>? ??
-                          [],
-                      leaveRatioStats:
-                          extra?['leaveRatioStats'] as LeaveRatioStats?,
                       isMultiMonth: isMultiMonth,
                     );
                   },
@@ -142,15 +123,6 @@ class MyApp extends StatelessWidget {
 
                     return YearlyAnalysisPage(
                       year: year,
-                      departmentStats:
-                          extra?['departmentStats']
-                              as List<DepartmentSalaryStats>? ??
-                          [],
-                      attendanceStats:
-                          extra?['attendanceStats'] as List<AttendanceStats>? ??
-                          [],
-                      leaveRatioStats:
-                          extra?['leaveRatioStats'] as LeaveRatioStats?,
                       isMultiYear: extra?['isMultiYear'] as bool? ?? false,
                       endYear: endYear,
                     );
@@ -178,15 +150,6 @@ class MyApp extends StatelessWidget {
                     return QuarterlyAnalysisPage(
                       year: year,
                       quarter: quarter,
-                      departmentStats:
-                          extra?['departmentStats']
-                              as List<DepartmentSalaryStats>? ??
-                          [],
-                      attendanceStats:
-                          extra?['attendanceStats'] as List<AttendanceStats>? ??
-                          [],
-                      leaveRatioStats:
-                          extra?['leaveRatioStats'] as LeaveRatioStats?,
                       isMultiQuarter:
                           extra?['isMultiQuarter'] as bool? ?? false,
                       endYear: endYear,
