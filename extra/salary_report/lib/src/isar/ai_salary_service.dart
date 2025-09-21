@@ -3,17 +3,17 @@ import 'package:openai_dart/openai_dart.dart';
 import 'package:salary_report/src/common/llm_client.dart';
 import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/isar/database.dart';
-import 'package:salary_report/src/isar/salary_query_service.dart';
+import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/isar/salary_list.dart';
 import 'package:isar_community/isar.dart';
 
 class AISalaryService {
-  final SalaryQueryService _queryService;
+  final DataAnalysisService _queryService;
   final IsarDatabase _database;
   final LLMClient _llmClient;
 
   AISalaryService(IsarDatabase database)
-    : _queryService = SalaryQueryService(database),
+    : _queryService = DataAnalysisService(database),
       _database = database,
       _llmClient = LLMClient();
 
@@ -209,7 +209,7 @@ class AISalaryService {
         '计薪日天数: ${record.payDays ?? "未知"}\n'
         '实际出勤折算天数: ${record.actualPayDays ?? "未知"}\n'
         '病假天数: ${record.sickLeave ?? "未知"}\n'
-        '事假天数: ${record.leave ?? "未知"}\n'
+        '事假小时数: ${record.personalLeave ?? "未知"}\n'
         '缺勤次数: ${record.absence ?? "未知"}\n'
         '旷工天数: ${record.truancy ?? "未知"}\n'
         '绩效得分: ${record.performanceScore ?? "未知"}';
@@ -999,7 +999,7 @@ class AISalaryService {
             '$year 年 ${salaryList.month} 月: '
             '出勤情况=${record.attendance ?? "未知"}, '
             '病假=${record.sickLeave ?? "未知"}, '
-            '事假=${record.leave ?? "未知"}',
+            '事假=${record.personalLeave ?? "未知"}',
           );
         }
       }
@@ -1038,7 +1038,7 @@ class AISalaryService {
             '${salaryList.year} 年 $month 月: '
             '出勤情况=${record.attendance ?? "未知"}, '
             '病假=${record.sickLeave ?? "未知"}, '
-            '事假=${record.leave ?? "未知"}',
+            '事假=${record.personalLeave ?? "未知"}',
           );
         }
       }
@@ -1071,7 +1071,7 @@ class AISalaryService {
             '${salaryList.year} 年 ${salaryList.month} 月: '
             '出勤情况=${record.attendance ?? "未知"}, '
             '病假=${record.sickLeave ?? "未知"}, '
-            '事假=${record.leave ?? "未知"}',
+            '事假=${record.personalLeave ?? "未知"}',
           );
         }
       }

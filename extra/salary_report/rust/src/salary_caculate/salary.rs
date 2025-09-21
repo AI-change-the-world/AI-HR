@@ -5,38 +5,59 @@ use umya_spreadsheet::reader;
 /// 工资记录
 #[derive(Debug, Clone)]
 pub struct SalaryRecord {
+    // 必须要有的字段
     pub name: String,                // 姓名
-    pub department: String,          // 部门
-    pub position: String,            // 岗位
-    pub attendance: String,          // 出勤
-    pub salary_components: String,   // 工资构成
-    pub social_security_tax: String, // 社保个税
-    pub net_salary: String,          // 实发工资
-    // 考勤相关字段
-    pub payroll_days: String,           // 计薪日天数
-    pub actual_attendance_days: String, // 实际出勤折算天数
-    pub sick_leave: String,             // 病假/天
-    pub personal_leave: String,         // 事假/hr
-    pub absence: String,                // 缺勤/次
-    pub truancy: String,                // 旷工/天
-    pub performance_score: String,      // 绩效得分
-    // 工资明细字段（从基本工资到饭补）
-    pub basic_salary: String,              // 基本工资
-    pub position_salary: String,           // 岗位工资
-    pub performance_salary: String,        // 绩效工资
-    pub allowance_salary: String,          // 补贴工资
-    pub comprehensive_salary: String,      // 综合薪资标准
-    pub current_month_basic: String,       // 当月基本工资
-    pub current_month_position: String,    // 当月岗位工资
+    pub department: String,          // 一级部门
+    pub position: String,            // 职位
+    pub attendance: String,          // 实际出勤折算天数
+    pub pre_tax_salary: String,      // 税前工资
+    pub social_security_tax: String, // 社保公积金个人部分合计
+    pub net_salary: String,          // 税后应实发
+    // 可选字段
+    pub serial_number: String,        // 序号
+    pub hire_date: String,            // 入职日期
+    pub termination_date: String,     // 离职日期
+    pub gender: String,               // 性别
+    pub id_number: String,            // 身份证号
+    pub regularization_date: String,  // 转正日期
+    pub contract_type: String,        // 合同类型
+    pub financial_aggregation: String, // 财务归集
+    pub secondary_department: String, // 二级部门
+    pub job_level: String,            // 职级
+    pub payroll_days: String,         // 计薪日天数
+    pub sick_leave: String,           // 病假（天）
+    pub personal_leave: String,       // 事假（小时）
+    pub absence: String,              // 缺勤（次）
+    pub truancy: String,              // 旷工（天）
+    pub performance_score: String,    // 绩效得分
+    pub basic_salary: String,         // 基本工资
+    pub position_salary: String,      // 岗位工资
+    pub performance_salary: String,   // 绩效工资
+    pub allowance_salary: String,     // 补贴工资
+    pub comprehensive_salary: String, // 综合薪资标准
+    pub current_month_basic: String,  // 当月基本工资
+    pub current_month_position: String, // 当月岗位工资
     pub current_month_performance: String, // 当月绩效工资
-    pub current_month_allowance: String,   // 当月补贴工资
-    pub overtime_pay: String,              // 加班费
-    pub allowance: String,                 // 津贴
-    pub bonus: String,                     // 奖金
-    pub social_security_deduction: String, // 社保扣款
-    pub tax: String,                       // 个税
-    pub other_deductions: String,          // 其他扣款
-    pub meal_allowance: String,            // 饭补
+    pub current_month_allowance: String, // 当月补贴工资
+    pub current_month_sick_deduction: String, // 当月病假扣减
+    pub current_month_personal_leave_deduction: String, // 当月事假扣减
+    pub current_month_absence_deduction: String, // 当月缺勤扣减
+    pub current_month_truancy_deduction: String, // 当月旷工扣减
+    pub meal_allowance: String,       // 饭补
+    pub computer_allowance: String,   // 电脑补贴等
+    pub other_adjustments: String,    // 其他增减
+    pub monthly_payroll_salary: String, // 当月计薪工资
+    pub social_security_base: String, // 社保基数
+    pub provident_fund_base: String,  // 公积金基数
+    pub personal_pension: String,     // 个人养老
+    pub personal_medical: String,     // 个人医疗
+    pub personal_unemployment: String, // 个人失业
+    pub personal_provident_fund: String, // 个人公积金
+    pub monthly_personal_income_tax: String, // 当月个人所得税
+    pub severance_pay: String,        // 离职补偿金
+    pub post_tax_adjustments: String, // 税后增减
+    pub bank: String,                 // 所属银行
+    pub bank_account: String,         // 银行卡号
 }
 
 /// 工资汇总信息
@@ -67,55 +88,88 @@ pub fn parse_salary_report(file_path: &str) -> Result<SalarySummary> {
 
     // 查找需要的字段索引
     let mut field_indices = HashMap::new();
-    let required_fields = [
-        ("姓名", "name"),
-        ("一级部门", "department"),         // 使用"一级部门"而不是"部门"
-        ("职位", "position"),               // 使用"职位"而不是"岗位"
-        ("实际出勤折算天数", "attendance"), // 使用"实际出勤折算天数"作为出勤字段
-        ("税前工资", "salary_components"),  // 使用"税前工资"作为工资构成
-        ("社保公积金个人部分合计", "social_security_tax"), // 使用"社保公积金个人部分合计"作为社保个税
-        ("税后应实发", "net_salary"),                      // 使用"税后应实发"作为实发工资
-        // 考勤相关字段（除了实际出勤折算天数，因为它已经作为attendance字段使用了）
-        ("计薪日天数", "payroll_days"),
-        ("病假\n/天", "sick_leave"),
-        ("事假\n/hr", "personal_leave"),
-        ("缺勤\n/次", "absence"),
-        ("旷工\n/天", "truancy"),
-        ("绩效得分", "performance_score"),
-        // 工资明细字段（从基本工资到饭补）
-        ("基本工资", "basic_salary"),
-        ("岗位工资", "position_salary"),
-        ("绩效工资", "performance_salary"),
-        ("补贴工资", "allowance_salary"),
-        ("综合薪资标准", "comprehensive_salary"),
-        ("当月\n基本工资", "current_month_basic"),
-        ("当月\n岗位工资", "current_month_position"),
-        ("当月\n绩效工资", "current_month_performance"),
-        ("当月\n补贴工资", "current_month_allowance"),
-        ("加班费", "overtime_pay"),
-        ("津贴", "allowance"),
-        ("奖金", "bonus"),
-        ("社保扣款", "social_security_deduction"),
-        ("个税", "tax"),
-        ("其他扣款", "other_deductions"),
-        ("饭补", "meal_allowance"),
-    ];
-
+    
     // 必需字段，如果这些字段不存在则返回错误
     let mandatory_fields = [
         ("姓名", "name"),
         ("一级部门", "department"),
         ("职位", "position"),
         ("实际出勤折算天数", "attendance"),
-        ("税前工资", "salary_components"),
+        ("税前工资", "pre_tax_salary"),  // 修复这行，保持一致性
         ("社保公积金个人部分合计", "social_security_tax"),
         ("税后应实发", "net_salary"),
     ];
 
+    // 所有可能的字段映射
+    let all_fields = [
+        ("序号", "serial_number"),
+        ("入职日期", "hire_date"),
+        ("离职日期", "termination_date"),
+        ("性别", "gender"),
+        ("身份证号", "id_number"),
+        ("转正日期", "regularization_date"),
+        ("合同类型", "contract_type"),
+        ("财务归集", "financial_aggregation"),
+        ("一级部门", "department"),
+        ("二级部门", "secondary_department"),
+        ("职级", "job_level"),
+        ("职位", "position"),
+        ("计薪日天数", "payroll_days"),
+        ("实际出勤折算天数", "attendance"),
+        // 考勤相关字段使用包含匹配
+        ("病假", "sick_leave"),      // 包含"病假"即可匹配
+        ("事假", "personal_leave"),   // 包含"事假"即可匹配
+        ("缺勤", "absence"),         // 包含"缺勤"即可匹配
+        ("旷工", "truancy"),         // 包含"旷工"即可匹配
+        ("绩效得分", "performance_score"),
+        ("基本工资", "basic_salary"),
+        ("岗位工资", "position_salary"),
+        ("绩效工资", "performance_salary"),
+        ("补贴工资", "allowance_salary"),
+        ("综合薪资标准", "comprehensive_salary"),
+        ("当月基本工资", "current_month_basic"),
+        ("当月岗位工资", "current_month_position"),
+        ("当月绩效工资", "current_month_performance"),
+        ("当月补贴工资", "current_month_allowance"),
+        ("当月病假扣减", "current_month_sick_deduction"),
+        ("当月事假扣减", "current_month_personal_leave_deduction"),
+        ("当月缺勤扣减", "current_month_absence_deduction"),
+        ("当月旷工扣减", "current_month_truancy_deduction"),
+        ("饭补", "meal_allowance"),
+        ("电脑补贴等", "computer_allowance"),
+        ("其他增减", "other_adjustments"),
+        ("当月计薪工资", "monthly_payroll_salary"),
+        ("社保基数", "social_security_base"),
+        ("公积金基数", "provident_fund_base"),
+        ("个人养老", "personal_pension"),
+        ("个人医疗", "personal_medical"),
+        ("个人失业", "personal_unemployment"),
+        ("个人公积金", "personal_provident_fund"),
+        ("社保公积金个人部分合计", "social_security_tax"),
+        ("税前工资", "pre_tax_salary"),  // 添加这行
+        ("当月个人所得税", "monthly_personal_income_tax"),
+        ("离职补偿金", "severance_pay"),
+        ("税后增减", "post_tax_adjustments"),
+        ("税后应实发", "net_salary"),
+        ("所属银行", "bank"),
+        ("银行卡号", "bank_account"),
+        ("姓名", "name"),  // 添加这行
+    ];
+
+    // 查找表头中的字段索引
     for cell in header_row {
         let cell_value = cell.get_value().to_string();
-        for (chinese_name, field_name) in &required_fields {
-            if cell_value.contains(chinese_name) {
+        // 清理单元格值，去除换行符和首尾空格
+        let cleaned_cell_value = cell_value.replace("\n", "").replace("\r", "").trim().to_string();
+        for (chinese_name, field_name) in &all_fields {
+            // 对于考勤相关字段使用包含匹配，其他字段使用完全匹配
+            let is_match = if matches!(*field_name, "sick_leave" | "personal_leave" | "absence" | "truancy") {
+                cleaned_cell_value.contains(chinese_name)
+            } else {
+                cleaned_cell_value == *chinese_name
+            };
+            
+            if is_match {
                 field_indices.insert(field_name.to_string(), cell.get_coordinate().get_col_num());
                 break;
             }
@@ -125,6 +179,7 @@ pub fn parse_salary_report(file_path: &str) -> Result<SalarySummary> {
     // 检查必需字段是否存在
     for (chinese_name, field_name) in &mandatory_fields {
         if !field_indices.contains_key(*field_name) {
+            println!("模板不符合要求：缺少必需字段 '{}',完整列表如下： {:?}", chinese_name, field_indices);
             anyhow::bail!("模板不符合要求：缺少必需字段 '{}'", chinese_name);
         }
     }
@@ -232,22 +287,28 @@ pub fn parse_salary_report(file_path: &str) -> Result<SalarySummary> {
                         .iter()
                         .find(|(_, &index)| index == col_index)
                         .map(|(name, _)| name.clone())
-                        .unwrap_or_else(|| format!("summary_col_{}", col_index));
+                        .unwrap_or_else(|| format!("summary_col_{}", u32_to_excel_column(*col_index)));
 
                     // 如果找到了字段名，使用中文字段名
                     let display_name = match field_name.as_str() {
-                        "name" => "姓名".to_string(),
+                        "serial_number" => "序号".to_string(),
+                        "hire_date" => "入职日期".to_string(),
+                        "termination_date" => "离职日期".to_string(),
+                        "gender" => "性别".to_string(),
+                        "id_number" => "身份证号".to_string(),
+                        "regularization_date" => "转正日期".to_string(),
+                        "contract_type" => "合同类型".to_string(),
+                        "financial_aggregation" => "财务归集".to_string(),
                         "department" => "一级部门".to_string(),
+                        "secondary_department" => "二级部门".to_string(),
+                        "job_level" => "职级".to_string(),
                         "position" => "职位".to_string(),
-                        "attendance" => "实际出勤折算天数".to_string(),
-                        "salary_components" => "税前工资".to_string(),
-                        "social_security_tax" => "社保公积金个人部分合计".to_string(),
-                        "net_salary" => "税后应实发".to_string(),
                         "payroll_days" => "计薪日天数".to_string(),
-                        "sick_leave" => "病假/天".to_string(),
-                        "personal_leave" => "事假/hr".to_string(),
-                        "absence" => "缺勤/次".to_string(),
-                        "truancy" => "旷工/天".to_string(),
+                        "attendance" => "实际出勤折算天数".to_string(),
+                        "sick_leave" => "病假（天）".to_string(),
+                        "personal_leave" => "事假（小时）".to_string(),
+                        "absence" => "缺勤（次）".to_string(),
+                        "truancy" => "旷工（天）".to_string(),
                         "performance_score" => "绩效得分".to_string(),
                         "basic_salary" => "基本工资".to_string(),
                         "position_salary" => "岗位工资".to_string(),
@@ -258,13 +319,27 @@ pub fn parse_salary_report(file_path: &str) -> Result<SalarySummary> {
                         "current_month_position" => "当月岗位工资".to_string(),
                         "current_month_performance" => "当月绩效工资".to_string(),
                         "current_month_allowance" => "当月补贴工资".to_string(),
-                        "overtime_pay" => "加班费".to_string(),
-                        "allowance" => "津贴".to_string(),
-                        "bonus" => "奖金".to_string(),
-                        "social_security_deduction" => "社保扣款".to_string(),
-                        "tax" => "个税".to_string(),
-                        "other_deductions" => "其他扣款".to_string(),
+                        "current_month_sick_deduction" => "当月病假扣减".to_string(),
+                        "current_month_personal_leave_deduction" => "当月事假扣减".to_string(),
+                        "current_month_absence_deduction" => "当月缺勤扣减".to_string(),
+                        "current_month_truancy_deduction" => "当月旷工扣减".to_string(),
                         "meal_allowance" => "饭补".to_string(),
+                        "computer_allowance" => "电脑补贴等".to_string(),
+                        "other_adjustments" => "其他增减".to_string(),
+                        "monthly_payroll_salary" => "当月计薪工资".to_string(),
+                        "social_security_base" => "社保基数".to_string(),
+                        "provident_fund_base" => "公积金基数".to_string(),
+                        "personal_pension" => "个人养老".to_string(),
+                        "personal_medical" => "个人医疗".to_string(),
+                        "personal_unemployment" => "个人失业".to_string(),
+                        "personal_provident_fund" => "个人公积金".to_string(),
+                        "pre_tax_salary" => "税前工资".to_string(),
+                        "monthly_personal_income_tax" => "当月个人所得税".to_string(),
+                        "severance_pay" => "离职补偿金".to_string(),
+                        "post_tax_adjustments" => "税后增减".to_string(),
+                        "net_salary" => "税后应实发".to_string(),
+                        "bank" => "所属银行".to_string(),
+                        "bank_account" => "银行卡号".to_string(),
                         _ => field_name,
                     };
 
@@ -287,18 +362,26 @@ pub fn parse_salary_report(file_path: &str) -> Result<SalarySummary> {
             department: String::new(),
             position: String::new(),
             attendance: String::new(),
-            salary_components: String::new(),
+            pre_tax_salary: String::new(),  // 修复这行
             social_security_tax: String::new(),
             net_salary: String::new(),
-            // 考勤相关字段
+            // 可选字段
+            serial_number: String::new(),
+            hire_date: String::new(),
+            termination_date: String::new(),
+            gender: String::new(),
+            id_number: String::new(),
+            regularization_date: String::new(),
+            contract_type: String::new(),
+            financial_aggregation: String::new(),
+            secondary_department: String::new(),
+            job_level: String::new(),
             payroll_days: String::new(),
-            actual_attendance_days: String::new(), // 这个字段需要特殊处理
             sick_leave: String::new(),
             personal_leave: String::new(),
             absence: String::new(),
             truancy: String::new(),
             performance_score: String::new(),
-            // 工资明细字段
             basic_salary: String::new(),
             position_salary: String::new(),
             performance_salary: String::new(),
@@ -308,24 +391,26 @@ pub fn parse_salary_report(file_path: &str) -> Result<SalarySummary> {
             current_month_position: String::new(),
             current_month_performance: String::new(),
             current_month_allowance: String::new(),
-            overtime_pay: String::new(),
-            allowance: String::new(),
-            bonus: String::new(),
-            social_security_deduction: String::new(),
-            tax: String::new(),
-            other_deductions: String::new(),
+            current_month_sick_deduction: String::new(),
+            current_month_personal_leave_deduction: String::new(),
+            current_month_absence_deduction: String::new(),
+            current_month_truancy_deduction: String::new(),
             meal_allowance: String::new(),
+            computer_allowance: String::new(),
+            other_adjustments: String::new(),
+            monthly_payroll_salary: String::new(),
+            social_security_base: String::new(),
+            provident_fund_base: String::new(),
+            personal_pension: String::new(),
+            personal_medical: String::new(),
+            personal_unemployment: String::new(),
+            personal_provident_fund: String::new(),
+            monthly_personal_income_tax: String::new(),
+            severance_pay: String::new(),
+            post_tax_adjustments: String::new(),
+            bank: String::new(),
+            bank_account: String::new(),
         };
-
-        // 特殊处理actual_attendance_days字段（与attendance字段相同）
-        if let Some(&col_index) = field_indices.get("attendance") {
-            if let Some(cell) = row
-                .iter()
-                .find(|c| c.get_coordinate().get_col_num() == col_index)
-            {
-                record.actual_attendance_days = cell.get_value().to_string();
-            }
-        }
 
         for (field_name, &col_index) in &field_indices {
             if let Some(cell) = row
@@ -338,17 +423,26 @@ pub fn parse_salary_report(file_path: &str) -> Result<SalarySummary> {
                     "department" => record.department = value,
                     "position" => record.position = value,
                     "attendance" => record.attendance = value,
-                    "salary_components" => record.salary_components = value,
+                    "pre_tax_salary" => record.pre_tax_salary = value,  // 修复这行
                     "social_security_tax" => record.social_security_tax = value,
                     "net_salary" => record.net_salary = value,
-                    // 考勤相关字段
+                    // 可选字段
+                    "serial_number" => record.serial_number = value,
+                    "hire_date" => record.hire_date = value,
+                    "termination_date" => record.termination_date = value,
+                    "gender" => record.gender = value,
+                    "id_number" => record.id_number = value,
+                    "regularization_date" => record.regularization_date = value,
+                    "contract_type" => record.contract_type = value,
+                    "financial_aggregation" => record.financial_aggregation = value,
+                    "secondary_department" => record.secondary_department = value,
+                    "job_level" => record.job_level = value,
                     "payroll_days" => record.payroll_days = value,
                     "sick_leave" => record.sick_leave = value,
                     "personal_leave" => record.personal_leave = value,
                     "absence" => record.absence = value,
                     "truancy" => record.truancy = value,
                     "performance_score" => record.performance_score = value,
-                    // 工资明细字段
                     "basic_salary" => record.basic_salary = value,
                     "position_salary" => record.position_salary = value,
                     "performance_salary" => record.performance_salary = value,
@@ -358,13 +452,25 @@ pub fn parse_salary_report(file_path: &str) -> Result<SalarySummary> {
                     "current_month_position" => record.current_month_position = value,
                     "current_month_performance" => record.current_month_performance = value,
                     "current_month_allowance" => record.current_month_allowance = value,
-                    "overtime_pay" => record.overtime_pay = value,
-                    "allowance" => record.allowance = value,
-                    "bonus" => record.bonus = value,
-                    "social_security_deduction" => record.social_security_deduction = value,
-                    "tax" => record.tax = value,
-                    "other_deductions" => record.other_deductions = value,
+                    "current_month_sick_deduction" => record.current_month_sick_deduction = value,
+                    "current_month_personal_leave_deduction" => record.current_month_personal_leave_deduction = value,
+                    "current_month_absence_deduction" => record.current_month_absence_deduction = value,
+                    "current_month_truancy_deduction" => record.current_month_truancy_deduction = value,
                     "meal_allowance" => record.meal_allowance = value,
+                    "computer_allowance" => record.computer_allowance = value,
+                    "other_adjustments" => record.other_adjustments = value,
+                    "monthly_payroll_salary" => record.monthly_payroll_salary = value,
+                    "social_security_base" => record.social_security_base = value,
+                    "provident_fund_base" => record.provident_fund_base = value,
+                    "personal_pension" => record.personal_pension = value,
+                    "personal_medical" => record.personal_medical = value,
+                    "personal_unemployment" => record.personal_unemployment = value,
+                    "personal_provident_fund" => record.personal_provident_fund = value,
+                    "monthly_personal_income_tax" => record.monthly_personal_income_tax = value,
+                    "severance_pay" => record.severance_pay = value,
+                    "post_tax_adjustments" => record.post_tax_adjustments = value,
+                    "bank" => record.bank = value,
+                    "bank_account" => record.bank_account = value,
                     _ => {}
                 }
             }
@@ -383,4 +489,16 @@ pub fn parse_salary_report(file_path: &str) -> Result<SalarySummary> {
         records,
         summary_data,
     })
+}
+
+
+fn u32_to_excel_column(mut n: u32) -> String {
+    let mut s = String::new();
+    while n > 0 {
+        n -= 1; // Excel 列号是 1-based
+        let c = ((n % 26) as u8 + b'A') as char;
+        s.insert(0, c);
+        n /= 26;
+    }
+    s
 }

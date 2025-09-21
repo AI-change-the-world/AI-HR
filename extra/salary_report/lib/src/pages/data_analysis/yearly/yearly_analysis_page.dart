@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
+import 'package:salary_report/src/isar/data_analysis_service.dart'; // 添加新的导入
+import 'package:salary_report/src/isar/database.dart'; // 添加数据库导入
 import 'package:salary_report/src/components/attendance_pagination.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
 import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
@@ -33,21 +35,29 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
   late Map<String, dynamic> _analysisData;
   final GlobalKey _chartContainerKey = GlobalKey();
   bool _isGeneratingReport = false;
+  late DataAnalysisService _salaryDataService; // 添加新的服务实例
 
   @override
   void initState() {
     super.initState();
+    _salaryDataService = DataAnalysisService(IsarDatabase()); // 初始化服务
     _initAnalysisData();
   }
 
-  void _initAnalysisData() {
+  void _initAnalysisData() async {
+    // 使用DataAnalysisService获取数据
+    final departmentStats = await _salaryDataService.getDepartmentAggregation(
+      widget.year,
+      1, // 年度分析从1月开始
+    );
+
     // 计算总工资和平均工资
     double totalSalary = 0;
     int totalEmployees = 0;
     double highestSalary = 0;
     double lowestSalary = double.infinity;
 
-    for (var stat in widget.departmentStats) {
+    for (var stat in departmentStats) {
       totalSalary += stat.totalNetSalary;
       totalEmployees += stat.employeeCount;
 
@@ -85,14 +95,16 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
       {'month': '12月', 'salary': totalSalary * 0.10},
     ];
 
-    _analysisData = {
-      'totalEmployees': totalEmployees,
-      'totalSalary': totalSalary,
-      'averageSalary': averageSalary,
-      'highestSalary': highestSalary,
-      'lowestSalary': lowestSalary,
-      'monthlyTrend': monthlyTrendData,
-    };
+    setState(() {
+      _analysisData = {
+        'totalEmployees': totalEmployees,
+        'totalSalary': totalSalary,
+        'averageSalary': averageSalary,
+        'highestSalary': highestSalary,
+        'lowestSalary': lowestSalary,
+        'monthlyTrend': monthlyTrendData,
+      };
+    });
   }
 
   /// 生成工资报告
@@ -118,7 +130,7 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
         month: 0, // 年度报告没有月份
         isMultiMonth: widget.isMultiYear,
         startTime: startTime,
-        reportType: ReportType.annual, // 明确指定报告类型为年度报告
+        reportType: ReportType.singleYear, // 明确指定报告类型为年度报告
       );
 
       if (mounted) {

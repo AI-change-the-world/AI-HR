@@ -11,6 +11,7 @@ import 'package:salary_report/src/pages/data_analysis/monthly/monthly_analysis_p
 import 'package:salary_report/src/pages/data_analysis/monthly/multi_month_analysis_page.dart';
 import 'package:salary_report/src/pages/data_analysis/yearly/yearly_analysis_page.dart';
 import 'package:salary_report/src/pages/data_analysis/quarterly/quarterly_analysis_page.dart';
+import 'package:salary_report/src/pages/data_analysis/quarterly/multi_quarter_analysis_page.dart';
 import 'package:salary_report/src/pages/visualization/chart/chart_page.dart';
 import 'package:salary_report/src/pages/visualization/report/report_page.dart';
 import 'package:salary_report/src/pages/visualization/report/comprehensive_report_page.dart';
@@ -19,7 +20,6 @@ import 'package:salary_report/src/pages/settings/user/user_settings_page.dart';
 import 'package:salary_report/src/rust/frb_generated.dart';
 import 'package:toastification/toastification.dart';
 import 'package:logging/logging.dart';
-import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/common/ai_config.dart';
 
 Future<void> main() async {
@@ -37,7 +37,7 @@ Future<void> main() async {
   // 初始化AI配置
   await AIConfig.init();
 
-  runApp(const MyApp());
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -99,34 +99,12 @@ class MyApp extends StatelessWidget {
                         month: month,
                         endYear: endYear,
                         endMonth: endMonth,
-                        departmentStats:
-                            extra?['departmentStats']
-                                as List<DepartmentSalaryStats>? ??
-                            [],
-                        attendanceStats:
-                            extra?['attendanceStats']
-                                as List<AttendanceStats>? ??
-                            [],
-                        leaveRatioStats:
-                            extra?['leaveRatioStats'] as LeaveRatioStats?,
-                        dataAnalysisService: DataAnalysisService(
-                          IsarDatabase(),
-                        ), // 添加数据服务参数
                       );
                     }
 
                     return MonthlyAnalysisPage(
                       year: year,
                       month: month,
-                      departmentStats:
-                          extra?['departmentStats']
-                              as List<DepartmentSalaryStats>? ??
-                          [],
-                      attendanceStats:
-                          extra?['attendanceStats'] as List<AttendanceStats>? ??
-                          [],
-                      leaveRatioStats:
-                          extra?['leaveRatioStats'] as LeaveRatioStats?,
                       isMultiMonth: isMultiMonth,
                     );
                   },
@@ -145,15 +123,6 @@ class MyApp extends StatelessWidget {
 
                     return YearlyAnalysisPage(
                       year: year,
-                      departmentStats:
-                          extra?['departmentStats']
-                              as List<DepartmentSalaryStats>? ??
-                          [],
-                      attendanceStats:
-                          extra?['attendanceStats'] as List<AttendanceStats>? ??
-                          [],
-                      leaveRatioStats:
-                          extra?['leaveRatioStats'] as LeaveRatioStats?,
                       isMultiYear: extra?['isMultiYear'] as bool? ?? false,
                       endYear: endYear,
                     );
@@ -177,24 +146,19 @@ class MyApp extends StatelessWidget {
                         : null;
                     // 获取传递的额外数据
                     final extra = state.extra as Map<String, dynamic>?;
+                    final isMultiQuarter =
+                        extra?['isMultiQuarter'] as bool? ?? false;
 
-                    return QuarterlyAnalysisPage(
-                      year: year,
-                      quarter: quarter,
-                      departmentStats:
-                          extra?['departmentStats']
-                              as List<DepartmentSalaryStats>? ??
-                          [],
-                      attendanceStats:
-                          extra?['attendanceStats'] as List<AttendanceStats>? ??
-                          [],
-                      leaveRatioStats:
-                          extra?['leaveRatioStats'] as LeaveRatioStats?,
-                      isMultiQuarter:
-                          extra?['isMultiQuarter'] as bool? ?? false,
-                      endYear: endYear,
-                      endQuarter: endQuarter,
-                    );
+                    if (isMultiQuarter) {
+                      return MultiQuarterAnalysisPage(
+                        year: year,
+                        quarter: quarter,
+                        endYear: endYear ?? year,
+                        endQuarter: endQuarter ?? quarter,
+                      );
+                    }
+
+                    return QuarterlyAnalysisPage(year: year, quarter: quarter);
                   },
                 ),
               ],
@@ -230,41 +194,39 @@ class MyApp extends StatelessWidget {
       ],
     );
 
-    return ProviderScope(
-      child: ToastificationWrapper(
-        child: MaterialApp.router(
-          debugShowCheckedModeBanner: false,
-          title: '员工工资智能化分析系统',
-          theme: ThemeData(
-            fontFamily: "ph",
-            primarySwatch: Colors.lightBlue,
-            useMaterial3: true,
-            scaffoldBackgroundColor: Colors.lightBlue.shade50,
-            appBarTheme: const AppBarTheme(
-              backgroundColor: Colors.lightBlue,
+    return ToastificationWrapper(
+      child: MaterialApp.router(
+        debugShowCheckedModeBanner: false,
+        title: '员工工资智能化分析系统',
+        theme: ThemeData(
+          fontFamily: "ph",
+          primarySwatch: Colors.lightBlue,
+          useMaterial3: true,
+          scaffoldBackgroundColor: Colors.lightBlue.shade50,
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Colors.lightBlue,
+            foregroundColor: Colors.white,
+            elevation: 2,
+          ),
+          cardTheme: CardThemeData(
+            color: Colors.white,
+            elevation: 2,
+            shadowColor: Colors.lightBlue.withValues(alpha: 0.1),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.lightBlue.shade400,
               foregroundColor: Colors.white,
-              elevation: 2,
-            ),
-            cardTheme: CardThemeData(
-              color: Colors.white,
-              elevation: 2,
-              shadowColor: Colors.lightBlue.withValues(alpha: 0.1),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            elevatedButtonTheme: ElevatedButtonThemeData(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.lightBlue.shade400,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
           ),
-          routerConfig: router,
         ),
+        routerConfig: router,
       ),
     );
   }

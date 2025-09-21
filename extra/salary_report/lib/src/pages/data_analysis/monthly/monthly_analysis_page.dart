@@ -1,27 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
+import 'package:salary_report/src/components/salary_charts.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
+import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/components/attendance_pagination.dart';
 import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:toastification/toastification.dart';
+import 'package:salary_report/src/isar/salary_list.dart';
 
 class MonthlyAnalysisPage extends StatefulWidget {
   const MonthlyAnalysisPage({
     super.key,
     required this.year,
     required this.month,
-    this.departmentStats = const [],
-    this.attendanceStats = const [],
-    this.leaveRatioStats,
     this.isMultiMonth = false,
   });
 
   final int year;
   final int month;
-  final List<DepartmentSalaryStats> departmentStats;
-  final List<AttendanceStats> attendanceStats;
-  final LeaveRatioStats? leaveRatioStats;
   final bool isMultiMonth;
 
   @override
@@ -32,65 +29,145 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
   late Map<String, dynamic> _analysisData;
   final GlobalKey _chartContainerKey = GlobalKey();
   bool _isGeneratingReport = false;
+  bool _isLoading = true;
+  late DataAnalysisService _salaryDataService;
+  List<DepartmentSalaryStats> _departmentStats = [];
+  List<AttendanceStats> _attendanceStats = [];
+  LeaveRatioStats? _leaveRatioStats;
 
   @override
   void initState() {
     super.initState();
+    _salaryDataService = DataAnalysisService(IsarDatabase());
     _initAnalysisData();
   }
 
-  void _initAnalysisData() {
-    // 计算总工资和平均工资
-    double totalSalary = 0;
-    int totalEmployees = 0;
-    double highestSalary = 0;
-    double lowestSalary = double.infinity;
+  void _initAnalysisData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
 
-    for (var stat in widget.departmentStats) {
-      totalSalary += stat.totalNetSalary;
-      totalEmployees += stat.employeeCount;
+      // 使用DataAnalysisService获取数据
+      final departmentStats = await _salaryDataService.getDepartmentAggregation(
+        widget.year,
+        widget.month,
+      );
 
-      if (stat.averageNetSalary > highestSalary) {
-        highestSalary = stat.averageNetSalary;
+      // 获取考勤统计数据
+      final attendanceStats = await _salaryDataService
+          .getMonthlyAttendanceStats(year: widget.year, month: widget.month);
+
+      // 获取请假比例统计数据
+      final leaveRatioStats = await _salaryDataService.getLeaveRatioStats(
+        year: widget.year,
+        month: widget.month,
+      );
+
+      // 更新本地状态
+      setState(() {
+        _departmentStats = departmentStats;
+        _attendanceStats = attendanceStats;
+        _leaveRatioStats = leaveRatioStats;
+      });
+
+      // 计算总工资和平均工资
+      double totalSalary = 0;
+      int totalEmployees = 0;
+      double highestSalary = 0;
+      double lowestSalary = double.infinity;
+
+      for (var stat in departmentStats) {
+        totalSalary += stat.totalNetSalary;
+        totalEmployees += stat.employeeCount;
+
+        if (stat.averageNetSalary > highestSalary) {
+          highestSalary = stat.averageNetSalary;
+        }
+
+        if (stat.averageNetSalary < lowestSalary) {
+          lowestSalary = stat.averageNetSalary;
+        }
       }
 
-      if (stat.averageNetSalary < lowestSalary) {
-        lowestSalary = stat.averageNetSalary;
+      // 如果没有数据，设置默认值
+      if (lowestSalary == double.infinity) {
+        lowestSalary = 0;
       }
+
+      double averageSalary = totalEmployees > 0
+          ? totalSalary / totalEmployees
+          : 0;
+
+      // 构建部门统计数据
+      final departmentStatsData = departmentStats.map((stat) {
+        return {
+          'department': stat.department,
+          'count': stat.employeeCount,
+          'average': stat.averageNetSalary,
+          'total': stat.totalNetSalary,
+        };
+      }).toList();
+
+      // 为单月情况准备月度数据
+      final monthlyData = [
+        {'month': '${widget.month}月', 'salary': totalSalary},
+      ];
+
+      // 计算薪资区间分布数据
+      final salaryRanges = await _salaryDataService.getSalaryRangeAggregation(
+        widget.year,
+        widget.month,
+      );
+
+      // 计算部门和薪资范围联合统计数据
+      final departmentSalaryRangeStats = await _salaryDataService
+          .getDepartmentSalaryRangeAggregation(widget.year, widget.month);
+
+      // 获取工资最高的前10名员工
+      final topSalaryEmployees = await _salaryDataService.getTopSalaryEmployees(
+        year: widget.year,
+        month: widget.month,
+        limit: 10,
+      );
+
+      // 获取工资最低的前10名员工
+      final bottomSalaryEmployees = await _salaryDataService
+          .getBottomSalaryEmployees(
+            year: widget.year,
+            month: widget.month,
+            limit: 10,
+          );
+
+      // 获取工资汇总数据
+      final salarySummary = await _salaryDataService.getSalarySummaryData(
+        year: widget.year,
+        month: widget.month,
+      );
+
+      setState(() {
+        _analysisData = {
+          'totalEmployees': totalEmployees,
+          'totalSalary': totalSalary,
+          'averageSalary': averageSalary,
+          'highestSalary': highestSalary,
+          'lowestSalary': lowestSalary,
+          'departmentStats': departmentStatsData,
+          'monthlyData': monthlyData,
+          'salaryRanges': salaryRanges,
+          'departmentSalaryRangeStats': departmentSalaryRangeStats,
+          'topSalaryEmployees': topSalaryEmployees,
+          'bottomSalaryEmployees': bottomSalaryEmployees,
+          'salarySummary': salarySummary,
+        };
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('获取分析数据失败: $e');
+      setState(() {
+        _isLoading = false;
+      });
     }
-
-    // 如果没有数据，设置默认值
-    if (lowestSalary == double.infinity) {
-      lowestSalary = 0;
-    }
-
-    double averageSalary = totalEmployees > 0
-        ? totalSalary / totalEmployees
-        : 0;
-
-    // 构建部门统计数据
-    final departmentStatsData = widget.departmentStats.map((stat) {
-      return {
-        'department': stat.department,
-        'count': stat.employeeCount,
-        'average': stat.averageNetSalary,
-      };
-    }).toList();
-
-    // 为单月情况准备月度数据
-    final monthlyData = [
-      {'month': '${widget.month}月', 'salary': totalSalary},
-    ];
-
-    _analysisData = {
-      'totalEmployees': totalEmployees,
-      'totalSalary': totalSalary,
-      'averageSalary': averageSalary,
-      'highestSalary': highestSalary,
-      'lowestSalary': lowestSalary,
-      'departmentStats': departmentStatsData,
-      'monthlyData': monthlyData,
-    };
   }
 
   /// 生成工资报告
@@ -109,14 +186,14 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
       final generator = SalaryReportGenerator();
       final reportPath = await generator.generateReport(
         previewContainerKey: _chartContainerKey,
-        departmentStats: widget.departmentStats,
+        departmentStats: _departmentStats,
         analysisData: _analysisData,
         endTime: endTime,
         year: widget.year,
         month: widget.month,
         isMultiMonth: widget.isMultiMonth,
         startTime: startTime,
-        reportType: ReportType.monthly, // 明确指定报告类型为月度报告
+        reportType: ReportType.singleMonth,
       );
 
       if (mounted) {
@@ -151,6 +228,17 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(
+            '${widget.year}年${widget.month.toString().padLeft(2, '0')}月 工资分析',
+          ),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     final title = widget.isMultiMonth
         ? '${widget.year}年${widget.month.toString().padLeft(2, '0')}月起 工资分析'
         : '${widget.year}年${widget.month.toString().padLeft(2, '0')}月 工资分析';
@@ -215,6 +303,24 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
 
                   const SizedBox(height: 24),
 
+                  // 部门工资占比饼图
+                  const Text(
+                    '各部门工资占比',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Container(
+                      height: 300,
+                      padding: const EdgeInsets.all(16.0),
+                      child: DepartmentSalaryChart(
+                        departmentStats: _departmentStats,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
                   // 部门统计
                   const Text(
                     '各部门统计',
@@ -247,6 +353,12 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
                                   style: TextStyle(fontWeight: FontWeight.bold),
                                 ),
                               ),
+                              Expanded(
+                                child: Text(
+                                  '工资总额',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
                             ],
                           ),
                           const Divider(),
@@ -272,10 +384,342 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
                                       '¥${dept['average'].toStringAsFixed(2)}',
                                     ),
                                   ),
+                                  Expanded(
+                                    child: Text(
+                                      '¥${dept['total'].toStringAsFixed(2)}',
+                                    ),
+                                  ),
                                 ],
                               ),
                             );
                           }).toList(),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // 薪资区间分布
+                  const Text(
+                    '薪资区间分布',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          const Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '薪资区间',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  '人数',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  '工资总额',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  '平均工资',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(),
+                          ...(_analysisData['salaryRanges']
+                                  as List<SalaryRangeStats>)
+                              .map<Widget>((range) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8.0,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const SizedBox(width: 8),
+                                      Expanded(child: Text(range.range)),
+                                      Expanded(
+                                        child: Text(
+                                          range.employeeCount.toString(),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          '¥${range.totalSalary.toStringAsFixed(2)}',
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          '¥${range.averageSalary.toStringAsFixed(2)}',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              })
+                              .toList(),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // 部门和薪资区间联合统计
+                  const Text(
+                    '各部门薪资区间分布',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          const Row(
+                            children: [
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  '部门',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  '薪资区间',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  '人数',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  '工资总额',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  '平均工资',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(),
+                          ...(_analysisData['departmentSalaryRangeStats']
+                                  as List<DepartmentSalaryRangeStats>)
+                              .map<Widget>((deptRange) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8.0,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        flex: 2,
+                                        child: Text(deptRange.department),
+                                      ),
+                                      Expanded(
+                                        child: Text(deptRange.salaryRange),
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          deptRange.employeeCount.toString(),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          '¥${deptRange.totalSalary.toStringAsFixed(2)}',
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          '¥${deptRange.averageSalary.toStringAsFixed(2)}',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              })
+                              .toList(),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // 工资最高的员工
+                  const Text(
+                    '工资最高的员工（前10名）',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          const Row(
+                            children: [
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  '姓名',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  '部门',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  '职位',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  '实发工资',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(),
+                          ...(_analysisData['topSalaryEmployees'] as List)
+                              .map<Widget>((record) {
+                                // 确保类型正确
+                                if (record is SalaryListRecord) {
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8.0,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          flex: 2,
+                                          child: Text(record.name ?? ''),
+                                        ),
+                                        Expanded(
+                                          child: Text(record.department ?? ''),
+                                        ),
+                                        Expanded(
+                                          child: Text(record.position ?? ''),
+                                        ),
+                                        Expanded(
+                                          child: Text(record.netSalary ?? ''),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
+                                return const SizedBox.shrink();
+                              })
+                              .toList(),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // 工资最低的员工
+                  const Text(
+                    '工资最低的员工（前10名）',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          const Row(
+                            children: [
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  '姓名',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  '部门',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  '职位',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  '实发工资',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(),
+                          ...(_analysisData['bottomSalaryEmployees'] as List)
+                              .map<Widget>((record) {
+                                // 确保类型正确
+                                if (record is SalaryListRecord) {
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8.0,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          flex: 2,
+                                          child: Text(record.name ?? ''),
+                                        ),
+                                        Expanded(
+                                          child: Text(record.department ?? ''),
+                                        ),
+                                        Expanded(
+                                          child: Text(record.position ?? ''),
+                                        ),
+                                        Expanded(
+                                          child: Text(record.netSalary ?? ''),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
+                                return const SizedBox.shrink();
+                              })
+                              .toList(),
                         ],
                       ),
                     ),
@@ -295,7 +739,7 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
                       child: Column(
                         children: [
                           AttendancePagination(
-                            attendanceStats: widget.attendanceStats,
+                            attendanceStats: _attendanceStats,
                           ),
                         ],
                       ),
@@ -305,7 +749,7 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
                   const SizedBox(height: 24),
 
                   // 请假比例统计
-                  if (widget.leaveRatioStats != null) ...[
+                  if (_leaveRatioStats != null) ...[
                     const Text(
                       '请假比例统计',
                       style: TextStyle(
@@ -349,7 +793,7 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
                                   const Expanded(child: Text('总员工数')),
                                   Expanded(
                                     child: Text(
-                                      widget.leaveRatioStats!.totalEmployees
+                                      _leaveRatioStats!.totalEmployees
                                           .toString(),
                                     ),
                                   ),
@@ -365,7 +809,7 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
                                   const Expanded(child: Text('平均病假天数/人')),
                                   Expanded(
                                     child: Text(
-                                      widget.leaveRatioStats!.sickLeaveRatio
+                                      _leaveRatioStats!.sickLeaveRatio
                                           .toStringAsFixed(2),
                                     ),
                                   ),
@@ -381,7 +825,7 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
                                   const Expanded(child: Text('平均事假天数/人')),
                                   Expanded(
                                     child: Text(
-                                      widget.leaveRatioStats!.leaveRatio
+                                      _leaveRatioStats!.leaveRatio
                                           .toStringAsFixed(2),
                                     ),
                                   ),
@@ -417,7 +861,6 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // CircularProgressIndicator(),
                     SizedBox(
                       width: 40,
                       height: 40,

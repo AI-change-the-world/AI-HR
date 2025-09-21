@@ -131,6 +131,115 @@ $departmentData
     }
   }
 
+  /// 生成薪资区间特征总结
+  Future<String> generateSalaryRangeFeatureSummary(
+    List<Map<String, int>> salaryRanges,
+    List<DepartmentSalaryStats> departmentStats,
+  ) async {
+    if (!AIConfig.aiEnabled) return "";
+
+    try {
+      final salaryRangeDescriptions = salaryRanges
+          .map(
+            (range) => range.entries
+                .map((entry) => '${entry.key}: ${entry.value}人')
+                .join('\n'),
+          )
+          .join('\n');
+
+      final departmentData = departmentStats
+          .map(
+            (dept) =>
+                '${dept.department}: ${dept.employeeCount}人, 工资总额${dept.totalNetSalary.toStringAsFixed(2)}, 平均工资${dept.averageNetSalary.toStringAsFixed(2)}',
+          )
+          .join('; ');
+
+      final prompt =
+          '''
+请基于以下薪资分布数据：
+$salaryRangeDescriptions
+
+以及以下部门薪资数据：
+$departmentData
+
+撰写一段薪资分布特征总结。要求语言严谨、简洁，体现报告风格。内容需涵盖整体分布情况、主要集中区间，以及分布的均衡性或差异性。仅输出总结内容，不添加额外说明。
+      ''';
+      final summary = await _llmClient.getAnswer(prompt);
+      return summary.isNotEmpty ? summary : salaryRangeDescriptions;
+    } catch (e) {
+      logger.info('AI salary range feature summary failed: $e');
+      return ""; // Fallback to empty
+    }
+  }
+
+  /// 生成部门薪资分析
+  Future<String> generateDepartmentSalaryAnalysis(
+    List<DepartmentSalaryStats> departmentStats,
+  ) async {
+    if (!AIConfig.aiEnabled) return "";
+
+    try {
+      final departmentData = departmentStats
+          .map(
+            (dept) =>
+                '${dept.department}: ${dept.employeeCount}人, 工资总额${dept.totalNetSalary.toStringAsFixed(2)}, 平均工资${dept.averageNetSalary.toStringAsFixed(2)}',
+          )
+          .join('; ');
+
+      final prompt =
+          '''
+请基于以下部门薪资数据：
+$departmentData
+
+撰写一段严谨简洁的报告风格分析，阐述各部门之间薪资差异的原因，内容需包含薪资差异的主要原因、影响因素分析以及可能的改进建议。要求只输出一个连续的段落，不允许分段或使用任何格式标记。
+      ''';
+      return await _llmClient.getAnswer(prompt);
+    } catch (e) {
+      logger.info('AI department salary analysis failed: $e');
+      return ""; // Fallback to empty
+    }
+  }
+
+  /// 生成关键薪资点分析
+  Future<String> generateKeySalaryPoint(
+    List<DepartmentSalaryStats> departmentStats,
+    List<Map<String, int>> salaryRanges,
+  ) async {
+    if (!AIConfig.aiEnabled) return "";
+
+    try {
+      final departmentData = departmentStats
+          .map(
+            (dept) =>
+                '${dept.department}: ${dept.employeeCount}人, 工资总额${dept.totalNetSalary.toStringAsFixed(2)}, 平均工资${dept.averageNetSalary.toStringAsFixed(2)}',
+          )
+          .join('; ');
+
+      final salaryRangeDescriptions = salaryRanges
+          .map(
+            (range) => range.entries
+                .map((entry) => '${entry.key}: ${entry.value}人')
+                .join('\n'),
+          )
+          .join('\n');
+
+      final prompt =
+          '''
+请基于以下部门薪资数据：
+$departmentData
+
+以及薪资分布数据：
+$salaryRangeDescriptions
+
+分析关键岗位的薪资情况。要求语言严谨、简洁，体现报告风格。内容需涵盖关键岗位识别、薪资水平分析、市场竞争力评估，以及优化建议。仅输出分析内容，不添加额外说明，要求只输出一个连续的段落，不允许分段或使用任何格式标记。
+      ''';
+      return await _llmClient.getAnswer(prompt);
+    } catch (e) {
+      logger.info('AI key salary point analysis failed: $e');
+      return ""; // Fallback to empty
+    }
+  }
+
   final String _monthlySalaryAnalysisPrompt = """
 请基于以下数据，对公司的薪资结构进行合理性评估，并提出优化建议。
 

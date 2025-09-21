@@ -72,6 +72,9 @@ class _AttendancePaginationState extends State<AttendancePagination> {
               child: Text('部门', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
             Expanded(
+              child: Text('月份', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            Expanded(
               child: Text(
                 '病假(天)',
                 style: TextStyle(fontWeight: FontWeight.bold),
@@ -95,6 +98,13 @@ class _AttendancePaginationState extends State<AttendancePagination> {
                 const SizedBox(width: 8),
                 Expanded(flex: 2, child: Text(stat.name)),
                 Expanded(child: Text(stat.department)),
+                Expanded(
+                  child: Text(
+                    stat.year != null && stat.month != null
+                        ? '${stat.year}-${stat.month.toString().padLeft(2, '0')}'
+                        : 'N/A',
+                  ),
+                ),
                 Expanded(child: Text(stat.sickLeaveDays.toStringAsFixed(1))),
                 Expanded(child: Text(stat.leaveDays.toStringAsFixed(1))),
               ],

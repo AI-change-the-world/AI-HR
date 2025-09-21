@@ -6,30 +6,44 @@ void main() {
   group('ReportGeneratorFactory Tests', () {
     test('Should create MonthlyReportGenerator', () {
       final generator = ReportGeneratorFactory.createGenerator(
-        ReportType.monthly,
+        ReportType.singleMonth,
       );
-      expect(generator, isA<MonthlyReportGenerator>());
+      expect(generator.runtimeType.toString(), 'MonthlyReportGenerator');
     });
 
     test('Should create MultiMonthReportGenerator', () {
       final generator = ReportGeneratorFactory.createGenerator(
         ReportType.multiMonth,
       );
-      expect(generator, isA<MultiMonthReportGenerator>());
+      expect(generator.runtimeType.toString(), 'MultiMonthReportGenerator');
     });
 
     test('Should create QuarterlyReportGenerator', () {
       final generator = ReportGeneratorFactory.createGenerator(
-        ReportType.quarterly,
+        ReportType.singleQuarter,
       );
-      expect(generator, isA<QuarterlyReportGenerator>());
+      expect(generator.runtimeType.toString(), 'QuarterlyReportGenerator');
+    });
+
+    test('Should create MultiQuarterlyReportGenerator', () {
+      final generator = ReportGeneratorFactory.createGenerator(
+        ReportType.multiQuarter,
+      );
+      expect(generator.runtimeType.toString(), 'MultiQuarterlyReportGenerator');
     });
 
     test('Should create AnnualReportGenerator', () {
       final generator = ReportGeneratorFactory.createGenerator(
-        ReportType.annual,
+        ReportType.singleYear,
       );
-      expect(generator, isA<AnnualReportGenerator>());
+      expect(generator.runtimeType.toString(), 'AnnualReportGenerator');
+    });
+
+    test('Should create MultiAnnualReportGenerator', () {
+      final generator = ReportGeneratorFactory.createGenerator(
+        ReportType.multiYear,
+      );
+      expect(generator.runtimeType.toString(), 'MultiAnnualReportGenerator');
     });
   });
 }

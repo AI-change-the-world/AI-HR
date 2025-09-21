@@ -16,7 +16,7 @@ class ChartGenerationService {
   Future<ReportChartImages> generateAllCharts({
     required GlobalKey previewContainerKey,
     required List<DepartmentSalaryStats> departmentStats,
-    required Map<String, int> salaryRanges,
+    required List<Map<String, int>> salaryRanges,
     List<Map<String, dynamic>>? salaryStructureData, // 薪资结构数据
     // 多月报告专用图表数据
     List<Map<String, dynamic>>? employeeCountPerMonth, // 每月人数变化数据
@@ -48,6 +48,8 @@ class ChartGenerationService {
           employeeCount: data['employeeCount'] as int,
           averageNetSalary: data['averageSalary'] as double,
           totalNetSalary: data['totalSalary'] as double,
+          year: data['year'] as int? ?? 0,
+          month: data['month'] as int? ?? 0,
         );
       }).toList();
 
@@ -156,12 +158,8 @@ class ChartGenerationService {
   }
 
   Future<Uint8List?> _generateSalaryRangeChart(
-    Map<String, int> salaryRanges,
+    List<Map<String, int>> data,
   ) async {
-    final data = salaryRanges.entries
-        .map((e) => {'range': e.key, 'count': e.value})
-        .toList();
-
     final chartWidget = _buildChartContainer(
       SfCartesianChart(
         title: ChartTitle(text: '工资区间分布'),

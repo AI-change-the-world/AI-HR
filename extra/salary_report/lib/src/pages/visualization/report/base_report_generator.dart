@@ -5,12 +5,14 @@ import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/isar/report_service.dart';
+
 import 'package:salary_report/src/pages/visualization/report/ai_summary_service.dart';
 import 'package:salary_report/src/pages/visualization/report/chart_generation_service.dart';
 import 'package:salary_report/src/pages/visualization/report/docx_writer_service.dart';
 import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
 import 'package:salary_report/src/pages/visualization/report/report_data_service.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
+import 'package:salary_report/src/pages/visualization/report/analysis_data.dart';
 import 'package:salary_report/src/pages/visualization/report/report_generator_interface.dart';
 
 /// 抽象基类报告生成器
@@ -63,11 +65,187 @@ abstract class BaseReportGenerator implements ReportGenerator {
       );
 
       // 1. 准备报告数据
-      final reportContent = await prepareReportData(data);
+      late ReportContentModel reportContent;
+      switch (reportType) {
+        case ReportType.singleMonth:
+          final singleMonthData = SingleMonthAnalysisData(
+            year: data.year,
+            month: data.month,
+            departmentStats: data.departmentStats,
+            analysisData: data.analysisData,
+          );
+          reportContent = await prepareReportDataForSingleMonth(
+            singleMonthData,
+          );
+          break;
+        case ReportType.multiMonth:
+          // 对于多月报告，我们需要构造MultiMonthAnalysisData
+          // 这里简化处理，实际应用中可能需要更复杂的逻辑
+          final monthlyData = [
+            MonthlyAnalysisData(
+              year: data.year,
+              month: data.month,
+              departmentStats: data.departmentStats,
+              analysisData: data.analysisData,
+            ),
+          ];
+          final multiMonthData = MultiMonthAnalysisData(
+            startTime: data.startTime,
+            endTime: data.endTime,
+            monthlyData: monthlyData,
+          );
+          reportContent = await prepareReportDataForMultiMonth(multiMonthData);
+          break;
+        case ReportType.singleQuarter:
+          final singleQuarterData = SingleQuarterAnalysisData(
+            year: data.year,
+            quarter: ((data.month - 1) ~/ 3) + 1,
+            departmentStats: data.departmentStats,
+            analysisData: data.analysisData,
+          );
+          reportContent = await prepareReportDataForSingleQuarter(
+            singleQuarterData,
+          );
+          break;
+        case ReportType.multiQuarter:
+          // 简化处理
+          final quarterlyData = [
+            QuarterlyAnalysisData(
+              year: data.year,
+              quarter: ((data.month - 1) ~/ 3) + 1,
+              departmentStats: data.departmentStats,
+              analysisData: data.analysisData,
+            ),
+          ];
+          final multiQuarterData = MultiQuarterAnalysisData(
+            startTime: data.startTime,
+            endTime: data.endTime,
+            quarterlyData: quarterlyData,
+          );
+          reportContent = await prepareReportDataForMultiQuarter(
+            multiQuarterData,
+          );
+          break;
+        case ReportType.singleYear:
+          final singleYearData = SingleYearAnalysisData(
+            year: data.year,
+            departmentStats: data.departmentStats,
+            analysisData: data.analysisData,
+          );
+          reportContent = await prepareReportDataForSingleYear(singleYearData);
+          break;
+        case ReportType.multiYear:
+          // 简化处理
+          final annualData = [
+            AnnualAnalysisData(
+              year: data.year,
+              departmentStats: data.departmentStats,
+              analysisData: data.analysisData,
+            ),
+          ];
+          final multiYearData = MultiYearAnalysisData(
+            startYear: data.year,
+            endYear: data.year,
+            annualData: annualData,
+          );
+          reportContent = await prepareReportDataForMultiYear(multiYearData);
+          break;
+      }
       logger.info('Report data prepared.');
 
       // 2. 生成图表
-      final chartImages = await generateCharts(data, reportContent);
+      late ReportChartImages chartImages;
+      switch (reportType) {
+        case ReportType.singleMonth:
+          final singleMonthData = SingleMonthAnalysisData(
+            year: data.year,
+            month: data.month,
+            departmentStats: data.departmentStats,
+            analysisData: data.analysisData,
+          );
+          chartImages = await generateCharts(singleMonthData, reportContent);
+          break;
+        case ReportType.multiMonth:
+          // 对于多月报告，我们需要构造MultiMonthAnalysisData
+          final monthlyData = [
+            MonthlyAnalysisData(
+              year: data.year,
+              month: data.month,
+              departmentStats: data.departmentStats,
+              analysisData: data.analysisData,
+            ),
+          ];
+          final multiMonthData = MultiMonthAnalysisData(
+            startTime: data.startTime,
+            endTime: data.endTime,
+            monthlyData: monthlyData,
+          );
+          chartImages = await generateChartsForMultiMonth(
+            multiMonthData,
+            reportContent,
+          );
+          break;
+        case ReportType.singleQuarter:
+          final singleQuarterData = SingleQuarterAnalysisData(
+            year: data.year,
+            quarter: ((data.month - 1) ~/ 3) + 1,
+            departmentStats: data.departmentStats,
+            analysisData: data.analysisData,
+          );
+          chartImages = await generateChartsForSingleQuarter(
+            singleQuarterData,
+            reportContent,
+          );
+          break;
+        case ReportType.multiQuarter:
+          final quarterlyData = [
+            QuarterlyAnalysisData(
+              year: data.year,
+              quarter: ((data.month - 1) ~/ 3) + 1,
+              departmentStats: data.departmentStats,
+              analysisData: data.analysisData,
+            ),
+          ];
+          final multiQuarterData = MultiQuarterAnalysisData(
+            startTime: data.startTime,
+            endTime: data.endTime,
+            quarterlyData: quarterlyData,
+          );
+          chartImages = await generateChartsForMultiQuarter(
+            multiQuarterData,
+            reportContent,
+          );
+          break;
+        case ReportType.singleYear:
+          final singleYearData = SingleYearAnalysisData(
+            year: data.year,
+            departmentStats: data.departmentStats,
+            analysisData: data.analysisData,
+          );
+          chartImages = await generateChartsForSingleYear(
+            singleYearData,
+            reportContent,
+          );
+          break;
+        case ReportType.multiYear:
+          final annualData = [
+            AnnualAnalysisData(
+              year: data.year,
+              departmentStats: data.departmentStats,
+              analysisData: data.analysisData,
+            ),
+          ];
+          final multiYearData = MultiYearAnalysisData(
+            startYear: data.year,
+            endYear: data.year,
+            annualData: annualData,
+          );
+          chartImages = await generateChartsForMultiYear(
+            multiYearData,
+            reportContent,
+          );
+          break;
+      }
       logger.info('Chart images generated.');
 
       // 3. 生成报告文件
@@ -89,22 +267,51 @@ abstract class BaseReportGenerator implements ReportGenerator {
     }
   }
 
-  /// 准备报告数据 - 子类可以重写以实现特定逻辑
-  Future<ReportContentModel> prepareReportData(ReportData data) async {
-    return await _dataService.prepareReportData(
-      departmentStats: data.departmentStats,
-      analysisData: data.analysisData,
-      year: data.year,
-      month: data.month,
-      isMultiMonth: data.isMultiMonth,
-      startTime: data.startTime,
-      endTime: data.endTime,
-    );
+  /// 准备单月报告数据
+  Future<ReportContentModel> prepareReportDataForSingleMonth(
+    SingleMonthAnalysisData data,
+  ) async {
+    return await _dataService.prepareReportDataForSingleMonth(data);
   }
 
-  /// 生成图表 - 子类可以重写以实现特定逻辑
+  /// 准备多月报告数据
+  Future<ReportContentModel> prepareReportDataForMultiMonth(
+    MultiMonthAnalysisData data,
+  ) async {
+    return await _dataService.prepareReportDataForMultiMonth(data);
+  }
+
+  /// 准备单季度报告数据
+  Future<ReportContentModel> prepareReportDataForSingleQuarter(
+    SingleQuarterAnalysisData data,
+  ) async {
+    return await _dataService.prepareReportDataForSingleQuarter(data);
+  }
+
+  /// 准备多季度报告数据
+  Future<ReportContentModel> prepareReportDataForMultiQuarter(
+    MultiQuarterAnalysisData data,
+  ) async {
+    return await _dataService.prepareReportDataForMultiQuarter(data);
+  }
+
+  /// 准备单年报告数据
+  Future<ReportContentModel> prepareReportDataForSingleYear(
+    SingleYearAnalysisData data,
+  ) async {
+    return await _dataService.prepareReportDataForSingleYear(data);
+  }
+
+  /// 准备多年报告数据
+  Future<ReportContentModel> prepareReportDataForMultiYear(
+    MultiYearAnalysisData data,
+  ) async {
+    return await _dataService.prepareReportDataForMultiYear(data);
+  }
+
+  /// 生成单月报告图表
   Future<ReportChartImages> generateCharts(
-    ReportData data,
+    SingleMonthAnalysisData data,
     ReportContentModel reportContent,
   ) async {
     // 计算薪资区间
@@ -120,7 +327,113 @@ abstract class BaseReportGenerator implements ReportGenerator {
     );
   }
 
-  /// 生成文档
+  /// 生成多月报告图表
+  Future<ReportChartImages> generateChartsForMultiMonth(
+    MultiMonthAnalysisData data,
+    ReportContentModel reportContent,
+  ) async {
+    // 使用最后一个月的数据计算薪资区间
+    final lastMonthData = data.monthlyData.last;
+    final salaryRanges = _dataService.calculateSalaryRanges(
+      lastMonthData.departmentStats,
+    );
+
+    // 生成多月报告专用图表
+    return await _chartService.generateAllCharts(
+      previewContainerKey: GlobalKey(),
+      departmentStats: lastMonthData.departmentStats,
+      salaryRanges: salaryRanges,
+      salaryStructureData: reportContent.salaryStructureData,
+      // 多月报告专用图表数据
+      employeeCountPerMonth: reportContent.employeeCountPerMonth,
+      averageSalaryPerMonth: reportContent.averageSalaryPerMonth,
+      totalSalaryPerMonth: reportContent.totalSalaryPerMonth,
+      departmentDetailsPerMonth: reportContent.departmentDetailsPerMonth,
+      // 传递最后一个月的部门统计数据用于图表生成
+      lastMonthDepartmentStats:
+          lastMonthData.analysisData.containsKey('lastMonthDepartmentStats')
+          ? List<Map<String, dynamic>>.from(
+              lastMonthData.analysisData['lastMonthDepartmentStats'] as List,
+            )
+          : null,
+    );
+  }
+
+  /// 生成单季度报告图表
+  Future<ReportChartImages> generateChartsForSingleQuarter(
+    SingleQuarterAnalysisData data,
+    ReportContentModel reportContent,
+  ) async {
+    // 计算薪资区间
+    final salaryRanges = _dataService.calculateSalaryRanges(
+      data.departmentStats,
+    );
+
+    return await _chartService.generateAllCharts(
+      previewContainerKey: GlobalKey(),
+      departmentStats: data.departmentStats,
+      salaryRanges: salaryRanges,
+      salaryStructureData: reportContent.salaryStructureData,
+    );
+  }
+
+  /// 生成多季度报告图表
+  Future<ReportChartImages> generateChartsForMultiQuarter(
+    MultiQuarterAnalysisData data,
+    ReportContentModel reportContent,
+  ) async {
+    // 使用最后一个季度的数据计算薪资区间
+    final lastQuarterData = data.quarterlyData.last;
+    final salaryRanges = _dataService.calculateSalaryRanges(
+      lastQuarterData.departmentStats,
+    );
+
+    return await _chartService.generateAllCharts(
+      previewContainerKey: GlobalKey(),
+      departmentStats: lastQuarterData.departmentStats,
+      salaryRanges: salaryRanges,
+      salaryStructureData: reportContent.salaryStructureData,
+    );
+  }
+
+  /// 生成单年报告图表
+  Future<ReportChartImages> generateChartsForSingleYear(
+    SingleYearAnalysisData data,
+    ReportContentModel reportContent,
+  ) async {
+    // 计算薪资区间
+    final salaryRanges = _dataService.calculateSalaryRanges(
+      data.departmentStats,
+    );
+
+    return await _chartService.generateAllCharts(
+      previewContainerKey: GlobalKey(),
+      departmentStats: data.departmentStats,
+      salaryRanges: salaryRanges,
+      salaryStructureData: reportContent.salaryStructureData,
+    );
+  }
+
+  /// 生成多年报告图表
+  Future<ReportChartImages> generateChartsForMultiYear(
+    MultiYearAnalysisData data,
+    ReportContentModel reportContent,
+  ) async {
+    // 使用最后一年的数据计算薪资区间
+    final lastYearData = data.annualData.last;
+    final salaryRanges = _dataService.calculateSalaryRanges(
+      lastYearData.departmentStats,
+    );
+
+    return await _chartService.generateAllCharts(
+      previewContainerKey: GlobalKey(),
+      departmentStats: lastYearData.departmentStats,
+      salaryRanges: salaryRanges,
+      salaryStructureData: reportContent.salaryStructureData,
+    );
+  }
+
+  /// 生成报告文档
   Future<String> generateDocument(
     ReportContentModel reportContent,
     ReportChartImages chartImages,
@@ -138,55 +451,21 @@ abstract class BaseReportGenerator implements ReportGenerator {
     await _reportService.addReportRecord(reportPath);
   }
 
-  /// 获取报告类型名称 - 用于日志记录
+  /// 获取报告类型名称
   String _getReportTypeName(ReportType type) {
     switch (type) {
-      case ReportType.monthly:
-        return 'Monthly';
+      case ReportType.singleMonth:
+        return '单月';
       case ReportType.multiMonth:
-        return 'Multi-Month';
-      case ReportType.quarterly:
-        return 'Quarterly';
-      case ReportType.annual:
-        return 'Annual';
-    }
-  }
-
-  /// 生成报告标题 - 子类可以重写以实现特定逻辑
-  String generateReportTitle(
-    ReportType type,
-    int year,
-    int month,
-    bool isMultiMonth,
-    DateTime startTime,
-    DateTime endTime,
-  ) {
-    switch (type) {
-      case ReportType.monthly:
-        return '$year年$month月工资分析报告';
-      case ReportType.multiMonth:
-        return '${startTime.year}年${startTime.month}月至${endTime.year}年${endTime.month}月工资分析报告';
-      case ReportType.quarterly:
-        // 根据开始时间计算季度
-        final startQuarter = ((startTime.month - 1) ~/ 3) + 1;
-        // 根据结束时间计算季度
-        final endQuarter = ((endTime.month - 1) ~/ 3) + 1;
-
-        // 如果是同一季度
-        if (startTime.year == endTime.year && startQuarter == endQuarter) {
-          return '${startTime.year}年第${startQuarter}季度工资分析报告';
-        } else {
-          // 跨季度情况
-          return '${startTime.year}年第${startQuarter}季度-${endTime.year}年第${endQuarter}季度工资分析报告';
-        }
-      case ReportType.annual:
-        // 如果是同一年度
-        if (startTime.year == endTime.year) {
-          return '$year年度工资分析报告';
-        } else {
-          // 跨年度情况
-          return '${startTime.year}-${endTime.year}年度工资分析报告';
-        }
+        return '多月';
+      case ReportType.singleQuarter:
+        return '单季度';
+      case ReportType.multiQuarter:
+        return '多季度';
+      case ReportType.singleYear:
+        return '单年';
+      case ReportType.multiYear:
+        return '多年';
     }
   }
 }

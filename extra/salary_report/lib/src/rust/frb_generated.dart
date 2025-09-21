@@ -254,39 +254,60 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   SalaryRecord dco_decode_salary_record(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 30)
-      throw Exception('unexpected arr length: expect 30 but see ${arr.length}');
+    if (arr.length != 51)
+      throw Exception('unexpected arr length: expect 51 but see ${arr.length}');
     return SalaryRecord(
       name: dco_decode_String(arr[0]),
       department: dco_decode_String(arr[1]),
       position: dco_decode_String(arr[2]),
       attendance: dco_decode_String(arr[3]),
-      salaryComponents: dco_decode_String(arr[4]),
+      preTaxSalary: dco_decode_String(arr[4]),
       socialSecurityTax: dco_decode_String(arr[5]),
       netSalary: dco_decode_String(arr[6]),
-      payrollDays: dco_decode_String(arr[7]),
-      actualAttendanceDays: dco_decode_String(arr[8]),
-      sickLeave: dco_decode_String(arr[9]),
-      personalLeave: dco_decode_String(arr[10]),
-      absence: dco_decode_String(arr[11]),
-      truancy: dco_decode_String(arr[12]),
-      performanceScore: dco_decode_String(arr[13]),
-      basicSalary: dco_decode_String(arr[14]),
-      positionSalary: dco_decode_String(arr[15]),
-      performanceSalary: dco_decode_String(arr[16]),
-      allowanceSalary: dco_decode_String(arr[17]),
-      comprehensiveSalary: dco_decode_String(arr[18]),
-      currentMonthBasic: dco_decode_String(arr[19]),
-      currentMonthPosition: dco_decode_String(arr[20]),
-      currentMonthPerformance: dco_decode_String(arr[21]),
-      currentMonthAllowance: dco_decode_String(arr[22]),
-      overtimePay: dco_decode_String(arr[23]),
-      allowance: dco_decode_String(arr[24]),
-      bonus: dco_decode_String(arr[25]),
-      socialSecurityDeduction: dco_decode_String(arr[26]),
-      tax: dco_decode_String(arr[27]),
-      otherDeductions: dco_decode_String(arr[28]),
-      mealAllowance: dco_decode_String(arr[29]),
+      serialNumber: dco_decode_String(arr[7]),
+      hireDate: dco_decode_String(arr[8]),
+      terminationDate: dco_decode_String(arr[9]),
+      gender: dco_decode_String(arr[10]),
+      idNumber: dco_decode_String(arr[11]),
+      regularizationDate: dco_decode_String(arr[12]),
+      contractType: dco_decode_String(arr[13]),
+      financialAggregation: dco_decode_String(arr[14]),
+      secondaryDepartment: dco_decode_String(arr[15]),
+      jobLevel: dco_decode_String(arr[16]),
+      payrollDays: dco_decode_String(arr[17]),
+      sickLeave: dco_decode_String(arr[18]),
+      personalLeave: dco_decode_String(arr[19]),
+      absence: dco_decode_String(arr[20]),
+      truancy: dco_decode_String(arr[21]),
+      performanceScore: dco_decode_String(arr[22]),
+      basicSalary: dco_decode_String(arr[23]),
+      positionSalary: dco_decode_String(arr[24]),
+      performanceSalary: dco_decode_String(arr[25]),
+      allowanceSalary: dco_decode_String(arr[26]),
+      comprehensiveSalary: dco_decode_String(arr[27]),
+      currentMonthBasic: dco_decode_String(arr[28]),
+      currentMonthPosition: dco_decode_String(arr[29]),
+      currentMonthPerformance: dco_decode_String(arr[30]),
+      currentMonthAllowance: dco_decode_String(arr[31]),
+      currentMonthSickDeduction: dco_decode_String(arr[32]),
+      currentMonthPersonalLeaveDeduction: dco_decode_String(arr[33]),
+      currentMonthAbsenceDeduction: dco_decode_String(arr[34]),
+      currentMonthTruancyDeduction: dco_decode_String(arr[35]),
+      mealAllowance: dco_decode_String(arr[36]),
+      computerAllowance: dco_decode_String(arr[37]),
+      otherAdjustments: dco_decode_String(arr[38]),
+      monthlyPayrollSalary: dco_decode_String(arr[39]),
+      socialSecurityBase: dco_decode_String(arr[40]),
+      providentFundBase: dco_decode_String(arr[41]),
+      personalPension: dco_decode_String(arr[42]),
+      personalMedical: dco_decode_String(arr[43]),
+      personalUnemployment: dco_decode_String(arr[44]),
+      personalProvidentFund: dco_decode_String(arr[45]),
+      monthlyPersonalIncomeTax: dco_decode_String(arr[46]),
+      severancePay: dco_decode_String(arr[47]),
+      postTaxAdjustments: dco_decode_String(arr[48]),
+      bank: dco_decode_String(arr[49]),
+      bankAccount: dco_decode_String(arr[50]),
     );
   }
 
@@ -421,11 +442,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_department = sse_decode_String(deserializer);
     var var_position = sse_decode_String(deserializer);
     var var_attendance = sse_decode_String(deserializer);
-    var var_salaryComponents = sse_decode_String(deserializer);
+    var var_preTaxSalary = sse_decode_String(deserializer);
     var var_socialSecurityTax = sse_decode_String(deserializer);
     var var_netSalary = sse_decode_String(deserializer);
+    var var_serialNumber = sse_decode_String(deserializer);
+    var var_hireDate = sse_decode_String(deserializer);
+    var var_terminationDate = sse_decode_String(deserializer);
+    var var_gender = sse_decode_String(deserializer);
+    var var_idNumber = sse_decode_String(deserializer);
+    var var_regularizationDate = sse_decode_String(deserializer);
+    var var_contractType = sse_decode_String(deserializer);
+    var var_financialAggregation = sse_decode_String(deserializer);
+    var var_secondaryDepartment = sse_decode_String(deserializer);
+    var var_jobLevel = sse_decode_String(deserializer);
     var var_payrollDays = sse_decode_String(deserializer);
-    var var_actualAttendanceDays = sse_decode_String(deserializer);
     var var_sickLeave = sse_decode_String(deserializer);
     var var_personalLeave = sse_decode_String(deserializer);
     var var_absence = sse_decode_String(deserializer);
@@ -440,23 +470,46 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_currentMonthPosition = sse_decode_String(deserializer);
     var var_currentMonthPerformance = sse_decode_String(deserializer);
     var var_currentMonthAllowance = sse_decode_String(deserializer);
-    var var_overtimePay = sse_decode_String(deserializer);
-    var var_allowance = sse_decode_String(deserializer);
-    var var_bonus = sse_decode_String(deserializer);
-    var var_socialSecurityDeduction = sse_decode_String(deserializer);
-    var var_tax = sse_decode_String(deserializer);
-    var var_otherDeductions = sse_decode_String(deserializer);
+    var var_currentMonthSickDeduction = sse_decode_String(deserializer);
+    var var_currentMonthPersonalLeaveDeduction = sse_decode_String(
+      deserializer,
+    );
+    var var_currentMonthAbsenceDeduction = sse_decode_String(deserializer);
+    var var_currentMonthTruancyDeduction = sse_decode_String(deserializer);
     var var_mealAllowance = sse_decode_String(deserializer);
+    var var_computerAllowance = sse_decode_String(deserializer);
+    var var_otherAdjustments = sse_decode_String(deserializer);
+    var var_monthlyPayrollSalary = sse_decode_String(deserializer);
+    var var_socialSecurityBase = sse_decode_String(deserializer);
+    var var_providentFundBase = sse_decode_String(deserializer);
+    var var_personalPension = sse_decode_String(deserializer);
+    var var_personalMedical = sse_decode_String(deserializer);
+    var var_personalUnemployment = sse_decode_String(deserializer);
+    var var_personalProvidentFund = sse_decode_String(deserializer);
+    var var_monthlyPersonalIncomeTax = sse_decode_String(deserializer);
+    var var_severancePay = sse_decode_String(deserializer);
+    var var_postTaxAdjustments = sse_decode_String(deserializer);
+    var var_bank = sse_decode_String(deserializer);
+    var var_bankAccount = sse_decode_String(deserializer);
     return SalaryRecord(
       name: var_name,
       department: var_department,
       position: var_position,
       attendance: var_attendance,
-      salaryComponents: var_salaryComponents,
+      preTaxSalary: var_preTaxSalary,
       socialSecurityTax: var_socialSecurityTax,
       netSalary: var_netSalary,
+      serialNumber: var_serialNumber,
+      hireDate: var_hireDate,
+      terminationDate: var_terminationDate,
+      gender: var_gender,
+      idNumber: var_idNumber,
+      regularizationDate: var_regularizationDate,
+      contractType: var_contractType,
+      financialAggregation: var_financialAggregation,
+      secondaryDepartment: var_secondaryDepartment,
+      jobLevel: var_jobLevel,
       payrollDays: var_payrollDays,
-      actualAttendanceDays: var_actualAttendanceDays,
       sickLeave: var_sickLeave,
       personalLeave: var_personalLeave,
       absence: var_absence,
@@ -471,13 +524,26 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       currentMonthPosition: var_currentMonthPosition,
       currentMonthPerformance: var_currentMonthPerformance,
       currentMonthAllowance: var_currentMonthAllowance,
-      overtimePay: var_overtimePay,
-      allowance: var_allowance,
-      bonus: var_bonus,
-      socialSecurityDeduction: var_socialSecurityDeduction,
-      tax: var_tax,
-      otherDeductions: var_otherDeductions,
+      currentMonthSickDeduction: var_currentMonthSickDeduction,
+      currentMonthPersonalLeaveDeduction:
+          var_currentMonthPersonalLeaveDeduction,
+      currentMonthAbsenceDeduction: var_currentMonthAbsenceDeduction,
+      currentMonthTruancyDeduction: var_currentMonthTruancyDeduction,
       mealAllowance: var_mealAllowance,
+      computerAllowance: var_computerAllowance,
+      otherAdjustments: var_otherAdjustments,
+      monthlyPayrollSalary: var_monthlyPayrollSalary,
+      socialSecurityBase: var_socialSecurityBase,
+      providentFundBase: var_providentFundBase,
+      personalPension: var_personalPension,
+      personalMedical: var_personalMedical,
+      personalUnemployment: var_personalUnemployment,
+      personalProvidentFund: var_personalProvidentFund,
+      monthlyPersonalIncomeTax: var_monthlyPersonalIncomeTax,
+      severancePay: var_severancePay,
+      postTaxAdjustments: var_postTaxAdjustments,
+      bank: var_bank,
+      bankAccount: var_bankAccount,
     );
   }
 
@@ -624,11 +690,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.department, serializer);
     sse_encode_String(self.position, serializer);
     sse_encode_String(self.attendance, serializer);
-    sse_encode_String(self.salaryComponents, serializer);
+    sse_encode_String(self.preTaxSalary, serializer);
     sse_encode_String(self.socialSecurityTax, serializer);
     sse_encode_String(self.netSalary, serializer);
+    sse_encode_String(self.serialNumber, serializer);
+    sse_encode_String(self.hireDate, serializer);
+    sse_encode_String(self.terminationDate, serializer);
+    sse_encode_String(self.gender, serializer);
+    sse_encode_String(self.idNumber, serializer);
+    sse_encode_String(self.regularizationDate, serializer);
+    sse_encode_String(self.contractType, serializer);
+    sse_encode_String(self.financialAggregation, serializer);
+    sse_encode_String(self.secondaryDepartment, serializer);
+    sse_encode_String(self.jobLevel, serializer);
     sse_encode_String(self.payrollDays, serializer);
-    sse_encode_String(self.actualAttendanceDays, serializer);
     sse_encode_String(self.sickLeave, serializer);
     sse_encode_String(self.personalLeave, serializer);
     sse_encode_String(self.absence, serializer);
@@ -643,13 +718,25 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.currentMonthPosition, serializer);
     sse_encode_String(self.currentMonthPerformance, serializer);
     sse_encode_String(self.currentMonthAllowance, serializer);
-    sse_encode_String(self.overtimePay, serializer);
-    sse_encode_String(self.allowance, serializer);
-    sse_encode_String(self.bonus, serializer);
-    sse_encode_String(self.socialSecurityDeduction, serializer);
-    sse_encode_String(self.tax, serializer);
-    sse_encode_String(self.otherDeductions, serializer);
+    sse_encode_String(self.currentMonthSickDeduction, serializer);
+    sse_encode_String(self.currentMonthPersonalLeaveDeduction, serializer);
+    sse_encode_String(self.currentMonthAbsenceDeduction, serializer);
+    sse_encode_String(self.currentMonthTruancyDeduction, serializer);
     sse_encode_String(self.mealAllowance, serializer);
+    sse_encode_String(self.computerAllowance, serializer);
+    sse_encode_String(self.otherAdjustments, serializer);
+    sse_encode_String(self.monthlyPayrollSalary, serializer);
+    sse_encode_String(self.socialSecurityBase, serializer);
+    sse_encode_String(self.providentFundBase, serializer);
+    sse_encode_String(self.personalPension, serializer);
+    sse_encode_String(self.personalMedical, serializer);
+    sse_encode_String(self.personalUnemployment, serializer);
+    sse_encode_String(self.personalProvidentFund, serializer);
+    sse_encode_String(self.monthlyPersonalIncomeTax, serializer);
+    sse_encode_String(self.severancePay, serializer);
+    sse_encode_String(self.postTaxAdjustments, serializer);
+    sse_encode_String(self.bank, serializer);
+    sse_encode_String(self.bankAccount, serializer);
   }
 
   @protected

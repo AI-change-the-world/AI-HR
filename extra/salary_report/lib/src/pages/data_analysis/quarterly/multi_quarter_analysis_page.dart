@@ -7,47 +7,47 @@ import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:toastification/toastification.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:salary_report/src/providers/multi_month_analysis_provider.dart';
-import 'package:salary_report/src/components/multi_month/monthly_key_metrics_component.dart';
-import 'package:salary_report/src/components/multi_month/monthly_department_stats_component.dart';
-import 'package:salary_report/src/components/multi_month/monthly_attendance_stats_component.dart';
-import 'package:salary_report/src/components/multi_month/monthly_leave_ratio_stats_component.dart';
-import 'package:salary_report/src/components/multi_month/department_changes_component.dart';
+import 'package:salary_report/src/providers/multi_quarter_analysis_provider.dart';
+import 'package:salary_report/src/components/multi_quarter/quarterly_key_metrics_component.dart';
+import 'package:salary_report/src/components/multi_quarter/quarterly_department_stats_component.dart';
+import 'package:salary_report/src/components/multi_quarter/quarterly_attendance_stats_component.dart';
+import 'package:salary_report/src/components/multi_quarter/quarterly_leave_ratio_stats_component.dart';
+import 'package:salary_report/src/components/multi_quarter/department_changes_component.dart';
 
-// 简化状态管理，使用局部状态优化渲染性能
-class MultiMonthAnalysisPage extends ConsumerStatefulWidget {
-  const MultiMonthAnalysisPage({
+// 多季度分析页面
+class MultiQuarterAnalysisPage extends ConsumerStatefulWidget {
+  const MultiQuarterAnalysisPage({
     super.key,
     required this.year,
-    required this.month,
+    required this.quarter,
     required this.endYear,
-    required this.endMonth,
+    required this.endQuarter,
   });
 
   final int year;
-  final int month;
+  final int quarter;
   final int endYear;
-  final int endMonth;
+  final int endQuarter;
 
   @override
-  ConsumerState<MultiMonthAnalysisPage> createState() =>
-      _MultiMonthAnalysisPageState();
+  ConsumerState<MultiQuarterAnalysisPage> createState() =>
+      _MultiQuarterAnalysisPageState();
 }
 
-class _MultiMonthAnalysisPageState
-    extends ConsumerState<MultiMonthAnalysisPage> {
+class _MultiQuarterAnalysisPageState
+    extends ConsumerState<MultiQuarterAnalysisPage> {
   final GlobalKey _chartContainerKey = GlobalKey();
   bool _isGeneratingReport = false;
-  late DateRangeParams _dateRangeParams;
+  late QuarterRangeParams _quarterRangeParams;
 
   @override
   void initState() {
     super.initState();
-    _dateRangeParams = DateRangeParams(
+    _quarterRangeParams = QuarterRangeParams(
       startYear: widget.year,
-      startMonth: widget.month,
+      startQuarter: widget.quarter,
       endYear: widget.endYear,
-      endMonth: widget.endMonth,
+      endQuarter: widget.endQuarter,
     );
   }
 
@@ -59,26 +59,28 @@ class _MultiMonthAnalysisPageState
       });
 
       // 确定开始和结束时间
-      final startTime = DateTime(widget.year, widget.month);
-      final endTime = DateTime(widget.endYear, widget.endMonth);
+      final startMonth = (widget.quarter - 1) * 3 + 1;
+      final endMonth = (widget.endQuarter - 1) * 3 + 3;
+      final startTime = DateTime(widget.year, startMonth);
+      final endTime = DateTime(widget.endYear, endMonth);
 
       final generator = SalaryReportGenerator();
 
       // 获取分析数据
-      final keyMetricsState = ref.read(keyMetricsProvider(_dateRangeParams));
+      final keyMetricsState = ref.read(keyMetricsProvider(_quarterRangeParams));
       final departmentStatsState = ref.read(
-        departmentStatsProvider(_dateRangeParams),
+        departmentStatsProvider(_quarterRangeParams),
       );
       final attendanceStatsState = ref.read(
-        attendanceStatsProvider(_dateRangeParams),
+        attendanceStatsProvider(_quarterRangeParams),
       );
       final leaveRatioStatsState = ref.read(
-        leaveRatioStatsProvider(_dateRangeParams),
+        leaveRatioStatsProvider(_quarterRangeParams),
       );
       final departmentChangesState = ref.read(
-        departmentChangesProvider(_dateRangeParams),
+        departmentChangesProvider(_quarterRangeParams),
       );
-      final chartDataState = ref.read(chartDataProvider(_dateRangeParams));
+      final chartDataState = ref.read(chartDataProvider(_quarterRangeParams));
 
       final analysisData = _prepareAnalysisData(
         keyMetricsState,
@@ -95,10 +97,10 @@ class _MultiMonthAnalysisPageState
         analysisData: analysisData,
         endTime: endTime,
         year: widget.year,
-        month: widget.month,
+        month: widget.quarter,
         isMultiMonth: true,
         startTime: startTime,
-        reportType: ReportType.multiMonth, // 明确指定报告类型
+        reportType: ReportType.multiQuarter, // 明确指定报告类型
       );
 
       if (mounted) {
@@ -148,12 +150,12 @@ class _MultiMonthAnalysisPageState
 
     // 从关键指标状态中获取数据
     if (keyMetricsState is AsyncData &&
-        keyMetricsState.value?.monthlyData != null) {
-      for (var monthlyData in keyMetricsState.value!.monthlyData!) {
-        totalEmployees += monthlyData.employeeCount;
-        totalSalary += monthlyData.totalSalary;
+        keyMetricsState.value?.quarterlyData != null) {
+      for (var quarterlyData in keyMetricsState.value!.quarterlyData!) {
+        totalEmployees += quarterlyData.employeeCount;
+        totalSalary += quarterlyData.totalSalary;
 
-        monthlyData.departmentStats.forEach((dept, stat) {
+        quarterlyData.departmentStats.forEach((dept, stat) {
           if (stat.averageNetSalary > highestSalary) {
             highestSalary = stat.averageNetSalary;
           }
@@ -183,8 +185,8 @@ class _MultiMonthAnalysisPageState
   @override
   Widget build(BuildContext context) {
     final title =
-        '${widget.year}年${widget.month.toString().padLeft(2, '0')}月 - '
-        '${widget.endYear}年${widget.endMonth.toString().padLeft(2, '0')}月 工资分析';
+        '${widget.year}年第${widget.quarter}季度 - '
+        '${widget.endYear}年第${widget.endQuarter}季度 工资分析';
 
     return Scaffold(
       appBar: AppBar(
@@ -211,23 +213,25 @@ class _MultiMonthAnalysisPageState
 
                   const SizedBox(height: 24),
 
-                  // 每月关键指标（分页显示）
+                  // 每季度关键指标（分页显示）
                   const Text(
-                    '每月关键指标',
+                    '每季度关键指标',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
-                  MonthlyKeyMetricsComponent(params: _dateRangeParams),
+                  QuarterlyKeyMetricsComponent(params: _quarterRangeParams),
 
                   const SizedBox(height: 24),
 
-                  // 每月部门统计（分页显示）
+                  // 每季度部门统计（分页显示）
                   const Text(
-                    '每月部门统计',
+                    '每季度部门统计',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
-                  MonthlyDepartmentStatsComponent(params: _dateRangeParams),
+                  QuarterlyDepartmentStatsComponent(
+                    params: _quarterRangeParams,
+                  ),
 
                   const SizedBox(height: 24),
 
@@ -237,33 +241,37 @@ class _MultiMonthAnalysisPageState
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
-                  DepartmentChangesComponent(params: _dateRangeParams),
+                  DepartmentChangesComponent(params: _quarterRangeParams),
 
                   const SizedBox(height: 24),
 
-                  // 每月考勤统计（分页显示）
+                  // 每季度考勤统计（分页显示）
                   const Text(
-                    '每月考勤统计',
+                    '每季度考勤统计',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
-                  MonthlyAttendanceStatsComponent(params: _dateRangeParams),
+                  QuarterlyAttendanceStatsComponent(
+                    params: _quarterRangeParams,
+                  ),
 
                   const SizedBox(height: 24),
 
-                  // 每月请假比例统计（分页显示）
+                  // 每季度请假比例统计（分页显示）
                   const Text(
-                    '每月请假比例统计',
+                    '每季度请假比例统计',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
-                  MonthlyLeaveRatioStatsComponent(params: _dateRangeParams),
+                  QuarterlyLeaveRatioStatsComponent(
+                    params: _quarterRangeParams,
+                  ),
 
                   const SizedBox(height: 24),
 
-                  // 每月人数变化趋势图
+                  // 每季度人数变化趋势图
                   const Text(
-                    '每月人数变化趋势',
+                    '每季度人数变化趋势',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
@@ -271,17 +279,17 @@ class _MultiMonthAnalysisPageState
                     child: Container(
                       height: 300,
                       padding: const EdgeInsets.all(16.0),
-                      child: MonthlyEmployeeCountChartComponent(
-                        params: _dateRangeParams,
+                      child: QuarterlyEmployeeCountChartComponent(
+                        params: _quarterRangeParams,
                       ),
                     ),
                   ),
 
                   const SizedBox(height: 24),
 
-                  // 每月平均薪资变化趋势图
+                  // 每季度平均薪资变化趋势图
                   const Text(
-                    '每月平均薪资变化趋势',
+                    '每季度平均薪资变化趋势',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
@@ -289,16 +297,16 @@ class _MultiMonthAnalysisPageState
                     child: Container(
                       height: 300,
                       padding: const EdgeInsets.all(16.0),
-                      child: MonthlyAverageSalaryChartComponent(
-                        params: _dateRangeParams,
+                      child: QuarterlyAverageSalaryChartComponent(
+                        params: _quarterRangeParams,
                       ),
                     ),
                   ),
                   const SizedBox(height: 24),
 
-                  // 每月总工资变化趋势图
+                  // 每季度总工资变化趋势图
                   const Text(
-                    '每月总工资变化趋势',
+                    '每季度总工资变化趋势',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
@@ -306,8 +314,8 @@ class _MultiMonthAnalysisPageState
                     child: Container(
                       height: 300,
                       padding: const EdgeInsets.all(16.0),
-                      child: MonthlyTotalSalaryChartComponent(
-                        params: _dateRangeParams,
+                      child: QuarterlyTotalSalaryChartComponent(
+                        params: _quarterRangeParams,
                       ),
                     ),
                   ),
@@ -324,8 +332,8 @@ class _MultiMonthAnalysisPageState
                     child: Container(
                       height: 300,
                       padding: const EdgeInsets.all(16.0),
-                      child: MultiMonthDepartmentSalaryChartComponent(
-                        params: _dateRangeParams,
+                      child: MultiQuarterDepartmentSalaryChartComponent(
+                        params: _quarterRangeParams,
                       ),
                     ),
                   ),
@@ -381,17 +389,18 @@ class _MultiMonthAnalysisPageState
 
   /// 构建分页控制组件
   Widget _buildPaginationControls() {
-    final keyMetricsState = ref.watch(keyMetricsProvider(_dateRangeParams));
+    final keyMetricsState = ref.watch(keyMetricsProvider(_quarterRangeParams));
     final paginationState = ref.watch(paginationProvider);
 
     return keyMetricsState.when(
       data: (keyMetrics) {
-        if (keyMetrics.monthlyData == null) {
+        if (keyMetrics.quarterlyData == null) {
           return const SizedBox.shrink();
         }
 
-        final totalMonths = keyMetrics.monthlyData!.length;
-        final totalPages = (totalMonths / paginationState.itemsPerPage).ceil();
+        final totalQuarters = keyMetrics.quarterlyData!.length;
+        final totalPages = (totalQuarters / paginationState.itemsPerPage)
+            .ceil();
 
         if (totalPages <= 1) {
           return const SizedBox.shrink();
@@ -424,11 +433,11 @@ class _MultiMonthAnalysisPageState
   }
 }
 
-// 每月人数变化趋势图组件
-class MonthlyEmployeeCountChartComponent extends ConsumerWidget {
-  final DateRangeParams params;
+// 每季度人数变化趋势图组件
+class QuarterlyEmployeeCountChartComponent extends ConsumerWidget {
+  final QuarterRangeParams params;
 
-  const MonthlyEmployeeCountChartComponent({super.key, required this.params});
+  const QuarterlyEmployeeCountChartComponent({super.key, required this.params});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -440,39 +449,42 @@ class MonthlyEmployeeCountChartComponent extends ConsumerWidget {
           return const Center(child: Text('暂无数据'));
         }
 
-        final List<Map<String, dynamic>> employeeCountPerMonth = [];
+        final List<Map<String, dynamic>> employeeCountPerQuarter = [];
 
-        // 按时间排序月度数据
-        final sortedMonthlyData =
-            List<MonthlyComparisonData>.from(
-              chartData.comparisonData!.monthlyComparisons,
+        // 按时间排序季度数据
+        final sortedQuarterlyData =
+            List<QuarterlyComparisonData>.from(
+              chartData.comparisonData!.quarterlyComparisons,
             )..sort((a, b) {
               if (a.year != b.year) {
                 return a.year.compareTo(b.year);
               }
-              return a.month.compareTo(b.month);
+              return a.quarter.compareTo(b.quarter);
             });
 
-        for (var monthlyComparison in sortedMonthlyData) {
-          int totalEmployees = monthlyComparison.employeeCount;
+        for (var quarterlyComparison in sortedQuarterlyData) {
+          int totalEmployees = quarterlyComparison.employeeCount;
 
-          employeeCountPerMonth.add({
-            'month': '${monthlyComparison.year}年${monthlyComparison.month}月',
-            'year': monthlyComparison.year,
-            'monthNum': monthlyComparison.month,
+          employeeCountPerQuarter.add({
+            'quarter':
+                '${quarterlyComparison.year}年第${quarterlyComparison.quarter}季度',
+            'year': quarterlyComparison.year,
+            'quarterNum': quarterlyComparison.quarter,
             'employeeCount': totalEmployees,
           });
         }
 
         // 按时间排序
-        employeeCountPerMonth.sort((a, b) {
+        employeeCountPerQuarter.sort((a, b) {
           if (a['year'] != b['year']) {
             return (a['year'] as int).compareTo(b['year'] as int);
           }
-          return (a['monthNum'] as int).compareTo(b['monthNum'] as int);
+          return (a['quarterNum'] as int).compareTo(b['quarterNum'] as int);
         });
 
-        return MonthlyEmployeeCountChart(monthlyData: employeeCountPerMonth);
+        return QuarterlyEmployeeCountChart(
+          quarterlyData: employeeCountPerQuarter,
+        );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => Center(child: Text('加载数据失败: $error')),
@@ -480,11 +492,11 @@ class MonthlyEmployeeCountChartComponent extends ConsumerWidget {
   }
 }
 
-// 每月平均薪资变化趋势图组件
-class MonthlyAverageSalaryChartComponent extends ConsumerWidget {
-  final DateRangeParams params;
+// 每季度平均薪资变化趋势图组件
+class QuarterlyAverageSalaryChartComponent extends ConsumerWidget {
+  final QuarterRangeParams params;
 
-  const MonthlyAverageSalaryChartComponent({super.key, required this.params});
+  const QuarterlyAverageSalaryChartComponent({super.key, required this.params});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -496,41 +508,44 @@ class MonthlyAverageSalaryChartComponent extends ConsumerWidget {
           return const Center(child: Text('暂无数据'));
         }
 
-        List<Map<String, dynamic>> averageSalaryPerMonth = [];
+        List<Map<String, dynamic>> averageSalaryPerQuarter = [];
 
-        // 按时间排序月度数据
-        final sortedMonthlyData =
-            List<MonthlyComparisonData>.from(
-              chartData.comparisonData!.monthlyComparisons,
+        // 按时间排序季度数据
+        final sortedQuarterlyData =
+            List<QuarterlyComparisonData>.from(
+              chartData.comparisonData!.quarterlyComparisons,
             )..sort((a, b) {
               if (a.year != b.year) {
                 return a.year.compareTo(b.year);
               }
-              return a.month.compareTo(b.month);
+              return a.quarter.compareTo(b.quarter);
             });
 
-        for (var monthlyComparison in sortedMonthlyData) {
-          final averageSalary = monthlyComparison.averageSalary;
+        for (var quarterlyComparison in sortedQuarterlyData) {
+          final averageSalary = quarterlyComparison.averageSalary;
 
-          averageSalaryPerMonth.add({
-            'month': '${monthlyComparison.year}年${monthlyComparison.month}月',
-            'year': monthlyComparison.year,
-            'monthNum': monthlyComparison.month,
+          averageSalaryPerQuarter.add({
+            'quarter':
+                '${quarterlyComparison.year}年第${quarterlyComparison.quarter}季度',
+            'year': quarterlyComparison.year,
+            'quarterNum': quarterlyComparison.quarter,
             'averageSalary': averageSalary,
           });
         }
 
         // 按时间排序
-        averageSalaryPerMonth.sort((a, b) {
+        averageSalaryPerQuarter.sort((a, b) {
           if (a['year'] != b['year']) {
             return (a['year'] as int).compareTo(b['year'] as int);
           }
-          return (a['monthNum'] as int).compareTo(b['monthNum'] as int);
+          return (a['quarterNum'] as int).compareTo(b['quarterNum'] as int);
         });
 
-        logger.info('averageSalaryPerMonth: $averageSalaryPerMonth');
+        logger.info('averageSalaryPerQuarter: $averageSalaryPerQuarter');
 
-        return MonthlyAverageSalaryChart(monthlyData: averageSalaryPerMonth);
+        return QuarterlyAverageSalaryChart(
+          quarterlyData: averageSalaryPerQuarter,
+        );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => Center(child: Text('加载数据失败: $error')),
@@ -538,11 +553,11 @@ class MonthlyAverageSalaryChartComponent extends ConsumerWidget {
   }
 }
 
-// 每月总工资变化趋势图组件
-class MonthlyTotalSalaryChartComponent extends ConsumerWidget {
-  final DateRangeParams params;
+// 每季度总工资变化趋势图组件
+class QuarterlyTotalSalaryChartComponent extends ConsumerWidget {
+  final QuarterRangeParams params;
 
-  const MonthlyTotalSalaryChartComponent({super.key, required this.params});
+  const QuarterlyTotalSalaryChartComponent({super.key, required this.params});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -554,39 +569,40 @@ class MonthlyTotalSalaryChartComponent extends ConsumerWidget {
           return const Center(child: Text('暂无数据'));
         }
 
-        final List<Map<String, dynamic>> totalSalaryPerMonth = [];
+        final List<Map<String, dynamic>> totalSalaryPerQuarter = [];
 
-        // 按时间排序月度数据
-        final sortedMonthlyData =
-            List<MonthlyComparisonData>.from(
-              chartData.comparisonData!.monthlyComparisons,
+        // 按时间排序季度数据
+        final sortedQuarterlyData =
+            List<QuarterlyComparisonData>.from(
+              chartData.comparisonData!.quarterlyComparisons,
             )..sort((a, b) {
               if (a.year != b.year) {
                 return a.year.compareTo(b.year);
               }
-              return a.month.compareTo(b.month);
+              return a.quarter.compareTo(b.quarter);
             });
 
-        for (var monthlyComparison in sortedMonthlyData) {
-          final totalSalary = monthlyComparison.totalSalary;
+        for (var quarterlyComparison in sortedQuarterlyData) {
+          final totalSalary = quarterlyComparison.totalSalary;
 
-          totalSalaryPerMonth.add({
-            'month': '${monthlyComparison.year}年${monthlyComparison.month}月',
-            'year': monthlyComparison.year,
-            'monthNum': monthlyComparison.month,
+          totalSalaryPerQuarter.add({
+            'quarter':
+                '${quarterlyComparison.year}年第${quarterlyComparison.quarter}季度',
+            'year': quarterlyComparison.year,
+            'quarterNum': quarterlyComparison.quarter,
             'totalSalary': totalSalary,
           });
         }
 
         // 按时间排序
-        totalSalaryPerMonth.sort((a, b) {
+        totalSalaryPerQuarter.sort((a, b) {
           if (a['year'] != b['year']) {
             return (a['year'] as int).compareTo(b['year'] as int);
           }
-          return (a['monthNum'] as int).compareTo(b['monthNum'] as int);
+          return (a['quarterNum'] as int).compareTo(b['quarterNum'] as int);
         });
 
-        return MonthlyTotalSalaryChart(monthlyData: totalSalaryPerMonth);
+        return QuarterlyTotalSalaryChart(quarterlyData: totalSalaryPerQuarter);
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => Center(child: Text('加载数据失败: $error')),
@@ -595,10 +611,10 @@ class MonthlyTotalSalaryChartComponent extends ConsumerWidget {
 }
 
 // 各部门平均薪资趋势图组件
-class MultiMonthDepartmentSalaryChartComponent extends ConsumerWidget {
-  final DateRangeParams params;
+class MultiQuarterDepartmentSalaryChartComponent extends ConsumerWidget {
+  final QuarterRangeParams params;
 
-  const MultiMonthDepartmentSalaryChartComponent({
+  const MultiQuarterDepartmentSalaryChartComponent({
     super.key,
     required this.params,
   });
@@ -615,33 +631,36 @@ class MultiMonthDepartmentSalaryChartComponent extends ConsumerWidget {
 
         final List<Map<String, dynamic>> result = [];
 
-        // 按时间排序月度数据
-        final sortedMonthlyData =
-            List<MonthlyComparisonData>.from(
-              chartData.comparisonData!.monthlyComparisons,
+        // 按时间排序季度数据
+        final sortedQuarterlyData =
+            List<QuarterlyComparisonData>.from(
+              chartData.comparisonData!.quarterlyComparisons,
             )..sort((a, b) {
               if (a.year != b.year) {
                 return a.year.compareTo(b.year);
               }
-              return a.month.compareTo(b.month);
+              return a.quarter.compareTo(b.quarter);
             });
 
-        for (var monthlyData in sortedMonthlyData) {
-          final monthLabel = '${monthlyData.year}年${monthlyData.month}月';
+        for (var quarterlyData in sortedQuarterlyData) {
+          final quarterLabel =
+              '${quarterlyData.year}年第${quarterlyData.quarter}季度';
 
           // 构建部门数据映射
           final departmentData = <String, double>{};
-          monthlyData.departmentStats.forEach((deptName, stat) {
+          quarterlyData.departmentStats.forEach((deptName, stat) {
             // 确保使用正确的部门统计数据
             departmentData[deptName] = stat.averageNetSalary;
           });
 
-          result.add({'month': monthLabel, 'departments': departmentData});
+          result.add({'quarter': quarterLabel, 'departments': departmentData});
         }
 
-        logger.info('MultiMonthDepartmentSalaryChartComponent: $result');
+        logger.info('MultiQuarterDepartmentSalaryChartComponent: $result');
 
-        return MultiMonthDepartmentSalaryChart(departmentMonthlyData: result);
+        return MultiQuarterDepartmentSalaryChart(
+          departmentQuarterlyData: result,
+        );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => Center(child: Text('加载数据失败: $error')),
