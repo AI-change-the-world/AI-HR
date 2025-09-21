@@ -744,7 +744,7 @@ class DataAnalysisService {
             'payDays': record.payDays,
             'actualPayDays': record.actualPayDays,
             'sickLeave': record.sickLeave,
-            'leave': record.leave,
+            'leave': record.personalLeave,
             'absence': record.absence,
             'truancy': record.truancy,
           };
@@ -1237,8 +1237,11 @@ class DataAnalysisService {
           sickLeave = double.tryParse(sickLeaveStr) ?? 0;
         }
 
-        if (record.leave != null) {
-          final leaveStr = record.leave!.replaceAll(RegExp(r'[^\d.-]'), '');
+        if (record.personalLeave != null) {
+          final leaveStr = record.personalLeave!.replaceAll(
+            RegExp(r'[^\d.-]'),
+            '',
+          );
           leave = double.tryParse(leaveStr) ?? 0;
         }
 
@@ -1336,8 +1339,11 @@ class DataAnalysisService {
           totalSickLeave += double.tryParse(sickLeaveStr) ?? 0;
         }
 
-        if (record.leave != null) {
-          final leaveStr = record.leave!.replaceAll(RegExp(r'[^\d.-]'), '');
+        if (record.personalLeave != null) {
+          final leaveStr = record.personalLeave!.replaceAll(
+            RegExp(r'[^\d.-]'),
+            '',
+          );
           totalLeave += double.tryParse(leaveStr) ?? 0;
         }
       }
@@ -1447,8 +1453,11 @@ class DataAnalysisService {
               (double.tryParse(sickLeaveStr) ?? 0);
         }
 
-        if (record.leave != null) {
-          final leaveStr = record.leave!.replaceAll(RegExp(r'[^\d.-]'), '');
+        if (record.personalLeave != null) {
+          final leaveStr = record.personalLeave!.replaceAll(
+            RegExp(r'[^\d.-]'),
+            '',
+          );
           monthlyStats[monthKey]!['totalLeave'] =
               monthlyStats[monthKey]!['totalLeave']! +
               (double.tryParse(leaveStr) ?? 0);
@@ -1763,7 +1772,7 @@ class DataAnalysisService {
 
         // 如果是单年查询，使用查询参数
         if (year != null) {
-          statYear = year!;
+          statYear = year;
         }
         // 如果有具体的月份范围，从第一条记录中获取月份信息
         if (filteredSalaryLists.isNotEmpty) {
