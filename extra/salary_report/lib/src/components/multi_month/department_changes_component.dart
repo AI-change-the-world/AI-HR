@@ -21,6 +21,7 @@ class DepartmentChangesComponent extends ConsumerWidget {
         // 计算部门人数变化情况
         final departmentChangesMap = _calculateDepartmentChanges(
           departmentChanges.comparisonData!,
+          params, // 传递参数用于检查是否是时间范围的起始月
         );
 
         // 检查是否有任何变化
@@ -141,6 +142,7 @@ class DepartmentChangesComponent extends ConsumerWidget {
   /// 计算部门人数变化情况
   Map<String, List<Map<String, dynamic>>> _calculateDepartmentChanges(
     MultiMonthComparisonData comparisonData,
+    DateRangeParams params, // 添加参数用于检查是否是时间范围的起始月
   ) {
     final Map<String, List<Map<String, dynamic>>> departmentChanges = {};
 
@@ -212,16 +214,26 @@ class DepartmentChangesComponent extends ConsumerWidget {
           }
         });
       } else {
-        // 第一个月，记录所有部门为新增
-        currentMonth.departmentStats.forEach((deptName, stat) {
-          departmentChanges[monthKey]!.add({
-            'department': deptName,
-            'change': stat.employeeCount,
-            'type': 'new', // 新增部门
-            'currentCount': stat.employeeCount,
-            'previousCount': 0,
+        // 第一个月，但只有当它不是用户指定的时间范围起始月时才记录变化
+        // 检查当前月份是否是用户指定的时间范围起始月
+        bool isUserSpecifiedStartMonth =
+            currentMonth.year == params.startYear &&
+            currentMonth.month == params.startMonth;
+
+        // 如果是用户指定的时间范围起始月，则不标记为新增部门
+        // 因为我们没有更早的数据来进行比较
+        if (!isUserSpecifiedStartMonth) {
+          currentMonth.departmentStats.forEach((deptName, stat) {
+            departmentChanges[monthKey]!.add({
+              'department': deptName,
+              'change': stat.employeeCount,
+              'type': 'new', // 新增部门
+              'currentCount': stat.employeeCount,
+              'previousCount': 0,
+            });
           });
-        });
+        }
+        // 如果是用户指定的时间范围起始月，则不添加任何变化记录
       }
     }
 

@@ -151,6 +151,8 @@ class MonthlyComparisonData {
   final int employeeCount;
   final double totalSalary;
   final double averageSalary;
+  final double highestSalary; // 添加最高工资字段
+  final double lowestSalary; // 添加最低工资字段
   final Map<String, DepartmentSalaryStats> departmentStats;
   final Map<String, SalaryRangeStats> salaryRangeStats;
 
@@ -160,6 +162,8 @@ class MonthlyComparisonData {
     required this.employeeCount,
     required this.totalSalary,
     required this.averageSalary,
+    required this.highestSalary, // 添加最高工资字段
+    required this.lowestSalary, // 添加最低工资字段
     required this.departmentStats,
     required this.salaryRangeStats,
   });
@@ -518,14 +522,30 @@ class DataAnalysisService {
         int totalEmployeeCount = 0;
         double totalSalary = 0.0;
         double averageSalary = 0.0;
+        double highestSalary = 0.0; // 初始化最高工资
+        double lowestSalary = double.infinity; // 初始化最低工资
 
         for (var stat in departmentStatsList) {
           totalEmployeeCount += stat.employeeCount;
           totalSalary += stat.totalNetSalary;
+
+          // 更新最高和最低工资
+          if (stat.averageNetSalary > highestSalary) {
+            highestSalary = stat.averageNetSalary;
+          }
+
+          if (stat.averageNetSalary < lowestSalary) {
+            lowestSalary = stat.averageNetSalary;
+          }
         }
 
         if (totalEmployeeCount > 0) {
           averageSalary = totalSalary / totalEmployeeCount;
+        }
+
+        // 确保最低工资有合理的默认值
+        if (lowestSalary == double.infinity) {
+          lowestSalary = 0.0;
         }
 
         monthlyComparisons.add(
@@ -535,6 +555,8 @@ class DataAnalysisService {
             employeeCount: totalEmployeeCount,
             totalSalary: totalSalary,
             averageSalary: averageSalary,
+            highestSalary: highestSalary,
+            lowestSalary: lowestSalary,
             departmentStats: departmentStatsMap,
             salaryRangeStats: salaryRangeStatsMap,
           ),

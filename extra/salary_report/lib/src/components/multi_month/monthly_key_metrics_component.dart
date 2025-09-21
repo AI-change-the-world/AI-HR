@@ -81,6 +81,16 @@ class MonthlyKeyMetricsComponent extends ConsumerWidget {
                   '¥${monthlyData.averageSalary.toStringAsFixed(2)}',
                   Icons.trending_up,
                 ),
+                _buildStatCard(
+                  '最高工资',
+                  '¥${monthlyData.highestSalary.toStringAsFixed(2)}',
+                  Icons.arrow_upward,
+                ),
+                _buildStatCard(
+                  '最低工资',
+                  '¥${monthlyData.lowestSalary.toStringAsFixed(2)}',
+                  Icons.arrow_downward,
+                ),
               ],
             ),
           ],
