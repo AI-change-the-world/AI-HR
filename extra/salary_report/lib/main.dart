@@ -11,6 +11,7 @@ import 'package:salary_report/src/pages/data_analysis/monthly/monthly_analysis_p
 import 'package:salary_report/src/pages/data_analysis/monthly/multi_month_analysis_page.dart';
 import 'package:salary_report/src/pages/data_analysis/yearly/yearly_analysis_page.dart';
 import 'package:salary_report/src/pages/data_analysis/quarterly/quarterly_analysis_page.dart';
+import 'package:salary_report/src/pages/data_analysis/quarterly/multi_quarter_analysis_page.dart';
 import 'package:salary_report/src/pages/visualization/chart/chart_page.dart';
 import 'package:salary_report/src/pages/visualization/report/report_page.dart';
 import 'package:salary_report/src/pages/visualization/report/comprehensive_report_page.dart';
@@ -145,15 +146,19 @@ class MyApp extends StatelessWidget {
                         : null;
                     // 获取传递的额外数据
                     final extra = state.extra as Map<String, dynamic>?;
+                    final isMultiQuarter =
+                        extra?['isMultiQuarter'] as bool? ?? false;
 
-                    return QuarterlyAnalysisPage(
-                      year: year,
-                      quarter: quarter,
-                      isMultiQuarter:
-                          extra?['isMultiQuarter'] as bool? ?? false,
-                      endYear: endYear,
-                      endQuarter: endQuarter,
-                    );
+                    if (isMultiQuarter) {
+                      return MultiQuarterAnalysisPage(
+                        year: year,
+                        quarter: quarter,
+                        endYear: endYear ?? year,
+                        endQuarter: endQuarter ?? quarter,
+                      );
+                    }
+
+                    return QuarterlyAnalysisPage(year: year, quarter: quarter);
                   },
                 ),
               ],

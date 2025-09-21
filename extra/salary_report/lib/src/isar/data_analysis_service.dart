@@ -131,6 +131,44 @@ class DepartmentSalaryRangeStats {
   });
 }
 
+// 季度对比数据模型
+class QuarterlyComparisonData {
+  final int year;
+  final int quarter;
+  final int employeeCount;
+  final double totalSalary;
+  final double averageSalary;
+  final double highestSalary;
+  final double lowestSalary;
+  final Map<String, DepartmentSalaryStats> departmentStats;
+  final Map<String, SalaryRangeStats> salaryRangeStats;
+
+  QuarterlyComparisonData({
+    required this.year,
+    required this.quarter,
+    required this.employeeCount,
+    required this.totalSalary,
+    required this.averageSalary,
+    required this.highestSalary,
+    required this.lowestSalary,
+    required this.departmentStats,
+    required this.salaryRangeStats,
+  });
+}
+
+// 多季度对比数据模型
+class MultiQuarterComparisonData {
+  final List<QuarterlyComparisonData> quarterlyComparisons;
+  final DateTime startDate;
+  final DateTime endDate;
+
+  MultiQuarterComparisonData({
+    required this.quarterlyComparisons,
+    required this.startDate,
+    required this.endDate,
+  });
+}
+
 // 多月对比数据模型
 class MultiMonthComparisonData {
   final List<MonthlyComparisonData> monthlyComparisons;
@@ -1901,6 +1939,189 @@ class DataAnalysisService {
     }
 
     return mergedSummaryData.isEmpty ? null : mergedSummaryData;
+  }
+
+  /// 多季度数据对比功能
+  Future<MultiQuarterComparisonData?> getMultiQuarterComparisonData(
+    int startYear,
+    int startQuarter,
+    int endYear,
+    int endQuarter,
+  ) async {
+    try {
+      // 验证日期范围
+      // 将季度转换为月份进行比较
+      final startMonth = (startQuarter - 1) * 3 + 1;
+      final endMonth = (endQuarter - 1) * 3 + 3;
+
+      final startDateTime = DateTime(startYear, startMonth);
+      final endDateTime = DateTime(endYear, endMonth);
+
+      if (startDateTime.isAfter(endDateTime)) {
+        logger.warning('Start date is after end date');
+        return null;
+      }
+
+      // 生成需要查询的季度列表
+      final quarterList = _generateQuarterList(
+        startYear,
+        startQuarter,
+        endYear,
+        endQuarter,
+      );
+
+      logger.info('Generated quarter list: $quarterList');
+      final quarterlyComparisons = <QuarterlyComparisonData>[];
+
+      // 遍历季度列表获取数据
+      for (var quarterInfo in quarterList) {
+        final year = quarterInfo['year']!;
+        final quarter = quarterInfo['quarter']!;
+
+        // 计算季度的月份范围
+        final quarterStartMonth = (quarter - 1) * 3 + 1;
+        final quarterEndMonth = quarter * 3;
+
+        // 获取该季度所有月份的部门统计数据
+        final departmentStatsList = <DepartmentSalaryStats>[];
+
+        // 遍历季度内的每个月份
+        for (int month = quarterStartMonth; month <= quarterEndMonth; month++) {
+          final monthStats = await getDepartmentAggregation(year, month);
+          departmentStatsList.addAll(monthStats);
+        }
+
+        // 合并季度内的部门统计数据
+        final departmentStatsMap = <String, DepartmentSalaryStats>{};
+        final departmentMonthlyData = <String, List<DepartmentSalaryStats>>{};
+
+        // 按部门分组月度数据
+        for (var stat in departmentStatsList) {
+          if (!departmentMonthlyData.containsKey(stat.department)) {
+            departmentMonthlyData[stat.department] = [];
+          }
+          departmentMonthlyData[stat.department]!.add(stat);
+        }
+
+        // 计算每个部门的季度统计数据
+        departmentMonthlyData.forEach((deptName, monthlyStats) {
+          int totalEmployeeCount = 0;
+          double totalNetSalary = 0.0;
+
+          for (var stat in monthlyStats) {
+            totalEmployeeCount += stat.employeeCount;
+            totalNetSalary += stat.totalNetSalary;
+          }
+
+          final averageNetSalary = monthlyStats.isNotEmpty
+              ? totalNetSalary / totalEmployeeCount
+              : 0.0;
+
+          departmentStatsMap[deptName] = DepartmentSalaryStats(
+            department: deptName,
+            totalNetSalary: totalNetSalary,
+            averageNetSalary: averageNetSalary,
+            employeeCount: totalEmployeeCount,
+            year: year,
+            month: quarterStartMonth, // 使用季度起始月份作为代表
+          );
+        });
+
+        // 获取薪资范围统计数据（使用季度中间月份）
+        final middleMonth = (quarterStartMonth + quarterEndMonth) ~/ 2;
+        final salaryRangeStatsList = await getSalaryRangeAggregation(
+          year,
+          middleMonth,
+        );
+        final salaryRangeStatsMap = <String, SalaryRangeStats>{};
+        for (var stat in salaryRangeStatsList) {
+          salaryRangeStatsMap[stat.range] = stat;
+        }
+
+        // 计算总体统计数据
+        int totalEmployeeCount = 0;
+        double totalSalary = 0.0;
+        double averageSalary = 0.0;
+        double highestSalary = 0.0; // 初始化最高工资
+        double lowestSalary = double.infinity; // 初始化最低工资
+
+        for (var stat in departmentStatsMap.values) {
+          totalEmployeeCount += stat.employeeCount;
+          totalSalary += stat.totalNetSalary;
+
+          // 更新最高和最低工资
+          if (stat.averageNetSalary > highestSalary) {
+            highestSalary = stat.averageNetSalary;
+          }
+
+          if (stat.averageNetSalary < lowestSalary) {
+            lowestSalary = stat.averageNetSalary;
+          }
+        }
+
+        if (totalEmployeeCount > 0) {
+          averageSalary = totalSalary / totalEmployeeCount;
+        }
+
+        // 确保最低工资有合理的默认值
+        if (lowestSalary == double.infinity) {
+          lowestSalary = 0.0;
+        }
+
+        quarterlyComparisons.add(
+          QuarterlyComparisonData(
+            year: year,
+            quarter: quarter,
+            employeeCount: totalEmployeeCount,
+            totalSalary: totalSalary,
+            averageSalary: averageSalary,
+            highestSalary: highestSalary,
+            lowestSalary: lowestSalary,
+            departmentStats: departmentStatsMap,
+            salaryRangeStats: salaryRangeStatsMap,
+          ),
+        );
+      }
+
+      logger.info('Returning quarterly comparison data');
+
+      return MultiQuarterComparisonData(
+        quarterlyComparisons: quarterlyComparisons,
+        startDate: startDateTime,
+        endDate: endDateTime,
+      );
+    } catch (e) {
+      logger.severe('Error getting multi-quarter comparison data: $e');
+      rethrow; // 重新抛出异常而不是返回null
+    }
+  }
+
+  // 生成季度列表的辅助函数
+  List<Map<String, int>> _generateQuarterList(
+    int startYear,
+    int startQuarter,
+    int endYear,
+    int endQuarter,
+  ) {
+    final quarterList = <Map<String, int>>[];
+
+    int currentYear = startYear;
+    int currentQuarter = startQuarter;
+
+    while (currentYear < endYear ||
+        (currentYear == endYear && currentQuarter <= endQuarter)) {
+      quarterList.add({'year': currentYear, 'quarter': currentQuarter});
+
+      // 移动到下一个季度
+      if (currentQuarter == 4) {
+        currentYear++;
+        currentQuarter = 1;
+      } else {
+        currentQuarter++;
+      }
+    }
+
+    return quarterList;
   }
 
   /// 按季度统计部门工资
