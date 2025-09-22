@@ -13,6 +13,7 @@ import 'package:toastification/toastification.dart';
 import 'package:salary_report/src/components/monthly_detail_components.dart';
 import 'package:salary_report/src/common/scroll_screenshot.dart'; // 添加截图导入
 import 'package:salary_report/src/common/toast.dart'; // 添加Toast导入
+import 'package:salary_report/src/components/monthly_employee_changes_component.dart'; // 导入月度员工变化组件
 
 class YearlyAnalysisPage extends StatefulWidget {
   const YearlyAnalysisPage({
@@ -167,11 +168,15 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
 
     // 从数据库获取真实的月度趋势数据和年度总数据
     final monthlyTrendData = <Map<String, dynamic>>[];
+    final monthlyEmployeeChanges = <Map<String, dynamic>>[]; // 每月员工变化数据
     double totalSalary = 0; // 年度总工资（12个月工资总和）
     int totalEmployeeRecords = 0; // 年度总员工记录数（不去重，用于计算平均工资）
     double highestSalary = 0; // 最高工资
     double lowestSalary = double.infinity; // 最低工资
     final Set<String> uniqueEmployeeIds = <String>{}; // 用于去重统计员工数（姓名+身份证）
+
+    // 用于计算员工变化的数据结构
+    List<Map<String, dynamic>> monthlyEmployeeData = [];
 
     // 遍历12个月获取数据
     for (int month = 1; month <= 12; month++) {
@@ -182,6 +187,8 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
 
       // 计算该月的总工资
       double monthlyTotalSalary = 0;
+      Set<MinimalEmployeeInfo> currentMonthEmployees = <MinimalEmployeeInfo>{};
+
       if (monthlyData != null) {
         for (var record in monthlyData.records) {
           // 累加每个人的工资到月度总工资
@@ -192,6 +199,16 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
             );
             final salary = double.tryParse(salaryStr) ?? 0;
             monthlyTotalSalary += salary;
+          }
+
+          // 收集员工信息用于计算员工变化
+          if (record.name != null && record.department != null) {
+            currentMonthEmployees.add(
+              MinimalEmployeeInfo(
+                name: record.name!,
+                department: record.department!,
+              ),
+            );
           }
 
           // 收集员工唯一标识用于去重统计（姓名+身份证，若无身份证则仅用姓名）
@@ -224,8 +241,55 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
 
       monthlyTrendData.add({'month': '$month月', 'salary': monthlyTotalSalary});
 
+      // 存储每月员工数据用于计算变化
+      monthlyEmployeeData.add({
+        'month': month,
+        'employees': currentMonthEmployees,
+        'employeeCount': currentMonthEmployees.length,
+      });
+
       // 累加到年度总工资
       totalSalary += monthlyTotalSalary;
+    }
+
+    // 计算每月员工变化情况
+    for (int i = 0; i < monthlyEmployeeData.length; i++) {
+      final currentMonthData = monthlyEmployeeData[i];
+      final currentMonth = currentMonthData['month'] as int;
+      final currentEmployees =
+          currentMonthData['employees'] as Set<MinimalEmployeeInfo>;
+      final currentEmployeeCount = currentMonthData['employeeCount'] as int;
+
+      if (i > 0) {
+        final previousMonthData = monthlyEmployeeData[i - 1];
+        final previousEmployees =
+            previousMonthData['employees'] as Set<MinimalEmployeeInfo>;
+
+        // 计算新入职和离职员工
+        final newEmployees = currentEmployees
+            .difference(previousEmployees)
+            .toList();
+        final resignedEmployees = previousEmployees
+            .difference(currentEmployees)
+            .toList();
+
+        monthlyEmployeeChanges.add({
+          'month': currentMonth,
+          'employeeCount': currentEmployeeCount,
+          'newEmployees': newEmployees,
+          'resignedEmployees': resignedEmployees,
+          'netChange': newEmployees.length - resignedEmployees.length,
+        });
+      } else {
+        // 第一个月，没有前一个月数据进行比较
+        monthlyEmployeeChanges.add({
+          'month': currentMonth,
+          'employeeCount': currentEmployeeCount,
+          'newEmployees': <MinimalEmployeeInfo>[],
+          'resignedEmployees': <MinimalEmployeeInfo>[],
+          'netChange': 0,
+        });
+      }
     }
 
     // 如果没有数据，设置默认值
@@ -248,6 +312,7 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
       'highestSalary': highestSalary,
       'lowestSalary': lowestSalary,
       'monthlyTrend': monthlyTrendData,
+      'monthlyEmployeeChanges': monthlyEmployeeChanges, // 每月员工变化数据
       'departmentStats': departmentStats, // 年度部门统计数据
       'attendanceStats': attendanceStats, // 年度考勤统计数据
       'monthlyDepartmentStats': monthlyDepartmentStats, // 每月部门统计数据
@@ -411,6 +476,9 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
     final monthlyLeaveDetails =
         analysisData['monthlyLeaveDetails']
             as Map<String, List<AttendanceStats>>;
+    final monthlyEmployeeChanges =
+        analysisData['monthlyEmployeeChanges']
+            as List<Map<String, dynamic>>; // 获取每月员工变化数据
 
     return Stack(
       children: [
@@ -516,6 +584,18 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
                         Icons.arrow_downward,
                       ),
                     ],
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // 每月员工变动情况
+                  const Text(
+                    '每月员工变动情况',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  MonthlyEmployeeChangesComponent(
+                    monthlyChanges: monthlyEmployeeChanges,
                   ),
 
                   const SizedBox(height: 24),

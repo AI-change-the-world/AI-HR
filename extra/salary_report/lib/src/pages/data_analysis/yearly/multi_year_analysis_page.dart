@@ -17,6 +17,9 @@ import 'package:salary_report/src/components/multi_year/yearly_leave_ratio_stats
 import 'package:salary_report/src/components/multi_year/department_changes_component.dart';
 import 'package:salary_report/src/common/scroll_screenshot.dart'; // 添加截图导入
 import 'package:salary_report/src/common/toast.dart'; // 添加Toast导入
+import 'package:salary_report/src/components/monthly_employee_changes_component.dart'; // 导入月度员工变化组件
+import 'package:salary_report/src/services/monthly_analysis_service.dart'; // 导入月度分析服务
+import 'package:salary_report/src/isar/database.dart'; // 导入数据库
 
 // 多年分析页面
 class MultiYearAnalysisPage extends ConsumerStatefulWidget {
@@ -201,11 +204,24 @@ class _MultiYearAnalysisPageState extends ConsumerState<MultiYearAnalysisPage> {
 
   @override
   Widget build(BuildContext context) {
-    final title = '${widget.year}年 - ${widget.endYear}年 工资分析';
+    final keyMetricsState = ref.watch(keyMetricsProvider(_yearRangeParams));
+    final departmentStatsState = ref.watch(
+      departmentStatsProvider(_yearRangeParams),
+    );
+    final attendanceStatsState = ref.watch(
+      attendanceStatsProvider(_yearRangeParams),
+    );
+    final leaveRatioStatsState = ref.watch(
+      leaveRatioStatsProvider(_yearRangeParams),
+    );
+    final departmentChangesState = ref.watch(
+      departmentChangesProvider(_yearRangeParams),
+    );
+    final chartDataState = ref.watch(chartDataProvider(_yearRangeParams));
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
+        title: Text('${widget.year}年-${widget.endYear}年 工资分析'),
         actions: [
           IconButton(
             icon: const Icon(Icons.screenshot_monitor),
@@ -250,160 +266,79 @@ class _MultiYearAnalysisPageState extends ConsumerState<MultiYearAnalysisPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 分页控制
-                    _buildPaginationControls(),
-
-                    const SizedBox(height: 24),
-
-                    // 每年关键指标（分页显示）
-                    const Text(
-                      '每年关键指标',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
+                    // 关键指标组件
                     YearlyKeyMetricsComponent(params: _yearRangeParams),
-
                     const SizedBox(height: 24),
 
-                    // 每年部门统计（分页显示）
-                    const Text(
-                      '每年部门统计',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    // 每年员工变动情况（需要从服务中获取数据）
+                    FutureBuilder<List<Map<String, dynamic>>>(
+                      future: _calculateYearlyEmployeeChanges(_yearRangeParams),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Card(
+                            child: Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: Center(child: CircularProgressIndicator()),
+                            ),
+                          );
+                        } else if (snapshot.hasError) {
+                          return Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Center(
+                                child: Text('加载员工变动数据失败: ${snapshot.error}'),
+                              ),
+                            ),
+                          );
+                        } else if (!snapshot.hasData ||
+                            snapshot.data!.isEmpty) {
+                          return const Card(
+                            child: Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: Center(child: Text('暂无员工变动数据')),
+                            ),
+                          );
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '每年员工变动情况',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            MonthlyEmployeeChangesComponent(
+                              monthlyChanges: snapshot.data!,
+                            ),
+                          ],
+                        );
+                      },
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 24),
+
+                    // 部门统计组件
                     YearlyDepartmentStatsComponent(params: _yearRangeParams),
-
                     const SizedBox(height: 24),
 
-                    // 部门人数变化说明
-                    const Text(
-                      '部门人数变化说明',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    YearlyDepartmentChangesComponent(params: _yearRangeParams),
-
-                    const SizedBox(height: 24),
-
-                    // 每年考勤统计（分页显示）
-                    const Text(
-                      '每年考勤统计',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
+                    // 考勤统计组件
                     YearlyAttendanceStatsComponent(params: _yearRangeParams),
-
                     const SizedBox(height: 24),
 
-                    // 每年请假比例统计（分页显示）
-                    const Text(
-                      '每年请假比例统计',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
+                    // 请假比例统计组件
                     YearlyLeaveRatioStatsComponent(params: _yearRangeParams),
-
                     const SizedBox(height: 24),
 
-                    // 每年人数变化趋势图
-                    const Text(
-                      '每年人数变化趋势',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Card(
-                      child: Container(
-                        height: 300,
-                        padding: const EdgeInsets.all(16.0),
-                        child: YearlyEmployeeCountChartComponent(
-                          params: _yearRangeParams,
-                        ),
-                      ),
-                    ),
-
+                    // 部门变化组件
+                    YearlyDepartmentChangesComponent(params: _yearRangeParams),
                     const SizedBox(height: 24),
 
-                    // 每年平均薪资变化趋势图
-                    const Text(
-                      '每年平均薪资变化趋势',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Card(
-                      child: Container(
-                        height: 300,
-                        padding: const EdgeInsets.all(16.0),
-                        child: YearlyAverageSalaryChartComponent(
-                          params: _yearRangeParams,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // 每年总工资变化趋势图
-                    const Text(
-                      '每年总工资变化趋势',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Card(
-                      child: Container(
-                        height: 300,
-                        padding: const EdgeInsets.all(16.0),
-                        child: YearlyTotalSalaryChartComponent(
-                          params: _yearRangeParams,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // 各部门平均薪资趋势图
-                    const Text(
-                      '各部门平均薪资趋势',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    Card(
-                      child: Container(
-                        height: 300,
-                        padding: const EdgeInsets.all(16.0),
-                        child: MultiYearDepartmentSalaryChartComponent(
-                          params: _yearRangeParams,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // 分页控制
-                    _buildPaginationControls(),
+                    // 图表组件
+                    _buildChartSection(chartDataState),
                   ],
                 ),
               ),
@@ -451,47 +386,242 @@ class _MultiYearAnalysisPageState extends ConsumerState<MultiYearAnalysisPage> {
     );
   }
 
-  /// 构建分页控制组件
-  Widget _buildPaginationControls() {
-    final keyMetricsState = ref.watch(keyMetricsProvider(_yearRangeParams));
-    final paginationState = ref.watch(paginationProvider);
+  /// 计算每年员工变动情况
+  Future<List<Map<String, dynamic>>> _calculateYearlyEmployeeChanges(
+    YearRangeParams params,
+  ) async {
+    try {
+      final database = IsarDatabase();
+      final monthlyService = MonthlyAnalysisService(database);
+      final yearlyChanges = <Map<String, dynamic>>[];
 
-    return keyMetricsState.when(
-      data: (keyMetrics) {
-        if (keyMetrics.yearlyData == null) {
-          return const SizedBox.shrink();
+      // 遍历年份范围
+      for (int year = params.startYear; year <= params.endYear; year++) {
+        // 获取该年的月度数据
+        final monthlyData = <Map<String, dynamic>>[];
+
+        // 获取每个月的员工数据
+        for (int month = 1; month <= 12; month++) {
+          final salaryData = await monthlyService.getMonthlySalaryData(
+            year,
+            month,
+          );
+          final employees = <MinimalEmployeeInfo>{};
+
+          if (salaryData != null) {
+            for (var record in salaryData.records) {
+              if (record.name != null && record.department != null) {
+                employees.add(
+                  MinimalEmployeeInfo(
+                    name: record.name!,
+                    department: record.department!,
+                  ),
+                );
+              }
+            }
+          }
+
+          monthlyData.add({
+            'monthKey': '$year-$month',
+            'employees': employees,
+            'employeeCount': employees.length,
+          });
         }
 
-        final totalYears = keyMetrics.yearlyData!.length;
-        final totalPages = (totalYears / paginationState.itemsPerPage).ceil();
+        // 计算该年每个月的员工变化
+        for (int i = 0; i < monthlyData.length; i++) {
+          final currentMonthData = monthlyData[i];
+          final currentMonthKey = currentMonthData['monthKey'] as String;
+          final currentEmployees =
+              currentMonthData['employees'] as Set<MinimalEmployeeInfo>;
+          final currentEmployeeCount = currentMonthData['employeeCount'] as int;
 
-        if (totalPages <= 1) {
-          return const SizedBox.shrink();
+          if (i > 0) {
+            final previousMonthData = monthlyData[i - 1];
+            final previousEmployees =
+                previousMonthData['employees'] as Set<MinimalEmployeeInfo>;
+
+            // 计算新入职和离职员工
+            final newEmployees = currentEmployees
+                .difference(previousEmployees)
+                .toList();
+            final resignedEmployees = previousEmployees
+                .difference(currentEmployees)
+                .toList();
+
+            yearlyChanges.add({
+              'month': int.parse(currentMonthKey.split('-')[1]),
+              'year': int.parse(currentMonthKey.split('-')[0]),
+              'employeeCount': currentEmployeeCount,
+              'newEmployees': newEmployees,
+              'resignedEmployees': resignedEmployees,
+              'netChange': newEmployees.length - resignedEmployees.length,
+            });
+          } else {
+            // 第一个月，没有前一个月数据进行比较
+            yearlyChanges.add({
+              'month': int.parse(currentMonthKey.split('-')[1]),
+              'year': int.parse(currentMonthKey.split('-')[0]),
+              'employeeCount': currentEmployeeCount,
+              'newEmployees': <MinimalEmployeeInfo>[],
+              'resignedEmployees': <MinimalEmployeeInfo>[],
+              'netChange': 0,
+            });
+          }
+        }
+      }
+
+      return yearlyChanges;
+    } catch (e) {
+      logger.severe('Error calculating yearly employee changes: $e');
+      return [];
+    }
+  }
+
+  /// 构建图表部分
+  Widget _buildChartSection(AsyncValue<ChartDataState> chartDataState) {
+    return chartDataState.when(
+      data: (chartData) {
+        if (chartData.comparisonData == null) {
+          return const Center(child: Text('暂无数据'));
         }
 
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        final List<Map<String, dynamic>> employeeCountPerYear = [];
+        final List<Map<String, dynamic>> averageSalaryPerYear = [];
+        final List<Map<String, dynamic>> totalSalaryPerYear = [];
+        final List<Map<String, dynamic>> result = [];
+
+        // 按时间排序年度数据
+        final sortedYearlyData =
+            List<YearlyComparisonData>.from(
+              chartData.comparisonData!.yearlyComparisons,
+            )..sort((a, b) {
+              return a.year.compareTo(b.year);
+            });
+
+        for (var yearlyComparison in sortedYearlyData) {
+          // 使用去重后的员工数量，而不是直接使用employeeCount
+          int totalEmployees = yearlyComparison.totalEmployeeCount;
+
+          employeeCountPerYear.add({
+            'year': '${yearlyComparison.year}年',
+            'yearNum': yearlyComparison.year,
+            'employeeCount': totalEmployees,
+          });
+
+          final averageSalary = yearlyComparison.averageSalary;
+
+          averageSalaryPerYear.add({
+            'year': '${yearlyComparison.year}年',
+            'yearNum': yearlyComparison.year,
+            'averageSalary': averageSalary,
+          });
+
+          final totalSalary = yearlyComparison.totalSalary;
+
+          totalSalaryPerYear.add({
+            'year': '${yearlyComparison.year}年',
+            'yearNum': yearlyComparison.year,
+            'totalSalary': totalSalary,
+          });
+
+          final yearLabel = '${yearlyComparison.year}年';
+
+          // 构建部门数据映射
+          final departmentData = <String, double>{};
+          yearlyComparison.departmentStats.forEach((deptName, stat) {
+            // 确保使用正确的部门统计数据
+            departmentData[deptName] = stat.averageNetSalary;
+          });
+
+          result.add({'year': yearLabel, 'departments': departmentData});
+        }
+
+        // 按时间排序
+        employeeCountPerYear.sort((a, b) {
+          return (a['yearNum'] as int).compareTo(b['yearNum'] as int);
+        });
+
+        averageSalaryPerYear.sort((a, b) {
+          return (a['yearNum'] as int).compareTo(b['yearNum'] as int);
+        });
+
+        totalSalaryPerYear.sort((a, b) {
+          return (a['yearNum'] as int).compareTo(b['yearNum'] as int);
+        });
+
+        logger.info('averageSalaryPerYear: $averageSalaryPerYear');
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            IconButton(
-              icon: const Icon(Icons.chevron_left),
-              onPressed: paginationState.currentPage > 0
-                  ? () => ref.read(paginationProvider.notifier).previousPage()
-                  : null,
+            const Text(
+              '每年人数变化趋势',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            Text('${paginationState.currentPage + 1} / $totalPages'),
-            IconButton(
-              icon: const Icon(Icons.chevron_right),
-              onPressed: paginationState.currentPage < totalPages - 1
-                  ? () => ref
-                        .read(paginationProvider.notifier)
-                        .nextPage(totalPages)
-                  : null,
+            const SizedBox(height: 12),
+            Card(
+              child: Container(
+                height: 300,
+                padding: const EdgeInsets.all(16.0),
+                child: YearlyEmployeeCountChart(
+                  yearlyData: employeeCountPerYear,
+                ),
+              ),
             ),
+            const SizedBox(height: 24),
+
+            const Text(
+              '每年平均薪资变化趋势',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: Container(
+                height: 300,
+                padding: const EdgeInsets.all(16.0),
+                child: YearlyAverageSalaryChart(
+                  yearlyData: averageSalaryPerYear,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            const Text(
+              '每年总工资变化趋势',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: Container(
+                height: 300,
+                padding: const EdgeInsets.all(16.0),
+                child: YearlyTotalSalaryChart(yearlyData: totalSalaryPerYear),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            const Text(
+              '各部门平均薪资趋势',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+
+            Card(
+              child: Container(
+                height: 300,
+                padding: const EdgeInsets.all(16.0),
+                child: MultiYearDepartmentSalaryChart(
+                  departmentYearlyData: result,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
           ],
         );
       },
-      loading: () => const SizedBox.shrink(),
-      error: (error, stackTrace) => const SizedBox.shrink(),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stackTrace) => Center(child: Text('加载数据失败: $error')),
     );
   }
 }

@@ -12,6 +12,7 @@ import 'package:toastification/toastification.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
 import 'package:salary_report/src/common/scroll_screenshot.dart'; // 添加截图导入
 import 'package:salary_report/src/common/toast.dart'; // 添加Toast导入
+import 'package:salary_report/src/components/monthly_employee_changes_component.dart'; // 导入月度员工变化组件
 
 class QuarterlyAnalysisPage extends StatefulWidget {
   const QuarterlyAnalysisPage({
@@ -42,6 +43,7 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
   List<DepartmentSalaryRangeStats> _departmentSalaryRangeStats =
       []; // 部门薪资区间统计数据
   Map<String, dynamic>? _previousQuarterData; // 上一季度数据
+  List<Map<String, dynamic>> _monthlyEmployeeChanges = []; // 每月员工变动数据
 
   // 添加截图相关变量
   final GlobalKey repaintKey = GlobalKey();
@@ -134,6 +136,7 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
       // 获取每月详细数据用于图表展示和对比
       final monthlyData = <Map<String, dynamic>>[];
       final List<Map<String, dynamic>> departmentComparisonData = [];
+      final List<Map<String, dynamic>> monthlyEmployeeChanges = []; // 每月员工变动数据
       double totalSalary = 0;
       int totalEmployees = 0;
       double highestSalary = 0;
@@ -141,6 +144,9 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
 
       // 收集季度内每个月的员工姓名用于去重统计
       final uniqueEmployees = <String>{};
+
+      // 用于计算员工变动的数据结构
+      List<Map<String, dynamic>> monthlyEmployeeData = [];
 
       for (int month = startMonth; month <= endMonth; month++) {
         // 获取每月的部门统计数据
@@ -206,17 +212,71 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
           });
         }
 
-        // 收集该月的员工姓名用于去重统计
+        // 收集该月的员工数据用于计算员工变动
         final monthlySalaryData = await _salaryDataService.getMonthlySalaryData(
           widget.year,
           month,
         );
+
+        Set<MinimalEmployeeInfo> currentMonthEmployees =
+            <MinimalEmployeeInfo>{};
         if (monthlySalaryData != null) {
           for (var record in monthlySalaryData.records) {
-            if (record.name != null) {
-              uniqueEmployees.add(record.name!);
+            if (record.name != null && record.department != null) {
+              currentMonthEmployees.add(
+                MinimalEmployeeInfo(
+                  name: record.name!,
+                  department: record.department!,
+                ),
+              );
             }
           }
+        }
+
+        monthlyEmployeeData.add({
+          'month': month,
+          'employees': currentMonthEmployees,
+          'employeeCount': currentMonthEmployees.length,
+        });
+      }
+
+      // 计算每月员工变动情况
+      for (int i = 0; i < monthlyEmployeeData.length; i++) {
+        final currentMonthData = monthlyEmployeeData[i];
+        final currentMonth = currentMonthData['month'] as int;
+        final currentEmployees =
+            currentMonthData['employees'] as Set<MinimalEmployeeInfo>;
+        final currentEmployeeCount = currentMonthData['employeeCount'] as int;
+
+        if (i > 0) {
+          final previousMonthData = monthlyEmployeeData[i - 1];
+          final previousEmployees =
+              previousMonthData['employees'] as Set<MinimalEmployeeInfo>;
+
+          // 计算新入职和离职员工
+          final newEmployees = currentEmployees
+              .difference(previousEmployees)
+              .toList();
+          final resignedEmployees = previousEmployees
+              .difference(currentEmployees)
+              .toList();
+
+          monthlyEmployeeChanges.add({
+            'month': currentMonth,
+            'employeeCount': currentEmployeeCount,
+            'newEmployees': newEmployees,
+            'resignedEmployees': resignedEmployees,
+            'netChange': newEmployees.length - resignedEmployees.length,
+          });
+        } else {
+          // 第一个月，没有前一个月数据进行比较
+          monthlyEmployeeChanges.add({
+            'month': currentMonth,
+            'employeeCount': currentEmployeeCount,
+            'newEmployees': <MinimalEmployeeInfo>[],
+            'resignedEmployees': <MinimalEmployeeInfo>[],
+            'netChange': 0,
+          });
         }
       }
 
@@ -253,6 +313,7 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
         _monthlyData = monthlyData;
         _salaryRanges = salaryRanges;
         _departmentSalaryRangeStats = departmentSalaryRangeStats;
+        _monthlyEmployeeChanges = monthlyEmployeeChanges; // 存储每月员工变动数据
       });
 
       setState(() {
@@ -573,6 +634,21 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                           Icons.arrow_downward,
                         ),
                       ],
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // 每月员工变动情况
+                    const Text(
+                      '每月员工变动情况',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    MonthlyEmployeeChangesComponent(
+                      monthlyChanges: _monthlyEmployeeChanges,
                     ),
 
                     const SizedBox(height: 24),
