@@ -86,6 +86,18 @@ class _AttendancePaginationState extends State<AttendancePagination> {
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
+            Expanded(
+              child: Text(
+                '缺勤(次)',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                '旷工(天)',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
           ],
         ),
         const Divider(),
@@ -107,6 +119,8 @@ class _AttendancePaginationState extends State<AttendancePagination> {
                 ),
                 Expanded(child: Text(stat.sickLeaveDays.toStringAsFixed(1))),
                 Expanded(child: Text(stat.leaveDays.toStringAsFixed(1))),
+                Expanded(child: Text(stat.absenceCount.toString())),
+                Expanded(child: Text(stat.truancyDays.toString())),
               ],
             ),
           );

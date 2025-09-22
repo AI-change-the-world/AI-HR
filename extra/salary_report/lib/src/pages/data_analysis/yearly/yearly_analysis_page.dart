@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/services/data_analysis_service.dart';
-import 'package:salary_report/src/isar/database.dart'; // 添加数据库导入
+import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/components/attendance_pagination.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:toastification/toastification.dart';
+import 'package:salary_report/src/components/monthly_detail_components.dart';
 
 class YearlyAnalysisPage extends StatefulWidget {
   const YearlyAnalysisPage({
@@ -129,14 +130,16 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
       monthlyAttendanceStats['$month月'] = monthlyAttStats;
     }
 
-    // 获取每月的详细请假比例统计数据
-    final monthlyLeaveRatioStats = <String, LeaveRatioStats>{};
+    // 获取每月的具体请假详情数据（直接使用考勤统计数据）
+    final monthlyLeaveDetails = <String, List<AttendanceStats>>{};
     for (int month = 1; month <= 12; month++) {
-      final monthlyLeaveStats = await _salaryDataService.getLeaveRatioStats(
-        year: widget.year,
-        month: month,
-      );
-      monthlyLeaveRatioStats['$month月'] = monthlyLeaveStats;
+      final monthlyLeaveDetailsList = await _salaryDataService
+          .getMonthlyAttendanceStats(year: widget.year, month: month);
+      // 过滤出有请假记录的员工
+      final leaveDetails = monthlyLeaveDetailsList.where((stat) {
+        return stat.sickLeaveDays > 0 || stat.leaveDays > 0;
+      }).toList();
+      monthlyLeaveDetails['$month月'] = leaveDetails;
     }
 
     // 从数据库获取真实的月度趋势数据和年度总数据
@@ -225,7 +228,7 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
       'attendanceStats': attendanceStats, // 年度考勤统计数据
       'monthlyDepartmentStats': monthlyDepartmentStats, // 每月部门统计数据
       'monthlyAttendanceStats': monthlyAttendanceStats, // 每月考勤统计数据
-      'monthlyLeaveRatioStats': monthlyLeaveRatioStats, // 每月请假比例统计数据
+      'monthlyLeaveDetails': monthlyLeaveDetails, // 每月具体请假详情数据
     };
   }
 
@@ -285,8 +288,9 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
     final monthlyAttendanceStats =
         analysisData['monthlyAttendanceStats']
             as Map<String, List<AttendanceStats>>;
-    final monthlyLeaveRatioStats =
-        analysisData['monthlyLeaveRatioStats'] as Map<String, LeaveRatioStats>;
+    final monthlyLeaveDetails =
+        analysisData['monthlyLeaveDetails']
+            as Map<String, List<AttendanceStats>>;
 
     return Stack(
       children: [
@@ -418,237 +422,37 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
                 const SizedBox(height: 24),
 
                 // 按月部门工资对比
-                const Text(
-                  '按月部门工资对比',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                ...monthlyDepartmentStats.entries.map<Widget>((entry) {
-                  final month = entry.key;
-                  final stats = entry.value;
-
-                  // 如果该月没有数据，则跳过
-                  if (stats.isEmpty) {
-                    return const SizedBox.shrink();
-                  }
-
-                  return Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            month,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Row(
-                            children: [
-                              Expanded(
-                                flex: 2,
-                                child: Text(
-                                  '部门',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  '工资总额',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  '平均工资',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Divider(),
-                          ...stats.map<Widget>((stat) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 4.0,
-                              ),
-                              child: Row(
-                                children: [
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    flex: 2,
-                                    child: Text(stat.department),
-                                  ),
-                                  Expanded(
-                                    child: Text(
-                                      '¥${stat.totalNetSalary.toStringAsFixed(2)}',
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Text(
-                                      '¥${stat.averageNetSalary.toStringAsFixed(2)}',
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
-
-                const SizedBox(height: 24),
-
-                // 年度考勤统计
-                const Text(
-                  '年度考勤统计',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        AttendancePagination(attendanceStats: attendanceStats),
-                      ],
-                    ),
-                  ),
+                MonthlyDetailContainer(
+                  title: '按月部门工资对比',
+                  monthlyData: monthlyDepartmentStats,
+                  builder: (month, data) {
+                    return MonthlyDepartmentDetail(
+                      departmentStats: data as List<DepartmentSalaryStats>,
+                    );
+                  },
                 ),
 
                 const SizedBox(height: 24),
 
                 // 按月考勤统计
-                const Text(
-                  '按月考勤统计',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                MonthlyDetailContainer(
+                  title: '按月考勤统计',
+                  monthlyData: monthlyAttendanceStats,
+                  builder: (month, data) {
+                    return MonthlyAttendanceDetail(
+                      attendanceStats: data as List<AttendanceStats>,
+                    );
+                  },
                 ),
-                const SizedBox(height: 12),
-                ...monthlyAttendanceStats.entries.map<Widget>((entry) {
-                  final month = entry.key;
-                  final stats = entry.value;
 
-                  // 如果该月没有数据，则跳过
-                  if (stats.isEmpty) {
-                    return const SizedBox.shrink();
-                  }
-
-                  return Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            month,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          AttendancePagination(attendanceStats: stats),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
-
-                const SizedBox(height: 24),
-
-                // 按月请假比例统计
-                const Text(
-                  '按月请假比例统计',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                // 按月具体请假详情
+                MonthlyDetailContainer(
+                  title: '按月具体请假详情',
+                  monthlyData: monthlyLeaveDetails,
+                  builder: (month, data) {
+                    return _buildLeaveDetails(data as List<AttendanceStats>);
+                  },
                 ),
-                const SizedBox(height: 12),
-                ...monthlyLeaveRatioStats.entries.map<Widget>((entry) {
-                  final month = entry.key;
-                  final stats = entry.value;
-
-                  // 如果该月没有数据，则跳过
-                  if (stats.totalEmployees == 0) {
-                    return const SizedBox.shrink();
-                  }
-
-                  return Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            month,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  '统计项',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  '数值',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Divider(),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4.0),
-                            child: Row(
-                              children: [
-                                const Expanded(child: Text('总员工数')),
-                                Expanded(
-                                  child: Text(stats.totalEmployees.toString()),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4.0),
-                            child: Row(
-                              children: [
-                                const Expanded(child: Text('平均病假天数/人')),
-                                Expanded(
-                                  child: Text(
-                                    stats.sickLeaveRatio.toStringAsFixed(2),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4.0),
-                            child: Row(
-                              children: [
-                                const Expanded(child: Text('平均事假天数/人')),
-                                Expanded(
-                                  child: Text(
-                                    stats.leaveRatio.toStringAsFixed(2),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
               ],
             ),
           ),
@@ -694,6 +498,16 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
     );
   }
 
+  /// 从月份字符串中提取月份数字
+  int _extractMonthNumber(String monthString) {
+    final RegExp regExp = RegExp(r'(\d+)月');
+    final match = regExp.firstMatch(monthString);
+    if (match != null) {
+      return int.parse(match.group(1)!);
+    }
+    return 1; // 默认返回1月
+  }
+
   Widget _buildStatCard(String title, String value, IconData icon) {
     return Card(
       elevation: 2,
@@ -722,6 +536,11 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
         ),
       ),
     );
+  }
+
+  /// 构建请假详情组件
+  Widget _buildLeaveDetails(List<AttendanceStats> leaveDetails) {
+    return LeaveDetailBuilder.buildLeaveDetails(leaveDetails);
   }
 
   List<Map<String, dynamic>> _generateMultiYearData(
