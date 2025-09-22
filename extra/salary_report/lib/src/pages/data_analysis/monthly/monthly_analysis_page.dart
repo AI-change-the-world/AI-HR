@@ -3,6 +3,7 @@ import 'package:loading_indicator/loading_indicator.dart';
 import 'package:salary_report/src/common/scroll_screenshot.dart';
 import 'package:salary_report/src/common/toast.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
+import 'package:salary_report/src/isar/report_generation_record.dart';
 import 'package:salary_report/src/services/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/components/attendance_pagination.dart';
@@ -281,7 +282,10 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
               );
               if (file != null) {
                 ToastUtils.success(null, title: "长截图保存到: ${file.path}");
-                reportService.addReportRecord(file.path);
+                reportService.addReportRecord(
+                  file.path,
+                  reportSaveFormat: ReportSaveFormat.image,
+                );
                 return;
               }
               ToastUtils.error(null, title: "长截图失败");

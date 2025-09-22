@@ -92,15 +92,15 @@ class YearlyAnalysisService {
                 employeeNames.add(record.name!);
               }
             }
-            uniqueEmployees['${month}月'] = employeeNames;
+            uniqueEmployees['$month月'] = employeeNames;
           }
         }
 
         // 计算全年去重员工数
         final allEmployeeNames = <String>{};
-        uniqueEmployees.values.forEach((names) {
+        for (var names in uniqueEmployees.values) {
           allEmployeeNames.addAll(names);
-        });
+        }
         totalEmployeeCount = allEmployeeNames.length;
 
         // 计算总体统计数据

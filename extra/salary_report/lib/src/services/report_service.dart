@@ -7,10 +7,14 @@ class ReportService {
   final IsarDatabase _database = IsarDatabase();
 
   /// 添加报告生成记录
-  Future<Id> addReportRecord(String savePath) async {
+  Future<Id> addReportRecord(
+    String savePath, {
+    ReportSaveFormat reportSaveFormat = ReportSaveFormat.docx,
+  }) async {
     final record = ReportGenerationRecord()
       ..savePath = savePath
       ..createdAt = DateTime.now()
+      ..reportSaveFormat = reportSaveFormat
       ..isDeleted = false;
 
     return await _database.isar!.writeTxn(() async {

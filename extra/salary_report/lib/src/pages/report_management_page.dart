@@ -190,7 +190,7 @@ class _ReportManagementPageState extends State<ReportManagementPage> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            report.reportType == ReportType.docx
+                            report.reportSaveFormat == ReportSaveFormat.docx
                                 ? "Word"
                                 : "图像",
                             style: const TextStyle(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:salary_report/src/common/logger.dart';
+import 'package:salary_report/src/isar/report_generation_record.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
@@ -12,7 +13,6 @@ import 'package:salary_report/src/providers/multi_month_analysis_provider.dart';
 import 'package:salary_report/src/components/multi_month/monthly_key_metrics_component.dart';
 import 'package:salary_report/src/components/multi_month/monthly_department_stats_component.dart';
 import 'package:salary_report/src/components/multi_month/monthly_attendance_stats_component.dart';
-import 'package:salary_report/src/components/multi_month/monthly_leave_ratio_stats_component.dart';
 import 'package:salary_report/src/components/multi_month/department_changes_component.dart';
 import 'package:salary_report/src/common/scroll_screenshot.dart'; // 添加截图导入
 import 'package:salary_report/src/common/toast.dart'; // 添加Toast导入
@@ -225,7 +225,10 @@ class _MultiMonthAnalysisPageState
               );
               if (file != null) {
                 ToastUtils.success(null, title: "长截图保存到: ${file.path}");
-                reportService.addReportRecord(file.path);
+                reportService.addReportRecord(
+                  file.path,
+                  reportSaveFormat: ReportSaveFormat.image,
+                );
                 return;
               }
               ToastUtils.error(null, title: "长截图失败");

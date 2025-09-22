@@ -28,11 +28,11 @@ const ReportGenerationRecordSchema = CollectionSchema(
       name: r'isDeleted',
       type: IsarType.bool,
     ),
-    r'reportType': PropertySchema(
+    r'reportSaveFormat': PropertySchema(
       id: 2,
-      name: r'reportType',
+      name: r'reportSaveFormat',
       type: IsarType.byte,
-      enumMap: _ReportGenerationRecordreportTypeEnumValueMap,
+      enumMap: _ReportGenerationRecordreportSaveFormatEnumValueMap,
     ),
     r'savePath': PropertySchema(
       id: 3,
@@ -74,7 +74,7 @@ void _reportGenerationRecordSerialize(
 ) {
   writer.writeDateTime(offsets[0], object.createdAt);
   writer.writeBool(offsets[1], object.isDeleted);
-  writer.writeByte(offsets[2], object.reportType.index);
+  writer.writeByte(offsets[2], object.reportSaveFormat.index);
   writer.writeString(offsets[3], object.savePath);
 }
 
@@ -88,11 +88,11 @@ ReportGenerationRecord _reportGenerationRecordDeserialize(
   object.createdAt = reader.readDateTime(offsets[0]);
   object.id = id;
   object.isDeleted = reader.readBool(offsets[1]);
-  object.reportType =
-      _ReportGenerationRecordreportTypeValueEnumMap[reader.readByteOrNull(
+  object.reportSaveFormat =
+      _ReportGenerationRecordreportSaveFormatValueEnumMap[reader.readByteOrNull(
         offsets[2],
       )] ??
-      ReportType.docx;
+      ReportSaveFormat.docx;
   object.savePath = reader.readString(offsets[3]);
   return object;
 }
@@ -109,9 +109,9 @@ P _reportGenerationRecordDeserializeProp<P>(
     case 1:
       return (reader.readBool(offset)) as P;
     case 2:
-      return (_ReportGenerationRecordreportTypeValueEnumMap[reader
+      return (_ReportGenerationRecordreportSaveFormatValueEnumMap[reader
                   .readByteOrNull(offset)] ??
-              ReportType.docx)
+              ReportSaveFormat.docx)
           as P;
     case 3:
       return (reader.readString(offset)) as P;
@@ -120,10 +120,13 @@ P _reportGenerationRecordDeserializeProp<P>(
   }
 }
 
-const _ReportGenerationRecordreportTypeEnumValueMap = {'docx': 0, 'image': 1};
-const _ReportGenerationRecordreportTypeValueEnumMap = {
-  0: ReportType.docx,
-  1: ReportType.image,
+const _ReportGenerationRecordreportSaveFormatEnumValueMap = {
+  'docx': 0,
+  'image': 1,
+};
+const _ReportGenerationRecordreportSaveFormatValueEnumMap = {
+  0: ReportSaveFormat.docx,
+  1: ReportSaveFormat.image,
 };
 
 Id _reportGenerationRecordGetId(ReportGenerationRecord object) {
@@ -416,10 +419,10 @@ extension ReportGenerationRecordQueryFilter
     ReportGenerationRecord,
     QAfterFilterCondition
   >
-  reportTypeEqualTo(ReportType value) {
+  reportSaveFormatEqualTo(ReportSaveFormat value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'reportType', value: value),
+        FilterCondition.equalTo(property: r'reportSaveFormat', value: value),
       );
     });
   }
@@ -429,12 +432,12 @@ extension ReportGenerationRecordQueryFilter
     ReportGenerationRecord,
     QAfterFilterCondition
   >
-  reportTypeGreaterThan(ReportType value, {bool include = false}) {
+  reportSaveFormatGreaterThan(ReportSaveFormat value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.greaterThan(
           include: include,
-          property: r'reportType',
+          property: r'reportSaveFormat',
           value: value,
         ),
       );
@@ -446,12 +449,12 @@ extension ReportGenerationRecordQueryFilter
     ReportGenerationRecord,
     QAfterFilterCondition
   >
-  reportTypeLessThan(ReportType value, {bool include = false}) {
+  reportSaveFormatLessThan(ReportSaveFormat value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.lessThan(
           include: include,
-          property: r'reportType',
+          property: r'reportSaveFormat',
           value: value,
         ),
       );
@@ -463,16 +466,16 @@ extension ReportGenerationRecordQueryFilter
     ReportGenerationRecord,
     QAfterFilterCondition
   >
-  reportTypeBetween(
-    ReportType lower,
-    ReportType upper, {
+  reportSaveFormatBetween(
+    ReportSaveFormat lower,
+    ReportSaveFormat upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.between(
-          property: r'reportType',
+          property: r'reportSaveFormat',
           lower: lower,
           includeLower: includeLower,
           upper: upper,
@@ -711,16 +714,16 @@ extension ReportGenerationRecordQuerySortBy
   }
 
   QueryBuilder<ReportGenerationRecord, ReportGenerationRecord, QAfterSortBy>
-  sortByReportType() {
+  sortByReportSaveFormat() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'reportType', Sort.asc);
+      return query.addSortBy(r'reportSaveFormat', Sort.asc);
     });
   }
 
   QueryBuilder<ReportGenerationRecord, ReportGenerationRecord, QAfterSortBy>
-  sortByReportTypeDesc() {
+  sortByReportSaveFormatDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'reportType', Sort.desc);
+      return query.addSortBy(r'reportSaveFormat', Sort.desc);
     });
   }
 
@@ -789,16 +792,16 @@ extension ReportGenerationRecordQuerySortThenBy
   }
 
   QueryBuilder<ReportGenerationRecord, ReportGenerationRecord, QAfterSortBy>
-  thenByReportType() {
+  thenByReportSaveFormat() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'reportType', Sort.asc);
+      return query.addSortBy(r'reportSaveFormat', Sort.asc);
     });
   }
 
   QueryBuilder<ReportGenerationRecord, ReportGenerationRecord, QAfterSortBy>
-  thenByReportTypeDesc() {
+  thenByReportSaveFormatDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'reportType', Sort.desc);
+      return query.addSortBy(r'reportSaveFormat', Sort.desc);
     });
   }
 
@@ -834,9 +837,9 @@ extension ReportGenerationRecordQueryWhereDistinct
   }
 
   QueryBuilder<ReportGenerationRecord, ReportGenerationRecord, QDistinct>
-  distinctByReportType() {
+  distinctByReportSaveFormat() {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'reportType');
+      return query.addDistinctBy(r'reportSaveFormat');
     });
   }
 
@@ -875,10 +878,10 @@ extension ReportGenerationRecordQueryProperty
     });
   }
 
-  QueryBuilder<ReportGenerationRecord, ReportType, QQueryOperations>
-  reportTypeProperty() {
+  QueryBuilder<ReportGenerationRecord, ReportSaveFormat, QQueryOperations>
+  reportSaveFormatProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'reportType');
+      return query.addPropertyName(r'reportSaveFormat');
     });
   }
 

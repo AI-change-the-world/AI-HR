@@ -188,7 +188,7 @@ final coreAttendanceDataProvider =
         final stats = await service.getMonthlyAttendanceStats(
           year: year, // 修复：使用正确的参数
         );
-        attendanceData['${year}年'] = stats;
+        attendanceData['$year年'] = stats;
       }
 
       return attendanceData;

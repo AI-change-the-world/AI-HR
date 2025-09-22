@@ -53,7 +53,7 @@ class MonthlyDetailContainer extends StatelessWidget {
               ),
             ),
           );
-        }).toList(),
+        }),
         const SizedBox(height: 24),
       ],
     );

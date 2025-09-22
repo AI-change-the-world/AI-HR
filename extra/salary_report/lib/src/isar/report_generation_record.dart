@@ -11,7 +11,7 @@ class ReportGenerationRecord {
   late DateTime createdAt = DateTime.now();
 
   @enumerated
-  ReportType reportType = ReportType.docx;
+  ReportSaveFormat reportSaveFormat = ReportSaveFormat.docx;
 }
 
-enum ReportType { docx, image }
+enum ReportSaveFormat { docx, image }

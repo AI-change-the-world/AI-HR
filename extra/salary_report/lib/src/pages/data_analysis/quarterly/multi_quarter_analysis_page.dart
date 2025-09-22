@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:salary_report/src/common/logger.dart';
+import 'package:salary_report/src/isar/report_generation_record.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
@@ -227,7 +228,10 @@ class _MultiQuarterAnalysisPageState
               );
               if (file != null) {
                 ToastUtils.success(null, title: "长截图保存到: ${file.path}");
-                reportService.addReportRecord(file.path);
+                reportService.addReportRecord(
+                  file.path,
+                  reportSaveFormat: ReportSaveFormat.image,
+                );
                 return;
               }
               ToastUtils.error(null, title: "长截图失败");

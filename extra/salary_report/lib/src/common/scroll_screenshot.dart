@@ -146,8 +146,9 @@ class ScrollableStitcher {
 
     final ui.Image firstImage = images.first;
     final int usableWidth = firstImage.width - cropLeftPx - cropRightPx;
-    if (usableWidth <= 0)
+    if (usableWidth <= 0) {
       throw Exception('Invalid crop values result in zero or negative width.');
+    }
 
     final int finalHeightPx = (fullContentHeight * devicePixelRatio).round();
 

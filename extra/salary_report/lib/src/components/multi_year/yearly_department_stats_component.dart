@@ -111,7 +111,7 @@ class YearlyDepartmentStatsComponent extends ConsumerWidget {
                   ],
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),
