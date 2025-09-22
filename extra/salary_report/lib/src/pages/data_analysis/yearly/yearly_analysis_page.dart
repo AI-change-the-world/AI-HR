@@ -35,6 +35,7 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
   bool _isGeneratingReport = false;
   late DataAnalysisService _salaryDataService; // 数据分析服务实例
   late Map<String, dynamic> analysisData = {}; // 存储分析数据
+  Map<String, dynamic>? _previousYearData; // 上一年数据
 
   var future;
 
@@ -122,6 +123,9 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
   }
 
   Future<Map<String, dynamic>> _initAnalysisData() async {
+    // 获取上一年的数据
+    await _fetchPreviousYearData();
+
     // 使用DataAnalysisService获取年度聚合数据
     final departmentStats = await _salaryDataService.getDepartmentAggregation(
       widget.year,
@@ -251,6 +255,75 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
     };
   }
 
+  /// 获取上一年的数据
+  Future<void> _fetchPreviousYearData() async {
+    try {
+      // 获取上一年的年份
+      final previousYear = widget.year - 1;
+
+      // 获取上一年1月的部门统计数据作为基础数据
+      final previousDepartmentStats = await _salaryDataService
+          .getDepartmentAggregation(previousYear, 1);
+
+      if (previousDepartmentStats.isNotEmpty) {
+        // 计算上一年的总员工数和总工资
+        int totalEmployees = 0;
+        double totalSalary = 0;
+        int totalEmployeeRecords = 0; // 上一年总员工记录数（不去重，用于计算平均工资）
+        final Set<String> uniqueEmployeeIds = <String>{}; // 用于去重统计员工数
+
+        // 遍历上一年12个月获取数据
+        for (int month = 1; month <= 12; month++) {
+          final monthlyData = await _salaryDataService.getMonthlySalaryData(
+            previousYear,
+            month,
+          );
+
+          if (monthlyData != null) {
+            // 累加员工记录数（不去重，用于计算平均工资）
+            totalEmployeeRecords += monthlyData.records.length;
+
+            // 累加上一年的总工资
+            for (var record in monthlyData.records) {
+              if (record.netSalary != null) {
+                final salaryStr = record.netSalary!.replaceAll(
+                  RegExp(r'[^\d.-]'),
+                  '',
+                );
+                final salary = double.tryParse(salaryStr) ?? 0;
+                totalSalary += salary;
+
+                // 收集员工唯一标识用于去重统计
+                String employeeId = record.name ?? '';
+                if (record.idNumber != null && record.idNumber!.isNotEmpty) {
+                  employeeId += '_${record.idNumber}';
+                }
+                uniqueEmployeeIds.add(employeeId);
+              }
+            }
+          }
+        }
+
+        // 计算上一年的平均工资
+        final averageSalary = totalEmployeeRecords > 0
+            ? totalSalary / totalEmployeeRecords
+            : 0;
+
+        setState(() {
+          _previousYearData = {
+            'year': previousYear,
+            'totalEmployees': uniqueEmployeeIds.length,
+            'totalSalary': totalSalary,
+            'averageSalary': averageSalary,
+          };
+        });
+      }
+    } catch (e) {
+      print('获取上一年数据失败: $e');
+      // 不处理错误，因为这是可选的数据显示
+    }
+  }
+
   late ReportService reportService = ReportService();
 
   @override
@@ -348,6 +421,60 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 上一年数据展示（如果存在）
+                  if (_previousYearData != null) ...[
+                    const Text(
+                      '上一年对比',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Card(
+                      color: Colors.blue.shade50,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${_previousYearData!['year']}年基本情况',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Wrap(
+                              spacing: 12,
+                              runSpacing: 12,
+                              children: [
+                                _buildComparisonStatCard(
+                                  '总人数',
+                                  _previousYearData!['totalEmployees']
+                                      .toString(),
+                                  Icons.people,
+                                ),
+                                _buildComparisonStatCard(
+                                  '工资总额',
+                                  '¥${_previousYearData!['totalSalary'].toStringAsFixed(2)}',
+                                  Icons.account_balance_wallet,
+                                ),
+                                _buildComparisonStatCard(
+                                  '平均工资',
+                                  '¥${_previousYearData!['averageSalary'].toStringAsFixed(2)}',
+                                  Icons.trending_up,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
                   // 关键指标卡片
                   const Text(
                     '年度关键指标',
@@ -582,6 +709,36 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
                 value,
                 style: const TextStyle(
                   fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildComparisonStatCard(String title, String value, IconData icon) {
+    return Card(
+      elevation: 1,
+      child: SizedBox(
+        width: 120,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            children: [
+              Icon(icon, color: Colors.blue, size: 20),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
               ),

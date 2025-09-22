@@ -39,6 +39,7 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
   List<DepartmentSalaryStats> _departmentStats = [];
   List<AttendanceStats> _attendanceStats = [];
   LeaveRatioStats? _leaveRatioStats;
+  Map<String, dynamic>? _previousMonthData; // 上月数据
 
   @override
   void initState() {
@@ -62,6 +63,9 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
       setState(() {
         _isLoading = true;
       });
+
+      // 获取上月数据
+      await _fetchPreviousMonthData();
 
       // 使用DataAnalysisService获取数据
       final departmentStats = await _salaryDataService.getDepartmentAggregation(
@@ -182,6 +186,53 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+
+  /// 获取上月数据
+  Future<void> _fetchPreviousMonthData() async {
+    try {
+      // 计算上月的年份和月份
+      int previousYear = widget.year;
+      int previousMonth = widget.month - 1;
+
+      if (previousMonth == 0) {
+        // 如果是1月，上月就是去年的12月
+        previousYear = widget.year - 1;
+        previousMonth = 12;
+      }
+
+      // 获取上月的部门统计数据
+      final previousDepartmentStats = await _salaryDataService
+          .getDepartmentAggregation(previousYear, previousMonth);
+
+      if (previousDepartmentStats.isNotEmpty) {
+        // 计算上月的总员工数和总工资
+        int totalEmployees = 0;
+        double totalSalary = 0;
+
+        for (var stat in previousDepartmentStats) {
+          totalEmployees += stat.employeeCount;
+          totalSalary += stat.totalNetSalary;
+        }
+
+        final averageSalary = totalEmployees > 0
+            ? totalSalary / totalEmployees
+            : 0;
+
+        setState(() {
+          _previousMonthData = {
+            'year': previousYear,
+            'month': previousMonth,
+            'totalEmployees': totalEmployees,
+            'totalSalary': totalSalary,
+            'averageSalary': averageSalary,
+          };
+        });
+      }
+    } catch (e) {
+      print('获取上月数据失败: $e');
+      // 不处理错误，因为这是可选的数据显示
     }
   }
 
@@ -312,6 +363,61 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // 上月数据展示（如果存在）
+                    if (_previousMonthData != null) ...[
+                      // const Text(
+                      //   '上月对比',
+                      //   style: TextStyle(
+                      //     fontSize: 18,
+                      //     fontWeight: FontWeight.bold,
+                      //   ),
+                      // ),
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: '上月对比  ',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            TextSpan(
+                              text:
+                                  '${_previousMonthData!['year']}年${_previousMonthData!['month']}月基本情况',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: [
+                          _buildStatCard(
+                            '总人数',
+                            _previousMonthData!['totalEmployees'].toString(),
+                            Icons.people,
+                          ),
+                          _buildStatCard(
+                            '工资总额',
+                            '¥${_previousMonthData!['totalSalary'].toStringAsFixed(2)}',
+                            Icons.account_balance_wallet,
+                          ),
+                          _buildStatCard(
+                            '平均工资',
+                            '¥${_previousMonthData!['averageSalary'].toStringAsFixed(2)}',
+                            Icons.trending_up,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+
                     // 关键指标卡片
                     const Text(
                       '关键指标',

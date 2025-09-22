@@ -41,6 +41,7 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
   List<SalaryRangeStats> _salaryRanges = []; // 薪资区间统计数据
   List<DepartmentSalaryRangeStats> _departmentSalaryRangeStats =
       []; // 部门薪资区间统计数据
+  Map<String, dynamic>? _previousQuarterData; // 上一季度数据
 
   // 添加截图相关变量
   final GlobalKey repaintKey = GlobalKey();
@@ -71,9 +72,12 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
         _isLoading = true;
       });
 
-      // 计算季度的起始和结束月份
+      // 计算当前季度的起始和结束月份
       final startMonth = (widget.quarter - 1) * 3 + 1;
       final endMonth = startMonth + 2;
+
+      // 获取上一季度的数据
+      await _fetchPreviousQuarterData();
 
       // 获取整个季度的部门统计数据
       final departmentStats = await _salaryDataService.getDepartmentAggregation(
@@ -257,6 +261,56 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
     }
   }
 
+  /// 获取上一季度的数据
+  Future<void> _fetchPreviousQuarterData() async {
+    try {
+      // 计算上一季度的年份和季度
+      int previousYear = widget.year;
+      int previousQuarter = widget.quarter - 1;
+
+      if (previousQuarter == 0) {
+        // 如果是第一季度，上一季度就是去年的第四季度
+        previousYear = widget.year - 1;
+        previousQuarter = 4;
+      }
+
+      // 计算上一季度的起始月份
+      final startMonth = (previousQuarter - 1) * 3 + 1;
+
+      // 获取上一季度的部门统计数据
+      final previousDepartmentStats = await _salaryDataService
+          .getDepartmentAggregation(previousYear, startMonth);
+
+      if (previousDepartmentStats.isNotEmpty) {
+        // 计算上一季度的总员工数和总工资
+        int totalEmployees = 0;
+        double totalSalary = 0;
+
+        for (var stat in previousDepartmentStats) {
+          totalEmployees += stat.employeeCount;
+          totalSalary += stat.totalNetSalary;
+        }
+
+        final averageSalary = totalEmployees > 0
+            ? totalSalary / totalEmployees
+            : 0;
+
+        setState(() {
+          _previousQuarterData = {
+            'year': previousYear,
+            'quarter': previousQuarter,
+            'totalEmployees': totalEmployees,
+            'totalSalary': totalSalary,
+            'averageSalary': averageSalary,
+          };
+        });
+      }
+    } catch (e) {
+      print('获取上一季度数据失败: $e');
+      // 不处理错误，因为这是可选的数据显示
+    }
+  }
+
   /// 生成工资报告
   Future<void> _generateSalaryReport() async {
     try {
@@ -373,6 +427,60 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // 上一季度数据展示（如果存在）
+                    if (_previousQuarterData != null) ...[
+                      const Text(
+                        '上一季度对比',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Card(
+                        color: Colors.blue.shade50,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${_previousQuarterData!['year']}年第${_previousQuarterData!['quarter']}季度基本情况',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Wrap(
+                                spacing: 12,
+                                runSpacing: 12,
+                                children: [
+                                  _buildComparisonStatCard(
+                                    '总人数',
+                                    _previousQuarterData!['totalEmployees']
+                                        .toString(),
+                                    Icons.people,
+                                  ),
+                                  _buildComparisonStatCard(
+                                    '工资总额',
+                                    '¥${_previousQuarterData!['totalSalary'].toStringAsFixed(2)}',
+                                    Icons.account_balance_wallet,
+                                  ),
+                                  _buildComparisonStatCard(
+                                    '平均工资',
+                                    '¥${_previousQuarterData!['averageSalary'].toStringAsFixed(2)}',
+                                    Icons.trending_up,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+
                     // 关键指标卡片
                     const Text(
                       '季度关键指标',
@@ -1055,6 +1163,36 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                 value,
                 style: const TextStyle(
                   fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildComparisonStatCard(String title, String value, IconData icon) {
+    return Card(
+      elevation: 1,
+      child: SizedBox(
+        width: 120,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            children: [
+              Icon(icon, color: Colors.blue, size: 20),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
               ),
