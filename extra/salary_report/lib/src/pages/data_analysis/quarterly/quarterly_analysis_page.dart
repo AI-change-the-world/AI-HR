@@ -456,7 +456,7 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                         runSpacing: 12,
                         children: [
                           _buildStatCard(
-                            '总人数',
+                            '总人次',
                             _previousQuarterData!['totalEmployees'].toString(),
                             Icons.people,
                           ),
@@ -975,121 +975,6 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                     ),
 
                     const SizedBox(height: 24),
-
-                    // 请假比例统计
-                    const Text(
-                      '请假比例统计',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          children: [
-                            const Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    '月份',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    '统计项',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    '数值',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const Divider(),
-                            ..._leaveRatioStatsList.map((stats) {
-                              return Column(
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 8.0,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            '${stats.year ?? widget.year}-${stats.month.toString().padLeft(2, '0')}',
-                                          ),
-                                        ),
-                                        const Expanded(child: Text('总员工数')),
-                                        Expanded(
-                                          child: Text(
-                                            stats.totalEmployees.toString(),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 8.0,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            '${stats.year ?? widget.year}-${stats.month.toString().padLeft(2, '0')}',
-                                          ),
-                                        ),
-                                        const Expanded(child: Text('平均病假天数/人')),
-                                        Expanded(
-                                          child: Text(
-                                            stats.sickLeaveRatio
-                                                .toStringAsFixed(2),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 8.0,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            '${stats.year ?? widget.year}-${stats.month.toString().padLeft(2, '0')}',
-                                          ),
-                                        ),
-                                        const Expanded(child: Text('平均事假天数/人')),
-                                        Expanded(
-                                          child: Text(
-                                            stats.leaveRatio.toStringAsFixed(2),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }),
-                          ],
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -1157,36 +1042,6 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                 value,
                 style: const TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildComparisonStatCard(String title, String value, IconData icon) {
-    return Card(
-      elevation: 1,
-      child: SizedBox(
-        width: 120,
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            children: [
-              Icon(icon, color: Colors.blue, size: 20),
-              const SizedBox(height: 4),
-              Text(
-                title,
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
               ),

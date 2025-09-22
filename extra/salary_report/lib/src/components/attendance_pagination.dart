@@ -82,7 +82,7 @@ class _AttendancePaginationState extends State<AttendancePagination> {
             ),
             Expanded(
               child: Text(
-                '事假(天)',
+                '事假(小时)',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),

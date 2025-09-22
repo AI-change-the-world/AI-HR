@@ -318,20 +318,20 @@ class _MultiQuarterAnalysisPageState
 
                     const SizedBox(height: 24),
 
-                    // 每季度请假比例统计（分页显示）
-                    const Text(
-                      '每季度请假比例统计',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    QuarterlyLeaveRatioStatsComponent(
-                      params: _quarterRangeParams,
-                    ),
+                    // // 每季度请假比例统计（分页显示）
+                    // const Text(
+                    //   '每季度请假比例统计',
+                    //   style: TextStyle(
+                    //     fontSize: 18,
+                    //     fontWeight: FontWeight.bold,
+                    //   ),
+                    // ),
+                    // const SizedBox(height: 12),
+                    // QuarterlyLeaveRatioStatsComponent(
+                    //   params: _quarterRangeParams,
+                    // ),
 
-                    const SizedBox(height: 24),
+                    // const SizedBox(height: 24),
 
                     // 每季度人数变化趋势图
                     const Text(

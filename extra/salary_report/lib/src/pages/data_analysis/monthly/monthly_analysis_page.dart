@@ -399,7 +399,7 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
                         runSpacing: 12,
                         children: [
                           _buildStatCard(
-                            '总人数',
+                            '总人次',
                             _previousMonthData!['totalEmployees'].toString(),
                             Icons.people,
                           ),
@@ -432,7 +432,7 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
                       runSpacing: 12,
                       children: [
                         _buildStatCard(
-                          '总人数',
+                          '总人次',
                           _analysisData['totalEmployees'].toString(),
                           Icons.people,
                         ),

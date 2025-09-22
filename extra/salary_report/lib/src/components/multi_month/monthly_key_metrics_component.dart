@@ -67,7 +67,7 @@ class MonthlyKeyMetricsComponent extends ConsumerWidget {
             Wrap(
               children: [
                 _buildStatCard(
-                  '总人数',
+                  '总人次',
                   monthlyData.employeeCount.toString(),
                   Icons.people,
                 ),

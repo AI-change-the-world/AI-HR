@@ -67,7 +67,7 @@ class QuarterlyKeyMetricsComponent extends ConsumerWidget {
             Wrap(
               children: [
                 _buildStatCard(
-                  '总人数',
+                  '总人次',
                   quarterlyData.employeeCount.toString(),
                   Icons.people,
                 ),

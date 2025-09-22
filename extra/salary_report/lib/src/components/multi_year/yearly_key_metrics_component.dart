@@ -64,7 +64,7 @@ class YearlyKeyMetricsComponent extends ConsumerWidget {
             Wrap(
               children: [
                 _buildStatCard(
-                  '总人数',
+                  '总人次',
                   yearlyData.employeeCount.toString(),
                   Icons.people,
                 ),

@@ -76,7 +76,7 @@ class QuarterlyDepartmentStatsComponent extends ConsumerWidget {
                 ),
                 Expanded(
                   child: Text(
-                    '人数',
+                    '发薪人次',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),

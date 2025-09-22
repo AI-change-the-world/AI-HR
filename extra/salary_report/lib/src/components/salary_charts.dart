@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 // ignore: depend_on_referenced_packages
@@ -130,6 +131,8 @@ class MonthlySalaryTrendChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    logger.info('MonthlySalaryTrendChart build $monthlyData');
+
     return SfCartesianChart(
       title: ChartTitle(text: '月度工资趋势'),
       primaryXAxis: CategoryAxis(),
@@ -143,7 +146,7 @@ class MonthlySalaryTrendChart extends StatelessWidget {
           xValueMapper: (Map<String, dynamic> data, _) =>
               data['month'] as String,
           yValueMapper: (Map<String, dynamic> data, _) =>
-              (data['salary'] as num?)?.toInt() ?? 0,
+              (data['totalSalary'] as num?)?.toInt() ?? 0,
           dataLabelSettings: const DataLabelSettings(isVisible: true),
           enableTooltip: true,
         ),

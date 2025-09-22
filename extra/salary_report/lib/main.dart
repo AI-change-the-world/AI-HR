@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/pages/main_layout.dart';
 import 'package:salary_report/src/pages/salary_management/upload/upload_page.dart';
-import 'package:salary_report/src/pages/salary_management/detail/salary_detail_page.dart';
 import 'package:salary_report/src/pages/data_analysis/dimension/analysis_dimension_page.dart';
 import 'package:salary_report/src/pages/data_analysis/monthly/monthly_analysis_page.dart';
 import 'package:salary_report/src/pages/data_analysis/monthly/multi_month_analysis_page.dart';
@@ -53,14 +52,6 @@ class MyApp extends StatelessWidget {
             GoRoute(
               path: '/salary',
               builder: (context, state) => const UploadPage(),
-              routes: [
-                GoRoute(
-                  path: 'detail/:id',
-                  builder: (context, state) => SalaryDetailPage(
-                    reportId: int.parse(state.pathParameters['id']!),
-                  ),
-                ),
-              ],
             ),
             GoRoute(
               path: '/analysis',

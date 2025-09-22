@@ -449,7 +449,7 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
                       runSpacing: 12,
                       children: [
                         _buildStatCard(
-                          '总人数',
+                          '总人次',
                           _previousYearData!['totalEmployees'].toString(),
                           Icons.people,
                         ),
@@ -479,7 +479,7 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
                     runSpacing: 12,
                     children: [
                       _buildStatCard(
-                        '总人数',
+                        '总人次',
                         analysisData['totalEmployees'].toString(),
                         Icons.people,
                       ),
