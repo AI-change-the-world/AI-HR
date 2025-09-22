@@ -110,30 +110,79 @@ class QuarterlyAnalysisService {
           salaryRangeStatsMap[stat.range] = stat;
         }
 
-        // 计算总体统计数据
+        // 收集季度内每个月的员工姓名用于去重统计
+        final uniqueEmployees = <String, List<String>>{};
         int totalEmployeeCount = 0;
+
+        // 获取该季度所有月份的数据
+        for (int month = quarterStartMonth; month <= quarterEndMonth; month++) {
+          final monthlyData = await _monthlyService.getMonthlySalaryData(
+            year,
+            month,
+          );
+          if (monthlyData != null) {
+            final employeeNames = <String>[];
+            for (var record in monthlyData.records) {
+              if (record.name != null) {
+                employeeNames.add(record.name!);
+              }
+            }
+            uniqueEmployees['$month月'] = employeeNames;
+          }
+        }
+
+        // 计算季度去重员工数
+        final allEmployeeNames = <String>{};
+        for (var names in uniqueEmployees.values) {
+          allEmployeeNames.addAll(names);
+        }
+        totalEmployeeCount = allEmployeeNames.length;
+
+        // 计算总体统计数据
+        int employeeCount = 0;
         double totalSalary = 0.0;
         double averageSalary = 0.0;
         double highestSalary = 0.0; // 初始化最高工资
         double lowestSalary = double.infinity; // 初始化最低工资
 
-        for (var stat in departmentStatsMap.values) {
-          totalEmployeeCount += stat.employeeCount;
-          totalSalary += stat.totalNetSalary;
+        // 重新计算季度总工资和员工数（正确的方式）
+        double quarterlyTotalSalary = 0.0;
+        int quarterlyTotalEmployeeCount = 0;
 
-          // 更新最高和最低工资
-          if (stat.averageNetSalary > highestSalary) {
-            highestSalary = stat.averageNetSalary;
-          }
+        // 遍历季度内每个月的数据来计算季度总工资
+        for (int month = quarterStartMonth; month <= quarterEndMonth; month++) {
+          final monthlyData = await _monthlyService.getMonthlySalaryData(
+            year,
+            month,
+          );
+          if (monthlyData != null) {
+            for (var record in monthlyData.records) {
+              if (record.netSalary != null) {
+                final salaryStr = record.netSalary!.replaceAll(
+                  RegExp(r'[^\d.-]'),
+                  '',
+                );
+                final salary = double.tryParse(salaryStr) ?? 0;
+                quarterlyTotalSalary += salary;
+                quarterlyTotalEmployeeCount++;
 
-          if (stat.averageNetSalary < lowestSalary) {
-            lowestSalary = stat.averageNetSalary;
+                // 更新最高和最低工资
+                if (salary > highestSalary) {
+                  highestSalary = salary;
+                }
+                if (salary < lowestSalary && salary > 0) {
+                  // 忽略0工资
+                  lowestSalary = salary;
+                }
+              }
+            }
           }
         }
 
-        if (totalEmployeeCount > 0) {
-          averageSalary = totalSalary / totalEmployeeCount;
-        }
+        // 使用正确的季度统计数据
+        employeeCount = quarterlyTotalEmployeeCount;
+        totalSalary = quarterlyTotalSalary;
+        averageSalary = employeeCount > 0 ? totalSalary / employeeCount : 0.0;
 
         // 确保最低工资有合理的默认值
         if (lowestSalary == double.infinity) {
@@ -144,13 +193,15 @@ class QuarterlyAnalysisService {
           QuarterlyComparisonData(
             year: year,
             quarter: quarter,
-            employeeCount: totalEmployeeCount,
+            employeeCount: employeeCount,
             totalSalary: totalSalary,
             averageSalary: averageSalary,
             highestSalary: highestSalary,
             lowestSalary: lowestSalary,
             departmentStats: departmentStatsMap,
             salaryRangeStats: salaryRangeStatsMap,
+            uniqueEmployees: uniqueEmployees, // 添加去重员工信息
+            totalEmployeeCount: totalEmployeeCount, // 添加去重后的员工总数
           ),
         );
       }

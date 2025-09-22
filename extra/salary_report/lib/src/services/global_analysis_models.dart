@@ -178,6 +178,8 @@ class QuarterlyComparisonData {
   final double lowestSalary;
   final Map<String, DepartmentSalaryStats> departmentStats;
   final Map<String, SalaryRangeStats> salaryRangeStats;
+  final Map<String, List<String>> uniqueEmployees; // 每个月的员工姓名
+  final int totalEmployeeCount; // 季度去重后的员工总数
 
   QuarterlyComparisonData({
     required this.year,
@@ -189,6 +191,8 @@ class QuarterlyComparisonData {
     required this.lowestSalary,
     required this.departmentStats,
     required this.salaryRangeStats,
+    required this.uniqueEmployees,
+    required this.totalEmployeeCount,
   });
 }
 

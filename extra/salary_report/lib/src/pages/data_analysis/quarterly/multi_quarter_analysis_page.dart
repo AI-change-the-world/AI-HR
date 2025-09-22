@@ -540,7 +540,8 @@ class QuarterlyEmployeeCountChartComponent extends ConsumerWidget {
             });
 
         for (var quarterlyComparison in sortedQuarterlyData) {
-          int totalEmployees = quarterlyComparison.employeeCount;
+          // 使用去重后的员工数量，而不是直接使用employeeCount
+          int totalEmployees = quarterlyComparison.totalEmployeeCount;
 
           employeeCountPerQuarter.add({
             'quarter':
