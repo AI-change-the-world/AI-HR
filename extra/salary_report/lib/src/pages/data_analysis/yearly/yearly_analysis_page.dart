@@ -239,7 +239,10 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
         totalEmployeeRecords += monthlyData.records.length;
       }
 
-      monthlyTrendData.add({'month': '$month月', 'salary': monthlyTotalSalary});
+      monthlyTrendData.add({
+        'month': '$month月',
+        'totalSalary': monthlyTotalSalary,
+      });
 
       // 存储每月员工数据用于计算变化
       monthlyEmployeeData.add({
@@ -837,13 +840,5 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
   /// 构建请假详情组件
   Widget _buildLeaveDetails(List<AttendanceStats> leaveDetails) {
     return LeaveDetailBuilder.buildLeaveDetails(leaveDetails);
-  }
-
-  List<Map<String, dynamic>> _generateMultiYearData(
-    Map<String, dynamic> analysisData,
-  ) {
-    // 直接返回当前年份的数据，不生成额外的模拟数据
-    // 多年度分析应该在 MultiYearAnalysisPage 中处理
-    return analysisData['monthlyTrend'] as List<Map<String, dynamic>>;
   }
 }
