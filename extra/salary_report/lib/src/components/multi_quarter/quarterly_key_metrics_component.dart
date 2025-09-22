@@ -72,6 +72,11 @@ class QuarterlyKeyMetricsComponent extends ConsumerWidget {
                   Icons.people,
                 ),
                 _buildStatCard(
+                  '总人数',
+                  quarterlyData.totalEmployeeCount.toString(),
+                  Icons.group,
+                ),
+                _buildStatCard(
                   '工资总额',
                   '¥${quarterlyData.totalSalary.toStringAsFixed(2)}',
                   Icons.account_balance_wallet,

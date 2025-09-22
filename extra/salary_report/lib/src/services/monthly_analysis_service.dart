@@ -337,6 +337,24 @@ class MonthlyAnalysisService {
         final year = monthInfo['year']!;
         final month = monthInfo['month']!;
 
+        // 获取月度工资数据用于员工信息收集
+        final monthlySalaryData = await getMonthlySalaryData(year, month);
+
+        // 收集员工信息
+        final workers = <MinimalEmployeeInfo>[];
+        if (monthlySalaryData != null) {
+          for (var record in monthlySalaryData.records) {
+            if (record.name != null && record.department != null) {
+              workers.add(
+                MinimalEmployeeInfo(
+                  name: record.name!,
+                  department: record.department!,
+                ),
+              );
+            }
+          }
+        }
+
         // 获取部门统计数据
         final departmentStatsList = await getDepartmentAggregation(year, month);
         final departmentStatsMap = <String, DepartmentSalaryStats>{};
@@ -361,23 +379,40 @@ class MonthlyAnalysisService {
         double highestSalary = 0.0; // 初始化最高工资
         double lowestSalary = double.infinity; // 初始化最低工资
 
-        for (var stat in departmentStatsList) {
-          totalEmployeeCount += stat.employeeCount;
-          totalSalary += stat.totalNetSalary;
+        // 重新计算月度总工资和员工数（正确的方式）
+        double monthlyTotalSalary = 0.0;
+        int monthlyTotalEmployeeCount = 0;
 
-          // 更新最高和最低工资
-          if (stat.averageNetSalary > highestSalary) {
-            highestSalary = stat.averageNetSalary;
-          }
+        // 获取月度工资数据用于最高最低工资计算
+        if (monthlySalaryData != null) {
+          for (var record in monthlySalaryData.records) {
+            if (record.netSalary != null) {
+              final salaryStr = record.netSalary!.replaceAll(
+                RegExp(r'[^\d.-]'),
+                '',
+              );
+              final salary = double.tryParse(salaryStr) ?? 0;
+              monthlyTotalSalary += salary;
+              monthlyTotalEmployeeCount++;
 
-          if (stat.averageNetSalary < lowestSalary) {
-            lowestSalary = stat.averageNetSalary;
+              // 更新最高和最低工资
+              if (salary > highestSalary) {
+                highestSalary = salary;
+              }
+              if (salary < lowestSalary && salary > 0) {
+                // 忽略0工资
+                lowestSalary = salary;
+              }
+            }
           }
         }
 
-        if (totalEmployeeCount > 0) {
-          averageSalary = totalSalary / totalEmployeeCount;
-        }
+        // 使用正确的月度统计数据
+        totalEmployeeCount = monthlyTotalEmployeeCount;
+        totalSalary = monthlyTotalSalary;
+        averageSalary = totalEmployeeCount > 0
+            ? totalSalary / totalEmployeeCount
+            : 0.0;
 
         // 确保最低工资有合理的默认值
         if (lowestSalary == double.infinity) {
@@ -395,6 +430,7 @@ class MonthlyAnalysisService {
             lowestSalary: lowestSalary,
             departmentStats: departmentStatsMap,
             salaryRangeStats: salaryRangeStatsMap,
+            workers: workers, // 添加员工列表字段
           ),
         );
       }

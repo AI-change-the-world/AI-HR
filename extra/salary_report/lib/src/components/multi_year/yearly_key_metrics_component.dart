@@ -69,6 +69,11 @@ class YearlyKeyMetricsComponent extends ConsumerWidget {
                   Icons.people,
                 ),
                 _buildStatCard(
+                  '总人数',
+                  yearlyData.totalEmployeeCount.toString(),
+                  Icons.group,
+                ),
+                _buildStatCard(
                   '工资总额',
                   '¥${yearlyData.totalSalary.toStringAsFixed(2)}',
                   Icons.account_balance_wallet,

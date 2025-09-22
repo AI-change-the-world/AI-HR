@@ -154,7 +154,8 @@ class _MultiYearAnalysisPageState extends ConsumerState<MultiYearAnalysisPage> {
     AsyncValue<ChartDataState> chartDataState,
   ) {
     // 计算整体统计数据
-    int totalEmployees = 0;
+    int totalEmployees = 0; // 总人次（不去重）
+    int totalUniqueEmployees = 0; // 总人数（去重）
     double totalSalary = 0;
     double highestSalary = 0;
     double lowestSalary = double.infinity;
@@ -165,6 +166,8 @@ class _MultiYearAnalysisPageState extends ConsumerState<MultiYearAnalysisPage> {
       for (var yearlyData in keyMetricsState.value!.yearlyData!) {
         totalEmployees += yearlyData.employeeCount;
         totalSalary += yearlyData.totalSalary;
+        // 累加去重后的员工数
+        totalUniqueEmployees += yearlyData.totalEmployeeCount;
 
         yearlyData.departmentStats.forEach((dept, stat) {
           if (stat.averageNetSalary > highestSalary) {
@@ -185,7 +188,8 @@ class _MultiYearAnalysisPageState extends ConsumerState<MultiYearAnalysisPage> {
     final averageSalary = totalEmployees > 0 ? totalSalary / totalEmployees : 0;
 
     return {
-      'totalEmployees': totalEmployees,
+      'totalEmployees': totalEmployees, // 总人次
+      'totalUniqueEmployees': totalUniqueEmployees, // 总人数（去重）
       'totalSalary': totalSalary,
       'averageSalary': averageSalary,
       'highestSalary': highestSalary,
@@ -519,7 +523,8 @@ class YearlyEmployeeCountChartComponent extends ConsumerWidget {
             });
 
         for (var yearlyComparison in sortedYearlyData) {
-          int totalEmployees = yearlyComparison.employeeCount;
+          // 使用去重后的员工数量，而不是直接使用employeeCount
+          int totalEmployees = yearlyComparison.totalEmployeeCount;
 
           employeeCountPerYear.add({
             'year': '${yearlyComparison.year}年',

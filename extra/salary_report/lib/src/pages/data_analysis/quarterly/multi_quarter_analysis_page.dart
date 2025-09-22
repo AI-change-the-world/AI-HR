@@ -163,7 +163,8 @@ class _MultiQuarterAnalysisPageState
     AsyncValue<ChartDataState> chartDataState,
   ) {
     // 计算整体统计数据
-    int totalEmployees = 0;
+    int totalEmployees = 0; // 总人次（不去重）
+    int totalUniqueEmployees = 0; // 总人数（去重）
     double totalSalary = 0;
     double highestSalary = 0;
     double lowestSalary = double.infinity;
@@ -174,6 +175,8 @@ class _MultiQuarterAnalysisPageState
       for (var quarterlyData in keyMetricsState.value!.quarterlyData!) {
         totalEmployees += quarterlyData.employeeCount;
         totalSalary += quarterlyData.totalSalary;
+        // 累加去重后的员工数
+        totalUniqueEmployees += quarterlyData.totalEmployeeCount;
 
         quarterlyData.departmentStats.forEach((dept, stat) {
           if (stat.averageNetSalary > highestSalary) {
@@ -194,7 +197,8 @@ class _MultiQuarterAnalysisPageState
     final averageSalary = totalEmployees > 0 ? totalSalary / totalEmployees : 0;
 
     return {
-      'totalEmployees': totalEmployees,
+      'totalEmployees': totalEmployees, // 总人次
+      'totalUniqueEmployees': totalUniqueEmployees, // 总人数（去重）
       'totalSalary': totalSalary,
       'averageSalary': averageSalary,
       'highestSalary': highestSalary,

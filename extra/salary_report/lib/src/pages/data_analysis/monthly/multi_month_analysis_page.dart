@@ -160,7 +160,8 @@ class _MultiMonthAnalysisPageState
     AsyncValue<ChartDataState> chartDataState,
   ) {
     // 计算整体统计数据
-    int totalEmployees = 0;
+    int totalEmployees = 0; // 总人次（不去重）
+    int totalUniqueEmployees = 0; // 总人数（去重）
     double totalSalary = 0;
     double highestSalary = 0;
     double lowestSalary = double.infinity;
@@ -191,7 +192,8 @@ class _MultiMonthAnalysisPageState
     final averageSalary = totalEmployees > 0 ? totalSalary / totalEmployees : 0;
 
     return {
-      'totalEmployees': totalEmployees,
+      'totalEmployees': totalEmployees, // 总人次
+      'totalUniqueEmployees': totalUniqueEmployees, // 总人数（去重）
       'totalSalary': totalSalary,
       'averageSalary': averageSalary,
       'highestSalary': highestSalary,
@@ -529,6 +531,7 @@ class MonthlyEmployeeCountChartComponent extends ConsumerWidget {
             });
 
         for (var monthlyComparison in sortedMonthlyData) {
+          // 月度数据没有去重概念，直接使用employeeCount作为总人次
           int totalEmployees = monthlyComparison.employeeCount;
 
           employeeCountPerMonth.add({

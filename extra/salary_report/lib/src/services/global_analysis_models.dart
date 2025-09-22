@@ -127,6 +127,25 @@ class DepartmentSalaryRangeStats {
   });
 }
 
+// 最小化的人员信息类
+class MinimalEmployeeInfo {
+  final String name;
+  final String department;
+
+  MinimalEmployeeInfo({required this.name, required this.department});
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is MinimalEmployeeInfo &&
+        other.name == name &&
+        other.department == department;
+  }
+
+  @override
+  int get hashCode => Object.hash(name, department);
+}
+
 // 月度对比数据模型
 class MonthlyComparisonData {
   final int year;
@@ -138,6 +157,7 @@ class MonthlyComparisonData {
   final double lowestSalary; // 添加最低工资字段
   final Map<String, DepartmentSalaryStats> departmentStats;
   final Map<String, SalaryRangeStats> salaryRangeStats;
+  final List<MinimalEmployeeInfo> workers; // 添加员工列表字段
 
   MonthlyComparisonData({
     required this.year,
@@ -149,6 +169,7 @@ class MonthlyComparisonData {
     required this.lowestSalary, // 添加最低工资字段
     required this.departmentStats,
     required this.salaryRangeStats,
+    required this.workers,
   });
 }
 
@@ -178,8 +199,9 @@ class QuarterlyComparisonData {
   final double lowestSalary;
   final Map<String, DepartmentSalaryStats> departmentStats;
   final Map<String, SalaryRangeStats> salaryRangeStats;
-  final Map<String, List<String>> uniqueEmployees; // 每个月的员工姓名
+  final Map<String, List<MinimalEmployeeInfo>> uniqueEmployees; // 每个月的员工姓名
   final int totalEmployeeCount; // 季度去重后的员工总数
+  final List<MinimalEmployeeInfo> workers; // 添加员工列表字段
 
   QuarterlyComparisonData({
     required this.year,
@@ -193,6 +215,7 @@ class QuarterlyComparisonData {
     required this.salaryRangeStats,
     required this.uniqueEmployees,
     required this.totalEmployeeCount,
+    required this.workers,
   });
 }
 
@@ -221,8 +244,9 @@ class YearlyComparisonData {
   final double lowestSalary;
   final Map<String, DepartmentSalaryStats> departmentStats;
   final Map<String, SalaryRangeStats> salaryRangeStats;
-  final Map<String, List<String>> uniqueEmployees; // 每个月的员工姓名
+  final Map<String, List<MinimalEmployeeInfo>> uniqueEmployees; // 每个月的员工姓名
   final int totalEmployeeCount; // 全年去重后的员工总数
+  final List<MinimalEmployeeInfo> workers; // 添加员工列表字段
 
   YearlyComparisonData({
     required this.year,
@@ -235,6 +259,7 @@ class YearlyComparisonData {
     required this.salaryRangeStats,
     required this.uniqueEmployees,
     required this.totalEmployeeCount,
+    required this.workers,
   });
 }
 

@@ -76,8 +76,9 @@ class YearlyAnalysisService {
         }
 
         // 收集每个月的员工姓名用于去重统计
-        final uniqueEmployees = <String, List<String>>{};
+        final uniqueEmployees = <String, List<MinimalEmployeeInfo>>{};
         int totalEmployeeCount = 0;
+        final workers = <MinimalEmployeeInfo>[]; // 收集所有员工信息
 
         // 获取该年所有月份的数据
         for (int month = 1; month <= 12; month++) {
@@ -86,20 +87,27 @@ class YearlyAnalysisService {
             month,
           );
           if (monthlyData != null) {
-            final employeeNames = <String>[];
+            final employeeInfos = <MinimalEmployeeInfo>[];
             for (var record in monthlyData.records) {
-              if (record.name != null) {
-                employeeNames.add(record.name!);
+              if (record.name != null && record.department != null) {
+                final employeeInfo = MinimalEmployeeInfo(
+                  name: record.name!,
+                  department: record.department!,
+                );
+                employeeInfos.add(employeeInfo);
+                workers.add(employeeInfo); // 添加到总员工列表
               }
             }
-            uniqueEmployees['$month月'] = employeeNames;
+            uniqueEmployees['$month月'] = employeeInfos;
           }
         }
 
         // 计算全年去重员工数
         final allEmployeeNames = <String>{};
         for (var names in uniqueEmployees.values) {
-          allEmployeeNames.addAll(names);
+          for (var employee in names) {
+            allEmployeeNames.add(employee.name);
+          }
         }
         totalEmployeeCount = allEmployeeNames.length;
 
@@ -166,6 +174,7 @@ class YearlyAnalysisService {
             salaryRangeStats: salaryRangeStatsMap,
             uniqueEmployees: uniqueEmployees,
             totalEmployeeCount: totalEmployeeCount,
+            workers: workers, // 添加员工列表字段
           ),
         );
       }

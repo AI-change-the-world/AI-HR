@@ -241,7 +241,8 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
     logger.info("monthlyTrendData $monthlyTrendData");
 
     return {
-      'totalEmployees': uniqueEmployeeIds.length, // 去重后的员工数用于显示
+      'totalEmployees': totalEmployeeRecords, // 总人次（不去重）
+      'totalUniqueEmployees': uniqueEmployeeIds.length, // 总人数（去重）
       'totalSalary': totalSalary, // 年度总工资（12个月工资总和）
       'averageSalary': averageSalary, // 年度总工资 / 年度总员工记录数
       'highestSalary': highestSalary,
@@ -312,7 +313,8 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
         setState(() {
           _previousYearData = {
             'year': previousYear,
-            'totalEmployees': uniqueEmployeeIds.length,
+            'totalEmployees': totalEmployeeRecords, // 总人次（不去重）
+            'totalUniqueEmployees': uniqueEmployeeIds.length, // 总人数（去重）
             'totalSalary': totalSalary,
             'averageSalary': averageSalary,
           };
@@ -454,6 +456,11 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
                           Icons.people,
                         ),
                         _buildStatCard(
+                          '总人数',
+                          _previousYearData!['totalUniqueEmployees'].toString(),
+                          Icons.group,
+                        ),
+                        _buildStatCard(
                           '工资总额',
                           '¥${_previousYearData!['totalSalary'].toStringAsFixed(2)}',
                           Icons.account_balance_wallet,
@@ -482,6 +489,11 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
                         '总人次',
                         analysisData['totalEmployees'].toString(),
                         Icons.people,
+                      ),
+                      _buildStatCard(
+                        '总人数',
+                        analysisData['totalUniqueEmployees'].toString(),
+                        Icons.group,
                       ),
                       _buildStatCard(
                         '工资总额',

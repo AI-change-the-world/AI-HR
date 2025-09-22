@@ -139,6 +139,9 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
       double highestSalary = 0;
       double lowestSalary = double.infinity;
 
+      // 收集季度内每个月的员工姓名用于去重统计
+      final uniqueEmployees = <String>{};
+
       for (int month = startMonth; month <= endMonth; month++) {
         // 获取每月的部门统计数据
         final monthlyDepartmentStats = await _salaryDataService
@@ -202,6 +205,19 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
             'employeeCount': stat.employeeCount,
           });
         }
+
+        // 收集该月的员工姓名用于去重统计
+        final monthlySalaryData = await _salaryDataService.getMonthlySalaryData(
+          widget.year,
+          month,
+        );
+        if (monthlySalaryData != null) {
+          for (var record in monthlySalaryData.records) {
+            if (record.name != null) {
+              uniqueEmployees.add(record.name!);
+            }
+          }
+        }
       }
 
       if (lowestSalary == double.infinity) {
@@ -241,7 +257,8 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
 
       setState(() {
         _analysisData = {
-          'totalEmployees': totalEmployees,
+          'totalEmployees': totalEmployees, // 总人次（不去重）
+          'totalUniqueEmployees': uniqueEmployees.length, // 总人数（去重）
           'totalSalary': totalSalary,
           'averageSalary': averageSalary,
           'highestSalary': highestSalary,
@@ -276,6 +293,7 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
 
       // 计算上一季度的起始月份
       final startMonth = (previousQuarter - 1) * 3 + 1;
+      final endMonth = startMonth + 2;
 
       // 获取上一季度的部门统计数据
       final previousDepartmentStats = await _salaryDataService
@@ -285,21 +303,51 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
         // 计算上一季度的总员工数和总工资
         int totalEmployees = 0;
         double totalSalary = 0;
+        int totalEmployeeRecords = 0; // 上一季度总员工记录数（不去重，用于计算平均工资）
+        final Set<String> uniqueEmployeeIds = <String>{}; // 用于去重统计员工数
 
-        for (var stat in previousDepartmentStats) {
-          totalEmployees += stat.employeeCount;
-          totalSalary += stat.totalNetSalary;
+        // 遍历上一季度所有月份获取数据
+        for (int month = startMonth; month <= endMonth; month++) {
+          final monthlyData = await _salaryDataService.getMonthlySalaryData(
+            previousYear,
+            month,
+          );
+
+          if (monthlyData != null) {
+            // 累加员工记录数（不去重，用于计算平均工资）
+            totalEmployeeRecords += monthlyData.records.length;
+
+            // 累加上一季度的总工资
+            for (var record in monthlyData.records) {
+              if (record.netSalary != null) {
+                final salaryStr = record.netSalary!.replaceAll(
+                  RegExp(r'[^\d.-]'),
+                  '',
+                );
+                final salary = double.tryParse(salaryStr) ?? 0;
+                totalSalary += salary;
+
+                // 收集员工唯一标识用于去重统计
+                String employeeId = record.name ?? '';
+                if (record.idNumber != null && record.idNumber!.isNotEmpty) {
+                  employeeId += '_${record.idNumber}';
+                }
+                uniqueEmployeeIds.add(employeeId);
+              }
+            }
+          }
         }
 
-        final averageSalary = totalEmployees > 0
-            ? totalSalary / totalEmployees
+        final averageSalary = totalEmployeeRecords > 0
+            ? totalSalary / totalEmployeeRecords
             : 0;
 
         setState(() {
           _previousQuarterData = {
             'year': previousYear,
             'quarter': previousQuarter,
-            'totalEmployees': totalEmployees,
+            'totalEmployees': totalEmployeeRecords, // 总人次（不去重）
+            'totalUniqueEmployees': uniqueEmployeeIds.length, // 总人数（去重）
             'totalSalary': totalSalary,
             'averageSalary': averageSalary,
           };
@@ -461,6 +509,12 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                             Icons.people,
                           ),
                           _buildStatCard(
+                            '总人数',
+                            _previousQuarterData!['totalUniqueEmployees']
+                                .toString(),
+                            Icons.group,
+                          ),
+                          _buildStatCard(
                             '工资总额',
                             '¥${_previousQuarterData!['totalSalary'].toStringAsFixed(2)}',
                             Icons.account_balance_wallet,
@@ -489,6 +543,16 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                       runSpacing: 12,
                       children: [
                         _buildStatCard(
+                          '总人次',
+                          _analysisData['totalEmployees'].toString(),
+                          Icons.people,
+                        ),
+                        _buildStatCard(
+                          '总人数',
+                          _analysisData['totalUniqueEmployees'].toString(),
+                          Icons.group,
+                        ),
+                        _buildStatCard(
                           '季度工资总额',
                           '¥${_analysisData['totalSalary'].toStringAsFixed(2)}',
                           Icons.account_balance_wallet,
@@ -497,6 +561,16 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                           '季度平均工资',
                           '¥${_analysisData['averageSalary'].toStringAsFixed(2)}',
                           Icons.trending_up,
+                        ),
+                        _buildStatCard(
+                          '最高工资',
+                          '¥${_analysisData['highestSalary'].toStringAsFixed(2)}',
+                          Icons.arrow_upward,
+                        ),
+                        _buildStatCard(
+                          '最低工资',
+                          '¥${_analysisData['lowestSalary'].toStringAsFixed(2)}',
+                          Icons.arrow_downward,
                         ),
                       ],
                     ),
