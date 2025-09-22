@@ -148,57 +148,110 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
       // 用于计算员工变动的数据结构
       List<Map<String, dynamic>> monthlyEmployeeData = [];
 
+      // 重新计算季度总工资和员工数（正确的方式）
+      double quarterlyTotalSalary = 0.0;
+      int quarterlyTotalEmployeeCount = 0;
+      double quarterlyHighestSalary = 0.0;
+      double quarterlyLowestSalary = double.infinity;
+
       for (int month = startMonth; month <= endMonth; month++) {
         // 获取每月的部门统计数据
         final monthlyDepartmentStats = await _salaryDataService
             .getDepartmentAggregation(widget.year, month);
 
-        // 计算每月的关键指标
-        double monthlyTotalSalary = 0;
-        int monthlyTotalEmployees = 0;
-        double monthlyHighestSalary = 0;
-        double monthlyLowestSalary = double.infinity;
+        // 获取当月工资数据用于去重统计和最高最低工资计算
+        final monthlySalaryData = await _salaryDataService.getMonthlySalaryData(
+          widget.year,
+          month,
+        );
 
-        for (var stat in monthlyDepartmentStats) {
-          monthlyTotalSalary += stat.totalNetSalary;
-          monthlyTotalEmployees += stat.employeeCount;
+        // 收集员工唯一标识用于去重统计（姓名+身份证，若无身份证则仅用姓名）
+        final Set<String> uniqueEmployeeIds = <String>{};
+        Set<MinimalEmployeeInfo> currentMonthEmployees =
+            <MinimalEmployeeInfo>{};
+        if (monthlySalaryData != null) {
+          for (var record in monthlySalaryData.records) {
+            String employeeId = record.name ?? '';
+            if (record.idNumber != null && record.idNumber!.isNotEmpty) {
+              employeeId += '_${record.idNumber}';
+            }
+            uniqueEmployeeIds.add(employeeId);
+            uniqueEmployees.addAll(uniqueEmployeeIds);
 
-          if (stat.averageNetSalary > monthlyHighestSalary) {
-            monthlyHighestSalary = stat.averageNetSalary;
-          }
-
-          if (stat.averageNetSalary < monthlyLowestSalary) {
-            monthlyLowestSalary = stat.averageNetSalary;
+            // 收集员工信息用于计算员工变化
+            if (record.name != null && record.department != null) {
+              currentMonthEmployees.add(
+                MinimalEmployeeInfo(
+                  name: record.name!,
+                  department: record.department!,
+                ),
+              );
+            }
           }
         }
+
+        // 重新计算月度总工资和员工数（正确的方式）
+        double monthlyTotalSalary = 0.0;
+        int monthlyTotalEmployeeCount = 0;
+        double monthlyHighestSalary = 0.0;
+        double monthlyLowestSalary = double.infinity;
+
+        // 获取月度工资数据用于最高最低工资计算
+        if (monthlySalaryData != null) {
+          for (var record in monthlySalaryData.records) {
+            if (record.netSalary != null) {
+              final salaryStr = record.netSalary!.replaceAll(
+                RegExp(r'[^\d.-]'),
+                '',
+              );
+              final salary = double.tryParse(salaryStr) ?? 0;
+              monthlyTotalSalary += salary;
+              monthlyTotalEmployeeCount++;
+              quarterlyTotalEmployeeCount++;
+
+              // 更新最高和最低工资
+              if (salary > monthlyHighestSalary) {
+                monthlyHighestSalary = salary;
+              }
+              if (salary < monthlyLowestSalary && salary > 0) {
+                // 忽略0工资
+                monthlyLowestSalary = salary;
+              }
+
+              // 更新季度最高和最低工资
+              if (salary > quarterlyHighestSalary) {
+                quarterlyHighestSalary = salary;
+              }
+              if (salary < quarterlyLowestSalary && salary > 0) {
+                // 忽略0工资
+                quarterlyLowestSalary = salary;
+              }
+            }
+          }
+        }
+
+        // 累加到季度总工资
+        quarterlyTotalSalary += monthlyTotalSalary;
 
         if (monthlyLowestSalary == double.infinity) {
           monthlyLowestSalary = 0;
         }
 
-        double monthlyAverageSalary = monthlyTotalEmployees > 0
-            ? monthlyTotalSalary / monthlyTotalEmployees
+        double monthlyAverageSalary = monthlyTotalEmployeeCount > 0
+            ? monthlyTotalSalary / monthlyTotalEmployeeCount
             : 0;
 
         monthlyData.add({
           'month': '$month月',
           'totalSalary': monthlyTotalSalary,
           'averageSalary': monthlyAverageSalary,
-          'employeeCount': monthlyTotalEmployees,
+          'employeeCount': monthlyTotalEmployeeCount,
           'highestSalary': monthlyHighestSalary,
           'lowestSalary': monthlyLowestSalary,
         });
 
         totalSalary += monthlyTotalSalary;
-        totalEmployees += monthlyTotalEmployees;
-
-        if (monthlyHighestSalary > highestSalary) {
-          highestSalary = monthlyHighestSalary;
-        }
-
-        if (monthlyLowestSalary < lowestSalary) {
-          lowestSalary = monthlyLowestSalary;
-        }
+        totalEmployees += monthlyTotalEmployeeCount;
 
         // 为每月的部门统计数据创建对比数据
         for (var stat in monthlyDepartmentStats) {
@@ -210,27 +263,6 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
             'average': stat.averageNetSalary,
             'employeeCount': stat.employeeCount,
           });
-        }
-
-        // 收集该月的员工数据用于计算员工变动
-        final monthlySalaryData = await _salaryDataService.getMonthlySalaryData(
-          widget.year,
-          month,
-        );
-
-        Set<MinimalEmployeeInfo> currentMonthEmployees =
-            <MinimalEmployeeInfo>{};
-        if (monthlySalaryData != null) {
-          for (var record in monthlySalaryData.records) {
-            if (record.name != null && record.department != null) {
-              currentMonthEmployees.add(
-                MinimalEmployeeInfo(
-                  name: record.name!,
-                  department: record.department!,
-                ),
-              );
-            }
-          }
         }
 
         monthlyEmployeeData.add({
@@ -279,6 +311,12 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
           });
         }
       }
+
+      // 使用正确的季度统计数据
+      totalSalary = quarterlyTotalSalary;
+      totalEmployees = quarterlyTotalEmployeeCount;
+      highestSalary = quarterlyHighestSalary;
+      lowestSalary = quarterlyLowestSalary;
 
       if (lowestSalary == double.infinity) {
         lowestSalary = 0;
@@ -366,6 +404,8 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
         double totalSalary = 0;
         int totalEmployeeRecords = 0; // 上一季度总员工记录数（不去重，用于计算平均工资）
         final Set<String> uniqueEmployeeIds = <String>{}; // 用于去重统计员工数
+        double highestSalary = 0;
+        double lowestSalary = double.infinity;
 
         // 遍历上一季度所有月份获取数据
         for (int month = startMonth; month <= endMonth; month++) {
@@ -378,7 +418,7 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
             // 累加员工记录数（不去重，用于计算平均工资）
             totalEmployeeRecords += monthlyData.records.length;
 
-            // 累加上一季度的总工资
+            // 累加上一季度的总工资和计算最高最低工资
             for (var record in monthlyData.records) {
               if (record.netSalary != null) {
                 final salaryStr = record.netSalary!.replaceAll(
@@ -387,6 +427,15 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                 );
                 final salary = double.tryParse(salaryStr) ?? 0;
                 totalSalary += salary;
+
+                // 更新最高和最低工资
+                if (salary > highestSalary) {
+                  highestSalary = salary;
+                }
+                if (salary < lowestSalary && salary > 0) {
+                  // 忽略0工资
+                  lowestSalary = salary;
+                }
 
                 // 收集员工唯一标识用于去重统计
                 String employeeId = record.name ?? '';
@@ -397,6 +446,10 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
               }
             }
           }
+        }
+
+        if (lowestSalary == double.infinity) {
+          lowestSalary = 0;
         }
 
         final averageSalary = totalEmployeeRecords > 0
@@ -411,6 +464,8 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
             'totalUniqueEmployees': uniqueEmployeeIds.length, // 总人数（去重）
             'totalSalary': totalSalary,
             'averageSalary': averageSalary,
+            'highestSalary': highestSalary, // 添加最高工资
+            'lowestSalary': lowestSalary, // 添加最低工资
           };
         });
       }
@@ -584,6 +639,16 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                             '平均工资',
                             '¥${_previousQuarterData!['averageSalary'].toStringAsFixed(2)}',
                             Icons.trending_up,
+                          ),
+                          _buildStatCard(
+                            '最高工资',
+                            '¥${_previousQuarterData!['highestSalary'].toStringAsFixed(2)}',
+                            Icons.arrow_upward,
+                          ),
+                          _buildStatCard(
+                            '最低工资',
+                            '¥${_previousQuarterData!['lowestSalary'].toStringAsFixed(2)}',
+                            Icons.arrow_downward,
                           ),
                         ],
                       ),
