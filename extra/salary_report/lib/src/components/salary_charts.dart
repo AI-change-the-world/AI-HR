@@ -143,7 +143,7 @@ class MonthlySalaryTrendChart extends StatelessWidget {
           xValueMapper: (Map<String, dynamic> data, _) =>
               data['month'] as String,
           yValueMapper: (Map<String, dynamic> data, _) =>
-              (data['totalSalary'] as num?)?.toInt() ?? 0,
+              (data['salary'] as num?)?.toInt() ?? 0,
           dataLabelSettings: const DataLabelSettings(isVisible: true),
           enableTooltip: true,
         ),
@@ -433,6 +433,191 @@ class MultiQuarterDepartmentSalaryChart extends StatelessWidget {
               data['quarter'] as String,
           yValueMapper: (Map<String, dynamic> data, _) =>
               data['salary'] as int, // 使用int类型
+          dataLabelSettings: const DataLabelSettings(isVisible: false),
+          color: colors[colorIndex % colors.length], // 循环使用颜色
+        ),
+      );
+
+      colorIndex++;
+    }
+
+    return series;
+  }
+}
+
+/// 每年人数变化图表
+class YearlyEmployeeCountChart extends StatelessWidget {
+  final List<Map<String, dynamic>> yearlyData;
+
+  const YearlyEmployeeCountChart({super.key, required this.yearlyData});
+
+  @override
+  Widget build(BuildContext context) {
+    return SfCartesianChart(
+      title: ChartTitle(text: '每年人数变化'),
+      primaryXAxis: CategoryAxis(),
+      primaryYAxis: NumericAxis(),
+      tooltipBehavior: TooltipBehavior(enable: true),
+      series: <LineSeries<Map<String, dynamic>, String>>[
+        LineSeries<Map<String, dynamic>, String>(
+          dataSource: yearlyData,
+          xValueMapper: (Map<String, dynamic> data, _) =>
+              data['year'] as String,
+          yValueMapper: (Map<String, dynamic> data, _) =>
+              data['employeeCount'] as int,
+          dataLabelSettings: const DataLabelSettings(isVisible: true),
+          enableTooltip: true,
+        ),
+      ],
+    );
+  }
+}
+
+/// 每年平均薪资变化图表
+class YearlyAverageSalaryChart extends StatelessWidget {
+  final List<Map<String, dynamic>> yearlyData;
+
+  const YearlyAverageSalaryChart({super.key, required this.yearlyData});
+
+  @override
+  Widget build(BuildContext context) {
+    return SfCartesianChart(
+      title: ChartTitle(text: '每年平均薪资变化'),
+      primaryXAxis: CategoryAxis(),
+      primaryYAxis: NumericAxis(
+        numberFormat: NumberFormat.simpleCurrency(locale: 'zh_CN'),
+      ),
+      tooltipBehavior: TooltipBehavior(enable: true),
+      series: <LineSeries<Map<String, dynamic>, String>>[
+        LineSeries<Map<String, dynamic>, String>(
+          dataSource: yearlyData,
+          xValueMapper: (Map<String, dynamic> data, _) =>
+              data['year'] as String,
+          yValueMapper: (Map<String, dynamic> data, _) =>
+              (data['averageSalary'] as num).toInt(),
+          dataLabelSettings: const DataLabelSettings(isVisible: true),
+          enableTooltip: true,
+        ),
+      ],
+    );
+  }
+}
+
+/// 每年总工资变化图表
+class YearlyTotalSalaryChart extends StatelessWidget {
+  final List<Map<String, dynamic>> yearlyData;
+
+  const YearlyTotalSalaryChart({super.key, required this.yearlyData});
+
+  @override
+  Widget build(BuildContext context) {
+    return SfCartesianChart(
+      title: ChartTitle(text: '每年总工资变化'),
+      primaryXAxis: CategoryAxis(),
+      primaryYAxis: NumericAxis(
+        numberFormat: NumberFormat.simpleCurrency(locale: 'zh_CN'),
+      ),
+      tooltipBehavior: TooltipBehavior(enable: true),
+      series: <LineSeries<Map<String, dynamic>, String>>[
+        LineSeries<Map<String, dynamic>, String>(
+          dataSource: yearlyData,
+          xValueMapper: (Map<String, dynamic> data, _) =>
+              data['year'] as String,
+          yValueMapper: (Map<String, dynamic> data, _) =>
+              (data['totalSalary'] as double).toInt(),
+          dataLabelSettings: const DataLabelSettings(isVisible: true),
+          enableTooltip: true,
+        ),
+      ],
+    );
+  }
+}
+
+/// 多年部门工资趋势图表
+class MultiYearDepartmentSalaryChart extends StatelessWidget {
+  final List<Map<String, dynamic>> departmentYearlyData;
+
+  const MultiYearDepartmentSalaryChart({
+    super.key,
+    required this.departmentYearlyData,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SfCartesianChart(
+      title: ChartTitle(text: '各部门年度工资趋势'),
+      primaryXAxis: CategoryAxis(),
+      primaryYAxis: NumericAxis(
+        numberFormat: NumberFormat.simpleCurrency(locale: 'zh_CN'),
+      ),
+      legend: Legend(isVisible: true),
+      tooltipBehavior: TooltipBehavior(enable: true),
+      series: _getDepartmentSeries(),
+    );
+  }
+
+  List<LineSeries<Map<String, dynamic>, String>> _getDepartmentSeries() {
+    // 统一收集所有部门
+    final departments = <String>{};
+    for (var data in departmentYearlyData) {
+      if (data['departments'] is Map<String, dynamic>) {
+        (data['departments'] as Map<String, dynamic>).keys.forEach(
+          departments.add,
+        );
+      }
+    }
+
+    final series = <LineSeries<Map<String, dynamic>, String>>[];
+    // 添加更多颜色选项以适应部门较多的公司
+    final colors = [
+      Colors.lightBlue,
+      Colors.orange,
+      Colors.green,
+      Colors.purple,
+      Colors.red,
+      Colors.teal,
+      Colors.pink,
+      Colors.yellow,
+      Colors.cyan,
+      Colors.lime,
+      Colors.amber,
+      Colors.deepOrange,
+      Colors.brown,
+      Colors.grey,
+      Colors.blueGrey,
+      Colors.indigo,
+      Colors.deepPurple,
+      Colors.lightGreen,
+      Colors.blue,
+      Colors.redAccent,
+    ];
+
+    int colorIndex = 0;
+    for (var department in departments) {
+      final departmentData = <Map<String, dynamic>>[];
+
+      for (var data in departmentYearlyData) {
+        final year = data['year'] as String;
+        final deptData = data['departments'] as Map<String, dynamic>;
+
+        // 转为int以提高性能
+        final salary = ((deptData[department] as num?)?.toDouble() ?? 0.0)
+            .toInt();
+
+        departmentData.add({
+          'year': year,
+          'salary': salary,
+          'department': department,
+        });
+      }
+
+      series.add(
+        LineSeries<Map<String, dynamic>, String>(
+          name: department,
+          dataSource: departmentData,
+          xValueMapper: (Map<String, dynamic> data, _) =>
+              data['year'] as String,
+          yValueMapper: (Map<String, dynamic> data, _) => data['salary'] as int,
           dataLabelSettings: const DataLabelSettings(isVisible: false),
           color: colors[colorIndex % colors.length], // 循环使用颜色
         ),
