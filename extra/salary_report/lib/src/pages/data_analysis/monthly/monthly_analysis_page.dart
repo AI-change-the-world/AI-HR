@@ -14,6 +14,7 @@ import 'package:salary_report/src/services/report_service.dart';
 import 'package:toastification/toastification.dart';
 import 'package:salary_report/src/isar/salary_list.dart';
 import 'package:salary_report/src/components/employee_changes_component.dart';
+import 'package:salary_report/src/components/department_stats_component.dart';
 
 class MonthlyAnalysisPage extends StatefulWidget {
   const MonthlyAnalysisPage({
@@ -658,91 +659,9 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
                     const SizedBox(height: 24),
 
                     // 部门统计
-                    const Text(
-                      '各部门统计',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          children: [
-                            const Row(
-                              children: [
-                                Expanded(
-                                  flex: 2,
-                                  child: Text(
-                                    '部门',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    '人数',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    '平均工资',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    '工资总额',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const Divider(),
-                            ..._analysisData['departmentStats'].map<Widget>((
-                              dept,
-                            ) {
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 8.0,
-                                ),
-                                child: Row(
-                                  children: [
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      flex: 2,
-                                      child: Text(dept['department']),
-                                    ),
-                                    Expanded(
-                                      child: Text(dept['count'].toString()),
-                                    ),
-                                    Expanded(
-                                      child: Text(
-                                        '¥${dept['average'].toStringAsFixed(2)}',
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Text(
-                                        '¥${dept['total'].toStringAsFixed(2)}',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                          ],
-                        ),
-                      ),
+                    DepartmentStatsComponent(
+                      departmentStats: _departmentStats,
+                      title: '月度部门工资对比',
                     ),
 
                     const SizedBox(height: 24),

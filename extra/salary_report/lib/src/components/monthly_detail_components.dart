@@ -29,7 +29,6 @@ class MonthlyDetailContainer extends StatelessWidget {
           final month = entry.key;
           final data = entry.value;
 
-          // 如果该月没有数据，则跳过
           if (_isDataEmpty(data)) {
             return const SizedBox.shrink();
           }

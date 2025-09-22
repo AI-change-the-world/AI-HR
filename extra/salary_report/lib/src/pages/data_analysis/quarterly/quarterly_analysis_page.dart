@@ -13,6 +13,7 @@ import 'package:salary_report/src/components/salary_charts.dart';
 import 'package:salary_report/src/common/scroll_screenshot.dart'; // 添加截图导入
 import 'package:salary_report/src/common/toast.dart'; // 添加Toast导入
 import 'package:salary_report/src/components/monthly_employee_changes_component.dart'; // 导入月度员工变化组件
+import 'package:salary_report/src/components/single_quarter/quarterly_department_stats_component.dart';
 
 class QuarterlyAnalysisPage extends StatefulWidget {
   const QuarterlyAnalysisPage({
@@ -82,11 +83,16 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
       await _fetchPreviousQuarterData();
 
       // 获取整个季度的部门统计数据
-      final departmentStats = await _salaryDataService.getDepartmentAggregation(
-        widget.year,
-        startMonth, // 使用季度起始月份获取数据
-        // 移除不存在的endMonth参数
+      final departmentStats = await _salaryDataService.getDepartmentSalaryStats(
+        startYear: widget.year,
+        startMonth: startMonth,
+        endYear: widget.year,
+        endMonth: endMonth,
       );
+
+      // for (var stats in departmentStats) {
+      //   logger.info('Department: ${stats.averageNetSalary}');
+      // }
 
       // 获取考勤统计数据（获取季度内所有月份的考勤数据）
       final attendanceStats = <AttendanceStats>[];
@@ -396,7 +402,12 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
 
       // 获取上一季度的部门统计数据
       final previousDepartmentStats = await _salaryDataService
-          .getDepartmentAggregation(previousYear, startMonth);
+          .getDepartmentSalaryStats(
+            startYear: previousYear,
+            startMonth: startMonth,
+            endYear: previousYear,
+            endMonth: endMonth,
+          );
 
       if (previousDepartmentStats.isNotEmpty) {
         // 计算上一季度的总员工数和总工资
@@ -826,107 +837,11 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
 
                     const SizedBox(height: 24),
 
-                    // 部门对比
-                    const Text(
-                      '部门对比',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          children: [
-                            const Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    '月份',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 2,
-                                  child: Text(
-                                    '部门',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    '工资总额',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    '平均工资',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    '员工数',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const Divider(),
-                            ..._analysisData['departmentComparison'].map<
-                              Widget
-                            >((dept) {
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 8.0,
-                                ),
-                                child: Row(
-                                  children: [
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        '${dept['year']}-${dept['month'].toString().padLeft(2, '0')}',
-                                      ),
-                                    ),
-                                    Expanded(
-                                      flex: 2,
-                                      child: Text(dept['department']),
-                                    ),
-                                    Expanded(
-                                      child: Text(
-                                        '¥${dept['salary'].toStringAsFixed(2)}',
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Text(
-                                        '¥${dept['average'].toStringAsFixed(2)}',
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Text(
-                                        dept['employeeCount'].toString(),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                          ],
-                        ),
-                      ),
+                    // 季度部门统计
+                    QuarterlyDepartmentStatsCard(
+                      year: widget.year,
+                      quarter: widget.quarter,
+                      departmentStats: _departmentStats,
                     ),
 
                     const SizedBox(height: 24),

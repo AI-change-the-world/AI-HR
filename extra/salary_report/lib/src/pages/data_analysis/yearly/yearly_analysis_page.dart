@@ -14,6 +14,7 @@ import 'package:salary_report/src/components/monthly_detail_components.dart';
 import 'package:salary_report/src/common/scroll_screenshot.dart'; // 添加截图导入
 import 'package:salary_report/src/common/toast.dart'; // 添加Toast导入
 import 'package:salary_report/src/components/monthly_employee_changes_component.dart'; // 导入月度员工变化组件
+import 'package:salary_report/src/components/department_stats_component.dart';
 
 class YearlyAnalysisPage extends StatefulWidget {
   const YearlyAnalysisPage({
@@ -127,10 +128,9 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
     // 获取上一年的数据
     await _fetchPreviousYearData();
 
-    // 使用DataAnalysisService获取年度聚合数据
-    final departmentStats = await _salaryDataService.getDepartmentAggregation(
-      widget.year,
-      1, // 年度分析从1月开始
+    // 使用DataAnalysisService获取年度聚合数据（整个年度的数据）
+    final departmentStats = await _salaryDataService.getDepartmentSalaryStats(
+      year: widget.year,
     );
 
     // 获取考勤统计数据
@@ -330,9 +330,9 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
       // 获取上一年的年份
       final previousYear = widget.year - 1;
 
-      // 获取上一年1月的部门统计数据作为基础数据
+      // 获取上一年的部门统计数据（整个年度的数据）
       final previousDepartmentStats = await _salaryDataService
-          .getDepartmentAggregation(previousYear, 1);
+          .getDepartmentSalaryStats(year: previousYear);
 
       if (previousDepartmentStats.isNotEmpty) {
         // 计算上一年的总员工数和总工资
@@ -622,69 +622,9 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
                   const SizedBox(height: 24),
 
                   // 年度部门工资对比
-                  const Text(
-                    '年度部门工资对比',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        children: [
-                          const Row(
-                            children: [
-                              Expanded(
-                                flex: 2,
-                                child: Text(
-                                  '部门',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  '工资总额',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  '平均工资',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Divider(),
-                          ...departmentStats.map<Widget>((stat) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 8.0,
-                              ),
-                              child: Row(
-                                children: [
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    flex: 2,
-                                    child: Text(stat.department),
-                                  ),
-                                  Expanded(
-                                    child: Text(
-                                      '¥${stat.totalNetSalary.toStringAsFixed(2)}',
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Text(
-                                      '¥${stat.averageNetSalary.toStringAsFixed(2)}',
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }),
-                        ],
-                      ),
-                    ),
+                  DepartmentStatsComponent(
+                    departmentStats: departmentStats,
+                    title: '年度部门工资对比',
                   ),
 
                   const SizedBox(height: 24),
@@ -714,13 +654,13 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
                   ),
 
                   // 按月具体请假详情
-                  MonthlyDetailContainer(
-                    title: '按月具体请假详情',
-                    monthlyData: monthlyLeaveDetails,
-                    builder: (month, data) {
-                      return _buildLeaveDetails(data as List<AttendanceStats>);
-                    },
-                  ),
+                  // MonthlyDetailContainer(
+                  //   title: '按月具体请假详情',
+                  //   monthlyData: monthlyLeaveDetails,
+                  //   builder: (month, data) {
+                  //     return _buildLeaveDetails(data as List<AttendanceStats>);
+                  //   },
+                  // ),
                 ],
               ),
             ),
@@ -839,6 +779,12 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
 
   /// 构建请假详情组件
   Widget _buildLeaveDetails(List<AttendanceStats> leaveDetails) {
+    logger.info("buildLeaveDetails $leaveDetails");
+
+    if (leaveDetails.isEmpty) {
+      return const Center(child: Text('没有请假记录'));
+    }
+
     return LeaveDetailBuilder.buildLeaveDetails(leaveDetails);
   }
 }
