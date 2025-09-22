@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:salary_report/src/isar/report_generation_record.dart';
@@ -14,6 +15,7 @@ import 'package:salary_report/src/common/scroll_screenshot.dart'; // 添加截�
 import 'package:salary_report/src/common/toast.dart'; // 添加Toast导入
 import 'package:salary_report/src/components/monthly_employee_changes_component.dart'; // 导入月度员工变化组件
 import 'package:salary_report/src/components/single_quarter/quarterly_department_stats_component.dart';
+import 'package:salary_report/src/utils/quarterly_analysis_json_converter.dart'; // 添加导入
 
 class QuarterlyAnalysisPage extends StatefulWidget {
   const QuarterlyAnalysisPage({
@@ -544,6 +546,58 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
 
   late ReportService reportService = ReportService();
 
+  /// 生成JSON格式的分析报告
+  Future<String> _generateJsonReport() {
+    return Future.value(
+      QuarterlyAnalysisJsonConverter.convertAnalysisDataToJson(
+        analysisData: _analysisData,
+        departmentStats: _departmentStats,
+        attendanceStats: _attendanceStats,
+        previousQuarterData: _previousQuarterData,
+        year: widget.year,
+        quarter: widget.quarter,
+      ),
+    );
+  }
+
+  /// 显示JSON报告
+  Future<void> _showJsonReport() async {
+    try {
+      final jsonReport = await _generateJsonReport();
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('JSON分析报告'),
+              content: SingleChildScrollView(child: Text(jsonReport)),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('关闭'),
+                ),
+              ],
+            );
+          },
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        toastification.show(
+          context: context,
+          title: const Text('生成JSON报告失败'),
+          description: Text('错误信息: $e'),
+          type: ToastificationType.error,
+          style: ToastificationStyle.flat,
+          autoCloseDuration: const Duration(seconds: 5),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -583,6 +637,13 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
             },
             tooltip: '截图报告',
           ),
+          if (kDebugMode)
+            IconButton(
+              icon: const Icon(Icons.code),
+              onPressed: _showJsonReport,
+              tooltip: '查看JSON报告',
+            ),
+          SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
             onPressed: _isGeneratingReport ? null : _generateSalaryReport,
