@@ -74,16 +74,10 @@ class _ReportManagementPageState extends State<ReportManagementPage> {
           // 刷新列表
           await _refreshReports();
           // 显示成功提示
-          // ScaffoldMessenger.of(
-          //   context,
-          // ).showSnackBar(const SnackBar(content: Text('报告已删除')));
           ToastUtils.info(null, title: '报告已删除');
         }
       } catch (e) {
         // 显示错误提示
-        // ScaffoldMessenger.of(
-        //   context,
-        // ).showSnackBar(const SnackBar(content: Text('删除过程中发生错误')));
         ToastUtils.error(null, title: '删除过程中发生错误');
       }
     }
@@ -94,15 +88,12 @@ class _ReportManagementPageState extends State<ReportManagementPage> {
       final result = await OpenFile.open(filePath);
       if (result.type != ResultType.done) {
         // 文件打开失败
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('无法打开文件')));
+        ToastUtils.error(null, title: '无法打开文件');
       }
     } catch (e) {
       // 显示错误提示
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('打开文件时发生错误')));
+
+      ToastUtils.error(null, title: '打开文件时发生错误');
     }
   }
 
@@ -190,6 +181,18 @@ class _ReportManagementPageState extends State<ReportManagementPage> {
                           const SizedBox(height: 2),
                           Text(
                             report.savePath,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            report.reportType == ReportType.docx
+                                ? "Word"
+                                : "图像",
                             style: const TextStyle(
                               fontSize: 12,
                               color: Colors.grey,

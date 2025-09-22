@@ -4,6 +4,7 @@ import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
+import 'package:salary_report/src/services/report_service.dart';
 import 'package:toastification/toastification.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +14,8 @@ import 'package:salary_report/src/components/multi_year/yearly_department_stats_
 import 'package:salary_report/src/components/multi_year/yearly_attendance_stats_component.dart';
 import 'package:salary_report/src/components/multi_year/yearly_leave_ratio_stats_component.dart';
 import 'package:salary_report/src/components/multi_year/department_changes_component.dart';
+import 'package:salary_report/src/common/scroll_screenshot.dart'; // 添加截图导入
+import 'package:salary_report/src/common/toast.dart'; // 添加Toast导入
 
 // 多年分析页面
 class MultiYearAnalysisPage extends ConsumerStatefulWidget {
@@ -35,6 +38,11 @@ class _MultiYearAnalysisPageState extends ConsumerState<MultiYearAnalysisPage> {
   bool _isGeneratingReport = false;
   late YearRangeParams _yearRangeParams;
 
+  // 添加截图相关变量
+  final GlobalKey repaintKey = GlobalKey();
+  final ScrollController controller = ScrollController();
+  late ScrollableStitcher screenshotUtil;
+
   @override
   void initState() {
     super.initState();
@@ -42,6 +50,17 @@ class _MultiYearAnalysisPageState extends ConsumerState<MultiYearAnalysisPage> {
       startYear: widget.year,
       endYear: widget.endYear,
     );
+    // 初始化截图工具
+    screenshotUtil = ScrollableStitcher(
+      repaintBoundaryKey: repaintKey,
+      scrollController: controller,
+    );
+  }
+
+  @override
+  void dispose() {
+    controller.dispose(); // 释放滚动控制器
+    super.dispose();
   }
 
   /// 生成工资报告
@@ -173,6 +192,8 @@ class _MultiYearAnalysisPageState extends ConsumerState<MultiYearAnalysisPage> {
     };
   }
 
+  late ReportService reportService = ReportService();
+
   @override
   Widget build(BuildContext context) {
     final title = '${widget.year}年 - ${widget.endYear}年 工资分析';
@@ -181,6 +202,27 @@ class _MultiYearAnalysisPageState extends ConsumerState<MultiYearAnalysisPage> {
       appBar: AppBar(
         title: Text(title),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.screenshot_monitor),
+            onPressed: () async {
+              final file = await screenshotUtil.captureAndSave(
+                filename: '${DateTime.now().millisecondsSinceEpoch}.png',
+                fromTop: true, // 若希望从顶部开始截，true；否则从当前滚动开始
+                overlap: 80.0, // dp 单位的重叠量
+                waitForPaint: 300, // 每次滚动等待渲染时间（毫秒）
+                cropLeft: 10,
+                cropRight: 10,
+                background: const Color.fromARGB(255, 147, 212, 243),
+              );
+              if (file != null) {
+                ToastUtils.success(null, title: "长截图保存到: ${file.path}");
+                reportService.addReportRecord(file.path);
+                return;
+              }
+              ToastUtils.error(null, title: "长截图失败");
+            },
+            tooltip: '截图报告',
+          ),
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
             onPressed: _isGeneratingReport ? null : _generateSalaryReport,
@@ -191,140 +233,171 @@ class _MultiYearAnalysisPageState extends ConsumerState<MultiYearAnalysisPage> {
       ),
       body: Stack(
         children: [
-          SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 分页控制
-                  _buildPaginationControls(),
+          RepaintBoundary(
+            key: repaintKey,
+            child: SingleChildScrollView(
+              controller: controller,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 分页控制
+                    _buildPaginationControls(),
 
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                  // 每年关键指标（分页显示）
-                  const Text(
-                    '每年关键指标',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  YearlyKeyMetricsComponent(params: _yearRangeParams),
-
-                  const SizedBox(height: 24),
-
-                  // 每年部门统计（分页显示）
-                  const Text(
-                    '每年部门统计',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  YearlyDepartmentStatsComponent(params: _yearRangeParams),
-
-                  const SizedBox(height: 24),
-
-                  // 部门人数变化说明
-                  const Text(
-                    '部门人数变化说明',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  YearlyDepartmentChangesComponent(params: _yearRangeParams),
-
-                  const SizedBox(height: 24),
-
-                  // 每年考勤统计（分页显示）
-                  const Text(
-                    '每年考勤统计',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  YearlyAttendanceStatsComponent(params: _yearRangeParams),
-
-                  const SizedBox(height: 24),
-
-                  // 每年请假比例统计（分页显示）
-                  const Text(
-                    '每年请假比例统计',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  YearlyLeaveRatioStatsComponent(params: _yearRangeParams),
-
-                  const SizedBox(height: 24),
-
-                  // 每年人数变化趋势图
-                  const Text(
-                    '每年人数变化趋势',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  Card(
-                    child: Container(
-                      height: 300,
-                      padding: const EdgeInsets.all(16.0),
-                      child: YearlyEmployeeCountChartComponent(
-                        params: _yearRangeParams,
+                    // 每年关键指标（分页显示）
+                    const Text(
+                      '每年关键指标',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 12),
+                    YearlyKeyMetricsComponent(params: _yearRangeParams),
 
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                  // 每年平均薪资变化趋势图
-                  const Text(
-                    '每年平均薪资变化趋势',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  Card(
-                    child: Container(
-                      height: 300,
-                      padding: const EdgeInsets.all(16.0),
-                      child: YearlyAverageSalaryChartComponent(
-                        params: _yearRangeParams,
+                    // 每年部门统计（分页显示）
+                    const Text(
+                      '每年部门统计',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 12),
+                    YearlyDepartmentStatsComponent(params: _yearRangeParams),
 
-                  // 每年总工资变化趋势图
-                  const Text(
-                    '每年总工资变化趋势',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  Card(
-                    child: Container(
-                      height: 300,
-                      padding: const EdgeInsets.all(16.0),
-                      child: YearlyTotalSalaryChartComponent(
-                        params: _yearRangeParams,
+                    const SizedBox(height: 24),
+
+                    // 部门人数变化说明
+                    const Text(
+                      '部门人数变化说明',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 12),
+                    YearlyDepartmentChangesComponent(params: _yearRangeParams),
 
-                  // 各部门平均薪资趋势图
-                  const Text(
-                    '各部门平均薪资趋势',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
+                    const SizedBox(height: 24),
 
-                  Card(
-                    child: Container(
-                      height: 300,
-                      padding: const EdgeInsets.all(16.0),
-                      child: MultiYearDepartmentSalaryChartComponent(
-                        params: _yearRangeParams,
+                    // 每年考勤统计（分页显示）
+                    const Text(
+                      '每年考勤统计',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 12),
+                    YearlyAttendanceStatsComponent(params: _yearRangeParams),
 
-                  // 分页控制
-                  _buildPaginationControls(),
-                ],
+                    const SizedBox(height: 24),
+
+                    // 每年请假比例统计（分页显示）
+                    const Text(
+                      '每年请假比例统计',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    YearlyLeaveRatioStatsComponent(params: _yearRangeParams),
+
+                    const SizedBox(height: 24),
+
+                    // 每年人数变化趋势图
+                    const Text(
+                      '每年人数变化趋势',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Card(
+                      child: Container(
+                        height: 300,
+                        padding: const EdgeInsets.all(16.0),
+                        child: YearlyEmployeeCountChartComponent(
+                          params: _yearRangeParams,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // 每年平均薪资变化趋势图
+                    const Text(
+                      '每年平均薪资变化趋势',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Card(
+                      child: Container(
+                        height: 300,
+                        padding: const EdgeInsets.all(16.0),
+                        child: YearlyAverageSalaryChartComponent(
+                          params: _yearRangeParams,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // 每年总工资变化趋势图
+                    const Text(
+                      '每年总工资变化趋势',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Card(
+                      child: Container(
+                        height: 300,
+                        padding: const EdgeInsets.all(16.0),
+                        child: YearlyTotalSalaryChartComponent(
+                          params: _yearRangeParams,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // 各部门平均薪资趋势图
+                    const Text(
+                      '各部门平均薪资趋势',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    Card(
+                      child: Container(
+                        height: 300,
+                        padding: const EdgeInsets.all(16.0),
+                        child: MultiYearDepartmentSalaryChartComponent(
+                          params: _yearRangeParams,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // 分页控制
+                    _buildPaginationControls(),
+                  ],
+                ),
               ),
             ),
           ),

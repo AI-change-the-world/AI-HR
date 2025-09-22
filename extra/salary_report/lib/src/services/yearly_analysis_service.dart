@@ -26,7 +26,7 @@ class YearlyAnalysisService {
 
       // 遍历年份列表获取数据
       for (int year = startYear; year <= endYear; year++) {
-        // 获取该年所有月份的部门统计数据
+        // 修复：正确获取该年所有月份的部门统计数据
         final departmentStatsList = await _monthlyService
             .getDepartmentSalaryStats(startYear: year, endYear: year);
 
@@ -52,7 +52,7 @@ class YearlyAnalysisService {
             totalNetSalary += stat.totalNetSalary;
           }
 
-          final averageNetSalary = monthlyStats.isNotEmpty
+          final averageNetSalary = totalEmployeeCount > 0
               ? totalNetSalary / totalEmployeeCount
               : 0.0;
 
@@ -110,23 +110,44 @@ class YearlyAnalysisService {
         double highestSalary = 0.0; // 初始化最高工资
         double lowestSalary = double.infinity; // 初始化最低工资
 
-        for (var stat in departmentStatsMap.values) {
-          employeeCount += stat.employeeCount;
-          totalSalary += stat.totalNetSalary;
+        // 重新计算年度总工资和员工数（正确的方式）
+        double yearlyTotalSalary = 0.0;
+        int yearlyTotalEmployeeCount = 0;
 
-          // 更新最高和最低工资
-          if (stat.averageNetSalary > highestSalary) {
-            highestSalary = stat.averageNetSalary;
-          }
+        // 遍历每个月的数据来计算年度总工资
+        for (int month = 1; month <= 12; month++) {
+          final monthlyData = await _monthlyService.getMonthlySalaryData(
+            year,
+            month,
+          );
+          if (monthlyData != null) {
+            for (var record in monthlyData.records) {
+              if (record.netSalary != null) {
+                final salaryStr = record.netSalary!.replaceAll(
+                  RegExp(r'[^\d.-]'),
+                  '',
+                );
+                final salary = double.tryParse(salaryStr) ?? 0;
+                yearlyTotalSalary += salary;
+                yearlyTotalEmployeeCount++;
 
-          if (stat.averageNetSalary < lowestSalary) {
-            lowestSalary = stat.averageNetSalary;
+                // 更新最高和最低工资
+                if (salary > highestSalary) {
+                  highestSalary = salary;
+                }
+                if (salary < lowestSalary && salary > 0) {
+                  // 忽略0工资
+                  lowestSalary = salary;
+                }
+              }
+            }
           }
         }
 
-        if (employeeCount > 0) {
-          averageSalary = totalSalary / employeeCount;
-        }
+        // 使用正确的年度统计数据
+        employeeCount = yearlyTotalEmployeeCount;
+        totalSalary = yearlyTotalSalary;
+        averageSalary = employeeCount > 0 ? totalSalary / employeeCount : 0.0;
 
         // 确保最低工资有合理的默认值
         if (lowestSalary == double.infinity) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/providers/year_analysis_provider.dart';
+import 'package:salary_report/src/components/attendance_pagination.dart';
 
 class YearlyAttendanceStatsComponent extends ConsumerWidget {
   final YearRangeParams params;
@@ -85,6 +86,10 @@ class YearlyAttendanceStatsComponent extends ConsumerWidget {
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
+            // 使用分页组件展示详细考勤数据
+            AttendancePagination(attendanceStats: stats),
+            const SizedBox(height: 16),
+            // 汇总统计信息
             Wrap(
               children: [
                 _buildStatCard(

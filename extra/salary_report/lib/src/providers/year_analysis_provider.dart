@@ -186,8 +186,7 @@ final coreAttendanceDataProvider =
       // 为每个年份获取考勤数据
       for (int year = params.startYear; year <= params.endYear; year++) {
         final stats = await service.getMonthlyAttendanceStats(
-          startYear: year,
-          endYear: year,
+          year: year, // 修复：使用正确的参数
         );
         attendanceData['${year}年'] = stats;
       }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/providers/year_analysis_provider.dart';
+import 'package:salary_report/src/components/attendance_pagination.dart';
 
 class YearlyLeaveRatioStatsComponent extends ConsumerWidget {
   final YearRangeParams params;
@@ -11,34 +12,44 @@ class YearlyLeaveRatioStatsComponent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final paginationState = ref.watch(paginationProvider);
-    final leaveRatioStatsState = ref.watch(leaveRatioStatsProvider(params));
+    final attendanceStatsState = ref.watch(attendanceStatsProvider(params));
 
-    return leaveRatioStatsState.when(
-      data: (leaveRatioStats) {
-        if (leaveRatioStats.yearlyData == null) {
+    return attendanceStatsState.when(
+      data: (attendanceStats) {
+        if (attendanceStats.attendanceData == null ||
+            attendanceStats.attendanceData!.isEmpty) {
           return const Center(child: Text('暂无数据'));
         }
 
-        // 按时间排序年度数据
-        final sortedYearlyData =
-            List<YearlyComparisonData>.from(leaveRatioStats.yearlyData!)
-              ..sort((a, b) {
-                return a.year.compareTo(b.year);
-              });
+        // 获取年份列表并排序
+        final yearKeys = attendanceStats.attendanceData!.keys.toList()
+          ..sort((a, b) {
+            // 提取年份进行排序
+            final yearA = int.tryParse(a.replaceAll('年', '')) ?? 0;
+            final yearB = int.tryParse(b.replaceAll('年', '')) ?? 0;
+            return yearA.compareTo(yearB);
+          });
 
         // 计算当前页的年份范围
         final start =
             paginationState.currentPage * paginationState.itemsPerPage;
-        final end =
-            (start + paginationState.itemsPerPage < sortedYearlyData.length)
+        final end = (start + paginationState.itemsPerPage < yearKeys.length)
             ? start + paginationState.itemsPerPage
-            : sortedYearlyData.length;
+            : yearKeys.length;
 
-        final pageEntries = sortedYearlyData.sublist(start, end);
+        final pageEntries = yearKeys.sublist(start, end);
 
         return Column(
-          children: pageEntries.map((yearlyData) {
-            return _buildYearlyLeaveRatioCard(yearlyData);
+          children: pageEntries.map((yearKey) {
+            final stats = attendanceStats.attendanceData![yearKey] ?? [];
+            // 过滤出有请假、缺勤或旷工记录的员工
+            final leaveStats = stats.where((stat) {
+              return stat.sickLeaveDays > 0 ||
+                  stat.leaveDays > 0 ||
+                  stat.absenceCount > 0 ||
+                  stat.truancyDays > 0;
+            }).toList();
+            return _buildYearlyLeaveDetailsCard(yearKey, leaveStats);
           }).toList(),
         );
       },
@@ -47,27 +58,10 @@ class YearlyLeaveRatioStatsComponent extends ConsumerWidget {
     );
   }
 
-  Widget _buildYearlyLeaveRatioCard(YearlyComparisonData yearlyData) {
-    // 计算整体的请假统计数据
-    int totalEmployees = yearlyData.employeeCount;
-    double totalSickLeaveDays = 0;
-    double totalLeaveDays = 0;
-
-    // 遍历所有部门的统计数据来计算整体请假情况
-    yearlyData.departmentStats.forEach((deptName, stat) {
-      // 这里我们假设可以从其他数据源获取请假信息
-      // 由于原始数据结构中没有直接的请假统计，我们使用一些估算值
-      totalSickLeaveDays += stat.employeeCount * 0.5; // 假设每人每年病假0.5天
-      totalLeaveDays += stat.employeeCount * 1.2; // 假设每人每年事假1.2天
-    });
-
-    final avgSickLeaveRatio = totalEmployees > 0
-        ? totalSickLeaveDays / totalEmployees
-        : 0;
-    final avgLeaveRatio = totalEmployees > 0
-        ? totalLeaveDays / totalEmployees
-        : 0;
-
+  Widget _buildYearlyLeaveDetailsCard(
+    String yearKey,
+    List<AttendanceStats> leaveStats,
+  ) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Container(
@@ -77,54 +71,15 @@ class YearlyLeaveRatioStatsComponent extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${yearlyData.year}年请假比例统计',
+              '$yearKey请假详情',
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            const Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '统计项',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    '数值',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ),
-            const Divider(),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4.0),
-              child: Row(
-                children: [
-                  const Expanded(child: Text('总员工数')),
-                  Expanded(child: Text(totalEmployees.toString())),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4.0),
-              child: Row(
-                children: [
-                  const Expanded(child: Text('平均病假天数/人')),
-                  Expanded(child: Text(avgSickLeaveRatio.toStringAsFixed(2))),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4.0),
-              child: Row(
-                children: [
-                  const Expanded(child: Text('平均事假天数/人')),
-                  Expanded(child: Text(avgLeaveRatio.toStringAsFixed(2))),
-                ],
-              ),
-            ),
+            if (leaveStats.isEmpty)
+              const Text('本年度无请假、缺勤或旷工记录')
+            else
+              // 使用分页组件展示详细请假数据
+              AttendancePagination(attendanceStats: leaveStats),
           ],
         ),
       ),
