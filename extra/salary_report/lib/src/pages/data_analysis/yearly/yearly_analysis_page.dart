@@ -423,54 +423,47 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
                 children: [
                   // 上一年数据展示（如果存在）
                   if (_previousYearData != null) ...[
-                    const Text(
-                      '上一年对比',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: '上一年对比  ',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          TextSpan(
+                            text: '${_previousYearData!['year']}年基本情况',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Card(
-                      color: Colors.blue.shade50,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${_previousYearData!['year']}年基本情况',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Wrap(
-                              spacing: 12,
-                              runSpacing: 12,
-                              children: [
-                                _buildComparisonStatCard(
-                                  '总人数',
-                                  _previousYearData!['totalEmployees']
-                                      .toString(),
-                                  Icons.people,
-                                ),
-                                _buildComparisonStatCard(
-                                  '工资总额',
-                                  '¥${_previousYearData!['totalSalary'].toStringAsFixed(2)}',
-                                  Icons.account_balance_wallet,
-                                ),
-                                _buildComparisonStatCard(
-                                  '平均工资',
-                                  '¥${_previousYearData!['averageSalary'].toStringAsFixed(2)}',
-                                  Icons.trending_up,
-                                ),
-                              ],
-                            ),
-                          ],
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        _buildStatCard(
+                          '总人数',
+                          _previousYearData!['totalEmployees'].toString(),
+                          Icons.people,
                         ),
-                      ),
+                        _buildStatCard(
+                          '工资总额',
+                          '¥${_previousYearData!['totalSalary'].toStringAsFixed(2)}',
+                          Icons.account_balance_wallet,
+                        ),
+                        _buildStatCard(
+                          '平均工资',
+                          '¥${_previousYearData!['averageSalary'].toStringAsFixed(2)}',
+                          Icons.trending_up,
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 24),
                   ],
