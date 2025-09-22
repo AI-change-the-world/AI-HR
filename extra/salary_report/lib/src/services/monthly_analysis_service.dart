@@ -833,6 +833,7 @@ class MonthlyAnalysisService {
     }
     // 如果指定了年份范围
     else if (startYear != null && endYear != null) {
+      // 修复：正确过滤年份范围
       salaryLists = await isar.salaryLists
           .filter()
           .yearBetween(startYear, endYear)

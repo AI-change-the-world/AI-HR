@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:salary_report/src/common/scroll_screenshot.dart';
+import 'package:salary_report/src/common/toast.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
 import 'package:salary_report/src/services/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart';
@@ -8,6 +9,7 @@ import 'package:salary_report/src/components/attendance_pagination.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
+import 'package:salary_report/src/services/report_service.dart';
 import 'package:toastification/toastification.dart';
 import 'package:salary_report/src/isar/salary_list.dart';
 
@@ -242,6 +244,8 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
   final ScrollController controller = ScrollController();
   late ScrollableStitcher screenshotUtil;
 
+  late ReportService reportService = ReportService();
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -267,14 +271,20 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
             icon: const Icon(Icons.screenshot_monitor),
             onPressed: () async {
               final file = await screenshotUtil.captureAndSave(
-                filename: 'long_capture.png',
+                filename: '${DateTime.now().millisecondsSinceEpoch}.png',
                 fromTop: true, // 若希望从顶部开始截，true；否则从当前滚动开始
                 overlap: 80.0, // dp 单位的重叠量
                 waitForPaint: 300, // 每次滚动等待渲染时间（毫秒）
+                cropLeft: 10,
+                cropRight: 10,
+                background: const Color.fromARGB(255, 147, 212, 243),
               );
               if (file != null) {
-                print("长截图保存到: ${file.path}");
+                ToastUtils.success(null, title: "长截图保存到: ${file.path}");
+                reportService.addReportRecord(file.path);
+                return;
               }
+              ToastUtils.error(null, title: "长截图失败");
             },
             tooltip: '截图报告',
           ),

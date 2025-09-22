@@ -12,7 +12,6 @@ import 'package:salary_report/src/pages/data_analysis/monthly/multi_month_analys
 import 'package:salary_report/src/pages/data_analysis/yearly/yearly_analysis_page.dart';
 import 'package:salary_report/src/pages/data_analysis/quarterly/quarterly_analysis_page.dart';
 import 'package:salary_report/src/pages/data_analysis/quarterly/multi_quarter_analysis_page.dart';
-import 'package:salary_report/src/pages/visualization/chart/chart_page.dart';
 import 'package:salary_report/src/pages/visualization/report/report_page.dart';
 import 'package:salary_report/src/pages/visualization/report/comprehensive_report_page.dart';
 import 'package:salary_report/src/pages/report_management_page.dart';
@@ -170,10 +169,6 @@ class MyApp extends StatelessWidget {
                 GoRoute(
                   path: 'report',
                   builder: (context, state) => const ReportPage(),
-                ),
-                GoRoute(
-                  path: 'chart',
-                  builder: (context, state) => const ChartPage(),
                 ),
                 GoRoute(
                   path: 'comprehensive',
