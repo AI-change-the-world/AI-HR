@@ -38,7 +38,6 @@ class EnhancedAnnualReportGenerator implements EnhancedReportGenerator {
            analysisService ?? DataAnalysisService(IsarDatabase()),
        _reportService = reportService ?? ReportService();
 
-  /// 生成包含描述和图表的增强版年度报告
   @override
   Future<String> generateEnhancedReport({
     required GlobalKey previewContainerKey,
@@ -68,25 +67,33 @@ class EnhancedAnnualReportGenerator implements EnhancedReportGenerator {
       // 2. 解析JSON数据
       final jsonData = json.decode(jsonString) as Map<String, dynamic>;
 
-      // 3. 生成图表图像（从UI）
+      // 3. 构建薪资结构数据
+      final salaryStructureData = _createSalaryStructureData(
+        analysisData.containsKey('salarySummary')
+            ? analysisData['salarySummary'] as Map<String, dynamic>
+            : null,
+      );
+
+      // 4. 生成图表图像（从UI）
       final chartImagesFromUI = await _chartService.generateAllCharts(
         previewContainerKey: previewContainerKey,
         departmentStats: departmentStats,
         salaryRanges: _convertToSalaryRangeMap(
           analysisData['salaryRanges'] as List<dynamic>,
         ),
+        salaryStructureData: salaryStructureData, // 添加薪资结构数据
       );
 
-      // 4. 生成图表图像（从JSON数据）
+      // 5. 生成图表图像（从JSON数据）
       final chartImagesFromJson = await _jsonChartService
           .generateAllChartsFromJson(jsonData: jsonData);
 
-      // 5. 创建组合图表图像集合
+      // 6. 创建组合图表图像集合
       final combinedChartImages = ReportChartImages(
         mainChart: chartImagesFromUI.mainChart,
         departmentDetailsChart: chartImagesFromJson.departmentChart,
         salaryRangeChart: chartImagesFromJson.salaryRangeChart,
-        salaryStructureChart: null, // 可以从jsonData中提取薪资结构数据来生成
+        salaryStructureChart: chartImagesFromUI.salaryStructureChart, // 薪资结构饼图
         employeeCountPerMonthChart:
             chartImagesFromUI.employeeCountPerMonthChart,
         averageSalaryPerMonthChart:
@@ -96,7 +103,7 @@ class EnhancedAnnualReportGenerator implements EnhancedReportGenerator {
             chartImagesFromUI.departmentDetailsPerMonthChart,
       );
 
-      // 6. 创建报告内容模型
+      // 7. 创建报告内容模型
       final reportContent = _createReportContentModel(
         jsonData,
         analysisData,
@@ -104,14 +111,14 @@ class EnhancedAnnualReportGenerator implements EnhancedReportGenerator {
         endTime,
       );
 
-      // 7. 写入报告文件
+      // 8. 写入报告文件
       final reportPath = await _docxService.writeReport(
         data: reportContent,
         images: combinedChartImages,
         reportType: ReportType.singleYear,
       );
 
-      // 8. 添加报告记录到数据库
+      // 9. 添加报告记录到数据库
       await _reportService.addReportRecord(reportPath);
 
       logger.info('Enhanced annual report generation complete: $reportPath');
@@ -125,6 +132,43 @@ class EnhancedAnnualReportGenerator implements EnhancedReportGenerator {
       );
       rethrow;
     }
+  }
+
+  /// 创建薪资结构数据
+  List<Map<String, dynamic>> _createSalaryStructureData(
+    Map<String, dynamic>? salarySummary,
+  ) {
+    final salaryStructureData = <Map<String, dynamic>>[];
+
+    if (salarySummary == null) {
+      return salaryStructureData;
+    }
+
+    // 定义薪资结构相关的字段
+    final salaryStructureFields = {
+      '基本工资': '基本工资',
+      '岗位工资': '岗位工资',
+      '绩效工资': '绩效工资',
+      '补贴工资': '补贴工资',
+      '饭补': '饭补',
+      '电脑补贴等': '电脑补贴等',
+      '税前工资': '税前工资',
+      '个人养老': '个人养老',
+      '个人医疗': '个人医疗',
+      '个人失业': '个人失业',
+      '个人公积金': '个人公积金',
+      '当月个人所得税': '当月个人所得税',
+      '税后应实发': '税后应实发',
+    };
+
+    // 遍历 salarySummary，提取薪资结构相关字段
+    salarySummary.forEach((key, value) {
+      if (salaryStructureFields.containsKey(key) && value is num) {
+        salaryStructureData.add({'category': key, 'value': value.toDouble()});
+      }
+    });
+
+    return salaryStructureData;
   }
 
   /// 将薪资区间数据转换为图表服务所需的格式
@@ -145,7 +189,6 @@ class EnhancedAnnualReportGenerator implements EnhancedReportGenerator {
     }).toList();
   }
 
-  /// 创建报告内容模型
   ReportContentModel _createReportContentModel(
     Map<String, dynamic> jsonData,
     Map<String, dynamic> analysisData,
@@ -164,16 +207,16 @@ class EnhancedAnnualReportGenerator implements EnhancedReportGenerator {
     final salaryRanges = analysisData['salaryRanges'] as List<dynamic>;
 
     // 构建薪资结构数据
-    final salaryStructureData = <Map<String, dynamic>>[];
-    if (analysisData.containsKey('salarySummary')) {
-      final salarySummary =
-          analysisData['salarySummary'] as Map<String, dynamic>;
-      salarySummary.forEach((key, value) {
-        if (value is num) {
-          salaryStructureData.add({'category': key, 'value': value.toDouble()});
-        }
-      });
-    }
+    final salaryStructureData = _createSalaryStructureData(
+      analysisData.containsKey('salarySummary')
+          ? analysisData['salarySummary'] as Map<String, dynamic>
+          : null,
+    );
+
+    // 生成薪资结构描述
+    final salaryStructureDescription = _generateSalaryStructureDescription(
+      salaryStructureData,
+    );
 
     return ReportContentModel(
       reportTitle: '年度工资分析报告',
@@ -199,7 +242,7 @@ class EnhancedAnnualReportGenerator implements EnhancedReportGenerator {
       salaryRankings: _generateSalaryRankings(analysisData),
       basicSalaryRate: 0.7,
       performanceSalaryRate: 0.3,
-      salaryStructure: '薪资结构分析',
+      salaryStructure: salaryStructureDescription, // 使用生成的薪资结构描述
       salaryStructureAdvice: '薪资结构优化建议',
       salaryStructureData: salaryStructureData,
       departmentStats: departmentStats.map((dept) {
@@ -254,6 +297,39 @@ class EnhancedAnnualReportGenerator implements EnhancedReportGenerator {
         );
       }
     }
+    return buffer.toString();
+  }
+
+  /// 生成薪资结构的自然语言描述
+  String _generateSalaryStructureDescription(
+    List<Map<String, dynamic>> salaryStructureData,
+  ) {
+    if (salaryStructureData.isEmpty) {
+      return '暂无薪资结构数据。';
+    }
+
+    final buffer = StringBuffer();
+    buffer.write('薪资结构分析如下：');
+
+    // 按值排序，显示最重要的组成部分
+    final sortedData = List<Map<String, dynamic>>.from(salaryStructureData);
+    sortedData.sort(
+      (a, b) => (b['value'] as double).compareTo(a['value'] as double),
+    );
+
+    for (int i = 0; i < sortedData.length; i++) {
+      final item = sortedData[i];
+      final category = item['category'] as String;
+      final value = (item['value'] as double).toStringAsFixed(2);
+
+      buffer.write('$category为${value}元');
+
+      if (i < sortedData.length - 1) {
+        buffer.write('，');
+      }
+    }
+
+    buffer.write('。');
     return buffer.toString();
   }
 
