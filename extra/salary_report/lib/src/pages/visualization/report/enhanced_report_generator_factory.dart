@@ -19,11 +19,11 @@ class EnhancedReportGeneratorFactory {
       case ReportType.singleQuarter:
         return EnhancedQuarterlyReportGenerator();
       case ReportType.multiQuarter:
-        return EnhancedQuarterlyReportGenerator(); // 多季度报告可以复用季度报告生成器
+        return EnhancedMultiMonthReportGenerator(); // 多季度报告使用多月报告生成器
       case ReportType.singleYear:
         return EnhancedAnnualReportGenerator();
       case ReportType.multiYear:
-        return EnhancedAnnualReportGenerator(); // 多年报告可以复用年度报告生成器
+        return EnhancedMultiMonthReportGenerator(); // 多年报告使用多月报告生成器
     }
   }
 }

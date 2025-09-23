@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/isar/report_generation_record.dart';
-import 'package:salary_report/src/pages/visualization/report/enhanced_multi_month_report_generator.dart';
-import 'package:salary_report/src/services/global_analysis_models.dart';
-import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
+import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_factory.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
+import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:toastification/toastification.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
@@ -82,7 +81,9 @@ class _MultiMonthAnalysisPageState
       final startTime = DateTime(widget.year, widget.month);
       final endTime = DateTime(widget.endYear, widget.endMonth);
 
-      final generator = EnhancedMultiMonthReportGenerator();
+      final generator = EnhancedReportGeneratorFactory.createGenerator(
+        ReportType.multiMonth,
+      );
 
       // 获取分析数据
       final keyMetricsState = ref.read(keyMetricsProvider(_dateRangeParams));
@@ -242,6 +243,34 @@ class _MultiMonthAnalysisPageState
 
     final averageSalary = totalEmployees > 0 ? totalSalary / totalEmployees : 0;
 
+    // 合并所有月份的薪资区间统计数据
+    final salaryRangeStatsMap = <String, SalaryRangeStats>{};
+    if (keyMetricsState is AsyncData &&
+        keyMetricsState.value?.monthlyData != null) {
+      for (var monthlyData in keyMetricsState.value!.monthlyData!) {
+        monthlyData.salaryRangeStats.forEach((rangeName, stat) {
+          if (salaryRangeStatsMap.containsKey(rangeName)) {
+            final existingStat = salaryRangeStatsMap[rangeName]!;
+            salaryRangeStatsMap[rangeName] = SalaryRangeStats(
+              range: rangeName,
+              employeeCount: existingStat.employeeCount + stat.employeeCount,
+              totalSalary: existingStat.totalSalary + stat.totalSalary,
+              averageSalary:
+                  (existingStat.totalSalary + stat.totalSalary) /
+                  (existingStat.employeeCount + stat.employeeCount),
+              year: stat.year,
+              month: stat.month,
+            );
+          } else {
+            salaryRangeStatsMap[rangeName] = stat;
+          }
+        });
+      }
+    }
+
+    // 将薪资区间统计数据转换为列表
+    final salaryRanges = salaryRangeStatsMap.values.toList();
+
     return {
       'totalEmployees': totalEmployees, // 总人次
       'totalUniqueEmployees': totalUniqueEmployees, // 总人数（去重）
@@ -249,6 +278,7 @@ class _MultiMonthAnalysisPageState
       'averageSalary': averageSalary,
       'highestSalary': highestSalary,
       'lowestSalary': lowestSalary,
+      'salaryRanges': salaryRanges, // 添加薪资区间数据
     };
   }
 

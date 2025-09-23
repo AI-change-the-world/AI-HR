@@ -9,9 +9,9 @@ import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:salary_report/src/utils/monthly_analysis_json_converter.dart';
-import 'package:salary_report/src/services/chart_generation_from_json_service.dart';
+import 'package:salary_report/src/services/yearly/chart_generation_from_json_service.dart';
 import 'package:salary_report/src/pages/visualization/report/chart_generation_service.dart';
-import 'package:salary_report/src/pages/visualization/report/docx_writer_service.dart';
+import 'package:salary_report/src/services/yearly/docx_writer_service.dart';
 import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_interface.dart';
@@ -20,20 +20,21 @@ import 'package:salary_report/src/isar/salary_list.dart';
 /// 增强版年度报告生成器
 class EnhancedAnnualReportGenerator implements EnhancedReportGenerator {
   final ChartGenerationService _chartService;
-  final ChartGenerationFromJsonService _jsonChartService;
-  final DocxWriterService _docxService;
+  final YearlyChartGenerationFromJsonService _jsonChartService;
+  final YearlyDocxWriterService _docxService;
   final DataAnalysisService _analysisService;
   final ReportService _reportService;
 
   EnhancedAnnualReportGenerator({
     ChartGenerationService? chartService,
-    ChartGenerationFromJsonService? jsonChartService,
-    DocxWriterService? docxService,
+    YearlyChartGenerationFromJsonService? jsonChartService,
+    YearlyDocxWriterService? docxService,
     DataAnalysisService? analysisService,
     ReportService? reportService,
   }) : _chartService = chartService ?? ChartGenerationService(),
-       _jsonChartService = jsonChartService ?? ChartGenerationFromJsonService(),
-       _docxService = docxService ?? DocxWriterService(),
+       _jsonChartService =
+           jsonChartService ?? YearlyChartGenerationFromJsonService(),
+       _docxService = docxService ?? YearlyDocxWriterService(),
        _analysisService =
            analysisService ?? DataAnalysisService(IsarDatabase()),
        _reportService = reportService ?? ReportService();
@@ -322,7 +323,7 @@ class EnhancedAnnualReportGenerator implements EnhancedReportGenerator {
       final category = item['category'] as String;
       final value = (item['value'] as double).toStringAsFixed(2);
 
-      buffer.write('$category为${value}元');
+      buffer.write('$category为$value元');
 
       if (i < sortedData.length - 1) {
         buffer.write('，');

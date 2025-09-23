@@ -9,9 +9,9 @@ import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:salary_report/src/utils/monthly_analysis_json_converter.dart';
-import 'package:salary_report/src/services/chart_generation_from_json_service.dart';
+import 'package:salary_report/src/services/monthly/chart_generation_from_json_service.dart';
 import 'package:salary_report/src/pages/visualization/report/chart_generation_service.dart';
-import 'package:salary_report/src/pages/visualization/report/docx_writer_service.dart';
+import 'package:salary_report/src/services/monthly/docx_writer_service.dart';
 import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_interface.dart';
@@ -20,22 +20,23 @@ import 'package:salary_report/src/pages/visualization/report/ai_summary_service.
 /// 增强版单月报告生成器
 class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
   final ChartGenerationService _chartService;
-  final ChartGenerationFromJsonService _jsonChartService;
-  final DocxWriterService _docxService;
+  final MonthlyChartGenerationFromJsonService _jsonChartService;
+  final MonthlyDocxWriterService _docxService;
   final DataAnalysisService _analysisService;
   final ReportService _reportService;
   final AISummaryService _aiSummaryService;
 
   EnhancedMonthlyReportGenerator({
     ChartGenerationService? chartService,
-    ChartGenerationFromJsonService? jsonChartService,
-    DocxWriterService? docxService,
+    MonthlyChartGenerationFromJsonService? jsonChartService,
+    MonthlyDocxWriterService? docxService,
     DataAnalysisService? analysisService,
     ReportService? reportService,
     AISummaryService? aiSummaryService,
   }) : _chartService = chartService ?? ChartGenerationService(),
-       _jsonChartService = jsonChartService ?? ChartGenerationFromJsonService(),
-       _docxService = docxService ?? DocxWriterService(),
+       _jsonChartService =
+           jsonChartService ?? MonthlyChartGenerationFromJsonService(),
+       _docxService = docxService ?? MonthlyDocxWriterService(),
        _analysisService =
            analysisService ?? DataAnalysisService(IsarDatabase()),
        _reportService = reportService ?? ReportService(),
@@ -205,7 +206,7 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
   ) {
     return salaryRanges.map<Map<String, int>>((range) {
       if (range is SalaryRangeStats) {
-        return {'${range.range}': range.employeeCount};
+        return {range.range: range.employeeCount};
       } else if (range is Map<String, dynamic>) {
         final rangeLabel = range['range'] as String? ?? 'Unknown';
         final count =
@@ -435,7 +436,7 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
       final category = item['category'] as String;
       final value = (item['value'] as double).toStringAsFixed(2);
 
-      buffer.write('$category为${value}元');
+      buffer.write('$category为$value元');
 
       if (i < sortedData.length - 1) {
         buffer.write('，');
@@ -545,7 +546,7 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
           }
 
           buffer.write(
-            '${departmentName}部门有${employeeCount}名员工，平均工资为${averageSalary.toStringAsFixed(2)}元',
+            '$departmentName部门有$employeeCount名员工，平均工资为${averageSalary.toStringAsFixed(2)}元',
           );
 
           // 总是添加最高和最低工资信息
@@ -581,7 +582,7 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
             final minSalary = (position['minSalary'] as num? ?? 0).toDouble();
 
             buffer.write(
-              '${positionName}岗位有${employeeCount}名员工，平均工资为${averageSalary.toStringAsFixed(2)}元',
+              '$positionName岗位有$employeeCount名员工，平均工资为${averageSalary.toStringAsFixed(2)}元',
             );
 
             // 总是添加最高和最低工资信息

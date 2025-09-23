@@ -6,7 +6,7 @@ import 'package:salary_report/src/services/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/components/attendance_pagination.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
-import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
+import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_factory.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:toastification/toastification.dart';
@@ -501,8 +501,10 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
       final startTime = DateTime(widget.year, startMonth);
       final endTime = DateTime(widget.year, endMonth);
 
-      final generator = SalaryReportGenerator();
-      final reportPath = await generator.generateReport(
+      final generator = EnhancedReportGeneratorFactory.createGenerator(
+        ReportType.singleQuarter,
+      );
+      final reportPath = await generator.generateEnhancedReport(
         previewContainerKey: _chartContainerKey,
         departmentStats: _departmentStats,
         analysisData: _analysisData,
@@ -511,7 +513,8 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
         month: widget.quarter,
         isMultiMonth: false,
         startTime: startTime,
-        reportType: ReportType.singleQuarter, // 明确指定报告类型为季度报告
+        attendanceStats: [], // 季度报告不需要考勤数据
+        previousMonthData: null, // 季度报告不需要上月数据
       );
 
       if (mounted) {

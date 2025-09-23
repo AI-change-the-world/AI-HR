@@ -1,7 +1,7 @@
 // test/database_update_test.dart
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:salary_report/src/pages/visualization/report/report_generator_factory.dart';
+import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_factory.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:salary_report/src/isar/database.dart';
@@ -19,12 +19,15 @@ void main() {
 
     test('Should verify report record is saved to database', () async {
       // 创建报告生成器
-      final generator = ReportGeneratorFactory.createGenerator(
+      final generator = EnhancedReportGeneratorFactory.createGenerator(
         ReportType.singleMonth,
       );
 
       // 验证生成器已正确创建
-      expect(generator.runtimeType.toString(), 'MonthlyReportGenerator');
+      expect(
+        generator.runtimeType.toString(),
+        'EnhancedMonthlyReportGenerator',
+      );
 
       // 注意：实际的报告生成测试需要更多设置，这里只是验证结构
       expect(reportService, isA<ReportService>());

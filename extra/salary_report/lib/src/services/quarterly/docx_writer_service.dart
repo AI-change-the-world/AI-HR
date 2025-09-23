@@ -1,4 +1,4 @@
-// src/report/services/docx_writer_service.dart
+// src/services/quarterly/docx_writer_service.dart
 
 import 'dart:io';
 import 'package:flutter/services.dart';
@@ -10,12 +10,12 @@ import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 
-class DocxWriterService {
+class QuarterlyDocxWriterService {
   /// 根据报告类型选择模板并写入报告
   Future<String> writeReport({
     required ReportContentModel data,
     required ReportChartImages images,
-    ReportType reportType = ReportType.singleMonth, // 默认为单月报告
+    ReportType reportType = ReportType.singleQuarter, // 默认为季度报告
   }) async {
     // 根据报告类型选择模板
     final templatePath = _getTemplatePath(reportType);

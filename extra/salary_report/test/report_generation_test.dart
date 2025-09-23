@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
-import 'package:salary_report/src/pages/visualization/report/report_generator_factory.dart';
+import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_factory.dart';
 
 void main() {
   group('Report Generation Tests', () {
@@ -15,46 +15,51 @@ void main() {
     });
 
     test('ReportGeneratorFactory should create correct generators', () {
-      final monthlyGenerator = ReportGeneratorFactory.createGenerator(
+      final monthlyGenerator = EnhancedReportGeneratorFactory.createGenerator(
         ReportType.singleMonth,
       );
-      expect(monthlyGenerator.runtimeType.toString(), 'MonthlyReportGenerator');
-
-      final multiMonthGenerator = ReportGeneratorFactory.createGenerator(
-        ReportType.multiMonth,
+      expect(
+        monthlyGenerator.runtimeType.toString(),
+        'EnhancedMonthlyReportGenerator',
       );
+
+      final multiMonthGenerator =
+          EnhancedReportGeneratorFactory.createGenerator(ReportType.multiMonth);
       expect(
         multiMonthGenerator.runtimeType.toString(),
-        'MultiMonthReportGenerator',
+        'EnhancedMultiMonthReportGenerator',
       );
 
-      final quarterlyGenerator = ReportGeneratorFactory.createGenerator(
+      final quarterlyGenerator = EnhancedReportGeneratorFactory.createGenerator(
         ReportType.singleQuarter,
       );
       expect(
         quarterlyGenerator.runtimeType.toString(),
-        'QuarterlyReportGenerator',
+        'EnhancedQuarterlyReportGenerator',
       );
 
-      final multiQuarterlyGenerator = ReportGeneratorFactory.createGenerator(
-        ReportType.multiQuarter,
-      );
+      final multiQuarterlyGenerator =
+          EnhancedReportGeneratorFactory.createGenerator(
+            ReportType.multiQuarter,
+          );
       expect(
         multiQuarterlyGenerator.runtimeType.toString(),
-        'MultiQuarterlyReportGenerator',
+        'EnhancedMultiMonthReportGenerator',
       );
 
-      final annualGenerator = ReportGeneratorFactory.createGenerator(
+      final annualGenerator = EnhancedReportGeneratorFactory.createGenerator(
         ReportType.singleYear,
       );
-      expect(annualGenerator.runtimeType.toString(), 'AnnualReportGenerator');
-
-      final multiAnnualGenerator = ReportGeneratorFactory.createGenerator(
-        ReportType.multiYear,
+      expect(
+        annualGenerator.runtimeType.toString(),
+        'EnhancedAnnualReportGenerator',
       );
+
+      final multiAnnualGenerator =
+          EnhancedReportGeneratorFactory.createGenerator(ReportType.multiYear);
       expect(
         multiAnnualGenerator.runtimeType.toString(),
-        'MultiAnnualReportGenerator',
+        'EnhancedMultiMonthReportGenerator',
       );
     });
 

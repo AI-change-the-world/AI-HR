@@ -53,7 +53,8 @@ samples, guidance on mobile development, and a full API reference.
 ### 文件结构
 
 - `lib/src/utils/monthly_analysis_json_converter.dart` - JSON转换器
-- `lib/src/services/chart_generation_from_json_service.dart` - 图表生成服务
+- `lib/src/services/*/chart_generation_from_json_service.dart` - 图表生成服务（按场景分类）
+- `lib/src/services/*/docx_writer_service.dart` - DOCX报告写入服务（按场景分类）
 - `lib/src/pages/visualization/report/enhanced_salary_report_generator.dart` - 增强版报告生成器
 - `lib/src/pages/data_analysis/monthly/monthly_analysis_page.dart` - 月度分析页面（已集成增强功能）
 - `example/json_to_chart_example.dart` - JSON到图表转换示例

@@ -9,9 +9,9 @@ import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:salary_report/src/utils/monthly_analysis_json_converter.dart';
-import 'package:salary_report/src/services/chart_generation_from_json_service.dart';
+import 'package:salary_report/src/services/quarterly/chart_generation_from_json_service.dart';
 import 'package:salary_report/src/pages/visualization/report/chart_generation_service.dart';
-import 'package:salary_report/src/pages/visualization/report/docx_writer_service.dart';
+import 'package:salary_report/src/services/quarterly/docx_writer_service.dart';
 import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_interface.dart';
@@ -20,20 +20,21 @@ import 'package:salary_report/src/isar/salary_list.dart';
 /// 增强版季度报告生成器
 class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
   final ChartGenerationService _chartService;
-  final ChartGenerationFromJsonService _jsonChartService;
-  final DocxWriterService _docxService;
+  final QuarterlyChartGenerationFromJsonService _jsonChartService;
+  final QuarterlyDocxWriterService _docxService;
   final DataAnalysisService _analysisService;
   final ReportService _reportService;
 
   EnhancedQuarterlyReportGenerator({
     ChartGenerationService? chartService,
-    ChartGenerationFromJsonService? jsonChartService,
-    DocxWriterService? docxService,
+    QuarterlyChartGenerationFromJsonService? jsonChartService,
+    QuarterlyDocxWriterService? docxService,
     DataAnalysisService? analysisService,
     ReportService? reportService,
   }) : _chartService = chartService ?? ChartGenerationService(),
-       _jsonChartService = jsonChartService ?? ChartGenerationFromJsonService(),
-       _docxService = docxService ?? DocxWriterService(),
+       _jsonChartService =
+           jsonChartService ?? QuarterlyChartGenerationFromJsonService(),
+       _docxService = docxService ?? QuarterlyDocxWriterService(),
        _analysisService =
            analysisService ?? DataAnalysisService(IsarDatabase()),
        _reportService = reportService ?? ReportService();

@@ -8,9 +8,9 @@ import 'package:salary_report/src/services/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/services/report_service.dart';
-import 'package:salary_report/src/services/chart_generation_from_json_service.dart';
+import 'package:salary_report/src/services/multi_month/chart_generation_from_json_service.dart';
 import 'package:salary_report/src/pages/visualization/report/chart_generation_service.dart';
-import 'package:salary_report/src/pages/visualization/report/docx_writer_service.dart';
+import 'package:salary_report/src/services/multi_month/docx_writer_service.dart';
 import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_interface.dart';
@@ -20,20 +20,21 @@ import 'package:salary_report/src/utils/multi_month_analysis_json_converter.dart
 /// 增强版多月报告生成器
 class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
   final ChartGenerationService _chartService;
-  final ChartGenerationFromJsonService _jsonChartService;
-  final DocxWriterService _docxService;
+  final MultiMonthChartGenerationFromJsonService _jsonChartService;
+  final MultiMonthDocxWriterService _docxService;
   final DataAnalysisService _analysisService;
   final ReportService _reportService;
 
   EnhancedMultiMonthReportGenerator({
     ChartGenerationService? chartService,
-    ChartGenerationFromJsonService? jsonChartService,
-    DocxWriterService? docxService,
+    MultiMonthChartGenerationFromJsonService? jsonChartService,
+    MultiMonthDocxWriterService? docxService,
     DataAnalysisService? analysisService,
     ReportService? reportService,
   }) : _chartService = chartService ?? ChartGenerationService(),
-       _jsonChartService = jsonChartService ?? ChartGenerationFromJsonService(),
-       _docxService = docxService ?? DocxWriterService(),
+       _jsonChartService =
+           jsonChartService ?? MultiMonthChartGenerationFromJsonService(),
+       _docxService = docxService ?? MultiMonthDocxWriterService(),
        _analysisService =
            analysisService ?? DataAnalysisService(IsarDatabase()),
        _reportService = reportService ?? ReportService();
@@ -351,7 +352,7 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
       final category = item['category'] as String;
       final value = (item['value'] as double).toStringAsFixed(2);
 
-      buffer.write('$category为${value}元');
+      buffer.write('$category为$value元');
 
       if (i < sortedData.length - 1) {
         buffer.write('，');

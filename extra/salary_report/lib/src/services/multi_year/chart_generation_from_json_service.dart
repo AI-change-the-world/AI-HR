@@ -1,4 +1,4 @@
-// src/services/chart_generation_from_json_service.dart
+// src/services/multi_year/chart_generation_from_json_service.dart
 
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -6,8 +6,8 @@ import 'package:screenshot/screenshot.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'dart:ui' as ui;
 
-/// 从JSON数据生成图表的基础服务
-class ChartGenerationFromJsonService {
+/// 多年报告从JSON数据生成图表的服务
+class MultiYearChartGenerationFromJsonService {
   final ScreenshotController _screenshotController = ScreenshotController();
 
   /// 生成所有图表

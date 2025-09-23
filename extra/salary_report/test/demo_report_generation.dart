@@ -1,62 +1,67 @@
 // test/demo_report_generation.dart
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:salary_report/src/pages/visualization/report/report_generator_factory.dart';
+import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_factory.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
-import 'package:salary_report/src/pages/visualization/report/monthly_report_generator.dart'
+import 'package:salary_report/src/pages/visualization/report/enhanced_monthly_report_generator.dart'
     as monthly_gen;
-import 'package:salary_report/src/pages/visualization/report/multi_month_report_generator.dart'
+import 'package:salary_report/src/pages/visualization/report/enhanced_multi_month_report_generator.dart'
     as multi_month_gen;
-import 'package:salary_report/src/pages/visualization/report/quarterly_report_generator.dart'
+import 'package:salary_report/src/pages/visualization/report/enhanced_quarterly_report_generator.dart'
     as quarterly_gen;
-import 'package:salary_report/src/pages/visualization/report/multi_quarterly_report_generator.dart'
+import 'package:salary_report/src/pages/visualization/report/enhanced_multi_month_report_generator.dart'
     as multi_quarterly_gen;
-import 'package:salary_report/src/pages/visualization/report/annual_report_generator.dart'
+import 'package:salary_report/src/pages/visualization/report/enhanced_annual_report_generator.dart'
     as annual_gen;
-import 'package:salary_report/src/pages/visualization/report/multi_annual_report_generator.dart'
+import 'package:salary_report/src/pages/visualization/report/enhanced_multi_month_report_generator.dart'
     as multi_annual_gen;
 
 void main() {
   group('Demo Report Generation Tests', () {
     test('Should create and verify all report generators', () {
       // 测试创建所有类型的报告生成器
-      final monthlyGenerator = ReportGeneratorFactory.createGenerator(
+      final monthlyGenerator = EnhancedReportGeneratorFactory.createGenerator(
         ReportType.singleMonth,
       );
-      expect(monthlyGenerator, isA<monthly_gen.MonthlyReportGenerator>());
-
-      final multiMonthGenerator = ReportGeneratorFactory.createGenerator(
-        ReportType.multiMonth,
+      expect(
+        monthlyGenerator,
+        isA<monthly_gen.EnhancedMonthlyReportGenerator>(),
       );
+
+      final multiMonthGenerator =
+          EnhancedReportGeneratorFactory.createGenerator(ReportType.multiMonth);
       expect(
         multiMonthGenerator,
-        isA<multi_month_gen.MultiMonthReportGenerator>(),
+        isA<multi_month_gen.EnhancedMultiMonthReportGenerator>(),
       );
 
-      final quarterlyGenerator = ReportGeneratorFactory.createGenerator(
+      final quarterlyGenerator = EnhancedReportGeneratorFactory.createGenerator(
         ReportType.singleQuarter,
       );
-      expect(quarterlyGenerator, isA<quarterly_gen.QuarterlyReportGenerator>());
-
-      final multiQuarterlyGenerator = ReportGeneratorFactory.createGenerator(
-        ReportType.multiQuarter,
+      expect(
+        quarterlyGenerator,
+        isA<quarterly_gen.EnhancedQuarterlyReportGenerator>(),
       );
+
+      final multiQuarterlyGenerator =
+          EnhancedReportGeneratorFactory.createGenerator(
+            ReportType.multiQuarter,
+          );
       expect(
         multiQuarterlyGenerator,
-        isA<multi_quarterly_gen.MultiQuarterlyReportGenerator>(),
+        isA<multi_quarterly_gen.EnhancedMultiMonthReportGenerator>(),
       );
 
-      final annualGenerator = ReportGeneratorFactory.createGenerator(
+      final annualGenerator = EnhancedReportGeneratorFactory.createGenerator(
         ReportType.singleYear,
       );
-      expect(annualGenerator, isA<annual_gen.AnnualReportGenerator>());
+      expect(annualGenerator, isA<annual_gen.EnhancedAnnualReportGenerator>());
 
-      final multiAnnualGenerator = ReportGeneratorFactory.createGenerator(
-        ReportType.multiYear,
-      );
+      final multiAnnualGenerator =
+          EnhancedReportGeneratorFactory.createGenerator(ReportType.multiYear);
       expect(
         multiAnnualGenerator,
-        isA<multi_annual_gen.MultiAnnualReportGenerator>(),
+        isA<multi_annual_gen.EnhancedMultiMonthReportGenerator>(),
       );
     });
 

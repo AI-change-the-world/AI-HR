@@ -7,7 +7,7 @@ import 'package:salary_report/src/services/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
-import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
+import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_factory.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:toastification/toastification.dart';
@@ -83,8 +83,10 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
           ? DateTime(widget.endYear!, 12)
           : DateTime(widget.year, 12);
 
-      final generator = SalaryReportGenerator();
-      final reportPath = await generator.generateReport(
+      final generator = EnhancedReportGeneratorFactory.createGenerator(
+        ReportType.singleYear,
+      );
+      final reportPath = await generator.generateEnhancedReport(
         previewContainerKey: _chartContainerKey,
         departmentStats: departmentStats, // 使用从分析数据中获取的部门统计数据
         analysisData: analysisData,
@@ -93,7 +95,8 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
         month: 0, // 年度报告没有月份
         isMultiMonth: widget.isMultiYear,
         startTime: startTime,
-        reportType: ReportType.singleYear, // 明确指定报告类型为年度报告
+        attendanceStats: [], // 年度报告不需要考勤数据
+        previousMonthData: null, // 年度报告不需要上月数据
       );
 
       if (mounted) {
