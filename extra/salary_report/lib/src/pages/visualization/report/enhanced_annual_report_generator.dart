@@ -10,28 +10,28 @@ import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:salary_report/src/utils/monthly_analysis_json_converter.dart';
 import 'package:salary_report/src/services/yearly/chart_generation_from_json_service.dart';
-import 'package:salary_report/src/pages/visualization/report/chart_generation_service.dart';
+import 'package:salary_report/src/services/yearly/chart_generation_service.dart';
 import 'package:salary_report/src/services/yearly/docx_writer_service.dart';
-import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
+import 'package:salary_report/src/services/yearly/yearly_report_models.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_interface.dart';
 import 'package:salary_report/src/isar/salary_list.dart';
 
 /// 增强版年度报告生成器
 class EnhancedAnnualReportGenerator implements EnhancedReportGenerator {
-  final ChartGenerationService _chartService;
+  final YearlyChartGenerationService _chartService;
   final YearlyChartGenerationFromJsonService _jsonChartService;
   final YearlyDocxWriterService _docxService;
   final DataAnalysisService _analysisService;
   final ReportService _reportService;
 
   EnhancedAnnualReportGenerator({
-    ChartGenerationService? chartService,
+    YearlyChartGenerationService? chartService,
     YearlyChartGenerationFromJsonService? jsonChartService,
     YearlyDocxWriterService? docxService,
     DataAnalysisService? analysisService,
     ReportService? reportService,
-  }) : _chartService = chartService ?? ChartGenerationService(),
+  }) : _chartService = chartService ?? YearlyChartGenerationService(),
        _jsonChartService =
            jsonChartService ?? YearlyChartGenerationFromJsonService(),
        _docxService = docxService ?? YearlyDocxWriterService(),
@@ -90,18 +90,11 @@ class EnhancedAnnualReportGenerator implements EnhancedReportGenerator {
           .generateAllChartsFromJson(jsonData: jsonData);
 
       // 6. 创建组合图表图像集合
-      final combinedChartImages = ReportChartImages(
+      final combinedChartImages = YearlyReportChartImages(
         mainChart: chartImagesFromUI.mainChart,
         departmentDetailsChart: chartImagesFromJson.departmentChart,
         salaryRangeChart: chartImagesFromJson.salaryRangeChart,
         salaryStructureChart: chartImagesFromUI.salaryStructureChart, // 薪资结构饼图
-        employeeCountPerMonthChart:
-            chartImagesFromUI.employeeCountPerMonthChart,
-        averageSalaryPerMonthChart:
-            chartImagesFromUI.averageSalaryPerMonthChart,
-        totalSalaryPerMonthChart: chartImagesFromUI.totalSalaryPerMonthChart,
-        departmentDetailsPerMonthChart:
-            chartImagesFromUI.departmentDetailsPerMonthChart,
       );
 
       // 7. 创建报告内容模型
@@ -116,7 +109,6 @@ class EnhancedAnnualReportGenerator implements EnhancedReportGenerator {
       final reportPath = await _docxService.writeReport(
         data: reportContent,
         images: combinedChartImages,
-        reportType: ReportType.singleYear,
       );
 
       // 9. 添加报告记录到数据库
@@ -190,7 +182,7 @@ class EnhancedAnnualReportGenerator implements EnhancedReportGenerator {
     }).toList();
   }
 
-  ReportContentModel _createReportContentModel(
+  YearlyReportContentModel _createReportContentModel(
     Map<String, dynamic> jsonData,
     Map<String, dynamic> analysisData,
     DateTime startTime,
@@ -219,7 +211,7 @@ class EnhancedAnnualReportGenerator implements EnhancedReportGenerator {
       salaryStructureData,
     );
 
-    return ReportContentModel(
+    return YearlyReportContentModel(
       reportTitle: '年度工资分析报告',
       reportDate:
           '${DateTime.now().year}年${DateTime.now().month}月${DateTime.now().day}日',

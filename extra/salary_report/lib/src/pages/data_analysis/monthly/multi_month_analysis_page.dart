@@ -203,6 +203,7 @@ class _MultiMonthAnalysisPageState
   }
 
   /// 准备分析数据用于报告生成
+  /// 准备分析数据用于报告生成
   Map<String, dynamic> _prepareAnalysisData(
     AsyncValue<KeyMetricsState> keyMetricsState,
     AsyncValue<DepartmentStatsState> departmentStatsState,
@@ -217,6 +218,7 @@ class _MultiMonthAnalysisPageState
     double totalSalary = 0;
     double highestSalary = 0;
     double lowestSalary = double.infinity;
+    final Set<String> uniqueEmployeeIds = <String>{}; // 用于去重统计员工数
 
     // 从关键指标状态中获取数据
     if (keyMetricsState is AsyncData &&
@@ -225,17 +227,25 @@ class _MultiMonthAnalysisPageState
         totalEmployees += monthlyData.employeeCount;
         totalSalary += monthlyData.totalSalary;
 
-        monthlyData.departmentStats.forEach((dept, stat) {
-          if (stat.averageNetSalary > highestSalary) {
-            highestSalary = stat.averageNetSalary;
-          }
+        // 累加去重后的员工数
+        for (var worker in monthlyData.workers) {
+          final employeeId = '${worker.name}_${worker.department}';
+          uniqueEmployeeIds.add(employeeId);
+        }
 
-          if (stat.averageNetSalary < lowestSalary) {
-            lowestSalary = stat.averageNetSalary;
-          }
-        });
+        // 使用月度数据中的最高最低工资字段
+        if (monthlyData.highestSalary > highestSalary) {
+          highestSalary = monthlyData.highestSalary;
+        }
+
+        if (monthlyData.lowestSalary < lowestSalary) {
+          lowestSalary = monthlyData.lowestSalary;
+        }
       }
     }
+
+    // 设置去重员工总数
+    totalUniqueEmployees = uniqueEmployeeIds.length;
 
     if (lowestSalary == double.infinity) {
       lowestSalary = 0;

@@ -7,20 +7,18 @@ import 'package:docx_template_fork/docx_template_fork.dart';
 import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 
-import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
-import 'package:salary_report/src/pages/visualization/report/report_types.dart';
+import 'package:salary_report/src/services/multi_quarter/multi_quarter_report_models.dart';
 
 class MultiQuarterDocxWriterService {
-  /// 根据报告类型选择模板并写入报告
+  /// 写入多季度报告
   Future<String> writeReport({
-    required ReportContentModel data,
-    required ReportChartImages images,
-    ReportType reportType = ReportType.multiQuarter, // 默认为多季度报告
+    required MultiQuarterReportContentModel data,
+    required MultiQuarterReportChartImages images,
   }) async {
-    // 根据报告类型选择模板
-    final templatePath = _getTemplatePath(reportType);
+    // 使用多季度报告模板
+    final templatePath = 'assets/salary_report_template_multi_quarter.docx';
 
-    logger.info('开始写入报告, 使用 模板: $templatePath');
+    logger.info('开始写入多季度报告, 使用模板: $templatePath');
 
     // 加载模板
     final data0 = await rootBundle.load(templatePath);
@@ -29,7 +27,7 @@ class MultiQuarterDocxWriterService {
     final docx = await DocxTemplate.fromBytes(bytes);
 
     // 构建内容
-    final content = _buildContent(data, images, reportType);
+    final content = _buildContent(data, images);
 
     final generatedBytes = await docx.generate(content);
     if (generatedBytes == null) {
@@ -40,7 +38,7 @@ class MultiQuarterDocxWriterService {
     final dir = await getApplicationDocumentsDirectory();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final formattedTime = _formatDateTime(DateTime.now());
-    final reportName = _generateReportName(data, reportType, formattedTime);
+    final reportName = _generateReportName(data, formattedTime);
     final outputPath = '${dir.path}/$reportName.docx';
     final outputFile = File(outputPath);
     await outputFile.writeAsBytes(generatedBytes);
@@ -56,35 +54,12 @@ class MultiQuarterDocxWriterService {
 
   /// 生成报告文件名
   String _generateReportName(
-    ReportContentModel data,
-    ReportType type,
+    MultiQuarterReportContentModel data,
     String timestamp,
   ) {
     final companyName = data.companyName;
     final reportTime = data.reportTime;
-
-    // 根据报告类型生成相应的描述
-    String typeDescription;
-    switch (type) {
-      case ReportType.singleMonth:
-        typeDescription = '月度';
-        break;
-      case ReportType.multiMonth:
-        typeDescription = '多月';
-        break;
-      case ReportType.singleQuarter:
-        typeDescription = '季度';
-        break;
-      case ReportType.multiQuarter:
-        typeDescription = '多季度';
-        break;
-      case ReportType.singleYear:
-        typeDescription = '年度';
-        break;
-      case ReportType.multiYear:
-        typeDescription = '多年';
-        break;
-    }
+    final typeDescription = '多季度';
 
     // 移除报告时间中的特殊字符，使其适合文件名
     final cleanReportTime = reportTime.replaceAll(
@@ -95,56 +70,18 @@ class MultiQuarterDocxWriterService {
     return '${companyName}_${reportTime}_$typeDescription报告_$timestamp';
   }
 
-  /// 根据报告类型获取模板路径
-  String _getTemplatePath(ReportType type) {
-    switch (type) {
-      case ReportType.singleMonth:
-        return 'assets/salary_report_template_monthly.docx';
-      case ReportType.multiMonth:
-        return 'assets/salary_report_template_multi_month.docx';
-      case ReportType.singleQuarter:
-        return 'assets/salary_report_template_quarterly.docx';
-      case ReportType.multiQuarter:
-        return 'assets/salary_report_template_multi_quarter.docx';
-      case ReportType.singleYear:
-        return 'assets/salary_report_template_annual.docx';
-      case ReportType.multiYear:
-        return 'assets/salary_report_template_multi_year.docx';
-    }
-  }
-
-  /// 构建内容，根据不同报告类型可能有不同的处理
+  /// 构建内容
   Content _buildContent(
-    ReportContentModel data,
-    ReportChartImages images,
-    ReportType type,
+    MultiQuarterReportContentModel data,
+    MultiQuarterReportChartImages images,
   ) {
     final content = Content();
 
     // 添加通用文本字段
     _addCommonTextFields(content, data);
 
-    // 根据报告类型添加特定字段
-    switch (type) {
-      case ReportType.singleMonth:
-        _addMonthlySpecificFields(content, data);
-        break;
-      case ReportType.multiMonth:
-        _addMultiMonthSpecificFields(content, data);
-        break;
-      case ReportType.singleQuarter:
-        _addQuarterlySpecificFields(content, data);
-        break;
-      case ReportType.multiQuarter:
-        _addQuarterlySpecificFields(content, data);
-        break;
-      case ReportType.singleYear:
-        _addAnnualSpecificFields(content, data);
-        break;
-      case ReportType.multiYear:
-        _addAnnualSpecificFields(content, data);
-        break;
-    }
+    // 添加多季度报告特定字段
+    _addMultiQuarterSpecificFields(content, data);
 
     // 添加表格内容
     _addTableContent(content, data);
@@ -155,18 +92,18 @@ class MultiQuarterDocxWriterService {
     return content;
   }
 
-  /// 格式化每月人数变化数据
-  String _formatEmployeeCountPerMonthData(
-    List<Map<String, dynamic>> employeeCountPerMonth,
+  /// 格式化每季度人数变化数据
+  String _formatEmployeeCountPerQuarterData(
+    List<Map<String, dynamic>> employeeCountPerQuarter,
   ) {
-    if (employeeCountPerMonth.isEmpty) {
+    if (employeeCountPerQuarter.isEmpty) {
       return '';
     }
 
     final buffer = StringBuffer();
-    for (var item in employeeCountPerMonth) {
-      // 修改格式，不使用冒号分隔，直接说明哪年哪月总共有多少人，并显示各部门详情
-      buffer.write('${item["month"]}总共有${item["employeeCount"]}人');
+    for (var item in employeeCountPerQuarter) {
+      // 修改格式，不使用冒号分隔，直接说明哪年哪季度总共有多少人，并显示各部门详情
+      buffer.write('${item["quarter"]}季度总共有${item["employeeCount"]}人');
 
       // 如果有部门详情，也显示出来
       if (item.containsKey('departments') && item['departments'] is List) {
@@ -191,19 +128,19 @@ class MultiQuarterDocxWriterService {
     return result.isEmpty ? '' : '${result.substring(0, result.length - 1)}。';
   }
 
-  /// 格式化每月平均薪资变化数据
-  String _formatAverageSalaryPerMonthData(
-    List<Map<String, dynamic>> averageSalaryPerMonth,
+  /// 格式化每季度平均薪资变化数据
+  String _formatAverageSalaryPerQuarterData(
+    List<Map<String, dynamic>> averageSalaryPerQuarter,
   ) {
-    if (averageSalaryPerMonth.isEmpty) {
+    if (averageSalaryPerQuarter.isEmpty) {
       return '';
     }
 
     final buffer = StringBuffer();
-    for (var item in averageSalaryPerMonth) {
+    for (var item in averageSalaryPerQuarter) {
       // 修改格式，不使用冒号分隔
       buffer.write(
-        '${item["month"]}平均薪资为¥${(item["averageSalary"] as double).toStringAsFixed(2)}；',
+        '${item["quarter"]}季度平均薪资为¥${(item["averageSalary"] as double).toStringAsFixed(2)}；',
       );
     }
     // 移除最后的分号并添加句号
@@ -211,19 +148,19 @@ class MultiQuarterDocxWriterService {
     return result.isEmpty ? '' : '${result.substring(0, result.length - 1)}。';
   }
 
-  /// 格式化每月总工资变化数据
-  String _formatTotalSalaryPerMonthData(
-    List<Map<String, dynamic>> totalSalaryPerMonth,
+  /// 格式化每季度总工资变化数据
+  String _formatTotalSalaryPerQuarterData(
+    List<Map<String, dynamic>> totalSalaryPerQuarter,
   ) {
-    if (totalSalaryPerMonth.isEmpty) {
+    if (totalSalaryPerQuarter.isEmpty) {
       return '';
     }
 
     final buffer = StringBuffer();
-    for (var item in totalSalaryPerMonth) {
+    for (var item in totalSalaryPerQuarter) {
       // 修改格式，不使用冒号分隔
       buffer.write(
-        '${item["month"]}总工资为¥${(item["totalSalary"] as double).toStringAsFixed(2)}；',
+        '${item["quarter"]}季度总工资为¥${(item["totalSalary"] as double).toStringAsFixed(2)}；',
       );
     }
     // 移除最后的分号并添加句号
@@ -233,19 +170,19 @@ class MultiQuarterDocxWriterService {
 
   /// 格式化部门详情数据
   String _formatDepartmentDetailsData(
-    List<Map<String, dynamic>> departmentDetailsPerMonth,
+    List<Map<String, dynamic>> departmentDetailsPerQuarter,
   ) {
-    if (departmentDetailsPerMonth.isEmpty) {
+    if (departmentDetailsPerQuarter.isEmpty) {
       return '';
     }
 
     final departmentDetailsData = StringBuffer();
-    for (var monthData in departmentDetailsPerMonth) {
+    for (var quarterData in departmentDetailsPerQuarter) {
       // 修改格式，显示各部门详情
       departmentDetailsData.write(
-        '${monthData["month"]}总共有${(monthData["departments"] as List).length}个部门：',
+        '${quarterData["quarter"]}季度总共有${(quarterData["departments"] as List).length}个部门：',
       );
-      final departments = monthData["departments"] as List<dynamic>;
+      final departments = quarterData["departments"] as List<dynamic>;
       final deptDetails = departments
           .map((dept) {
             if (dept is Map<String, dynamic>) {
@@ -262,7 +199,10 @@ class MultiQuarterDocxWriterService {
   }
 
   /// 添加通用文本字段
-  void _addCommonTextFields(Content content, ReportContentModel data) {
+  void _addCommonTextFields(
+    Content content,
+    MultiQuarterReportContentModel data,
+  ) {
     content
       ..add(TextContent('company_name', data.companyName))
       ..add(TextContent('report_time', data.reportTime))
@@ -298,68 +238,57 @@ class MultiQuarterDocxWriterService {
     }
     content.add(TextContent('compare_last', data.compareLast));
 
-    // 添加多月报告可能有的额外文本字段（即使为空也要添加占位符）
+    // 添加多季度报告可能有的额外文本字段（即使为空也要添加占位符）
     content
       ..add(
         TextContent(
-          'employee_count_per_month_data',
-          data.employeeCountPerMonth != null
-              ? _formatEmployeeCountPerMonthData(data.employeeCountPerMonth!)
+          'employee_count_per_quarter_data',
+          data.employeeCountPerQuarter != null
+              ? _formatEmployeeCountPerQuarterData(
+                  data.employeeCountPerQuarter!,
+                )
               : '',
         ),
       )
       ..add(
         TextContent(
-          'average_salary_per_month_data',
-          data.averageSalaryPerMonth != null
-              ? _formatAverageSalaryPerMonthData(data.averageSalaryPerMonth!)
+          'average_salary_per_quarter_data',
+          data.averageSalaryPerQuarter != null
+              ? _formatAverageSalaryPerQuarterData(
+                  data.averageSalaryPerQuarter!,
+                )
               : '',
         ),
       )
       ..add(
         TextContent(
-          'total_salary_per_month_data',
-          data.totalSalaryPerMonth != null
-              ? _formatTotalSalaryPerMonthData(data.totalSalaryPerMonth!)
+          'total_salary_per_quarter_data',
+          data.totalSalaryPerQuarter != null
+              ? _formatTotalSalaryPerQuarterData(data.totalSalaryPerQuarter!)
               : '',
         ),
       )
       ..add(
         TextContent(
-          'department_details_per_month_data',
-          data.departmentDetailsPerMonth != null
-              ? _formatDepartmentDetailsData(data.departmentDetailsPerMonth!)
+          'department_details_per_quarter_data',
+          data.departmentDetailsPerQuarter != null
+              ? _formatDepartmentDetailsData(data.departmentDetailsPerQuarter!)
               : '',
         ),
       );
   }
 
-  /// 添加单月报告特定字段
-  void _addMonthlySpecificFields(Content content, ReportContentModel data) {
-    // 单月报告可能需要添加的一些特定字段
-    // 这里可以根据需要添加
-  }
-
-  /// 添加多月报告特定字段
-  void _addMultiMonthSpecificFields(Content content, ReportContentModel data) {
-    // 多月报告特定的处理逻辑（如果有的话）
+  /// 添加多季度报告特定字段
+  void _addMultiQuarterSpecificFields(
+    Content content,
+    MultiQuarterReportContentModel data,
+  ) {
+    // 多季度报告特定的处理逻辑（如果有的话）
     // 通用文本字段已经在 _addCommonTextFields 中处理了
   }
 
-  /// 添加季度报告特定字段
-  void _addQuarterlySpecificFields(Content content, ReportContentModel data) {
-    // 季度报告也可以使用多月报告的数据
-    _addMultiMonthSpecificFields(content, data);
-  }
-
-  /// 添加年度报告特定字段
-  void _addAnnualSpecificFields(Content content, ReportContentModel data) {
-    // 年度报告也可以使用多月报告的数据
-    _addMultiMonthSpecificFields(content, data);
-  }
-
   /// 添加表格内容
-  void _addTableContent(Content content, ReportContentModel data) {
+  void _addTableContent(Content content, MultiQuarterReportContentModel data) {
     final departmentRows = data.departmentStats.map<RowContent>((
       DepartmentSalaryStats stat,
     ) {
@@ -385,7 +314,7 @@ class MultiQuarterDocxWriterService {
   }
 
   /// 添加图片内容
-  void _addImageContent(Content content, ReportChartImages images) {
+  void _addImageContent(Content content, MultiQuarterReportChartImages images) {
     if (images.mainChart != null) {
       content.add(ImageContent('chart_overall', images.mainChart!));
     }
@@ -406,36 +335,36 @@ class MultiQuarterDocxWriterService {
         ImageContent('salary_structure_chart', images.salaryStructureChart!),
       );
     }
-    // 添加多月报告专用图表
-    if (images.employeeCountPerMonthChart != null) {
+    // 添加多季度报告专用图表
+    if (images.employeeCountPerQuarterChart != null) {
       content.add(
         ImageContent(
-          'employee_count_per_month_chart',
-          images.employeeCountPerMonthChart!,
+          'employee_count_per_quarter_chart',
+          images.employeeCountPerQuarterChart!,
         ),
       );
     }
-    if (images.averageSalaryPerMonthChart != null) {
+    if (images.averageSalaryPerQuarterChart != null) {
       content.add(
         ImageContent(
-          'average_salary_per_month_chart',
-          images.averageSalaryPerMonthChart!,
+          'average_salary_per_quarter_chart',
+          images.averageSalaryPerQuarterChart!,
         ),
       );
     }
-    if (images.totalSalaryPerMonthChart != null) {
+    if (images.totalSalaryPerQuarterChart != null) {
       content.add(
         ImageContent(
-          'total_salary_per_month_chart',
-          images.totalSalaryPerMonthChart!,
+          'total_salary_per_quarter_chart',
+          images.totalSalaryPerQuarterChart!,
         ),
       );
     }
-    if (images.departmentDetailsPerMonthChart != null) {
+    if (images.departmentDetailsPerQuarterChart != null) {
       content.add(
         ImageContent(
-          'department_details_per_month_chart',
-          images.departmentDetailsPerMonthChart!,
+          'department_details_per_quarter_chart',
+          images.departmentDetailsPerQuarterChart!,
         ),
       );
     }

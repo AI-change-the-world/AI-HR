@@ -212,6 +212,7 @@ class _MultiYearAnalysisPageState extends ConsumerState<MultiYearAnalysisPage> {
     double totalSalary = 0;
     double highestSalary = 0;
     double lowestSalary = double.infinity;
+    final Set<String> uniqueEmployeeIds = <String>{}; // 用于去重统计员工数
 
     // 从关键指标状态中获取数据
     if (keyMetricsState is AsyncData &&
@@ -219,20 +220,26 @@ class _MultiYearAnalysisPageState extends ConsumerState<MultiYearAnalysisPage> {
       for (var yearlyData in keyMetricsState.value!.yearlyData!) {
         totalEmployees += yearlyData.employeeCount;
         totalSalary += yearlyData.totalSalary;
+
         // 累加去重后的员工数
-        totalUniqueEmployees += yearlyData.totalEmployeeCount;
+        for (var worker in yearlyData.workers) {
+          final employeeId = '${worker.name}_${worker.department}';
+          uniqueEmployeeIds.add(employeeId);
+        }
 
-        yearlyData.departmentStats.forEach((dept, stat) {
-          if (stat.averageNetSalary > highestSalary) {
-            highestSalary = stat.averageNetSalary;
-          }
+        // 使用年度数据中的最高最低工资字段
+        if (yearlyData.highestSalary > highestSalary) {
+          highestSalary = yearlyData.highestSalary;
+        }
 
-          if (stat.averageNetSalary < lowestSalary) {
-            lowestSalary = stat.averageNetSalary;
-          }
-        });
+        if (yearlyData.lowestSalary < lowestSalary) {
+          lowestSalary = yearlyData.lowestSalary;
+        }
       }
     }
+
+    // 设置去重员工总数
+    totalUniqueEmployees = uniqueEmployeeIds.length;
 
     if (lowestSalary == double.infinity) {
       lowestSalary = 0;

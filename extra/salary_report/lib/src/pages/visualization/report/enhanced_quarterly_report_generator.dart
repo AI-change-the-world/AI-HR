@@ -10,28 +10,28 @@ import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:salary_report/src/utils/monthly_analysis_json_converter.dart';
 import 'package:salary_report/src/services/quarterly/chart_generation_from_json_service.dart';
-import 'package:salary_report/src/pages/visualization/report/chart_generation_service.dart';
+import 'package:salary_report/src/services/quarterly/chart_generation_service.dart';
 import 'package:salary_report/src/services/quarterly/docx_writer_service.dart';
-import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
+import 'package:salary_report/src/services/quarterly/quarterly_report_models.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_interface.dart';
 import 'package:salary_report/src/isar/salary_list.dart';
 
 /// 增强版季度报告生成器
 class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
-  final ChartGenerationService _chartService;
+  final QuarterlyChartGenerationService _chartService;
   final QuarterlyChartGenerationFromJsonService _jsonChartService;
   final QuarterlyDocxWriterService _docxService;
   final DataAnalysisService _analysisService;
   final ReportService _reportService;
 
   EnhancedQuarterlyReportGenerator({
-    ChartGenerationService? chartService,
+    QuarterlyChartGenerationService? chartService,
     QuarterlyChartGenerationFromJsonService? jsonChartService,
     QuarterlyDocxWriterService? docxService,
     DataAnalysisService? analysisService,
     ReportService? reportService,
-  }) : _chartService = chartService ?? ChartGenerationService(),
+  }) : _chartService = chartService ?? QuarterlyChartGenerationService(),
        _jsonChartService =
            jsonChartService ?? QuarterlyChartGenerationFromJsonService(),
        _docxService = docxService ?? QuarterlyDocxWriterService(),
@@ -83,18 +83,11 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
           .generateAllChartsFromJson(jsonData: jsonData);
 
       // 5. 创建组合图表图像集合
-      final combinedChartImages = ReportChartImages(
+      final combinedChartImages = QuarterlyReportChartImages(
         mainChart: chartImagesFromUI.mainChart,
         departmentDetailsChart: chartImagesFromJson.departmentChart,
         salaryRangeChart: chartImagesFromJson.salaryRangeChart,
         salaryStructureChart: null, // 可以从jsonData中提取薪资结构数据来生成
-        employeeCountPerMonthChart:
-            chartImagesFromUI.employeeCountPerMonthChart,
-        averageSalaryPerMonthChart:
-            chartImagesFromUI.averageSalaryPerMonthChart,
-        totalSalaryPerMonthChart: chartImagesFromUI.totalSalaryPerMonthChart,
-        departmentDetailsPerMonthChart:
-            chartImagesFromUI.departmentDetailsPerMonthChart,
       );
 
       // 6. 创建报告内容模型
@@ -109,7 +102,6 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
       final reportPath = await _docxService.writeReport(
         data: reportContent,
         images: combinedChartImages,
-        reportType: ReportType.singleQuarter,
       );
 
       // 8. 添加报告记录到数据库
@@ -147,7 +139,7 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
   }
 
   /// 创建报告内容模型
-  ReportContentModel _createReportContentModel(
+  QuarterlyReportContentModel _createReportContentModel(
     Map<String, dynamic> jsonData,
     Map<String, dynamic> analysisData,
     DateTime startTime,
@@ -176,7 +168,7 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
       });
     }
 
-    return ReportContentModel(
+    return QuarterlyReportContentModel(
       reportTitle: '季度工资分析报告',
       reportDate:
           '${DateTime.now().year}年${DateTime.now().month}月${DateTime.now().day}日',

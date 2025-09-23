@@ -1,29 +1,28 @@
-// src/report/services/chart_generation_service.dart
+// src/services/multi_quarter/chart_generation_service.dart
 
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
-import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
+import 'package:salary_report/src/services/multi_quarter/multi_quarter_report_models.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 import 'dart:ui' as ui;
 
-class ChartGenerationService {
+class MultiQuarterChartGenerationService {
   final ScreenshotController _screenshotController = ScreenshotController();
 
-  Future<ReportChartImages> generateAllCharts({
+  Future<MultiQuarterReportChartImages> generateAllCharts({
     required GlobalKey previewContainerKey,
     required List<DepartmentSalaryStats> departmentStats,
     required List<Map<String, dynamic>> salaryRanges,
     List<Map<String, dynamic>>? salaryStructureData, // 薪资结构数据
-    // 多月报告专用图表数据
-    List<Map<String, dynamic>>? employeeCountPerMonth, // 每月人数变化数据
-    List<Map<String, dynamic>>? averageSalaryPerMonth, // 每月平均薪资变化数据
-    List<Map<String, dynamic>>? totalSalaryPerMonth, // 每月总工资变化数据
-    List<Map<String, dynamic>>? departmentDetailsPerMonth, // 每月各部门详情数据
-    List<Map<String, dynamic>>? lastMonthDepartmentStats, // 最后一个月部门统计数据（用于图表生成）
+    // 多季度报告专用图表数据
+    List<Map<String, dynamic>>? employeeCountPerQuarter, // 每季度人数变化数据
+    List<Map<String, dynamic>>? averageSalaryPerQuarter, // 每季度平均薪资变化数据
+    List<Map<String, dynamic>>? totalSalaryPerQuarter, // 每季度总工资变化数据
+    List<Map<String, dynamic>>? departmentDetailsPerQuarter, // 每季度各部门详情数据
   }) async {
     // 1. Capture the existing chart from the UI
     Uint8List? mainChartImage;
@@ -37,31 +36,9 @@ class ChartGenerationService {
     }
 
     // 2. Generate other charts virtually
-    // 对于多月报告，使用最后一个月的数据生成部门详情图表
-    Uint8List? departmentChartImage;
-    if (lastMonthDepartmentStats != null &&
-        lastMonthDepartmentStats.isNotEmpty) {
-      // 使用最后一个月的数据生成部门详情图表
-      final lastMonthStats = lastMonthDepartmentStats.map((data) {
-        return DepartmentSalaryStats(
-          department: data['department'] as String,
-          employeeCount: data['employeeCount'] as int,
-          averageNetSalary: data['averageSalary'] as double,
-          totalNetSalary: data['totalSalary'] as double,
-          year: data['year'] as int? ?? 0,
-          month: data['month'] as int? ?? 0,
-        );
-      }).toList();
-
-      departmentChartImage = await _generateDepartmentDetailsChart(
-        lastMonthStats,
-      );
-    } else {
-      // 使用原有的部门统计数据
-      departmentChartImage = await _generateDepartmentDetailsChart(
-        departmentStats,
-      );
-    }
+    final departmentChartImage = await _generateDepartmentDetailsChart(
+      departmentStats,
+    );
 
     final salaryRangeChartImage = await _generateSalaryRangeChart(salaryRanges);
     final salaryStructureChartImage =
@@ -69,49 +46,47 @@ class ChartGenerationService {
         ? await _generateSalaryStructureChart(salaryStructureData)
         : null;
 
-    // 3. 生成多月报告专用图表
-    Uint8List? employeeCountPerMonthChart;
-    Uint8List? averageSalaryPerMonthChart;
-    Uint8List? totalSalaryPerMonthChart;
-    Uint8List? departmentDetailsPerMonthChart;
+    // 3. 生成多季度报告专用图表
+    Uint8List? employeeCountPerQuarterChart;
+    Uint8List? averageSalaryPerQuarterChart;
+    Uint8List? totalSalaryPerQuarterChart;
+    Uint8List? departmentDetailsPerQuarterChart;
 
-    if (employeeCountPerMonth != null && employeeCountPerMonth.isNotEmpty) {
-      employeeCountPerMonthChart = await _generateEmployeeCountPerMonthChart(
-        employeeCountPerMonth,
+    if (employeeCountPerQuarter != null && employeeCountPerQuarter.isNotEmpty) {
+      employeeCountPerQuarterChart =
+          await _generateEmployeeCountPerQuarterChart(employeeCountPerQuarter);
+    }
+
+    if (averageSalaryPerQuarter != null && averageSalaryPerQuarter.isNotEmpty) {
+      averageSalaryPerQuarterChart =
+          await _generateAverageSalaryPerQuarterChart(averageSalaryPerQuarter);
+    }
+
+    if (totalSalaryPerQuarter != null && totalSalaryPerQuarter.isNotEmpty) {
+      totalSalaryPerQuarterChart = await _generateTotalSalaryPerQuarterChart(
+        totalSalaryPerQuarter,
       );
     }
 
-    if (averageSalaryPerMonth != null && averageSalaryPerMonth.isNotEmpty) {
-      averageSalaryPerMonthChart = await _generateAverageSalaryPerMonthChart(
-        averageSalaryPerMonth,
-      );
-    }
-
-    if (totalSalaryPerMonth != null && totalSalaryPerMonth.isNotEmpty) {
-      totalSalaryPerMonthChart = await _generateTotalSalaryPerMonthChart(
-        totalSalaryPerMonth,
-      );
-    }
-
-    if (departmentDetailsPerMonth != null &&
-        departmentDetailsPerMonth.isNotEmpty) {
-      departmentDetailsPerMonthChart =
-          await _generateDepartmentDetailsPerMonthChart(
-            departmentDetailsPerMonth,
+    if (departmentDetailsPerQuarter != null &&
+        departmentDetailsPerQuarter.isNotEmpty) {
+      departmentDetailsPerQuarterChart =
+          await _generateDepartmentDetailsPerQuarterChart(
+            departmentDetailsPerQuarter,
           );
     }
 
-    return ReportChartImages(
+    return MultiQuarterReportChartImages(
       mainChart: mainChartImage,
       departmentDetailsChart: departmentChartImage,
       salaryRangeChart: salaryRangeChartImage,
       salaryStructureChart: salaryStructureChartImage, // 薪资结构饼图
-      // 多月报告专用图表
-      employeeCountPerMonthChart: employeeCountPerMonthChart, // 每月人数变化图表
-      averageSalaryPerMonthChart: averageSalaryPerMonthChart, // 每月平均薪资变化图表
-      totalSalaryPerMonthChart: totalSalaryPerMonthChart, // 每月总工资变化图表
-      departmentDetailsPerMonthChart:
-          departmentDetailsPerMonthChart, // 每月各部门详情图表
+      // 多季度报告专用图表
+      employeeCountPerQuarterChart: employeeCountPerQuarterChart, // 每季度人数变化图表
+      averageSalaryPerQuarterChart: averageSalaryPerQuarterChart, // 每季度平均薪资变化图表
+      totalSalaryPerQuarterChart: totalSalaryPerQuarterChart, // 每季度总工资变化图表
+      departmentDetailsPerQuarterChart:
+          departmentDetailsPerQuarterChart, // 每季度各部门详情图表
     );
   }
 
@@ -207,21 +182,21 @@ class ChartGenerationService {
     return await _captureWidgetAsImage(chartWidget);
   }
 
-  /// 生成每月人数变化图表
-  Future<Uint8List?> _generateEmployeeCountPerMonthChart(
-    List<Map<String, dynamic>> employeeCountPerMonth,
+  /// 生成每季度人数变化图表
+  Future<Uint8List?> _generateEmployeeCountPerQuarterChart(
+    List<Map<String, dynamic>> employeeCountPerQuarter,
   ) async {
     final chartWidget = _buildChartContainer(
       SfCartesianChart(
-        title: ChartTitle(text: '每月人数变化'),
+        title: ChartTitle(text: '每季度人数变化'),
         primaryXAxis: CategoryAxis(),
         primaryYAxis: NumericAxis(minimum: 0),
         series: [
           LineSeries<Map<String, dynamic>, String>(
             animationDelay: 0,
             animationDuration: 0,
-            dataSource: employeeCountPerMonth,
-            xValueMapper: (d, _) => d['month'],
+            dataSource: employeeCountPerQuarter,
+            xValueMapper: (d, _) => d['quarter'].toString(),
             yValueMapper: (d, _) => d['employeeCount'],
             dataLabelSettings: const DataLabelSettings(isVisible: true),
           ),
@@ -231,21 +206,21 @@ class ChartGenerationService {
     return await _captureWidgetAsImage(chartWidget);
   }
 
-  /// 生成每月平均薪资变化图表
-  Future<Uint8List?> _generateAverageSalaryPerMonthChart(
-    List<Map<String, dynamic>> averageSalaryPerMonth,
+  /// 生成每季度平均薪资变化图表
+  Future<Uint8List?> _generateAverageSalaryPerQuarterChart(
+    List<Map<String, dynamic>> averageSalaryPerQuarter,
   ) async {
     final chartWidget = _buildChartContainer(
       SfCartesianChart(
-        title: ChartTitle(text: '每月平均薪资变化'),
+        title: ChartTitle(text: '每季度平均薪资变化'),
         primaryXAxis: CategoryAxis(),
         primaryYAxis: NumericAxis(minimum: 0),
         series: [
           LineSeries<Map<String, dynamic>, String>(
             animationDelay: 0,
             animationDuration: 0,
-            dataSource: averageSalaryPerMonth,
-            xValueMapper: (d, _) => d['month'],
+            dataSource: averageSalaryPerQuarter,
+            xValueMapper: (d, _) => d['quarter'].toString(),
             yValueMapper: (d, _) => d['averageSalary'],
             dataLabelSettings: const DataLabelSettings(isVisible: true),
           ),
@@ -255,21 +230,21 @@ class ChartGenerationService {
     return await _captureWidgetAsImage(chartWidget);
   }
 
-  /// 生成每月总工资变化图表
-  Future<Uint8List?> _generateTotalSalaryPerMonthChart(
-    List<Map<String, dynamic>> totalSalaryPerMonth,
+  /// 生成每季度总工资变化图表
+  Future<Uint8List?> _generateTotalSalaryPerQuarterChart(
+    List<Map<String, dynamic>> totalSalaryPerQuarter,
   ) async {
     final chartWidget = _buildChartContainer(
       SfCartesianChart(
-        title: ChartTitle(text: '每月总工资变化'),
+        title: ChartTitle(text: '每季度总工资变化'),
         primaryXAxis: CategoryAxis(),
         primaryYAxis: NumericAxis(minimum: 0),
         series: [
           LineSeries<Map<String, dynamic>, String>(
             animationDelay: 0,
             animationDuration: 0,
-            dataSource: totalSalaryPerMonth,
-            xValueMapper: (d, _) => d['month'],
+            dataSource: totalSalaryPerQuarter,
+            xValueMapper: (d, _) => d['quarter'].toString(),
             yValueMapper: (d, _) => d['totalSalary'],
             dataLabelSettings: const DataLabelSettings(isVisible: true),
           ),
@@ -279,15 +254,15 @@ class ChartGenerationService {
     return await _captureWidgetAsImage(chartWidget);
   }
 
-  /// 生成每月各部门详情图表
-  Future<Uint8List?> _generateDepartmentDetailsPerMonthChart(
-    List<Map<String, dynamic>> departmentDetailsPerMonth,
+  /// 生成每季度各部门详情图表
+  Future<Uint8List?> _generateDepartmentDetailsPerQuarterChart(
+    List<Map<String, dynamic>> departmentDetailsPerQuarter,
   ) async {
     // 提取所有部门名称
     final departments = <String>{};
-    for (var monthData in departmentDetailsPerMonth) {
-      if (monthData.containsKey('departments')) {
-        final deptList = monthData['departments'] as List<dynamic>;
+    for (var quarterData in departmentDetailsPerQuarter) {
+      if (quarterData.containsKey('departments')) {
+        final deptList = quarterData['departments'] as List<dynamic>;
         for (var dept in deptList) {
           if (dept is Map<String, dynamic> && dept.containsKey('department')) {
             departments.add(dept['department'] as String);
@@ -300,15 +275,15 @@ class ChartGenerationService {
     final seriesList = <LineSeries<Map<String, dynamic>, String>>[];
     for (var department in departments) {
       final departmentData = <Map<String, dynamic>>[];
-      for (var monthData in departmentDetailsPerMonth) {
-        if (monthData.containsKey('departments')) {
-          final deptList = monthData['departments'] as List<dynamic>;
+      for (var quarterData in departmentDetailsPerQuarter) {
+        if (quarterData.containsKey('departments')) {
+          final deptList = quarterData['departments'] as List<dynamic>;
           for (var dept in deptList) {
             if (dept is Map<String, dynamic> &&
                 dept.containsKey('department') &&
                 dept['department'] == department) {
               departmentData.add({
-                'month': monthData['month'],
+                'quarter': quarterData['quarter'].toString(),
                 'averageSalary': dept['averageSalary'],
               });
               break;
@@ -324,7 +299,7 @@ class ChartGenerationService {
             animationDuration: 0,
             name: department,
             dataSource: departmentData,
-            xValueMapper: (d, _) => d['month'],
+            xValueMapper: (d, _) => d['quarter'],
             yValueMapper: (d, _) => d['averageSalary'],
             dataLabelSettings: const DataLabelSettings(isVisible: false),
           ),

@@ -217,6 +217,7 @@ class _MultiQuarterAnalysisPageState
     double totalSalary = 0;
     double highestSalary = 0;
     double lowestSalary = double.infinity;
+    final Set<String> uniqueEmployeeIds = <String>{}; // 用于去重统计员工数
 
     // 从关键指标状态中获取数据
     if (keyMetricsState is AsyncData &&
@@ -224,20 +225,26 @@ class _MultiQuarterAnalysisPageState
       for (var quarterlyData in keyMetricsState.value!.quarterlyData!) {
         totalEmployees += quarterlyData.employeeCount;
         totalSalary += quarterlyData.totalSalary;
+
         // 累加去重后的员工数
-        totalUniqueEmployees += quarterlyData.totalEmployeeCount;
+        for (var worker in quarterlyData.workers) {
+          final employeeId = '${worker.name}_${worker.department}';
+          uniqueEmployeeIds.add(employeeId);
+        }
 
-        quarterlyData.departmentStats.forEach((dept, stat) {
-          if (stat.averageNetSalary > highestSalary) {
-            highestSalary = stat.averageNetSalary;
-          }
+        // 使用季度数据中的最高最低工资字段
+        if (quarterlyData.highestSalary > highestSalary) {
+          highestSalary = quarterlyData.highestSalary;
+        }
 
-          if (stat.averageNetSalary < lowestSalary) {
-            lowestSalary = stat.averageNetSalary;
-          }
-        });
+        if (quarterlyData.lowestSalary < lowestSalary) {
+          lowestSalary = quarterlyData.lowestSalary;
+        }
       }
     }
+
+    // 设置去重员工总数
+    totalUniqueEmployees = uniqueEmployeeIds.length;
 
     if (lowestSalary == double.infinity) {
       lowestSalary = 0;

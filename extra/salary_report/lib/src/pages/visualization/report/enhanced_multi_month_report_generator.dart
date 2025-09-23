@@ -9,9 +9,9 @@ import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:salary_report/src/services/multi_month/chart_generation_from_json_service.dart';
-import 'package:salary_report/src/pages/visualization/report/chart_generation_service.dart';
+import 'package:salary_report/src/services/multi_month/chart_generation_service.dart';
 import 'package:salary_report/src/services/multi_month/docx_writer_service.dart';
-import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
+import 'package:salary_report/src/services/multi_month/multi_month_report_models.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_interface.dart';
 import 'package:salary_report/src/isar/salary_list.dart';
@@ -19,19 +19,19 @@ import 'package:salary_report/src/utils/multi_month_analysis_json_converter.dart
 
 /// 增强版多月报告生成器
 class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
-  final ChartGenerationService _chartService;
+  final MultiMonthChartGenerationService _chartService;
   final MultiMonthChartGenerationFromJsonService _jsonChartService;
   final MultiMonthDocxWriterService _docxService;
   final DataAnalysisService _analysisService;
   final ReportService _reportService;
 
   EnhancedMultiMonthReportGenerator({
-    ChartGenerationService? chartService,
+    MultiMonthChartGenerationService? chartService,
     MultiMonthChartGenerationFromJsonService? jsonChartService,
     MultiMonthDocxWriterService? docxService,
     DataAnalysisService? analysisService,
     ReportService? reportService,
-  }) : _chartService = chartService ?? ChartGenerationService(),
+  }) : _chartService = chartService ?? MultiMonthChartGenerationService(),
        _jsonChartService =
            jsonChartService ?? MultiMonthChartGenerationFromJsonService(),
        _docxService = docxService ?? MultiMonthDocxWriterService(),
@@ -112,7 +112,7 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
           .generateAllChartsFromJson(jsonData: jsonData);
 
       // 6. 创建组合图表图像集合
-      final combinedChartImages = ReportChartImages(
+      final combinedChartImages = MultiMonthReportChartImages(
         mainChart: chartImagesFromUI.mainChart,
         departmentDetailsChart: chartImagesFromJson.departmentChart,
         salaryRangeChart: chartImagesFromJson.salaryRangeChart,
@@ -126,6 +126,8 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
             chartImagesFromUI.departmentDetailsPerMonthChart,
       );
 
+      logger.info('analysisData analysisData analysisData: $analysisData');
+
       // 7. 创建报告内容模型
       final reportContent = _createReportContentModel(
         jsonData,
@@ -138,7 +140,6 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
       final reportPath = await _docxService.writeReport(
         data: reportContent,
         images: combinedChartImages,
-        reportType: ReportType.multiMonth,
       );
 
       // 9. 添加报告记录到数据库
@@ -177,19 +178,15 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
       '补贴工资': '补贴工资',
       '饭补': '饭补',
       '电脑补贴等': '电脑补贴等',
-      '税前工资': '税前工资',
-      '个人养老': '个人养老',
-      '个人医疗': '个人医疗',
-      '个人失业': '个人失业',
-      '个人公积金': '个人公积金',
-      '当月个人所得税': '当月个人所得税',
-      '税后应实发': '税后应实发',
     };
 
     // 遍历 salarySummary，提取薪资结构相关字段
     salarySummary.forEach((key, value) {
-      if (salaryStructureFields.containsKey(key) && value is num) {
-        salaryStructureData.add({'category': key, 'value': value.toDouble()});
+      if (salaryStructureFields.containsKey(key)) {
+        salaryStructureData.add({
+          'category': key,
+          'value': double.tryParse(value.toString()) ?? 0.0,
+        });
       }
     });
 
@@ -214,7 +211,7 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
     }).toList();
   }
 
-  ReportContentModel _createReportContentModel(
+  MultiMonthReportContentModel _createReportContentModel(
     Map<String, dynamic> jsonData,
     Map<String, dynamic> analysisData,
     DateTime startTime,
@@ -243,7 +240,7 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
       salaryStructureData,
     );
 
-    return ReportContentModel(
+    return MultiMonthReportContentModel(
       reportTitle: '多月工资分析报告',
       reportDate:
           '${DateTime.now().year}年${DateTime.now().month}月${DateTime.now().day}日',

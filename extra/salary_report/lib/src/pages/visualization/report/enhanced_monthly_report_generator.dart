@@ -10,16 +10,16 @@ import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:salary_report/src/utils/monthly_analysis_json_converter.dart';
 import 'package:salary_report/src/services/monthly/chart_generation_from_json_service.dart';
-import 'package:salary_report/src/pages/visualization/report/chart_generation_service.dart';
+import 'package:salary_report/src/services/monthly/chart_generation_service.dart';
 import 'package:salary_report/src/services/monthly/docx_writer_service.dart';
-import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
+import 'package:salary_report/src/services/monthly/monthly_report_models.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_interface.dart';
 import 'package:salary_report/src/pages/visualization/report/ai_summary_service.dart';
 
 /// 增强版单月报告生成器
 class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
-  final ChartGenerationService _chartService;
+  final MonthlyChartGenerationService _chartService;
   final MonthlyChartGenerationFromJsonService _jsonChartService;
   final MonthlyDocxWriterService _docxService;
   final DataAnalysisService _analysisService;
@@ -27,13 +27,13 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
   final AISummaryService _aiSummaryService;
 
   EnhancedMonthlyReportGenerator({
-    ChartGenerationService? chartService,
+    MonthlyChartGenerationService? chartService,
     MonthlyChartGenerationFromJsonService? jsonChartService,
     MonthlyDocxWriterService? docxService,
     DataAnalysisService? analysisService,
     ReportService? reportService,
     AISummaryService? aiSummaryService,
-  }) : _chartService = chartService ?? ChartGenerationService(),
+  }) : _chartService = chartService ?? MonthlyChartGenerationService(),
        _jsonChartService =
            jsonChartService ?? MonthlyChartGenerationFromJsonService(),
        _docxService = docxService ?? MonthlyDocxWriterService(),
@@ -94,18 +94,11 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
           .generateAllChartsFromJson(jsonData: jsonData);
 
       // 6. 创建组合图表图像集合
-      final combinedChartImages = ReportChartImages(
+      final combinedChartImages = MonthlyReportChartImages(
         mainChart: chartImagesFromUI.mainChart,
         departmentDetailsChart: chartImagesFromJson.departmentChart,
         salaryRangeChart: chartImagesFromJson.salaryRangeChart,
         salaryStructureChart: chartImagesFromUI.salaryStructureChart, // 薪资结构饼图
-        employeeCountPerMonthChart:
-            chartImagesFromUI.employeeCountPerMonthChart,
-        averageSalaryPerMonthChart:
-            chartImagesFromUI.averageSalaryPerMonthChart,
-        totalSalaryPerMonthChart: chartImagesFromUI.totalSalaryPerMonthChart,
-        departmentDetailsPerMonthChart:
-            chartImagesFromUI.departmentDetailsPerMonthChart,
       );
 
       // 7. 创建报告内容模型
@@ -120,7 +113,6 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
       final reportPath = await _docxService.writeReport(
         data: reportContent,
         images: combinedChartImages,
-        reportType: ReportType.singleMonth,
       );
 
       // 9. 添加报告记录到数据库
@@ -218,7 +210,7 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
   }
 
   /// 创建报告内容模型
-  Future<ReportContentModel> _createReportContentModel(
+  Future<MonthlyReportContentModel> _createReportContentModel(
     Map<String, dynamic> jsonData,
     Map<String, dynamic> analysisData,
     DateTime startTime,
@@ -293,7 +285,7 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
               : '暂无薪资区间特征数据',
         );
 
-    return ReportContentModel(
+    return MonthlyReportContentModel(
       reportTitle: '月度工资分析报告',
       reportDate:
           '${DateTime.now().year}年${DateTime.now().month}月${DateTime.now().day}日',

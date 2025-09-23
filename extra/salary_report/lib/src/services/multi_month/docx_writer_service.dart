@@ -7,20 +7,18 @@ import 'package:docx_template_fork/docx_template_fork.dart';
 import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 
-import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
-import 'package:salary_report/src/pages/visualization/report/report_types.dart';
+import 'package:salary_report/src/services/multi_month/multi_month_report_models.dart';
 
 class MultiMonthDocxWriterService {
-  /// 根据报告类型选择模板并写入报告
+  /// 写入多月报告
   Future<String> writeReport({
-    required ReportContentModel data,
-    required ReportChartImages images,
-    ReportType reportType = ReportType.multiMonth, // 默认为多月报告
+    required MultiMonthReportContentModel data,
+    required MultiMonthReportChartImages images,
   }) async {
-    // 根据报告类型选择模板
-    final templatePath = _getTemplatePath(reportType);
+    // 使用多月报告模板
+    final templatePath = 'assets/salary_report_template_multi_month.docx';
 
-    logger.info('开始写入报告, 使用 模板: $templatePath');
+    logger.info('开始写入多月报告, 使用模板: $templatePath');
 
     // 加载模板
     final data0 = await rootBundle.load(templatePath);
@@ -29,7 +27,7 @@ class MultiMonthDocxWriterService {
     final docx = await DocxTemplate.fromBytes(bytes);
 
     // 构建内容
-    final content = _buildContent(data, images, reportType);
+    final content = _buildContent(data, images);
 
     final generatedBytes = await docx.generate(content);
     if (generatedBytes == null) {
@@ -40,7 +38,7 @@ class MultiMonthDocxWriterService {
     final dir = await getApplicationDocumentsDirectory();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final formattedTime = _formatDateTime(DateTime.now());
-    final reportName = _generateReportName(data, reportType, formattedTime);
+    final reportName = _generateReportName(data, formattedTime);
     final outputPath = '${dir.path}/$reportName.docx';
     final outputFile = File(outputPath);
     await outputFile.writeAsBytes(generatedBytes);
@@ -56,35 +54,12 @@ class MultiMonthDocxWriterService {
 
   /// 生成报告文件名
   String _generateReportName(
-    ReportContentModel data,
-    ReportType type,
+    MultiMonthReportContentModel data,
     String timestamp,
   ) {
     final companyName = data.companyName;
     final reportTime = data.reportTime;
-
-    // 根据报告类型生成相应的描述
-    String typeDescription;
-    switch (type) {
-      case ReportType.singleMonth:
-        typeDescription = '月度';
-        break;
-      case ReportType.multiMonth:
-        typeDescription = '多月';
-        break;
-      case ReportType.singleQuarter:
-        typeDescription = '季度';
-        break;
-      case ReportType.multiQuarter:
-        typeDescription = '多季度';
-        break;
-      case ReportType.singleYear:
-        typeDescription = '年度';
-        break;
-      case ReportType.multiYear:
-        typeDescription = '多年';
-        break;
-    }
+    final typeDescription = '多月';
 
     // 移除报告时间中的特殊字符，使其适合文件名
     final cleanReportTime = reportTime.replaceAll(
@@ -95,56 +70,18 @@ class MultiMonthDocxWriterService {
     return '${companyName}_${reportTime}_$typeDescription报告_$timestamp';
   }
 
-  /// 根据报告类型获取模板路径
-  String _getTemplatePath(ReportType type) {
-    switch (type) {
-      case ReportType.singleMonth:
-        return 'assets/salary_report_template_monthly.docx';
-      case ReportType.multiMonth:
-        return 'assets/salary_report_template_multi_month.docx';
-      case ReportType.singleQuarter:
-        return 'assets/salary_report_template_quarterly.docx';
-      case ReportType.multiQuarter:
-        return 'assets/salary_report_template_multi_quarter.docx';
-      case ReportType.singleYear:
-        return 'assets/salary_report_template_annual.docx';
-      case ReportType.multiYear:
-        return 'assets/salary_report_template_multi_year.docx';
-    }
-  }
-
-  /// 构建内容，根据不同报告类型可能有不同的处理
+  /// 构建内容
   Content _buildContent(
-    ReportContentModel data,
-    ReportChartImages images,
-    ReportType type,
+    MultiMonthReportContentModel data,
+    MultiMonthReportChartImages images,
   ) {
     final content = Content();
 
     // 添加通用文本字段
     _addCommonTextFields(content, data);
 
-    // 根据报告类型添加特定字段
-    switch (type) {
-      case ReportType.singleMonth:
-        _addMonthlySpecificFields(content, data);
-        break;
-      case ReportType.multiMonth:
-        _addMultiMonthSpecificFields(content, data);
-        break;
-      case ReportType.singleQuarter:
-        _addQuarterlySpecificFields(content, data);
-        break;
-      case ReportType.multiQuarter:
-        _addQuarterlySpecificFields(content, data);
-        break;
-      case ReportType.singleYear:
-        _addAnnualSpecificFields(content, data);
-        break;
-      case ReportType.multiYear:
-        _addAnnualSpecificFields(content, data);
-        break;
-    }
+    // 添加多月报告特定字段
+    _addMultiMonthSpecificFields(content, data);
 
     // 添加表格内容
     _addTableContent(content, data);
@@ -262,7 +199,10 @@ class MultiMonthDocxWriterService {
   }
 
   /// 添加通用文本字段
-  void _addCommonTextFields(Content content, ReportContentModel data) {
+  void _addCommonTextFields(
+    Content content,
+    MultiMonthReportContentModel data,
+  ) {
     content
       ..add(TextContent('company_name', data.companyName))
       ..add(TextContent('report_time', data.reportTime))
@@ -334,32 +274,17 @@ class MultiMonthDocxWriterService {
       );
   }
 
-  /// 添加单月报告特定字段
-  void _addMonthlySpecificFields(Content content, ReportContentModel data) {
-    // 单月报告可能需要添加的一些特定字段
-    // 这里可以根据需要添加
-  }
-
   /// 添加多月报告特定字段
-  void _addMultiMonthSpecificFields(Content content, ReportContentModel data) {
+  void _addMultiMonthSpecificFields(
+    Content content,
+    MultiMonthReportContentModel data,
+  ) {
     // 多月报告特定的处理逻辑（如果有的话）
     // 通用文本字段已经在 _addCommonTextFields 中处理了
   }
 
-  /// 添加季度报告特定字段
-  void _addQuarterlySpecificFields(Content content, ReportContentModel data) {
-    // 季度报告也可以使用多月报告的数据
-    _addMultiMonthSpecificFields(content, data);
-  }
-
-  /// 添加年度报告特定字段
-  void _addAnnualSpecificFields(Content content, ReportContentModel data) {
-    // 年度报告也可以使用多月报告的数据
-    _addMultiMonthSpecificFields(content, data);
-  }
-
   /// 添加表格内容
-  void _addTableContent(Content content, ReportContentModel data) {
+  void _addTableContent(Content content, MultiMonthReportContentModel data) {
     final departmentRows = data.departmentStats.map<RowContent>((
       DepartmentSalaryStats stat,
     ) {
@@ -385,7 +310,7 @@ class MultiMonthDocxWriterService {
   }
 
   /// 添加图片内容
-  void _addImageContent(Content content, ReportChartImages images) {
+  void _addImageContent(Content content, MultiMonthReportChartImages images) {
     if (images.mainChart != null) {
       content.add(ImageContent('chart_overall', images.mainChart!));
     }
