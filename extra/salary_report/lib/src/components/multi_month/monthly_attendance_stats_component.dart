@@ -10,7 +10,6 @@ class MonthlyAttendanceStatsComponent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final paginationState = ref.watch(paginationProvider);
     final attendanceStatsState = ref.watch(attendanceStatsProvider(params));
 
     return attendanceStatsState.when(
@@ -37,18 +36,8 @@ class MonthlyAttendanceStatsComponent extends ConsumerWidget {
             return aMonth.compareTo(bMonth);
           });
 
-        // 计算当前页的月份范围
-        final start =
-            paginationState.currentPage * paginationState.itemsPerPage;
-        final end =
-            (start + paginationState.itemsPerPage < sortedMonthKeys.length)
-            ? start + paginationState.itemsPerPage
-            : sortedMonthKeys.length;
-
-        final pageMonthKeys = sortedMonthKeys.sublist(start, end);
-
         return Column(
-          children: pageMonthKeys.map((monthKey) {
+          children: sortedMonthKeys.map((monthKey) {
             final attendanceStatsList =
                 attendanceStats.attendanceData![monthKey] ?? [];
 

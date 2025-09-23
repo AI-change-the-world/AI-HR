@@ -352,6 +352,7 @@ final chartDataProvider =
     });
 
 // 分页状态模型
+@Deprecated("弃用")
 class PaginationState {
   final int currentPage;
   final int itemsPerPage;
@@ -366,12 +367,7 @@ class PaginationState {
   }
 }
 
-// 分页状态提供者
-final paginationProvider =
-    NotifierProvider<PaginationNotifier, PaginationState>(
-      PaginationNotifier.new,
-    );
-
+@Deprecated("弃用")
 class PaginationNotifier extends Notifier<PaginationState> {
   @override
   PaginationState build() {

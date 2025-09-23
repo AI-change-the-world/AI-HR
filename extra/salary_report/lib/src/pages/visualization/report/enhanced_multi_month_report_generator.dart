@@ -92,6 +92,10 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
             : null,
       );
 
+      logger.info(
+        'analysisData["salaryRanges"] data: ${analysisData['salaryRanges'].runtimeType}',
+      );
+
       // 4. 生成图表图像（从UI）
       final chartImagesFromUI = await _chartService.generateAllCharts(
         previewContainerKey: previewContainerKey,

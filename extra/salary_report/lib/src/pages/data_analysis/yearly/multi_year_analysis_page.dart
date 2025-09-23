@@ -3,8 +3,6 @@ import 'package:loading_indicator/loading_indicator.dart';
 import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/isar/report_generation_record.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
-import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
-import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:toastification/toastification.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
@@ -20,6 +18,7 @@ import 'package:salary_report/src/common/toast.dart'; // 添加Toast导入
 import 'package:salary_report/src/components/monthly_employee_changes_component.dart'; // 导入月度员工变化组件
 import 'package:salary_report/src/services/monthly_analysis_service.dart'; // 导入月度分析服务
 import 'package:salary_report/src/isar/database.dart'; // 导入数据库
+import 'package:salary_report/src/pages/visualization/report/enhanced_multi_month_report_generator.dart'; // 添加导入
 
 // 多年分析页面
 class MultiYearAnalysisPage extends ConsumerStatefulWidget {
@@ -78,7 +77,7 @@ class _MultiYearAnalysisPageState extends ConsumerState<MultiYearAnalysisPage> {
       final startTime = DateTime(widget.year);
       final endTime = DateTime(widget.endYear);
 
-      final generator = SalaryReportGenerator();
+      final generator = EnhancedMultiMonthReportGenerator();
 
       // 获取分析数据
       final keyMetricsState = ref.read(keyMetricsProvider(_yearRangeParams));
@@ -96,6 +95,53 @@ class _MultiYearAnalysisPageState extends ConsumerState<MultiYearAnalysisPage> {
       );
       final chartDataState = ref.read(chartDataProvider(_yearRangeParams));
 
+      // 获取部门统计数据
+      List<DepartmentSalaryStats> departmentStats = [];
+      if (departmentStatsState is AsyncData &&
+          departmentStatsState.value?.yearlyData != null) {
+        // 合并所有年的部门统计数据
+        final departmentStatsMap = <String, DepartmentSalaryStats>{};
+
+        for (var yearlyData in departmentStatsState.value!.yearlyData!) {
+          yearlyData.departmentStats.forEach((deptName, stat) {
+            if (departmentStatsMap.containsKey(deptName)) {
+              final existingStat = departmentStatsMap[deptName]!;
+              departmentStatsMap[deptName] = DepartmentSalaryStats(
+                department: deptName,
+                employeeCount: existingStat.employeeCount + stat.employeeCount,
+                totalNetSalary:
+                    existingStat.totalNetSalary + stat.totalNetSalary,
+                averageNetSalary:
+                    (existingStat.totalNetSalary + stat.totalNetSalary) /
+                    (existingStat.employeeCount + stat.employeeCount),
+                year: stat.year,
+                month: stat.month,
+                maxSalary: stat.maxSalary > existingStat.maxSalary
+                    ? stat.maxSalary
+                    : existingStat.maxSalary,
+                minSalary: stat.minSalary < existingStat.minSalary
+                    ? stat.minSalary
+                    : existingStat.minSalary,
+              );
+            } else {
+              departmentStatsMap[deptName] = stat;
+            }
+          });
+        }
+
+        departmentStats = departmentStatsMap.values.toList();
+      }
+
+      // 获取考勤统计数据
+      List<AttendanceStats> attendanceStats = [];
+      if (attendanceStatsState is AsyncData &&
+          attendanceStatsState.value?.attendanceData != null) {
+        // 合并所有年的考勤统计数据
+        attendanceStatsState.value!.attendanceData!.forEach((year, stats) {
+          attendanceStats.addAll(stats);
+        });
+      }
+
       final analysisData = _prepareAnalysisData(
         keyMetricsState,
         departmentStatsState,
@@ -105,16 +151,17 @@ class _MultiYearAnalysisPageState extends ConsumerState<MultiYearAnalysisPage> {
         chartDataState,
       );
 
-      final reportPath = await generator.generateReport(
+      final reportPath = await generator.generateEnhancedReport(
         previewContainerKey: _chartContainerKey,
-        departmentStats: [],
+        departmentStats: departmentStats,
         analysisData: analysisData,
-        endTime: endTime,
+        attendanceStats: attendanceStats,
+        previousMonthData: null, // 多年报告不需要上期数据
         year: widget.year,
         month: 0, // 年度报告没有月份
         isMultiMonth: true,
         startTime: startTime,
-        reportType: ReportType.multiYear, // 明确指定报告类型
+        endTime: endTime,
       );
 
       if (mounted) {

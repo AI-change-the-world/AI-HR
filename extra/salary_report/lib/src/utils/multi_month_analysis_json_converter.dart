@@ -134,7 +134,7 @@ class MultiMonthAnalysisJsonConverter {
     }
 
     final buffer = StringBuffer();
-    buffer.write('各月份工资情况如下：');
+    buffer.write('各月份工资情况：');
 
     for (int i = 0; i < comparisonData.monthlyComparisons.length; i++) {
       final monthlyData = comparisonData.monthlyComparisons[i];
@@ -189,7 +189,7 @@ class MultiMonthAnalysisJsonConverter {
     }
 
     final buffer = StringBuffer();
-    buffer.write('各部门员工分布情况如下：');
+    buffer.write('各部门员工分布情况：');
 
     int index = 0;
     for (var entry in departmentStatsMap.entries) {
@@ -239,7 +239,7 @@ class MultiMonthAnalysisJsonConverter {
     }
 
     final buffer = StringBuffer();
-    buffer.write('薪资区间分布情况如下：');
+    buffer.write('薪资区间分布情况：');
 
     int index = 0;
     for (var entry in salaryRangeStatsMap.entries) {
@@ -266,7 +266,7 @@ class MultiMonthAnalysisJsonConverter {
     }
 
     final buffer = StringBuffer();
-    buffer.write('考勤情况统计如下：');
+    buffer.write('考勤情况统计：');
 
     for (int i = 0; i < attendanceStats.length && i < 10; i++) {
       final stat = attendanceStats[i];
@@ -303,35 +303,24 @@ class MultiMonthAnalysisJsonConverter {
       '多月工资分析报告（${startDate.year}年${startDate.month}月至${endDate.year}年${endDate.month}月）\n\n',
     );
 
-    // 关键参数
-    buffer.write('一、基本情况\n');
+    // 直接生成各部分内容，不添加分类标题
     buffer.write(_generateKeyParam(comparisonData, previousPeriodData));
     buffer.write('\n\n');
 
-    // 关键指标
-    buffer.write('二、关键指标\n');
     buffer.write(
       _generateKeyMetricsDescription(comparisonData, previousPeriodData),
     );
     buffer.write('\n\n');
 
-    // 月度分解
-    buffer.write('三、月度工资情况\n');
     buffer.write(_generateMonthlyBreakdownDescription(comparisonData));
     buffer.write('\n\n');
 
-    // 部门统计
-    buffer.write('四、部门统计\n');
     buffer.write(_generateDepartmentStatsDescription(comparisonData));
     buffer.write('\n\n');
 
-    // 薪资区间分布
-    buffer.write('五、薪资区间分布\n');
     buffer.write(_generateSalaryRangesDescription(comparisonData));
     buffer.write('\n\n');
 
-    // 考勤统计
-    buffer.write('六、考勤统计\n');
     buffer.write(_generateAttendanceStatsDescription(attendanceStats));
     buffer.write('\n\n');
 

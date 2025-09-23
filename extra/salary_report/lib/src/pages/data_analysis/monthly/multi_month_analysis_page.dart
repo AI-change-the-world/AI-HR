@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/isar/report_generation_record.dart';
+import 'package:salary_report/src/pages/visualization/report/enhanced_multi_month_report_generator.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
@@ -81,7 +82,7 @@ class _MultiMonthAnalysisPageState
       final startTime = DateTime(widget.year, widget.month);
       final endTime = DateTime(widget.endYear, widget.endMonth);
 
-      final generator = SalaryReportGenerator();
+      final generator = EnhancedMultiMonthReportGenerator();
 
       // 获取分析数据
       final keyMetricsState = ref.read(keyMetricsProvider(_dateRangeParams));
@@ -99,6 +100,53 @@ class _MultiMonthAnalysisPageState
       );
       final chartDataState = ref.read(chartDataProvider(_dateRangeParams));
 
+      // 获取部门统计数据
+      List<DepartmentSalaryStats> departmentStats = [];
+      if (departmentStatsState is AsyncData &&
+          departmentStatsState.value?.monthlyData != null) {
+        // 合并所有月份的部门统计数据
+        final departmentStatsMap = <String, DepartmentSalaryStats>{};
+
+        for (var monthlyData in departmentStatsState.value!.monthlyData!) {
+          monthlyData.departmentStats.forEach((deptName, stat) {
+            if (departmentStatsMap.containsKey(deptName)) {
+              final existingStat = departmentStatsMap[deptName]!;
+              departmentStatsMap[deptName] = DepartmentSalaryStats(
+                department: deptName,
+                employeeCount: existingStat.employeeCount + stat.employeeCount,
+                totalNetSalary:
+                    existingStat.totalNetSalary + stat.totalNetSalary,
+                averageNetSalary:
+                    (existingStat.totalNetSalary + stat.totalNetSalary) /
+                    (existingStat.employeeCount + stat.employeeCount),
+                year: stat.year,
+                month: stat.month,
+                maxSalary: stat.maxSalary > existingStat.maxSalary
+                    ? stat.maxSalary
+                    : existingStat.maxSalary,
+                minSalary: stat.minSalary < existingStat.minSalary
+                    ? stat.minSalary
+                    : existingStat.minSalary,
+              );
+            } else {
+              departmentStatsMap[deptName] = stat;
+            }
+          });
+        }
+
+        departmentStats = departmentStatsMap.values.toList();
+      }
+
+      // 获取考勤统计数据
+      List<AttendanceStats> attendanceStats = [];
+      if (attendanceStatsState is AsyncData &&
+          attendanceStatsState.value?.attendanceData != null) {
+        // 合并所有月份的考勤统计数据
+        attendanceStatsState.value!.attendanceData!.forEach((month, stats) {
+          attendanceStats.addAll(stats);
+        });
+      }
+
       final analysisData = _prepareAnalysisData(
         keyMetricsState,
         departmentStatsState,
@@ -108,16 +156,17 @@ class _MultiMonthAnalysisPageState
         chartDataState,
       );
 
-      final reportPath = await generator.generateReport(
+      final reportPath = await generator.generateEnhancedReport(
         previewContainerKey: _chartContainerKey,
-        departmentStats: [],
+        departmentStats: departmentStats,
         analysisData: analysisData,
-        endTime: endTime,
+        attendanceStats: attendanceStats,
+        previousMonthData: null, // 多月报告不需要上月数据
         year: widget.year,
         month: widget.month,
         isMultiMonth: true,
         startTime: startTime,
-        reportType: ReportType.multiMonth, // 明确指定报告类型
+        endTime: endTime,
       );
 
       if (mounted) {
@@ -130,7 +179,9 @@ class _MultiMonthAnalysisPageState
           autoCloseDuration: const Duration(seconds: 5),
         );
       }
-    } catch (e) {
+    } catch (e, s) {
+      logger.severe("生成报告时发生错误 $s");
+
       if (mounted) {
         toastification.show(
           context: context,
@@ -256,11 +307,6 @@ class _MultiMonthAnalysisPageState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 分页控制
-                    _buildPaginationControls(),
-
-                    const SizedBox(height: 24),
-
                     // 每月关键指标（分页显示）
                     const Text(
                       '每月关键指标',
@@ -406,9 +452,6 @@ class _MultiMonthAnalysisPageState
                       ),
                     ),
                     const SizedBox(height: 24),
-
-                    // 分页控制
-                    _buildPaginationControls(),
                   ],
                 ),
               ),
@@ -453,50 +496,6 @@ class _MultiMonthAnalysisPageState
             ),
         ],
       ),
-    );
-  }
-
-  /// 构建分页控制组件
-  Widget _buildPaginationControls() {
-    final keyMetricsState = ref.watch(keyMetricsProvider(_dateRangeParams));
-    final paginationState = ref.watch(paginationProvider);
-
-    return keyMetricsState.when(
-      data: (keyMetrics) {
-        if (keyMetrics.monthlyData == null) {
-          return const SizedBox.shrink();
-        }
-
-        final totalMonths = keyMetrics.monthlyData!.length;
-        final totalPages = (totalMonths / paginationState.itemsPerPage).ceil();
-
-        if (totalPages <= 1) {
-          return const SizedBox.shrink();
-        }
-
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.chevron_left),
-              onPressed: paginationState.currentPage > 0
-                  ? () => ref.read(paginationProvider.notifier).previousPage()
-                  : null,
-            ),
-            Text('${paginationState.currentPage + 1} / $totalPages'),
-            IconButton(
-              icon: const Icon(Icons.chevron_right),
-              onPressed: paginationState.currentPage < totalPages - 1
-                  ? () => ref
-                        .read(paginationProvider.notifier)
-                        .nextPage(totalPages)
-                  : null,
-            ),
-          ],
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (error, stackTrace) => const SizedBox.shrink(),
     );
   }
 }

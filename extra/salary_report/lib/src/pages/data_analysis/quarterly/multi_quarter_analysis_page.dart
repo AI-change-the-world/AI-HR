@@ -16,6 +16,7 @@ import 'package:salary_report/src/components/multi_quarter/quarterly_attendance_
 import 'package:salary_report/src/components/multi_quarter/department_changes_component.dart';
 import 'package:salary_report/src/common/scroll_screenshot.dart'; // 添加截图导入
 import 'package:salary_report/src/common/toast.dart'; // 添加Toast导入
+import 'package:salary_report/src/pages/visualization/report/enhanced_multi_month_report_generator.dart'; // 添加导入
 
 // 多季度分析页面
 class MultiQuarterAnalysisPage extends ConsumerStatefulWidget {
@@ -83,7 +84,7 @@ class _MultiQuarterAnalysisPageState
       final startTime = DateTime(widget.year, startMonth);
       final endTime = DateTime(widget.endYear, endMonth);
 
-      final generator = SalaryReportGenerator();
+      final generator = EnhancedMultiMonthReportGenerator();
 
       // 获取分析数据
       final keyMetricsState = ref.read(keyMetricsProvider(_quarterRangeParams));
@@ -101,6 +102,53 @@ class _MultiQuarterAnalysisPageState
       );
       final chartDataState = ref.read(chartDataProvider(_quarterRangeParams));
 
+      // 获取部门统计数据
+      List<DepartmentSalaryStats> departmentStats = [];
+      if (departmentStatsState is AsyncData &&
+          departmentStatsState.value?.quarterlyData != null) {
+        // 合并所有季度的部门统计数据
+        final departmentStatsMap = <String, DepartmentSalaryStats>{};
+
+        for (var quarterlyData in departmentStatsState.value!.quarterlyData!) {
+          quarterlyData.departmentStats.forEach((deptName, stat) {
+            if (departmentStatsMap.containsKey(deptName)) {
+              final existingStat = departmentStatsMap[deptName]!;
+              departmentStatsMap[deptName] = DepartmentSalaryStats(
+                department: deptName,
+                employeeCount: existingStat.employeeCount + stat.employeeCount,
+                totalNetSalary:
+                    existingStat.totalNetSalary + stat.totalNetSalary,
+                averageNetSalary:
+                    (existingStat.totalNetSalary + stat.totalNetSalary) /
+                    (existingStat.employeeCount + stat.employeeCount),
+                year: stat.year,
+                month: stat.month,
+                maxSalary: stat.maxSalary > existingStat.maxSalary
+                    ? stat.maxSalary
+                    : existingStat.maxSalary,
+                minSalary: stat.minSalary < existingStat.minSalary
+                    ? stat.minSalary
+                    : existingStat.minSalary,
+              );
+            } else {
+              departmentStatsMap[deptName] = stat;
+            }
+          });
+        }
+
+        departmentStats = departmentStatsMap.values.toList();
+      }
+
+      // 获取考勤统计数据
+      List<AttendanceStats> attendanceStats = [];
+      if (attendanceStatsState is AsyncData &&
+          attendanceStatsState.value?.attendanceData != null) {
+        // 合并所有季度的考勤统计数据
+        attendanceStatsState.value!.attendanceData!.forEach((quarter, stats) {
+          attendanceStats.addAll(stats);
+        });
+      }
+
       final analysisData = _prepareAnalysisData(
         keyMetricsState,
         departmentStatsState,
@@ -110,16 +158,17 @@ class _MultiQuarterAnalysisPageState
         chartDataState,
       );
 
-      final reportPath = await generator.generateReport(
+      final reportPath = await generator.generateEnhancedReport(
         previewContainerKey: _chartContainerKey,
-        departmentStats: [],
+        departmentStats: departmentStats,
         analysisData: analysisData,
-        endTime: endTime,
+        attendanceStats: attendanceStats,
+        previousMonthData: null, // 多季度报告不需要上期数据
         year: widget.year,
         month: widget.quarter,
         isMultiMonth: true,
         startTime: startTime,
-        reportType: ReportType.multiQuarter, // 明确指定报告类型
+        endTime: endTime,
       );
 
       if (mounted) {
@@ -260,11 +309,6 @@ class _MultiQuarterAnalysisPageState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 分页控制
-                    _buildPaginationControls(),
-
-                    const SizedBox(height: 24),
-
                     // 每季度关键指标（分页显示）
                     const Text(
                       '每季度关键指标',
@@ -417,9 +461,6 @@ class _MultiQuarterAnalysisPageState
                       ),
                     ),
                     const SizedBox(height: 24),
-
-                    // 分页控制
-                    _buildPaginationControls(),
                   ],
                 ),
               ),
@@ -464,51 +505,6 @@ class _MultiQuarterAnalysisPageState
             ),
         ],
       ),
-    );
-  }
-
-  /// 构建分页控制组件
-  Widget _buildPaginationControls() {
-    final keyMetricsState = ref.watch(keyMetricsProvider(_quarterRangeParams));
-    final paginationState = ref.watch(paginationProvider);
-
-    return keyMetricsState.when(
-      data: (keyMetrics) {
-        if (keyMetrics.quarterlyData == null) {
-          return const SizedBox.shrink();
-        }
-
-        final totalQuarters = keyMetrics.quarterlyData!.length;
-        final totalPages = (totalQuarters / paginationState.itemsPerPage)
-            .ceil();
-
-        if (totalPages <= 1) {
-          return const SizedBox.shrink();
-        }
-
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.chevron_left),
-              onPressed: paginationState.currentPage > 0
-                  ? () => ref.read(paginationProvider.notifier).previousPage()
-                  : null,
-            ),
-            Text('${paginationState.currentPage + 1} / $totalPages'),
-            IconButton(
-              icon: const Icon(Icons.chevron_right),
-              onPressed: paginationState.currentPage < totalPages - 1
-                  ? () => ref
-                        .read(paginationProvider.notifier)
-                        .nextPage(totalPages)
-                  : null,
-            ),
-          ],
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (error, stackTrace) => const SizedBox.shrink(),
     );
   }
 }
