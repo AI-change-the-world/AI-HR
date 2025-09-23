@@ -9,11 +9,7 @@ import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:salary_report/src/utils/monthly_analysis_json_converter.dart';
-import 'package:salary_report/src/services/yearly/chart_generation_from_json_service.dart';
-import 'package:salary_report/src/services/yearly/chart_generation_service.dart';
-import 'package:salary_report/src/services/yearly/docx_writer_service.dart';
-import 'package:salary_report/src/services/yearly/yearly_report_models.dart';
-import 'package:salary_report/src/pages/visualization/report/report_types.dart';
+import 'package:salary_report/src/services/yearly/yearly.dart';
 import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_interface.dart';
 import 'package:salary_report/src/isar/salary_list.dart';
 

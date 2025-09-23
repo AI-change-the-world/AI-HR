@@ -157,6 +157,8 @@ class _MultiMonthAnalysisPageState
         chartDataState,
       );
 
+      logger.info('analysisData     $analysisData');
+
       final reportPath = await generator.generateEnhancedReport(
         previewContainerKey: _chartContainerKey,
         departmentStats: departmentStats,
