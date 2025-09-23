@@ -267,6 +267,280 @@ class DataAnalysisService {
     );
   }
 
+  /// 按岗位聚合实发工资和人均实发工资
+  Future<List<PositionSalaryStats>> getPositionSalaryStats({
+    int? year,
+    int? startYear,
+    int? endYear,
+    int? month,
+    int? startMonth,
+    int? endMonth,
+    String? position,
+    String? name,
+  }) async {
+    final isar = _database.isar!;
+
+    // 获取符合时间范围的数据
+    List<SalaryList> salaryLists = [];
+
+    // 如果指定了具体的年月，直接查询
+    if (year != null && month != null) {
+      final salaryList = await isar.salaryLists
+          .filter()
+          .yearEqualTo(year)
+          .monthEqualTo(month)
+          .findFirst();
+
+      if (salaryList != null) {
+        salaryLists = [salaryList];
+      }
+    }
+    // 如果指定了年份范围和月份范围
+    else if (startYear != null &&
+        endYear != null &&
+        startMonth != null &&
+        endMonth != null) {
+      // 生成需要查询的月份列表
+      final monthList = _monthlyService.generateMonthList(
+        startYear,
+        startMonth,
+        endYear,
+        endMonth,
+      );
+
+      // 遍历月份列表获取数据
+      for (var monthInfo in monthList) {
+        final salaryList = await isar.salaryLists
+            .filter()
+            .yearEqualTo(monthInfo['year']!)
+            .monthEqualTo(monthInfo['month']!)
+            .findFirst();
+
+        if (salaryList != null) {
+          salaryLists.add(salaryList);
+        }
+      }
+    }
+    // 如果只指定了年份
+    else if (year != null) {
+      salaryLists = await isar.salaryLists.filter().yearEqualTo(year).findAll();
+    }
+    // 如果只指定了月份
+    else if (month != null) {
+      salaryLists = await isar.salaryLists
+          .filter()
+          .monthEqualTo(month)
+          .findAll();
+    }
+    // 如果指定了年份范围
+    else if (startYear != null && endYear != null) {
+      salaryLists = await isar.salaryLists
+          .filter()
+          .yearBetween(startYear, endYear)
+          .findAll();
+    }
+    // 如果指定了月份范围
+    else if (startMonth != null && endMonth != null) {
+      // 由于 Isar 的 monthBetween 可能无法正确处理跨年的月份查询
+      // 我们获取所有数据然后在内存中过滤
+      final allSalaryLists = await isar.salaryLists.where().findAll();
+
+      for (var salaryList in allSalaryLists) {
+        if (salaryList.month >= startMonth && salaryList.month <= endMonth) {
+          salaryLists.add(salaryList);
+        }
+      }
+    }
+    // 如果没有指定时间范围，获取所有数据
+    else {
+      salaryLists = await isar.salaryLists.where().findAll();
+    }
+
+    // 按岗位聚合数据
+    final positionMap = <String, List<SalaryListRecord>>{};
+
+    for (var salaryList in salaryLists) {
+      for (var record in salaryList.records) {
+        // 过滤条件
+        if (position != null && record.position != position) continue;
+        if (name != null && record.name != name) continue;
+        if (record.position == null || record.netSalary == null) continue;
+
+        final pos = record.position!;
+        if (!positionMap.containsKey(pos)) {
+          positionMap[pos] = [];
+        }
+        positionMap[pos]!.add(record);
+      }
+    }
+
+    // 计算统计数据
+    final stats = <PositionSalaryStats>[];
+    positionMap.forEach((pos, records) {
+      double totalSalary = 0;
+      int validRecordCount = 0;
+      double maxSalary = 0; // 添加最高工资变量
+      double minSalary = double.infinity; // 添加最低工资变量
+
+      for (var record in records) {
+        if (record.netSalary != null) {
+          // 尝试解析实发工资字符串
+          final salaryStr = record.netSalary!.replaceAll(
+            RegExp(r'[^\d.-]'),
+            '',
+          );
+          if (double.tryParse(salaryStr) != null) {
+            final salary = double.parse(salaryStr);
+            totalSalary += salary;
+            validRecordCount++;
+
+            // 更新最高和最低工资
+            if (salary > maxSalary) {
+              maxSalary = salary;
+            }
+            if (salary < minSalary) {
+              minSalary = salary;
+            }
+          }
+        }
+      }
+
+      // 如果没有有效记录，将minSalary设为0
+      if (minSalary == double.infinity) {
+        minSalary = 0;
+      }
+
+      if (validRecordCount > 0) {
+        // 确定年份和月份信息
+        int statYear = 0;
+        int statMonth = 0;
+
+        // 如果是单月查询，使用查询参数
+        if (year != null && month != null) {
+          statYear = year;
+          statMonth = month;
+        }
+        // 如果是多月查询，从第一条记录中获取年月信息
+        else if (salaryLists.isNotEmpty) {
+          statYear = salaryLists[0].year;
+          statMonth = salaryLists[0].month;
+        }
+
+        stats.add(
+          PositionSalaryStats(
+            position: pos,
+            totalNetSalary: totalSalary,
+            averageNetSalary: totalSalary / validRecordCount,
+            employeeCount: validRecordCount,
+            year: statYear,
+            month: statMonth,
+            maxSalary: maxSalary, // 添加最高工资
+            minSalary: minSalary, // 添加最低工资
+          ),
+        );
+      }
+    });
+
+    // 如果是多月查询，需要为每个月份分别计算统计数据
+    if (startYear != null &&
+        endYear != null &&
+        startMonth != null &&
+        endMonth != null) {
+      // 清空之前的统计数据
+      stats.clear();
+
+      // 按月份分组计算
+      final monthlyData = <String, List<SalaryListRecord>>{};
+
+      for (var salaryList in salaryLists) {
+        final monthKey = '${salaryList.year}-${salaryList.month}';
+        if (!monthlyData.containsKey(monthKey)) {
+          monthlyData[monthKey] = [];
+        }
+
+        for (var record in salaryList.records) {
+          // 过滤条件
+          if (position != null && record.position != position) continue;
+          if (name != null && record.name != name) continue;
+          if (record.position == null || record.netSalary == null) continue;
+
+          monthlyData[monthKey]!.add(record);
+        }
+      }
+
+      // 为每个月份计算岗位统计数据
+      monthlyData.forEach((monthKey, records) {
+        // 按岗位分组
+        final posMap = <String, List<SalaryListRecord>>{};
+        for (var record in records) {
+          final pos = record.position!;
+          if (!posMap.containsKey(pos)) {
+            posMap[pos] = [];
+          }
+          posMap[pos]!.add(record);
+        }
+
+        // 计算每个岗位的统计数据
+        posMap.forEach((pos, posRecords) {
+          double totalSalary = 0;
+          int validRecordCount = 0;
+          double maxSalary = 0; // 添加最高工资变量
+          double minSalary = double.infinity; // 添加最低工资变量
+
+          for (var record in posRecords) {
+            if (record.netSalary != null) {
+              // 尝试解析实发工资字符串
+              final salaryStr = record.netSalary!.replaceAll(
+                RegExp(r'[^\d.-]'),
+                '',
+              );
+              if (double.tryParse(salaryStr) != null) {
+                final salary = double.parse(salaryStr);
+                totalSalary += salary;
+                validRecordCount++;
+
+                // 更新最高和最低工资
+                if (salary > maxSalary) {
+                  maxSalary = salary;
+                }
+                if (salary < minSalary) {
+                  minSalary = salary;
+                }
+              }
+            }
+          }
+
+          // 如果没有有效记录，将minSalary设为0
+          if (minSalary == double.infinity) {
+            minSalary = 0;
+          }
+
+          if (validRecordCount > 0) {
+            // 解析月份键
+            final parts = monthKey.split('-');
+            final statYear = int.parse(parts[0]);
+            final statMonth = int.parse(parts[1]);
+
+            stats.add(
+              PositionSalaryStats(
+                position: pos,
+                totalNetSalary: totalSalary,
+                averageNetSalary: totalSalary / validRecordCount,
+                employeeCount: validRecordCount,
+                year: statYear,
+                month: statMonth,
+                maxSalary: maxSalary, // 添加最高工资
+                minSalary: minSalary, // 添加最低工资
+              ),
+            );
+          }
+        });
+      });
+    }
+
+    return stats;
+  }
+
   /// 按季度统计部门工资
   Future<List<DepartmentSalaryStats>> getQuarterlyDepartmentSalaryStats({
     int? year,
@@ -364,5 +638,297 @@ class DataAnalysisService {
       month: month,
       department: department,
     );
+  }
+
+  /// 获取部门环比变化数据
+  Future<Map<String, dynamic>> getDepartmentMonthOverMonthChange({
+    required int year,
+    required int month,
+    required String department,
+  }) async {
+    // 获取当前月数据
+    final currentStatsList = await getDepartmentSalaryStats(
+      year: year,
+      month: month,
+      department: department,
+    );
+
+    if (currentStatsList.isEmpty) {
+      return {};
+    }
+
+    final currentStats = currentStatsList.first;
+
+    // 计算上月的年份和月份
+    int lastYear = year;
+    int lastMonth = month - 1;
+
+    if (lastMonth == 0) {
+      // 如果是1月，上月就是去年的12月
+      lastYear = year - 1;
+      lastMonth = 12;
+    }
+
+    // 获取上月数据
+    final lastStatsList = await getDepartmentSalaryStats(
+      year: lastYear,
+      month: lastMonth,
+      department: department,
+    );
+
+    if (lastStatsList.isEmpty) {
+      return {
+        'current': currentStats,
+        'previous': null,
+        'month_over_month_change': null,
+      };
+    }
+
+    final lastStats = lastStatsList.first;
+
+    // 计算环比变化
+    final employeeCountChange =
+        currentStats.employeeCount - lastStats.employeeCount;
+    final totalSalaryChange =
+        currentStats.totalNetSalary - lastStats.totalNetSalary;
+    final averageSalaryChange =
+        currentStats.averageNetSalary - lastStats.averageNetSalary;
+
+    final employeeCountChangePercent = lastStats.employeeCount > 0
+        ? (employeeCountChange / lastStats.employeeCount) * 100
+        : 0.0;
+    final totalSalaryChangePercent = lastStats.totalNetSalary > 0
+        ? (totalSalaryChange / lastStats.totalNetSalary) * 100
+        : 0.0;
+    final averageSalaryChangePercent = lastStats.averageNetSalary > 0
+        ? (averageSalaryChange / lastStats.averageNetSalary) * 100
+        : 0.0;
+
+    return {
+      'current': currentStats,
+      'previous': lastStats,
+      'month_over_month_change': {
+        'employee_count_change': employeeCountChange,
+        'employee_count_change_percent': employeeCountChangePercent,
+        'total_salary_change': totalSalaryChange,
+        'total_salary_change_percent': totalSalaryChangePercent,
+        'average_salary_change': averageSalaryChange,
+        'average_salary_change_percent': averageSalaryChangePercent,
+      },
+    };
+  }
+
+  /// 获取部门同比变化数据（与去年同期对比）
+  Future<Map<String, dynamic>> getDepartmentYearOverYearChange({
+    required int year,
+    required int month,
+    required String department,
+  }) async {
+    // 获取当前月数据
+    final currentStatsList = await getDepartmentSalaryStats(
+      year: year,
+      month: month,
+      department: department,
+    );
+
+    if (currentStatsList.isEmpty) {
+      return {};
+    }
+
+    final currentStats = currentStatsList.first;
+
+    // 获取去年同期数据
+    final lastYearStatsList = await getDepartmentSalaryStats(
+      year: year - 1,
+      month: month,
+      department: department,
+    );
+
+    if (lastYearStatsList.isEmpty) {
+      return {
+        'current': currentStats,
+        'previous': null,
+        'year_over_year_change': null,
+      };
+    }
+
+    final lastYearStats = lastYearStatsList.first;
+
+    // 计算同比变化
+    final employeeCountChange =
+        currentStats.employeeCount - lastYearStats.employeeCount;
+    final totalSalaryChange =
+        currentStats.totalNetSalary - lastYearStats.totalNetSalary;
+    final averageSalaryChange =
+        currentStats.averageNetSalary - lastYearStats.averageNetSalary;
+
+    final employeeCountChangePercent = lastYearStats.employeeCount > 0
+        ? (employeeCountChange / lastYearStats.employeeCount) * 100
+        : 0.0;
+    final totalSalaryChangePercent = lastYearStats.totalNetSalary > 0
+        ? (totalSalaryChange / lastYearStats.totalNetSalary) * 100
+        : 0.0;
+    final averageSalaryChangePercent = lastYearStats.averageNetSalary > 0
+        ? (averageSalaryChange / lastYearStats.averageNetSalary) * 100
+        : 0.0;
+
+    return {
+      'current': currentStats,
+      'previous': lastYearStats,
+      'year_over_year_change': {
+        'employee_count_change': employeeCountChange,
+        'employee_count_change_percent': employeeCountChangePercent,
+        'total_salary_change': totalSalaryChange,
+        'total_salary_change_percent': totalSalaryChangePercent,
+        'average_salary_change': averageSalaryChange,
+        'average_salary_change_percent': averageSalaryChangePercent,
+      },
+    };
+  }
+
+  /// 获取岗位环比变化数据
+  Future<Map<String, dynamic>> getPositionMonthOverMonthChange({
+    required int year,
+    required int month,
+    required String position,
+  }) async {
+    // 获取当前月数据
+    final currentStatsList = await getPositionSalaryStats(
+      year: year,
+      month: month,
+      position: position,
+    );
+
+    if (currentStatsList.isEmpty) {
+      return {};
+    }
+
+    final currentStats = currentStatsList.first;
+
+    // 计算上月的年份和月份
+    int lastYear = year;
+    int lastMonth = month - 1;
+
+    if (lastMonth == 0) {
+      // 如果是1月，上月就是去年的12月
+      lastYear = year - 1;
+      lastMonth = 12;
+    }
+
+    // 获取上月数据
+    final lastStatsList = await getPositionSalaryStats(
+      year: lastYear,
+      month: lastMonth,
+      position: position,
+    );
+
+    if (lastStatsList.isEmpty) {
+      return {
+        'current': currentStats,
+        'previous': null,
+        'month_over_month_change': null,
+      };
+    }
+
+    final lastStats = lastStatsList.first;
+
+    // 计算环比变化
+    final employeeCountChange =
+        currentStats.employeeCount - lastStats.employeeCount;
+    final totalSalaryChange =
+        currentStats.totalNetSalary - lastStats.totalNetSalary;
+    final averageSalaryChange =
+        currentStats.averageNetSalary - lastStats.averageNetSalary;
+
+    final employeeCountChangePercent = lastStats.employeeCount > 0
+        ? (employeeCountChange / lastStats.employeeCount) * 100
+        : 0.0;
+    final totalSalaryChangePercent = lastStats.totalNetSalary > 0
+        ? (totalSalaryChange / lastStats.totalNetSalary) * 100
+        : 0.0;
+    final averageSalaryChangePercent = lastStats.averageNetSalary > 0
+        ? (averageSalaryChange / lastStats.averageNetSalary) * 100
+        : 0.0;
+
+    return {
+      'current': currentStats,
+      'previous': lastStats,
+      'month_over_month_change': {
+        'employee_count_change': employeeCountChange,
+        'employee_count_change_percent': employeeCountChangePercent,
+        'total_salary_change': totalSalaryChange,
+        'total_salary_change_percent': totalSalaryChangePercent,
+        'average_salary_change': averageSalaryChange,
+        'average_salary_change_percent': averageSalaryChangePercent,
+      },
+    };
+  }
+
+  /// 获取岗位同比变化数据（与去年同期对比）
+  Future<Map<String, dynamic>> getPositionYearOverYearChange({
+    required int year,
+    required int month,
+    required String position,
+  }) async {
+    // 获取当前月数据
+    final currentStatsList = await getPositionSalaryStats(
+      year: year,
+      month: month,
+      position: position,
+    );
+
+    if (currentStatsList.isEmpty) {
+      return {};
+    }
+
+    final currentStats = currentStatsList.first;
+
+    // 获取去年同期数据
+    final lastYearStatsList = await getPositionSalaryStats(
+      year: year - 1,
+      month: month,
+      position: position,
+    );
+
+    if (lastYearStatsList.isEmpty) {
+      return {
+        'current': currentStats,
+        'previous': null,
+        'year_over_year_change': null,
+      };
+    }
+
+    final lastYearStats = lastYearStatsList.first;
+
+    // 计算同比变化
+    final employeeCountChange =
+        currentStats.employeeCount - lastYearStats.employeeCount;
+    final totalSalaryChange =
+        currentStats.totalNetSalary - lastYearStats.totalNetSalary;
+    final averageSalaryChange =
+        currentStats.averageNetSalary - lastYearStats.averageNetSalary;
+
+    final employeeCountChangePercent = lastYearStats.employeeCount > 0
+        ? (employeeCountChange / lastYearStats.employeeCount) * 100
+        : 0.0;
+    final totalSalaryChangePercent = lastYearStats.totalNetSalary > 0
+        ? (totalSalaryChange / lastYearStats.totalNetSalary) * 100
+        : 0.0;
+    final averageSalaryChangePercent = lastYearStats.averageNetSalary > 0
+        ? (averageSalaryChange / lastYearStats.averageNetSalary) * 100
+        : 0.0;
+
+    return {
+      'current': currentStats,
+      'previous': lastYearStats,
+      'year_over_year_change': {
+        'employee_count_change': employeeCountChange,
+        'employee_count_change_percent': employeeCountChangePercent,
+        'total_salary_change': totalSalaryChange,
+        'total_salary_change_percent': totalSalaryChangePercent,
+        'average_salary_change': averageSalaryChange,
+        'average_salary_change_percent': averageSalaryChangePercent,
+      },
+    };
   }
 }

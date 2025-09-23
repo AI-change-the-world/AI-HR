@@ -10,12 +10,14 @@ import 'package:toastification/toastification.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:salary_report/src/providers/multi_month_analysis_provider.dart';
+import 'package:salary_report/src/providers/multi_month_trend_analysis_provider.dart';
 import 'package:salary_report/src/components/multi_month/monthly_key_metrics_component.dart';
 import 'package:salary_report/src/components/multi_month/monthly_department_stats_component.dart';
 import 'package:salary_report/src/components/multi_month/monthly_attendance_stats_component.dart';
 import 'package:salary_report/src/components/multi_month/department_changes_component.dart';
-import 'package:salary_report/src/common/scroll_screenshot.dart'; // 添加截图导入
-import 'package:salary_report/src/common/toast.dart'; // 添加Toast导入
+import 'package:salary_report/src/components/multi_month/department_position_trend_analysis_component.dart';
+import 'package:salary_report/src/common/scroll_screenshot.dart';
+import 'package:salary_report/src/common/toast.dart';
 
 // 简化状态管理，使用局部状态优化渲染性能
 class MultiMonthAnalysisPage extends ConsumerStatefulWidget {
@@ -70,234 +72,16 @@ class _MultiMonthAnalysisPageState
     super.dispose();
   }
 
-  /// 生成工资报告
-  Future<void> _generateSalaryReport() async {
-    try {
-      setState(() {
-        _isGeneratingReport = true;
-      });
-
-      // 确定开始和结束时间
-      final startTime = DateTime(widget.year, widget.month);
-      final endTime = DateTime(widget.endYear, widget.endMonth);
-
-      final generator = EnhancedReportGeneratorFactory.createGenerator(
-        ReportType.multiMonth,
-      );
-
-      // 获取分析数据
-      final keyMetricsState = ref.read(keyMetricsProvider(_dateRangeParams));
-      final departmentStatsState = ref.read(
-        departmentStatsProvider(_dateRangeParams),
-      );
-      final attendanceStatsState = ref.read(
-        attendanceStatsProvider(_dateRangeParams),
-      );
-      final leaveRatioStatsState = ref.read(
-        leaveRatioStatsProvider(_dateRangeParams),
-      );
-      final departmentChangesState = ref.read(
-        departmentChangesProvider(_dateRangeParams),
-      );
-      final chartDataState = ref.read(chartDataProvider(_dateRangeParams));
-
-      // 获取部门统计数据
-      List<DepartmentSalaryStats> departmentStats = [];
-      if (departmentStatsState is AsyncData &&
-          departmentStatsState.value?.monthlyData != null) {
-        // 合并所有月份的部门统计数据
-        final departmentStatsMap = <String, DepartmentSalaryStats>{};
-
-        for (var monthlyData in departmentStatsState.value!.monthlyData!) {
-          monthlyData.departmentStats.forEach((deptName, stat) {
-            if (departmentStatsMap.containsKey(deptName)) {
-              final existingStat = departmentStatsMap[deptName]!;
-              departmentStatsMap[deptName] = DepartmentSalaryStats(
-                department: deptName,
-                employeeCount: existingStat.employeeCount + stat.employeeCount,
-                totalNetSalary:
-                    existingStat.totalNetSalary + stat.totalNetSalary,
-                averageNetSalary:
-                    (existingStat.totalNetSalary + stat.totalNetSalary) /
-                    (existingStat.employeeCount + stat.employeeCount),
-                year: stat.year,
-                month: stat.month,
-                maxSalary: stat.maxSalary > existingStat.maxSalary
-                    ? stat.maxSalary
-                    : existingStat.maxSalary,
-                minSalary: stat.minSalary < existingStat.minSalary
-                    ? stat.minSalary
-                    : existingStat.minSalary,
-              );
-            } else {
-              departmentStatsMap[deptName] = stat;
-            }
-          });
-        }
-
-        departmentStats = departmentStatsMap.values.toList();
-      }
-
-      // 获取考勤统计数据
-      List<AttendanceStats> attendanceStats = [];
-      if (attendanceStatsState is AsyncData &&
-          attendanceStatsState.value?.attendanceData != null) {
-        // 合并所有月份的考勤统计数据
-        attendanceStatsState.value!.attendanceData!.forEach((month, stats) {
-          attendanceStats.addAll(stats);
-        });
-      }
-
-      final analysisData = _prepareAnalysisData(
-        keyMetricsState,
-        departmentStatsState,
-        attendanceStatsState,
-        leaveRatioStatsState,
-        departmentChangesState,
-        chartDataState,
-      );
-
-      logger.info('analysisData     $analysisData');
-
-      final reportPath = await generator.generateEnhancedReport(
-        previewContainerKey: _chartContainerKey,
-        departmentStats: departmentStats,
-        analysisData: analysisData,
-        attendanceStats: attendanceStats,
-        previousMonthData: null, // 多月报告不需要上月数据
-        year: widget.year,
-        month: widget.month,
-        isMultiMonth: true,
-        startTime: startTime,
-        endTime: endTime,
-      );
-
-      if (mounted) {
-        toastification.show(
-          context: context,
-          title: const Text('报告生成成功'),
-          description: Text('报告已保存到: $reportPath'),
-          type: ToastificationType.success,
-          style: ToastificationStyle.flat,
-          autoCloseDuration: const Duration(seconds: 5),
-        );
-      }
-    } catch (e, s) {
-      logger.severe("生成报告时发生错误 $s");
-
-      if (mounted) {
-        toastification.show(
-          context: context,
-          title: const Text('报告生成失败'),
-          description: Text('错误信息: $e'),
-          type: ToastificationType.error,
-          style: ToastificationStyle.flat,
-          autoCloseDuration: const Duration(seconds: 5),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isGeneratingReport = false;
-        });
-      }
-    }
-  }
-
-  /// 准备分析数据用于报告生成
-  /// 准备分析数据用于报告生成
-  Map<String, dynamic> _prepareAnalysisData(
-    AsyncValue<KeyMetricsState> keyMetricsState,
-    AsyncValue<DepartmentStatsState> departmentStatsState,
-    AsyncValue<AttendanceStatsState> attendanceStatsState,
-    AsyncValue<LeaveRatioStatsState> leaveRatioStatsState,
-    AsyncValue<DepartmentChangesState> departmentChangesState,
-    AsyncValue<ChartDataState> chartDataState,
-  ) {
-    // 计算整体统计数据
-    int totalEmployees = 0; // 总人次（不去重）
-    int totalUniqueEmployees = 0; // 总人数（去重）
-    double totalSalary = 0;
-    double highestSalary = 0;
-    double lowestSalary = double.infinity;
-    final Set<String> uniqueEmployeeIds = <String>{}; // 用于去重统计员工数
-
-    // 从关键指标状态中获取数据
-    if (keyMetricsState is AsyncData &&
-        keyMetricsState.value?.monthlyData != null) {
-      for (var monthlyData in keyMetricsState.value!.monthlyData!) {
-        totalEmployees += monthlyData.employeeCount;
-        totalSalary += monthlyData.totalSalary;
-
-        // 累加去重后的员工数
-        for (var worker in monthlyData.workers) {
-          final employeeId = '${worker.name}_${worker.department}';
-          uniqueEmployeeIds.add(employeeId);
-        }
-
-        // 使用月度数据中的最高最低工资字段
-        if (monthlyData.highestSalary > highestSalary) {
-          highestSalary = monthlyData.highestSalary;
-        }
-
-        if (monthlyData.lowestSalary < lowestSalary) {
-          lowestSalary = monthlyData.lowestSalary;
-        }
-      }
-    }
-
-    // 设置去重员工总数
-    totalUniqueEmployees = uniqueEmployeeIds.length;
-
-    if (lowestSalary == double.infinity) {
-      lowestSalary = 0;
-    }
-
-    final averageSalary = totalEmployees > 0 ? totalSalary / totalEmployees : 0;
-
-    // 合并所有月份的薪资区间统计数据
-    final salaryRangeStatsMap = <String, SalaryRangeStats>{};
-    if (keyMetricsState is AsyncData &&
-        keyMetricsState.value?.monthlyData != null) {
-      for (var monthlyData in keyMetricsState.value!.monthlyData!) {
-        monthlyData.salaryRangeStats.forEach((rangeName, stat) {
-          if (salaryRangeStatsMap.containsKey(rangeName)) {
-            final existingStat = salaryRangeStatsMap[rangeName]!;
-            salaryRangeStatsMap[rangeName] = SalaryRangeStats(
-              range: rangeName,
-              employeeCount: existingStat.employeeCount + stat.employeeCount,
-              totalSalary: existingStat.totalSalary + stat.totalSalary,
-              averageSalary:
-                  (existingStat.totalSalary + stat.totalSalary) /
-                  (existingStat.employeeCount + stat.employeeCount),
-              year: stat.year,
-              month: stat.month,
-            );
-          } else {
-            salaryRangeStatsMap[rangeName] = stat;
-          }
-        });
-      }
-    }
-
-    // 将薪资区间统计数据转换为列表
-    final salaryRanges = salaryRangeStatsMap.values.toList();
-
-    return {
-      'totalEmployees': totalEmployees, // 总人次
-      'totalUniqueEmployees': totalUniqueEmployees, // 总人数（去重）
-      'totalSalary': totalSalary,
-      'averageSalary': averageSalary,
-      'highestSalary': highestSalary,
-      'lowestSalary': lowestSalary,
-      'salaryRanges': salaryRanges, // 添加薪资区间数据
-    };
-  }
-
-  late ReportService reportService = ReportService();
-
   @override
   Widget build(BuildContext context) {
+    // 创建用于趋势分析的参数
+    final trendParams = DateRangeParams(
+      startYear: widget.year,
+      startMonth: widget.month,
+      endYear: widget.endYear,
+      endMonth: widget.endMonth,
+    );
+
     final title =
         '${widget.year}年${widget.month.toString().padLeft(2, '0')}月 - '
         '${widget.endYear}年${widget.endMonth.toString().padLeft(2, '0')}月 工资分析';
@@ -494,6 +278,20 @@ class _MultiMonthAnalysisPageState
                       ),
                     ),
                     const SizedBox(height: 24),
+
+                    // 部门和岗位趋势分析（新增）
+                    const Text(
+                      '部门和岗位趋势分析',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DepartmentPositionTrendAnalysisComponent(
+                      params: trendParams,
+                    ),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -540,6 +338,266 @@ class _MultiMonthAnalysisPageState
       ),
     );
   }
+
+  /// 生成工资报告
+  Future<void> _generateSalaryReport() async {
+    try {
+      setState(() {
+        _isGeneratingReport = true;
+      });
+
+      // 确定开始和结束时间
+      final startTime = DateTime(widget.year, widget.month);
+      final endTime = DateTime(widget.endYear, widget.endMonth);
+
+      final generator = EnhancedReportGeneratorFactory.createGenerator(
+        ReportType.multiMonth,
+      );
+
+      // 获取分析数据
+      final keyMetricsState = ref.read(keyMetricsProvider(_dateRangeParams));
+      final departmentStatsState = ref.read(
+        departmentStatsProvider(_dateRangeParams),
+      );
+      final attendanceStatsState = ref.read(
+        attendanceStatsProvider(_dateRangeParams),
+      );
+      final leaveRatioStatsState = ref.read(
+        leaveRatioStatsProvider(_dateRangeParams),
+      );
+      final departmentChangesState = ref.read(
+        departmentChangesProvider(_dateRangeParams),
+      );
+      final chartDataState = ref.read(chartDataProvider(_dateRangeParams));
+
+      // 创建用于趋势分析的参数
+      final trendParams = DateRangeParams(
+        startYear: widget.year,
+        startMonth: widget.month,
+        endYear: widget.endYear,
+        endMonth: widget.endMonth,
+      );
+      final trendAnalysisState = ref.read(
+        trendAnalysisProvider(trendParams),
+      ); // 添加趋势分析数据
+
+      // 获取部门统计数据
+      List<DepartmentSalaryStats> departmentStats = [];
+      if (departmentStatsState is AsyncData &&
+          departmentStatsState.value?.monthlyData != null) {
+        // 合并所有月份的部门统计数据
+        final departmentStatsMap = <String, DepartmentSalaryStats>{};
+
+        for (var monthlyData in departmentStatsState.value!.monthlyData!) {
+          monthlyData.departmentStats.forEach((deptName, stat) {
+            if (departmentStatsMap.containsKey(deptName)) {
+              final existingStat = departmentStatsMap[deptName]!;
+              departmentStatsMap[deptName] = DepartmentSalaryStats(
+                department: deptName,
+                employeeCount: existingStat.employeeCount + stat.employeeCount,
+                totalNetSalary:
+                    existingStat.totalNetSalary + stat.totalNetSalary,
+                averageNetSalary:
+                    (existingStat.totalNetSalary + stat.totalNetSalary) /
+                    (existingStat.employeeCount + stat.employeeCount),
+                year: stat.year,
+                month: stat.month,
+                maxSalary: stat.maxSalary > existingStat.maxSalary
+                    ? stat.maxSalary
+                    : existingStat.maxSalary,
+                minSalary: stat.minSalary < existingStat.minSalary
+                    ? stat.minSalary
+                    : existingStat.minSalary,
+              );
+            } else {
+              departmentStatsMap[deptName] = stat;
+            }
+          });
+        }
+
+        departmentStats = departmentStatsMap.values.toList();
+      }
+
+      // 获取考勤统计数据
+      List<AttendanceStats> attendanceStats = [];
+      if (attendanceStatsState is AsyncData &&
+          attendanceStatsState.value?.attendanceData != null) {
+        // 合并所有月份的考勤统计数据
+        attendanceStatsState.value!.attendanceData!.forEach((month, stats) {
+          attendanceStats.addAll(stats);
+        });
+      }
+
+      final analysisData = _prepareAnalysisData(
+        keyMetricsState,
+        departmentStatsState,
+        attendanceStatsState,
+        leaveRatioStatsState,
+        departmentChangesState,
+        chartDataState,
+      );
+
+      logger.info('analysisData     $analysisData');
+
+      // 准备同比环比分析数据
+      List<Map<String, dynamic>> departmentMonthOverMonthData = [];
+      List<Map<String, dynamic>> departmentYearOverYearData = [];
+      List<Map<String, dynamic>> positionMonthOverMonthData = [];
+      List<Map<String, dynamic>> positionYearOverYearData = [];
+
+      if (trendAnalysisState is AsyncData && trendAnalysisState.value != null) {
+        departmentMonthOverMonthData =
+            trendAnalysisState.value!.departmentMonthOverMonthData;
+        departmentYearOverYearData =
+            trendAnalysisState.value!.departmentYearOverYearData;
+        positionMonthOverMonthData =
+            trendAnalysisState.value!.positionMonthOverMonthData;
+        positionYearOverYearData =
+            trendAnalysisState.value!.positionYearOverYearData;
+      }
+
+      // 将同比环比数据添加到analysisData中
+      analysisData['departmentMonthOverMonthData'] =
+          departmentMonthOverMonthData;
+      analysisData['departmentYearOverYearData'] = departmentYearOverYearData;
+      analysisData['positionMonthOverMonthData'] = positionMonthOverMonthData;
+      analysisData['positionYearOverYearData'] = positionYearOverYearData;
+
+      final reportPath = await generator.generateEnhancedReport(
+        previewContainerKey: _chartContainerKey,
+        departmentStats: departmentStats,
+        analysisData: analysisData,
+        attendanceStats: attendanceStats,
+        previousMonthData: null, // 多月报告不需要上月数据
+        year: widget.year,
+        month: widget.month,
+        isMultiMonth: true,
+        startTime: startTime,
+        endTime: endTime,
+      );
+
+      if (mounted) {
+        toastification.show(
+          context: context,
+          title: const Text('报告生成成功'),
+          description: Text('报告已保存到: $reportPath'),
+          type: ToastificationType.success,
+          style: ToastificationStyle.flat,
+          autoCloseDuration: const Duration(seconds: 5),
+        );
+      }
+    } catch (e, s) {
+      logger.severe("生成报告时发生错误 $s");
+
+      if (mounted) {
+        toastification.show(
+          context: context,
+          title: const Text('报告生成失败'),
+          description: Text('错误信息: $e'),
+          type: ToastificationType.error,
+          style: ToastificationStyle.flat,
+          autoCloseDuration: const Duration(seconds: 5),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGeneratingReport = false;
+        });
+      }
+    }
+  }
+
+  /// 准备分析数据用于报告生成
+  Map<String, dynamic> _prepareAnalysisData(
+    AsyncValue<KeyMetricsState> keyMetricsState,
+    AsyncValue<DepartmentStatsState> departmentStatsState,
+    AsyncValue<AttendanceStatsState> attendanceStatsState,
+    AsyncValue<LeaveRatioStatsState> leaveRatioStatsState,
+    AsyncValue<DepartmentChangesState> departmentChangesState,
+    AsyncValue<ChartDataState> chartDataState,
+  ) {
+    // 计算整体统计数据
+    int totalEmployees = 0; // 总人次（不去重）
+    int totalUniqueEmployees = 0; // 总人数（去重）
+    double totalSalary = 0;
+    double highestSalary = 0;
+    double lowestSalary = double.infinity;
+    final Set<String> uniqueEmployeeIds = <String>{}; // 用于去重统计员工数
+
+    // 从关键指标状态中获取数据
+    if (keyMetricsState is AsyncData &&
+        keyMetricsState.value?.monthlyData != null) {
+      for (var monthlyData in keyMetricsState.value!.monthlyData!) {
+        totalEmployees += monthlyData.employeeCount;
+        totalSalary += monthlyData.totalSalary;
+
+        // 累加去重后的员工数
+        for (var worker in monthlyData.workers) {
+          final employeeId = '${worker.name}_${worker.department}';
+          uniqueEmployeeIds.add(employeeId);
+        }
+
+        // 使用月度数据中的最高最低工资字段
+        if (monthlyData.highestSalary > highestSalary) {
+          highestSalary = monthlyData.highestSalary;
+        }
+
+        if (monthlyData.lowestSalary < lowestSalary) {
+          lowestSalary = monthlyData.lowestSalary;
+        }
+      }
+    }
+
+    // 设置去重员工总数
+    totalUniqueEmployees = uniqueEmployeeIds.length;
+
+    if (lowestSalary == double.infinity) {
+      lowestSalary = 0;
+    }
+
+    final averageSalary = totalEmployees > 0 ? totalSalary / totalEmployees : 0;
+
+    // 合并所有月份的薪资区间统计数据
+    final salaryRangeStatsMap = <String, SalaryRangeStats>{};
+    if (keyMetricsState is AsyncData &&
+        keyMetricsState.value?.monthlyData != null) {
+      for (var monthlyData in keyMetricsState.value!.monthlyData!) {
+        monthlyData.salaryRangeStats.forEach((rangeName, stat) {
+          if (salaryRangeStatsMap.containsKey(rangeName)) {
+            final existingStat = salaryRangeStatsMap[rangeName]!;
+            salaryRangeStatsMap[rangeName] = SalaryRangeStats(
+              range: rangeName,
+              employeeCount: existingStat.employeeCount + stat.employeeCount,
+              totalSalary: existingStat.totalSalary + stat.totalSalary,
+              averageSalary:
+                  (existingStat.totalSalary + stat.totalSalary) /
+                  (existingStat.employeeCount + stat.employeeCount),
+              year: stat.year,
+              month: stat.month,
+            );
+          } else {
+            salaryRangeStatsMap[rangeName] = stat;
+          }
+        });
+      }
+    }
+
+    // 将薪资区间统计数据转换为列表
+    final salaryRanges = salaryRangeStatsMap.values.toList();
+
+    return {
+      'totalEmployees': totalEmployees, // 总人次
+      'totalUniqueEmployees': totalUniqueEmployees, // 总人数（去重）
+      'totalSalary': totalSalary,
+      'averageSalary': averageSalary,
+      'highestSalary': highestSalary,
+      'lowestSalary': lowestSalary,
+      'salaryRanges': salaryRanges, // 添加薪资区间数据
+    };
+  }
+
+  late ReportService reportService = ReportService();
 }
 
 // 每月人数变化趋势图组件

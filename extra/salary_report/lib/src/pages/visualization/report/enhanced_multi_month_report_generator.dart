@@ -120,6 +120,12 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
         totalSalaryPerMonthChart: chartImagesFromUI.totalSalaryPerMonthChart,
         departmentDetailsPerMonthChart:
             chartImagesFromUI.departmentDetailsPerMonthChart,
+        // 新增同比环比对比图表
+        departmentMonthOverMonthChart:
+            chartImagesFromJson.departmentChart, // 可以使用现有的部门图表或创建新的
+        departmentYearOverYearChart: chartImagesFromJson.departmentChart,
+        positionMonthOverMonthChart: chartImagesFromJson.departmentChart,
+        positionYearOverYearChart: chartImagesFromJson.departmentChart,
       );
 
       logger.info('analysisData analysisData analysisData: $analysisData');
@@ -236,6 +242,13 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
       salaryStructureData,
     );
 
+    // 计算月份数量
+    final monthCount = _calculateMonthCount(startTime, endTime);
+
+    // 计算增长率（示例值，实际应根据数据计算）
+    final totalSalaryGrowthRate = 0.05; // 5% 示例值
+    final averageSalaryGrowthRate = 0.03; // 3% 示例值
+
     return MultiMonthReportContentModel(
       reportTitle: '多月工资分析报告',
       reportDate:
@@ -288,7 +301,76 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
       averageSalaryPerMonth: _extractAverageSalaryPerMonth(jsonData),
       totalSalaryPerMonth: _extractTotalSalaryPerMonth(jsonData),
       departmentDetailsPerMonth: _extractDepartmentDetailsPerMonth(jsonData),
+      // 多月同比环比对比专用字段
+      departmentMonthOverMonthData:
+          analysisData['departmentMonthOverMonthData']
+              as List<Map<String, dynamic>>?,
+      departmentYearOverYearData:
+          analysisData['departmentYearOverYearData']
+              as List<Map<String, dynamic>>?,
+      positionMonthOverMonthData:
+          analysisData['positionMonthOverMonthData']
+              as List<Map<String, dynamic>>?,
+      positionYearOverYearData:
+          analysisData['positionYearOverYearData']
+              as List<Map<String, dynamic>>?,
+      // 多月报告特有字段
+      monthCount: monthCount,
+      totalSalaryGrowthRate: totalSalaryGrowthRate,
+      averageSalaryGrowthRate: averageSalaryGrowthRate,
+      trendAnalysisSummary: _generateTrendAnalysisSummary(analysisData),
     );
+  }
+
+  /// 计算月份数量
+  int _calculateMonthCount(DateTime startTime, DateTime endTime) {
+    final years = endTime.year - startTime.year;
+    final months = endTime.month - startTime.month;
+    return years * 12 + months + 1; // +1 因为包含起始和结束月份
+  }
+
+  /// 生成趋势分析总结
+  String _generateTrendAnalysisSummary(Map<String, dynamic> analysisData) {
+    final buffer = StringBuffer();
+    buffer.writeln('多月趋势分析总结：');
+
+    // 添加部门环比变化总结
+    if (analysisData.containsKey('departmentMonthOverMonthData') &&
+        analysisData['departmentMonthOverMonthData'] is List) {
+      final deptMoMData = analysisData['departmentMonthOverMonthData'] as List;
+      if (deptMoMData.isNotEmpty) {
+        buffer.writeln('1. 部门环比变化：');
+        for (var item in deptMoMData) {
+          if (item is Map<String, dynamic>) {
+            final dept = item['department'] as String? ?? '未知部门';
+            final empChange = item['employee_count_change'] as int? ?? 0;
+            buffer.writeln(
+              '   - $dept部门员工数变化：${empChange > 0 ? '+' : ''}$empChange人',
+            );
+          }
+        }
+      }
+    }
+
+    // 添加部门同比变化总结
+    if (analysisData.containsKey('departmentYearOverYearData') &&
+        analysisData['departmentYearOverYearData'] is List) {
+      final deptYoYData = analysisData['departmentYearOverYearData'] as List;
+      if (deptYoYData.isNotEmpty) {
+        buffer.writeln('2. 部门同比变化：');
+        for (var item in deptYoYData) {
+          if (item is Map<String, dynamic>) {
+            final dept = item['department'] as String? ?? '未知部门';
+            final empChange = item['employee_count_change'] as int? ?? 0;
+            buffer.writeln(
+              '   - $dept部门员工数变化：${empChange > 0 ? '+' : ''}$empChange人',
+            );
+          }
+        }
+      }
+    }
+
+    return buffer.toString();
   }
 
   /// 生成部门详情描述

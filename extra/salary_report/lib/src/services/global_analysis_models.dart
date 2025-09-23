@@ -91,6 +91,29 @@ class DepartmentSalaryStats {
   });
 }
 
+// 岗位工资统计结果
+class PositionSalaryStats {
+  final String position;
+  final double totalNetSalary;
+  final double averageNetSalary;
+  final int employeeCount;
+  final int year;
+  final int month;
+  final double maxSalary; // 添加最高工资字段
+  final double minSalary; // 添加最低工资字段
+
+  PositionSalaryStats({
+    required this.position,
+    required this.totalNetSalary,
+    required this.averageNetSalary,
+    required this.employeeCount,
+    required this.year,
+    required this.month,
+    this.maxSalary = 0, // 默认值为0
+    this.minSalary = 0, // 默认值为0
+  });
+}
+
 // 薪资范围统计结果
 class SalaryRangeStats {
   final String range;
