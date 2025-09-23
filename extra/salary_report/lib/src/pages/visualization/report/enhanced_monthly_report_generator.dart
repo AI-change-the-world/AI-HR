@@ -177,19 +177,19 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
 
     String reportTime;
     if (startTime.month == endTime.month && startTime.year == endTime.year) {
-      reportTime = '${startTime.month}月${startTime.year}年';
+      reportTime = '${startTime.year}年${startTime.month}月';
     } else {
       reportTime =
-          '${startTime.month}月${startTime.year}年 - '
-          '${endTime.month}月${endTime.year}年';
+          '${startTime.year}年${startTime.month}月 - '
+          '${endTime.year}年${endTime.month}月';
     }
 
     return ReportContentModel(
       reportTitle: '月度工资分析报告',
-      reportDate: reportTime,
-      companyName: AIConfig.companyName,
-      reportTime:
+      reportDate:
           '${DateTime.now().year}年${DateTime.now().month}月${DateTime.now().day}日',
+      companyName: AIConfig.companyName,
+      reportTime: reportTime,
       startTime: '${startTime.year}年${startTime.month}月',
       endTime: '${endTime.year}年${endTime.month}月',
       compareLast: '与上月对比',
