@@ -105,11 +105,11 @@ class DocxWriterService {
       case ReportType.singleQuarter:
         return 'assets/salary_report_template_quarterly.docx';
       case ReportType.multiQuarter:
-        return 'assets/salary_report_template_quarterly.docx';
+        return 'assets/salary_report_template_multi_quarter.docx';
       case ReportType.singleYear:
         return 'assets/salary_report_template_annual.docx';
       case ReportType.multiYear:
-        return 'assets/salary_report_template_annual.docx';
+        return 'assets/salary_report_template_multi_year.docx';
     }
   }
 

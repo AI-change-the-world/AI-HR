@@ -8,7 +8,6 @@ import 'package:salary_report/src/services/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/services/report_service.dart';
-import 'package:salary_report/src/utils/monthly_analysis_json_converter.dart';
 import 'package:salary_report/src/services/chart_generation_from_json_service.dart';
 import 'package:salary_report/src/pages/visualization/report/chart_generation_service.dart';
 import 'package:salary_report/src/pages/visualization/report/docx_writer_service.dart';
@@ -16,6 +15,7 @@ import 'package:salary_report/src/pages/visualization/report/report_content_mode
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_interface.dart';
 import 'package:salary_report/src/isar/salary_list.dart';
+import 'package:salary_report/src/utils/multi_month_analysis_json_converter.dart';
 
 /// 增强版多月报告生成器
 class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
@@ -55,19 +55,37 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
       logger.info('Starting enhanced multi-month salary report generation...');
 
       // 1. 生成JSON格式的分析数据
-      final jsonString = MonthlyAnalysisJsonConverter.convertAnalysisDataToJson(
-        analysisData: analysisData,
-        departmentStats: departmentStats,
-        attendanceStats: attendanceStats,
-        previousMonthData: previousMonthData,
-        year: year,
-        month: month,
+      // 需要将analysisData转换为MultiMonthComparisonData
+      final multiMonthComparisonData = _convertToMultiMonthComparisonData(
+        analysisData,
       );
+
+      final jsonString =
+          MultiMonthAnalysisJsonConverter.convertAnalysisDataToJson(
+            comparisonData: multiMonthComparisonData,
+            attendanceStats: attendanceStats,
+            previousPeriodData: previousMonthData,
+            startDate: startTime,
+            endDate: endTime,
+          );
 
       // 2. 解析JSON数据
       final jsonData = json.decode(jsonString) as Map<String, dynamic>;
 
-      // 3. 构建薪资结构数据
+      // 3. 生成自然语言报告
+      final naturalLanguageReport =
+          MultiMonthAnalysisJsonConverter.generateMultiMonthNaturalLanguageReport(
+            comparisonData: multiMonthComparisonData,
+            attendanceStats: attendanceStats,
+            previousPeriodData: previousMonthData,
+            startDate: startTime,
+            endDate: endTime,
+          );
+
+      // 可以将自然语言报告保存到文件或用于其他用途
+      logger.info('Generated natural language report: $naturalLanguageReport');
+
+      // 4. 构建薪资结构数据
       final salaryStructureData = _createSalaryStructureData(
         analysisData.containsKey('salarySummary')
             ? analysisData['salarySummary'] as Map<String, dynamic>
@@ -199,8 +217,8 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
   ) {
     // 从JSON数据中提取关键信息来构建报告内容模型
     final keyMetrics = jsonData['key_metrics'] as Map<String, dynamic>;
-    final currentMonthMetrics =
-        keyMetrics['current_month'] as Map<String, dynamic>;
+    final currentPeriodMetrics =
+        keyMetrics['current_period'] as Map<String, dynamic>;
 
     // 获取部门统计信息
     final departmentStats = analysisData['departmentStats'] as List<dynamic>;
@@ -229,12 +247,12 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
           '${DateTime.now().year}年${DateTime.now().month}月${DateTime.now().day}日',
       startTime: '${startTime.year}年${startTime.month}月',
       endTime: '${endTime.year}年${endTime.month}月',
-      compareLast: '与上月对比',
-      totalEmployees: currentMonthMetrics['total_employees'] as int,
-      totalSalary: (currentMonthMetrics['total_salary'] as num).toDouble(),
-      averageSalary: (currentMonthMetrics['average_salary'] as num).toDouble(),
+      compareLast: '与上期对比',
+      totalEmployees: currentPeriodMetrics['total_employees'] as int,
+      totalSalary: (currentPeriodMetrics['total_salary'] as num).toDouble(),
+      averageSalary: (currentPeriodMetrics['average_salary'] as num).toDouble(),
       departmentCount: departmentStats.length,
-      employeeCount: currentMonthMetrics['total_unique_employees'] as int,
+      employeeCount: 0, // 多月报告中可能需要重新计算
       employeeDetails: jsonData['key_param'] as String,
       departmentDetails: _generateDepartmentDetails(departmentStats),
       salaryRangeDescription: _generateSalaryRangeDescription(salaryRanges),
@@ -268,15 +286,10 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
         );
       }).toList(),
       // 多月报告专用字段
-      employeeCountPerMonth:
-          jsonData['employee_count_per_month'] as List<Map<String, dynamic>>?,
-      averageSalaryPerMonth:
-          jsonData['average_salary_per_month'] as List<Map<String, dynamic>>?,
-      totalSalaryPerMonth:
-          jsonData['total_salary_per_month'] as List<Map<String, dynamic>>?,
-      departmentDetailsPerMonth:
-          jsonData['department_details_per_month']
-              as List<Map<String, dynamic>>?,
+      employeeCountPerMonth: _extractEmployeeCountPerMonth(jsonData),
+      averageSalaryPerMonth: _extractAverageSalaryPerMonth(jsonData),
+      totalSalaryPerMonth: _extractTotalSalaryPerMonth(jsonData),
+      departmentDetailsPerMonth: _extractDepartmentDetailsPerMonth(jsonData),
     );
   }
 
@@ -387,5 +400,274 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
     }
 
     return buffer.toString();
+  }
+
+  /// 提取每月员工数量数据
+  List<Map<String, dynamic>>? _extractEmployeeCountPerMonth(
+    Map<String, dynamic> jsonData,
+  ) {
+    if (jsonData.containsKey('monthly_breakdown') &&
+        jsonData['monthly_breakdown'] is List) {
+      final monthlyBreakdown = jsonData['monthly_breakdown'] as List;
+      return monthlyBreakdown.map<Map<String, dynamic>>((item) {
+        if (item is Map<String, dynamic>) {
+          return {
+            'year': item['year'],
+            'month': item['month'],
+            'employee_count': item['employee_count'],
+          };
+        }
+        return {};
+      }).toList();
+    }
+    return null;
+  }
+
+  /// 提取每月平均工资数据
+  List<Map<String, dynamic>>? _extractAverageSalaryPerMonth(
+    Map<String, dynamic> jsonData,
+  ) {
+    if (jsonData.containsKey('monthly_breakdown') &&
+        jsonData['monthly_breakdown'] is List) {
+      final monthlyBreakdown = jsonData['monthly_breakdown'] as List;
+      return monthlyBreakdown.map<Map<String, dynamic>>((item) {
+        if (item is Map<String, dynamic>) {
+          return {
+            'year': item['year'],
+            'month': item['month'],
+            'average_salary': item['average_salary'],
+          };
+        }
+        return {};
+      }).toList();
+    }
+    return null;
+  }
+
+  /// 提取每月总工资数据
+  List<Map<String, dynamic>>? _extractTotalSalaryPerMonth(
+    Map<String, dynamic> jsonData,
+  ) {
+    if (jsonData.containsKey('monthly_breakdown') &&
+        jsonData['monthly_breakdown'] is List) {
+      final monthlyBreakdown = jsonData['monthly_breakdown'] as List;
+      return monthlyBreakdown.map<Map<String, dynamic>>((item) {
+        if (item is Map<String, dynamic>) {
+          return {
+            'year': item['year'],
+            'month': item['month'],
+            'total_salary': item['total_salary'],
+          };
+        }
+        return {};
+      }).toList();
+    }
+    return null;
+  }
+
+  /// 提取每月部门详情数据
+  List<Map<String, dynamic>>? _extractDepartmentDetailsPerMonth(
+    Map<String, dynamic> jsonData,
+  ) {
+    if (jsonData.containsKey('department_stats') &&
+        jsonData['department_stats'] is List) {
+      return List<Map<String, dynamic>>.from(
+        jsonData['department_stats'] as List,
+      );
+    }
+    return null;
+  }
+
+  /// 提取部门统计信息
+  Map<String, DepartmentSalaryStats> _extractDepartmentStats(
+    Map<String, dynamic> analysisData,
+    Map<String, dynamic> item,
+  ) {
+    final departmentStats = <String, DepartmentSalaryStats>{};
+
+    // 如果analysisData包含departmentStats字段
+    if (analysisData.containsKey('departmentStats') &&
+        analysisData['departmentStats'] is List) {
+      final deptList = analysisData['departmentStats'] as List;
+      for (var dept in deptList) {
+        if (dept is Map<String, dynamic>) {
+          final deptName = dept['department'] as String? ?? '未知部门';
+          departmentStats[deptName] = DepartmentSalaryStats(
+            department: deptName,
+            employeeCount:
+                dept['count'] as int? ?? dept['employee_count'] as int? ?? 0,
+            averageNetSalary:
+                (dept['average'] as num? ?? dept['average_salary'] as num? ?? 0)
+                    .toDouble(),
+            totalNetSalary:
+                (dept['total'] as num? ?? dept['total_salary'] as num? ?? 0)
+                    .toDouble(),
+            year: item['year'] as int? ?? DateTime.now().year,
+            month: item['month'] as int? ?? DateTime.now().month,
+            maxSalary: (dept['max'] as num? ?? dept['max_salary'] as num? ?? 0)
+                .toDouble(),
+            minSalary: (dept['min'] as num? ?? dept['min_salary'] as num? ?? 0)
+                .toDouble(),
+          );
+        } else if (dept is DepartmentSalaryStats) {
+          departmentStats[dept.department] = dept;
+        }
+      }
+    }
+
+    return departmentStats;
+  }
+
+  /// 提取薪资区间统计信息
+  Map<String, SalaryRangeStats> _extractSalaryRangeStats(
+    Map<String, dynamic> analysisData,
+    Map<String, dynamic> item,
+  ) {
+    final salaryRangeStats = <String, SalaryRangeStats>{};
+
+    // 如果analysisData包含salaryRanges字段
+    if (analysisData.containsKey('salaryRanges') &&
+        analysisData['salaryRanges'] is List) {
+      final rangeList = analysisData['salaryRanges'] as List;
+      for (var range in rangeList) {
+        if (range is Map<String, dynamic>) {
+          final rangeName = range['range'] as String? ?? '未知区间';
+          salaryRangeStats[rangeName] = SalaryRangeStats(
+            range: rangeName,
+            employeeCount:
+                range['count'] as int? ?? range['employee_count'] as int? ?? 0,
+            totalSalary:
+                (range['total'] as num? ?? range['total_salary'] as num? ?? 0)
+                    .toDouble(),
+            averageSalary:
+                (range['average'] as num? ??
+                        range['average_salary'] as num? ??
+                        0)
+                    .toDouble(),
+            year: item['year'] as int? ?? DateTime.now().year,
+            month: item['month'] as int? ?? DateTime.now().month,
+          );
+        } else if (range is SalaryRangeStats) {
+          salaryRangeStats[range.range] = range;
+        }
+      }
+    }
+
+    return salaryRangeStats;
+  }
+
+  /// 提取员工信息
+  List<MinimalEmployeeInfo> _extractWorkers(
+    Map<String, dynamic> analysisData,
+    Map<String, dynamic> item,
+  ) {
+    final workers = <MinimalEmployeeInfo>[];
+
+    // 如果analysisData包含workers字段
+    if (analysisData.containsKey('workers') &&
+        analysisData['workers'] is List) {
+      final workerList = analysisData['workers'] as List;
+      for (var worker in workerList) {
+        if (worker is Map<String, dynamic>) {
+          workers.add(
+            MinimalEmployeeInfo(
+              name: worker['name'] as String? ?? '未知员工',
+              department: worker['department'] as String? ?? '未知部门',
+            ),
+          );
+        } else if (worker is MinimalEmployeeInfo) {
+          workers.add(worker);
+        }
+      }
+    }
+
+    return workers;
+  }
+
+  /// 将analysisData转换为MultiMonthComparisonData
+  MultiMonthComparisonData _convertToMultiMonthComparisonData(
+    Map<String, dynamic> analysisData,
+  ) {
+    // 从analysisData中提取多月比较数据
+    // 这里需要根据实际的数据结构进行转换
+    final monthlyComparisons = <MonthlyComparisonData>[];
+
+    // 如果analysisData包含monthlyData字段
+    if (analysisData.containsKey('monthlyData') &&
+        analysisData['monthlyData'] is List) {
+      final monthlyDataList = analysisData['monthlyData'] as List;
+      for (var item in monthlyDataList) {
+        if (item is Map<String, dynamic>) {
+          // 构造MonthlyComparisonData对象
+          monthlyComparisons.add(
+            MonthlyComparisonData(
+              year: item['year'] as int? ?? DateTime.now().year,
+              month: item['month'] as int? ?? DateTime.now().month,
+              employeeCount: item['employeeCount'] as int? ?? 0,
+              totalSalary: (item['totalSalary'] as num? ?? 0).toDouble(),
+              averageSalary: (item['averageSalary'] as num? ?? 0).toDouble(),
+              highestSalary: (item['highestSalary'] as num? ?? 0).toDouble(),
+              lowestSalary: (item['lowestSalary'] as num? ?? 0).toDouble(),
+              departmentStats: _extractDepartmentStats(analysisData, item),
+              salaryRangeStats: _extractSalaryRangeStats(analysisData, item),
+              workers: _extractWorkers(analysisData, item),
+            ),
+          );
+        }
+      }
+    }
+
+    // 如果没有monthlyData字段，创建一个默认的
+    if (monthlyComparisons.isEmpty) {
+      monthlyComparisons.add(
+        MonthlyComparisonData(
+          year: analysisData['year'] as int? ?? DateTime.now().year,
+          month: analysisData['month'] as int? ?? DateTime.now().month,
+          employeeCount: analysisData['totalEmployees'] as int? ?? 0,
+          totalSalary: (analysisData['totalSalary'] as num? ?? 0).toDouble(),
+          averageSalary: (analysisData['averageSalary'] as num? ?? 0)
+              .toDouble(),
+          highestSalary: (analysisData['highestSalary'] as num? ?? 0)
+              .toDouble(),
+          lowestSalary: (analysisData['lowestSalary'] as num? ?? 0).toDouble(),
+          departmentStats: _extractDepartmentStats(analysisData, {
+            'year': analysisData['year'],
+            'month': analysisData['month'],
+          }),
+          salaryRangeStats: _extractSalaryRangeStats(analysisData, {
+            'year': analysisData['year'],
+            'month': analysisData['month'],
+          }),
+          workers: _extractWorkers(analysisData, {
+            'year': analysisData['year'],
+            'month': analysisData['month'],
+          }),
+        ),
+      );
+    }
+
+    // 确定startDate和endDate
+    DateTime startDate = DateTime.now();
+    DateTime endDate = DateTime.now();
+
+    if (monthlyComparisons.isNotEmpty) {
+      // 按时间排序
+      monthlyComparisons.sort((a, b) {
+        if (a.year != b.year) return a.year.compareTo(b.year);
+        return a.month.compareTo(b.month);
+      });
+
+      final firstMonth = monthlyComparisons.first;
+      final lastMonth = monthlyComparisons.last;
+
+      startDate = DateTime(firstMonth.year, firstMonth.month);
+      endDate = DateTime(lastMonth.year, lastMonth.month);
+    }
+
+    return MultiMonthComparisonData(
+      monthlyComparisons: monthlyComparisons,
+      startDate: startDate,
+      endDate: endDate,
+    );
   }
 }
