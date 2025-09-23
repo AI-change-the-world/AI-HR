@@ -1088,8 +1088,8 @@ class AISalaryService {
   Future<String> _handleAverageSalaryQuery(
     Map<String, dynamic> parameters,
   ) async {
-    final year = parameters['year'] as int?;
-    final month = parameters['month'] as int?;
+    final year = int.tryParse(parameters['year'].toString());
+    final month = int.tryParse(parameters['month'].toString());
 
     // 如果提供了年份但没有提供月份，查询该年份的所有记录
     if (year != null && month == null) {

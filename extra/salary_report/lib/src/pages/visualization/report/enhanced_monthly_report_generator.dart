@@ -15,7 +15,7 @@ import 'package:salary_report/src/pages/visualization/report/docx_writer_service
 import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_interface.dart';
-import 'package:salary_report/src/isar/salary_list.dart';
+import 'package:salary_report/src/pages/visualization/report/ai_summary_service.dart';
 
 /// 增强版单月报告生成器
 class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
@@ -24,6 +24,7 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
   final DocxWriterService _docxService;
   final DataAnalysisService _analysisService;
   final ReportService _reportService;
+  final AISummaryService _aiSummaryService;
 
   EnhancedMonthlyReportGenerator({
     ChartGenerationService? chartService,
@@ -31,12 +32,14 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
     DocxWriterService? docxService,
     DataAnalysisService? analysisService,
     ReportService? reportService,
+    AISummaryService? aiSummaryService,
   }) : _chartService = chartService ?? ChartGenerationService(),
        _jsonChartService = jsonChartService ?? ChartGenerationFromJsonService(),
        _docxService = docxService ?? DocxWriterService(),
        _analysisService =
            analysisService ?? DataAnalysisService(IsarDatabase()),
-       _reportService = reportService ?? ReportService();
+       _reportService = reportService ?? ReportService(),
+       _aiSummaryService = aiSummaryService ?? AISummaryService();
 
   /// 生成包含描述和图表的增强版单月报告
   @override
@@ -105,7 +108,7 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
       );
 
       // 7. 创建报告内容模型
-      final reportContent = _createReportContentModel(
+      final reportContent = await _createReportContentModel(
         jsonData,
         analysisData,
         startTime,
@@ -196,13 +199,30 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
     }).toList();
   }
 
+  /// 将薪资区间数据转换为AI服务所需的格式
+  List<Map<String, int>> _convertToSalaryRangeMapForAI(
+    List<dynamic> salaryRanges,
+  ) {
+    return salaryRanges.map<Map<String, int>>((range) {
+      if (range is SalaryRangeStats) {
+        return {'${range.range}': range.employeeCount};
+      } else if (range is Map<String, dynamic>) {
+        final rangeLabel = range['range'] as String? ?? 'Unknown';
+        final count =
+            range['employee_count'] as int? ?? range['count'] as int? ?? 0;
+        return {rangeLabel: count};
+      }
+      return {'Unknown': 0};
+    }).toList();
+  }
+
   /// 创建报告内容模型
-  ReportContentModel _createReportContentModel(
+  Future<ReportContentModel> _createReportContentModel(
     Map<String, dynamic> jsonData,
     Map<String, dynamic> analysisData,
     DateTime startTime,
     DateTime endTime,
-  ) {
+  ) async {
     // 从JSON数据中提取关键信息来构建报告内容模型
     final keyMetrics = jsonData['key_metrics'] as Map<String, dynamic>;
     final currentMonthMetrics =
@@ -239,6 +259,39 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
           '${endTime.year}年${endTime.month}月';
     }
 
+    // 生成AI分析内容
+    final salaryRangeFeatureSummary = await _aiSummaryService
+        .generateSalaryRangeFeatureSummary(
+          _convertToSalaryRangeMapForAI(salaryRanges),
+          departmentStats
+              .map((dept) => _convertToDepartmentSalaryStats(dept))
+              .toList(),
+        );
+
+    final departmentSalaryAnalysis = await _aiSummaryService
+        .generateDepartmentSalaryAnalysis(
+          departmentStats
+              .map((dept) => _convertToDepartmentSalaryStats(dept))
+              .toList(),
+        );
+
+    final keySalaryPoint = await _aiSummaryService.generateKeySalaryPoint(
+      departmentStats
+          .map((dept) => _convertToDepartmentSalaryStats(dept))
+          .toList(),
+      _convertToSalaryRangeMapForAI(salaryRanges),
+    );
+
+    final salaryStructureAdvice = await _aiSummaryService
+        .generateSalaryStructureAdvice(
+          employeeDetails: jsonData['key_param'] as String,
+          departmentDetails: _generateDepartmentDetails(departmentStats),
+          salaryRange: _generateSalaryRangeDescription(salaryRanges),
+          salaryRangeFeature: salaryRangeFeatureSummary.isNotEmpty
+              ? salaryRangeFeatureSummary
+              : '暂无薪资区间特征数据',
+        );
+
     return ReportContentModel(
       reportTitle: '月度工资分析报告',
       reportDate:
@@ -256,14 +309,20 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
       employeeDetails: jsonData['key_param'] as String,
       departmentDetails: _generateDepartmentDetails(departmentStats),
       salaryRangeDescription: _generateSalaryRangeDescription(salaryRanges),
-      salaryRangeFeatureSummary: '薪资区间特征总结',
-      departmentSalaryAnalysis: '部门工资分析',
-      keySalaryPoint: '关键工资点',
+      salaryRangeFeatureSummary: salaryRangeFeatureSummary.isNotEmpty
+          ? salaryRangeFeatureSummary
+          : '薪资区间特征总结',
+      departmentSalaryAnalysis: departmentSalaryAnalysis.isNotEmpty
+          ? departmentSalaryAnalysis
+          : '部门工资分析',
+      keySalaryPoint: keySalaryPoint.isNotEmpty ? keySalaryPoint : '关键工资点',
       salaryRankings: _generateSalaryRankings(analysisData),
       basicSalaryRate: 0.7,
       performanceSalaryRate: 0.3,
       salaryStructure: salaryStructureDescription, // 使用生成的薪资结构描述
-      salaryStructureAdvice: '薪资结构优化建议',
+      salaryStructureAdvice: salaryStructureAdvice.isNotEmpty
+          ? salaryStructureAdvice
+          : '薪资结构优化建议',
       salaryStructureData: salaryStructureData,
       departmentStats: departmentStats
           .map((dept) => _convertToDepartmentSalaryStats(dept))
