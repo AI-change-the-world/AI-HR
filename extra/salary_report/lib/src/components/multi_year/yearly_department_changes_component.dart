@@ -57,12 +57,12 @@ class YearlyDepartmentChangesComponent extends ConsumerWidget {
 
         // 检查是否有任何变化
         bool hasChanges = false;
-        departmentChangesMap.entries.forEach((entry) {
+        for (var entry in departmentChangesMap.entries) {
           final employeeCounts = entry.value;
           if (employeeCounts.length > 1) {
             hasChanges = true;
           }
-        });
+        }
         employeeChangesMap.forEach((year, changes) {
           if (changes['newEmployees']!.isNotEmpty ||
               changes['resignedEmployees']!.isNotEmpty) {
@@ -227,7 +227,7 @@ class YearlyDepartmentChangesComponent extends ConsumerWidget {
                               ],
                             ),
                           );
-                        }).toList(),
+                        }),
                         const SizedBox(height: 8),
                       ],
 
@@ -258,13 +258,13 @@ class YearlyDepartmentChangesComponent extends ConsumerWidget {
                               ],
                             ),
                           );
-                        }).toList(),
+                        }),
                       ],
                     ],
                   ),
                 ),
               );
-            }).toList(),
+            }),
 
             // 按部门分组的员工变化详情
             ...departmentEmployeeChangesMap.entries.map((entry) {
@@ -358,13 +358,13 @@ class YearlyDepartmentChangesComponent extends ConsumerWidget {
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
-                                        '${employee.name}',
+                                        employee.name,
                                         style: const TextStyle(fontSize: 13),
                                       ),
                                     ],
                                   ),
                                 );
-                              }).toList(),
+                              }),
                             ],
 
                             // 离职员工
@@ -395,23 +395,23 @@ class YearlyDepartmentChangesComponent extends ConsumerWidget {
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
-                                        '${employee.name}',
+                                        employee.name,
                                         style: const TextStyle(fontSize: 13),
                                       ),
                                     ],
                                   ),
                                 );
-                              }).toList(),
+                              }),
                               const SizedBox(height: 4),
                             ],
                           ],
                         );
-                      }).toList(),
+                      }),
                     ],
                   ),
                 ),
               );
-            }).toList(),
+            }),
           ],
         );
       },

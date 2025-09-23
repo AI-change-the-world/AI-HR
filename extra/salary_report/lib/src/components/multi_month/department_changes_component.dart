@@ -160,7 +160,7 @@ class DepartmentChangesComponent extends ConsumerWidget {
                   ),
                 ),
               );
-            }).toList(),
+            }),
 
             // 员工入职和离职详情（总体）
             ...employeeChangesMap.entries.map((entry) {
@@ -223,7 +223,7 @@ class DepartmentChangesComponent extends ConsumerWidget {
                               ],
                             ),
                           );
-                        }).toList(),
+                        }),
                         const SizedBox(height: 8),
                       ],
 
@@ -254,13 +254,13 @@ class DepartmentChangesComponent extends ConsumerWidget {
                               ],
                             ),
                           );
-                        }).toList(),
+                        }),
                       ],
                     ],
                   ),
                 ),
               );
-            }).toList(),
+            }),
 
             // 按部门分组的员工变化详情
             ...departmentEmployeeChangesMap.entries.map((entry) {
@@ -359,13 +359,13 @@ class DepartmentChangesComponent extends ConsumerWidget {
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
-                                        '${employee.name}',
+                                        employee.name,
                                         style: const TextStyle(fontSize: 13),
                                       ),
                                     ],
                                   ),
                                 );
-                              }).toList(),
+                              }),
                             ],
 
                             // 离职员工
@@ -396,23 +396,23 @@ class DepartmentChangesComponent extends ConsumerWidget {
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
-                                        '${employee.name}',
+                                        employee.name,
                                         style: const TextStyle(fontSize: 13),
                                       ),
                                     ],
                                   ),
                                 );
-                              }).toList(),
+                              }),
                               const SizedBox(height: 4),
                             ],
                           ],
                         );
-                      }).toList(),
+                      }),
                     ],
                   ),
                 ),
               );
-            }).toList(),
+            }),
           ],
         );
       },

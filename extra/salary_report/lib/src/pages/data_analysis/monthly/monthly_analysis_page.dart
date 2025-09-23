@@ -5,12 +5,11 @@ import 'package:salary_report/src/common/scroll_screenshot.dart';
 import 'package:salary_report/src/common/toast.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
 import 'package:salary_report/src/isar/report_generation_record.dart';
+import 'package:salary_report/src/pages/visualization/report/enhanced_monthly_report_generator.dart';
 import 'package:salary_report/src/services/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/components/attendance_pagination.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
-import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
-import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:toastification/toastification.dart';
 import 'package:salary_report/src/isar/salary_list.dart';
@@ -390,17 +389,19 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
           ? DateTime(widget.year, widget.month)
           : DateTime(widget.year, widget.month);
 
-      final generator = SalaryReportGenerator();
-      final reportPath = await generator.generateReport(
+      // 使用增强版报告生成器
+      final generator = EnhancedMonthlyReportGenerator();
+      final reportPath = await generator.generateEnhancedReport(
         previewContainerKey: _chartContainerKey,
         departmentStats: _departmentStats,
         analysisData: _analysisData,
-        endTime: endTime,
+        attendanceStats: _attendanceStats,
+        previousMonthData: _previousMonthData,
         year: widget.year,
         month: widget.month,
         isMultiMonth: widget.isMultiMonth,
         startTime: startTime,
-        reportType: ReportType.singleMonth,
+        endTime: endTime,
       );
 
       if (mounted) {

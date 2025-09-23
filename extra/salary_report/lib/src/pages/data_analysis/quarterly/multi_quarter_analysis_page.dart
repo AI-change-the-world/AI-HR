@@ -13,7 +13,6 @@ import 'package:salary_report/src/providers/multi_quarter_analysis_provider.dart
 import 'package:salary_report/src/components/multi_quarter/quarterly_key_metrics_component.dart';
 import 'package:salary_report/src/components/multi_quarter/quarterly_department_stats_component.dart';
 import 'package:salary_report/src/components/multi_quarter/quarterly_attendance_stats_component.dart';
-import 'package:salary_report/src/components/multi_quarter/quarterly_leave_ratio_stats_component.dart';
 import 'package:salary_report/src/components/multi_quarter/department_changes_component.dart';
 import 'package:salary_report/src/common/scroll_screenshot.dart'; // 添加截图导入
 import 'package:salary_report/src/common/toast.dart'; // 添加Toast导入

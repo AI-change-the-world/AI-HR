@@ -446,4 +446,88 @@ class MonthlyAnalysisJsonConverter {
       'net_change': newEmployees.length - resignedEmployees.length,
     };
   }
+
+  /// 生成用于图表的部门统计数据
+  static List<Map<String, dynamic>> generateDepartmentChartDataSet(
+    List<DepartmentSalaryStats> departmentStats,
+  ) {
+    return departmentStats.map((stat) {
+      return {
+        'department': stat.department,
+        'employee_count': stat.employeeCount,
+        'total_salary': stat.totalNetSalary,
+        'average_salary': stat.averageNetSalary,
+      };
+    }).toList();
+  }
+
+  /// 生成用于图表的薪资区间数据
+  static List<Map<String, dynamic>> generateSalaryRangeChartDataSet(
+    List<SalaryRangeStats> salaryRanges,
+  ) {
+    return salaryRanges.map((range) {
+      return {
+        'range': range.range,
+        'count': range.employeeCount,
+        'total': range.totalSalary,
+      };
+    }).toList();
+  }
+
+  /// 生成用于图表的员工Top榜单数据
+  static List<Map<String, dynamic>> generateTopEmployeesChartDataSet(
+    List<dynamic> topEmployees,
+  ) {
+    return topEmployees
+        .map<Map<String, dynamic>>((employee) {
+          if (employee is SalaryListRecord) {
+            final salaryStr =
+                employee.netSalary?.replaceAll(RegExp(r'[^\d.-]'), '') ?? '0';
+            final salary = double.tryParse(salaryStr) ?? 0;
+            return {'name': employee.name ?? '', 'net_salary': salary};
+          }
+          return {};
+        })
+        .where((element) => element.isNotEmpty)
+        .toList();
+  }
+
+  /// 生成用于图表的考勤统计数据
+  static List<Map<String, dynamic>> generateAttendanceChartDataSet(
+    List<AttendanceStats> attendanceStats,
+  ) {
+    return attendanceStats.map((stat) {
+      return {
+        'name': stat.name,
+        'department': stat.department,
+        'sick_leave_days': stat.sickLeaveDays,
+        'leave_days': stat.leaveDays,
+        'absence_count': stat.absenceCount,
+        'truancy_days': stat.truancyDays,
+      };
+    }).toList();
+  }
+
+  /// 生成用于图表的部门薪资区间联合统计数据
+  static List<Map<String, dynamic>> generateDepartmentSalaryRangeChartDataSet(
+    List<DepartmentSalaryRangeStats> deptSalaryRanges,
+  ) {
+    // 按部门分组
+    final Map<String, List<Map<String, dynamic>>> groupedData = {};
+    for (var deptRange in deptSalaryRanges) {
+      if (!groupedData.containsKey(deptRange.department)) {
+        groupedData[deptRange.department] = [];
+      }
+      groupedData[deptRange.department]!.add({
+        'salary_range': deptRange.salaryRange,
+        'employee_count': deptRange.employeeCount,
+        'total_salary': deptRange.totalSalary,
+      });
+    }
+
+    // 转换为图表数据格式
+    return groupedData.entries.map((entry) {
+      return {'department': entry.key, 'salary_ranges': entry.value};
+    }).toList();
+  }
 }

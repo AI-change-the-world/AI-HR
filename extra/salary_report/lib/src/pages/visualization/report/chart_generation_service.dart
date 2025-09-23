@@ -16,7 +16,7 @@ class ChartGenerationService {
   Future<ReportChartImages> generateAllCharts({
     required GlobalKey previewContainerKey,
     required List<DepartmentSalaryStats> departmentStats,
-    required List<Map<String, int>> salaryRanges,
+    required List<Map<String, dynamic>> salaryRanges,
     List<Map<String, dynamic>>? salaryStructureData, // 薪资结构数据
     // 多月报告专用图表数据
     List<Map<String, dynamic>>? employeeCountPerMonth, // 每月人数变化数据
@@ -158,7 +158,7 @@ class ChartGenerationService {
   }
 
   Future<Uint8List?> _generateSalaryRangeChart(
-    List<Map<String, int>> data,
+    List<Map<String, dynamic>> data,
   ) async {
     final chartWidget = _buildChartContainer(
       SfCartesianChart(
