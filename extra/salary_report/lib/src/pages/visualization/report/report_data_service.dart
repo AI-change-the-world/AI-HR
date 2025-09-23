@@ -35,7 +35,7 @@ class ReportDataService {
       {'min': 7000.0, 'max': 8000.0, 'label': '7000-8000'},
       {'min': 8000.0, 'max': 9000.0, 'label': '8000-9000'},
       {'min': 9000.0, 'max': 10000.0, 'label': '9000-10000'},
-      {'min': 10000.0, 'max': double.infinity, 'label': '> 10000'},
+      {'min': 10000.0, 'max': double.infinity, 'label': '10000以上'},
     ];
 
     final rangeCounts = <String, int>{};

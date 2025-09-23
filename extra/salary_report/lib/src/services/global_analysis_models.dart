@@ -76,6 +76,8 @@ class DepartmentSalaryStats {
   final int employeeCount;
   final int year;
   final int month;
+  final double maxSalary; // 添加最高工资字段
+  final double minSalary; // 添加最低工资字段
 
   DepartmentSalaryStats({
     required this.department,
@@ -84,6 +86,8 @@ class DepartmentSalaryStats {
     required this.employeeCount,
     required this.year,
     required this.month,
+    this.maxSalary = 0, // 默认值为0
+    this.minSalary = 0, // 默认值为0
   });
 }
 

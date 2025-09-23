@@ -46,10 +46,25 @@ class YearlyAnalysisService {
         departmentMonthlyData.forEach((deptName, monthlyStats) {
           int totalEmployeeCount = 0;
           double totalNetSalary = 0.0;
+          double maxSalary = 0; // 添加最高工资变量
+          double minSalary = double.infinity; // 添加最低工资变量
 
           for (var stat in monthlyStats) {
             totalEmployeeCount += stat.employeeCount;
             totalNetSalary += stat.totalNetSalary;
+
+            // 更新最高和最低工资
+            if (stat.maxSalary > maxSalary) {
+              maxSalary = stat.maxSalary;
+            }
+            if (stat.minSalary < minSalary) {
+              minSalary = stat.minSalary;
+            }
+          }
+
+          // 如果没有有效记录，将minSalary设为0
+          if (minSalary == double.infinity) {
+            minSalary = 0;
           }
 
           final averageNetSalary = totalEmployeeCount > 0
@@ -63,6 +78,8 @@ class YearlyAnalysisService {
             employeeCount: totalEmployeeCount,
             year: year,
             month: 1, // 使用年份的1月作为代表
+            maxSalary: maxSalary, // 添加最高工资
+            minSalary: minSalary, // 添加最低工资
           );
         });
 

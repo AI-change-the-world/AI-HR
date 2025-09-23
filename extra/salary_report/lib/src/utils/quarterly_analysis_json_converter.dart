@@ -175,6 +175,8 @@ class QuarterlyAnalysisJsonConverter {
         'employee_count': stat.employeeCount,
         'total_salary': stat.totalNetSalary,
         'average_salary': stat.averageNetSalary,
+        'max_salary': stat.maxSalary, // 添加最高工资
+        'min_salary': stat.minSalary, // 添加最低工资
       };
     }).toList();
   }

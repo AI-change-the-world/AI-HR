@@ -15,7 +15,6 @@ import 'package:salary_report/src/pages/visualization/report/docx_writer_service
 import 'package:salary_report/src/pages/visualization/report/report_content_model.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
 import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_interface.dart';
-import 'package:salary_report/src/isar/salary_list.dart';
 
 /// 增强版单月报告生成器
 class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
@@ -123,6 +122,7 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
         e,
         stackTrace,
       );
+      logger.severe(stackTrace);
       rethrow;
     }
   }
@@ -192,7 +192,7 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
       reportTime: reportTime,
       startTime: '${startTime.year}年${startTime.month}月',
       endTime: '${endTime.year}年${endTime.month}月',
-      compareLast: '与上月对比',
+      compareLast: jsonData['salary_info'] as String,
       totalEmployees: currentMonthMetrics['total_employees'] as int,
       totalSalary: (currentMonthMetrics['total_salary'] as num).toDouble(),
       averageSalary: (currentMonthMetrics['average_salary'] as num).toDouble(),
@@ -210,99 +210,246 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
       salaryStructure: '薪资结构分析',
       salaryStructureAdvice: '薪资结构优化建议',
       salaryStructureData: salaryStructureData,
-      departmentStats: departmentStats.map((dept) {
-        if (dept is Map<String, dynamic>) {
-          return DepartmentSalaryStats(
-            department: dept['department'] as String,
-            employeeCount: dept['count'] as int,
-            averageNetSalary: (dept['average'] as num).toDouble(),
-            totalNetSalary: (dept['total'] as num).toDouble(),
-            year: DateTime.now().year,
-            month: DateTime.now().month,
-          );
-        }
-        return DepartmentSalaryStats(
-          department: '未知部门',
-          employeeCount: 0,
-          averageNetSalary: 0.0,
-          totalNetSalary: 0.0,
-          year: DateTime.now().year,
-          month: DateTime.now().month,
-        );
-      }).toList(),
+      departmentStats: departmentStats
+          .map((dept) => _convertToDepartmentSalaryStats(dept))
+          .toList(),
     );
   }
 
   /// 生成部门详情描述
   String _generateDepartmentDetails(List<dynamic> departmentStats) {
+    if (departmentStats.isEmpty) {
+      return '本月暂无部门数据。';
+    }
+
     final buffer = StringBuffer();
-    buffer.writeln('本月共有${departmentStats.length}个部门：');
-    for (var dept in departmentStats) {
-      if (dept is Map<String, dynamic>) {
-        buffer.writeln(
-          '- ${dept['department']}部门：${dept['count']}人，工资总额¥${(dept['total'] as num).toStringAsFixed(2)}，平均工资¥${(dept['average'] as num).toStringAsFixed(2)}',
-        );
+    buffer.write('本月共有${departmentStats.length}个部门，具体情况如下：');
+
+    for (int i = 0; i < departmentStats.length; i++) {
+      if (departmentStats[i] is Map<String, dynamic>) {
+        final dept = departmentStats[i] as Map<String, dynamic>;
+        buffer.write('${dept['department']}部门有${dept['count']}名员工，');
+        buffer.write('工资总额为${(dept['total'] as num).toStringAsFixed(2)}元，');
+        buffer.write('平均工资为${(dept['average'] as num).toStringAsFixed(2)}元');
+
+        // 添加最高和最低工资信息
+        if (dept.containsKey('max') || dept.containsKey('max_salary')) {
+          final maxSalary =
+              (dept['max'] as num? ?? dept['max_salary'] as num? ?? 0)
+                  .toDouble();
+          buffer.write('，最高工资为${maxSalary.toStringAsFixed(2)}元');
+        }
+
+        if (dept.containsKey('min') || dept.containsKey('min_salary')) {
+          final minSalary =
+              (dept['min'] as num? ?? dept['min_salary'] as num? ?? 0)
+                  .toDouble();
+          buffer.write('，最低工资为${minSalary.toStringAsFixed(2)}元');
+        }
+      } else if (departmentStats[i] is DepartmentSalaryStats) {
+        final dept = departmentStats[i] as DepartmentSalaryStats;
+        buffer.write('${dept.department}部门有${dept.employeeCount}名员工，');
+        buffer.write('工资总额为${dept.totalNetSalary.toStringAsFixed(2)}元，');
+        buffer.write('平均工资为${dept.averageNetSalary.toStringAsFixed(2)}元');
+        buffer.write('，最高工资为${dept.maxSalary.toStringAsFixed(2)}元');
+        buffer.write('，最低工资为${dept.minSalary.toStringAsFixed(2)}元');
+      }
+
+      if (i < departmentStats.length - 1) {
+        buffer.write('；');
       }
     }
+
+    buffer.write('。');
     return buffer.toString();
   }
 
   /// 生成薪资区间描述
   String _generateSalaryRangeDescription(List<dynamic> salaryRanges) {
+    if (salaryRanges.isEmpty) {
+      return '暂无薪资区间分布数据。';
+    }
+
     final buffer = StringBuffer();
-    buffer.writeln('薪资区间分布情况：');
-    for (var range in salaryRanges) {
-      if (range is SalaryRangeStats) {
-        buffer.writeln(
-          '- ${range.range}：${range.employeeCount}人，工资总额¥${range.totalSalary.toStringAsFixed(2)}，平均工资¥${range.averageSalary.toStringAsFixed(2)}',
+    buffer.write('薪资区间分布情况如下：');
+
+    for (int i = 0; i < salaryRanges.length; i++) {
+      if (salaryRanges[i] is SalaryRangeStats) {
+        final range = salaryRanges[i] as SalaryRangeStats;
+        buffer.write('${range.range}区间有${range.employeeCount}名员工，');
+        buffer.write('工资总额为${range.totalSalary.toStringAsFixed(2)}元，');
+        buffer.write('平均工资为${range.averageSalary.toStringAsFixed(2)}元');
+      } else if (salaryRanges[i] is Map<String, dynamic>) {
+        final range = salaryRanges[i] as Map<String, dynamic>;
+        buffer.write('${range['range']}区间有${range['employee_count']}名员工，');
+        buffer.write(
+          '工资总额为${(range['total_salary'] as num).toStringAsFixed(2)}元，',
         );
-      } else if (range is Map<String, dynamic>) {
-        buffer.writeln(
-          '- ${range['range']}：${range['employee_count']}人，工资总额¥${(range['total_salary'] as num).toStringAsFixed(2)}，平均工资¥${(range['average_salary'] as num).toStringAsFixed(2)}',
+        buffer.write(
+          '平均工资为${(range['average_salary'] as num).toStringAsFixed(2)}元',
         );
       }
+
+      if (i < salaryRanges.length - 1) {
+        buffer.write('；');
+      }
     }
+
+    buffer.write('。');
     return buffer.toString();
   }
 
-  /// 生成工资排名描述
+  /// 将动态对象转换为DepartmentSalaryStats对象
+  DepartmentSalaryStats _convertToDepartmentSalaryStats(dynamic dept) {
+    if (dept is DepartmentSalaryStats) {
+      return dept;
+    } else if (dept is Map<String, dynamic>) {
+      return DepartmentSalaryStats(
+        department: dept['department'] as String? ?? '未知部门',
+        employeeCount:
+            dept['count'] as int? ?? dept['employee_count'] as int? ?? 0,
+        averageNetSalary:
+            (dept['average'] as num? ?? dept['average_salary'] as num? ?? 0)
+                .toDouble(),
+        totalNetSalary:
+            (dept['total'] as num? ?? dept['total_salary'] as num? ?? 0)
+                .toDouble(),
+        year: dept['year'] as int? ?? DateTime.now().year,
+        month: dept['month'] as int? ?? DateTime.now().month,
+        maxSalary: (dept['max'] as num? ?? dept['max_salary'] as num? ?? 0)
+            .toDouble(), // 添加最高工资
+        minSalary: (dept['min'] as num? ?? dept['min_salary'] as num? ?? 0)
+            .toDouble(), // 添加最低工资
+      );
+    } else {
+      return DepartmentSalaryStats(
+        department: '未知部门',
+        employeeCount: 0,
+        averageNetSalary: 0.0,
+        totalNetSalary: 0.0,
+        year: DateTime.now().year,
+        month: DateTime.now().month,
+        maxSalary: 0.0, // 添加最高工资
+        minSalary: 0.0, // 添加最低工资
+      );
+    }
+  }
+
+  /// 生成部门和岗位薪资描述
   String _generateSalaryRankings(Map<String, dynamic> analysisData) {
     final buffer = StringBuffer();
 
-    // 最高工资员工
-    final topEmployees = analysisData['topSalaryEmployees'] as List<dynamic>;
-    if (topEmployees.isNotEmpty) {
-      buffer.writeln('工资最高的员工：');
-      for (var i = 0; i < topEmployees.length && i < 5; i++) {
-        final employee = topEmployees[i];
-        if (employee is SalaryListRecord) {
-          buffer.writeln(
-            '- ${employee.name}（${employee.department}）：¥${employee.netSalary}',
+    logger.info("生成部门薪资排名 $analysisData");
+
+    // 部门薪资排名
+    if (analysisData.containsKey('departmentStats') &&
+        analysisData['departmentStats'] is List<dynamic>) {
+      final departmentStats = analysisData['departmentStats'] as List<dynamic>;
+      if (departmentStats.isNotEmpty) {
+        // 按平均工资排序
+        final sortedDepartments = List<dynamic>.from(departmentStats);
+        sortedDepartments.sort((a, b) {
+          double avgSalaryA = 0, avgSalaryB = 0;
+
+          if (a is Map<String, dynamic>) {
+            avgSalaryA =
+                (a['average'] as num? ?? a['average_salary'] as num? ?? 0)
+                    .toDouble();
+          } else if (a is DepartmentSalaryStats) {
+            avgSalaryA = a.averageNetSalary;
+          }
+
+          if (b is Map<String, dynamic>) {
+            avgSalaryB =
+                (b['average'] as num? ?? b['average_salary'] as num? ?? 0)
+                    .toDouble();
+          } else if (b is DepartmentSalaryStats) {
+            avgSalaryB = b.averageNetSalary;
+          }
+
+          return avgSalaryB.compareTo(avgSalaryA); // 降序排列
+        });
+
+        for (int i = 0; i < sortedDepartments.length && i < 5; i++) {
+          final dept = sortedDepartments[i];
+          String departmentName = '未知部门';
+          double averageSalary = 0;
+          int employeeCount = 0;
+          double maxSalary = 0;
+          double minSalary = 0;
+
+          if (dept is Map<String, dynamic>) {
+            departmentName = dept['department'] as String? ?? '未知部门';
+            averageSalary =
+                (dept['average'] as num? ?? dept['average_salary'] as num? ?? 0)
+                    .toDouble();
+            employeeCount =
+                dept['count'] as int? ?? dept['employee_count'] as int? ?? 0;
+            maxSalary = (dept['max'] as num? ?? dept['max_salary'] as num? ?? 0)
+                .toDouble();
+            minSalary = (dept['min'] as num? ?? dept['min_salary'] as num? ?? 0)
+                .toDouble();
+          } else if (dept is DepartmentSalaryStats) {
+            departmentName = dept.department;
+            averageSalary = dept.averageNetSalary;
+            employeeCount = dept.employeeCount;
+            maxSalary = dept.maxSalary;
+            minSalary = dept.minSalary;
+          }
+
+          buffer.write(
+            '$departmentName部门有$employeeCount名员工，平均工资为${averageSalary.toStringAsFixed(2)}元',
           );
-        } else if (employee is Map<String, dynamic>) {
-          buffer.writeln(
-            '- ${employee['name']}（${employee['department']}）：¥${employee['net_salary']}',
+
+          // 总是添加最高和最低工资信息
+          buffer.write(
+            '，最高工资为${maxSalary.toStringAsFixed(2)}元，最低工资为${minSalary.toStringAsFixed(2)}元',
           );
+
+          if (i < sortedDepartments.length - 1 && i < 4) {
+            buffer.write('；');
+          }
         }
+        buffer.write('。');
       }
     }
 
-    // 最低工资员工
-    final bottomEmployees =
-        analysisData['bottomSalaryEmployees'] as List<dynamic>;
-    if (bottomEmployees.isNotEmpty) {
-      buffer.writeln('工资最低的员工：');
-      for (var i = 0; i < bottomEmployees.length && i < 5; i++) {
-        final employee = bottomEmployees[i];
-        if (employee is SalaryListRecord) {
-          buffer.writeln(
-            '- ${employee.name}（${employee.department}）：¥${employee.netSalary}',
-          );
-        } else if (employee is Map<String, dynamic>) {
-          buffer.writeln(
-            '- ${employee['name']}（${employee['department']}）：¥${employee['net_salary']}',
-          );
+    // 岗位薪资情况（如果有岗位统计数据）
+    if (analysisData.containsKey('positionStats') &&
+        analysisData['positionStats'] is List<dynamic>) {
+      final positionStats = analysisData['positionStats'] as List<dynamic>;
+      if (positionStats.isNotEmpty) {
+        buffer.write('各岗位薪资情况如下：');
+
+        for (int i = 0; i < positionStats.length && i < 5; i++) {
+          final position = positionStats[i];
+          if (position is Map<String, dynamic>) {
+            final positionName = position['position'] as String? ?? '未知岗位';
+            final employeeCount = position['employeeCount'] as int? ?? 0;
+            final averageSalary = (position['averageSalary'] as num? ?? 0)
+                .toDouble();
+            final totalSalary = (position['totalSalary'] as num? ?? 0)
+                .toDouble();
+            final maxSalary = (position['maxSalary'] as num? ?? 0).toDouble();
+            final minSalary = (position['minSalary'] as num? ?? 0).toDouble();
+
+            buffer.write(
+              '$positionName岗位有$employeeCount名员工，平均工资为${averageSalary.toStringAsFixed(2)}元',
+            );
+
+            // 总是添加最高和最低工资信息
+            buffer.write(
+              '，最高工资为${maxSalary.toStringAsFixed(2)}元，最低工资为${minSalary.toStringAsFixed(2)}元',
+            );
+
+            buffer.write('，工资总额为${totalSalary.toStringAsFixed(2)}元');
+
+            if (i < positionStats.length - 1 && i < 4) {
+              buffer.write('；');
+            }
+          }
         }
+        buffer.write('。');
       }
     }
 

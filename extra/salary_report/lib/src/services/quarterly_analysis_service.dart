@@ -380,6 +380,8 @@ class QuarterlyAnalysisService {
     departmentMap.forEach((dept, records) {
       double totalSalary = 0;
       int validRecordCount = 0;
+      double maxSalary = 0; // 添加最高工资变量
+      double minSalary = double.infinity; // 添加最低工资变量
 
       for (var record in records) {
         if (record.netSalary != null) {
@@ -389,10 +391,24 @@ class QuarterlyAnalysisService {
             '',
           );
           if (double.tryParse(salaryStr) != null) {
-            totalSalary += double.parse(salaryStr);
+            final salary = double.parse(salaryStr);
+            totalSalary += salary;
             validRecordCount++;
+
+            // 更新最高和最低工资
+            if (salary > maxSalary) {
+              maxSalary = salary;
+            }
+            if (salary < minSalary) {
+              minSalary = salary;
+            }
           }
         }
+      }
+
+      // 如果没有有效记录，将minSalary设为0
+      if (minSalary == double.infinity) {
+        minSalary = 0;
       }
 
       if (validRecordCount > 0) {
@@ -422,6 +438,8 @@ class QuarterlyAnalysisService {
             employeeCount: validRecordCount,
             year: statYear,
             month: statMonth,
+            maxSalary: maxSalary, // 添加最高工资
+            minSalary: minSalary, // 添加最低工资
           ),
         );
       }

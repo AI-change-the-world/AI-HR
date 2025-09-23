@@ -175,11 +175,6 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
           ? totalSalary / totalEmployees
           : 0;
 
-      for (var stat in departmentStats) {
-        // 注意：这里不再使用部门统计数据来计算最高最低工资
-        // 因为最高最低工资应该是个人的实际工资，而不是部门的平均工资
-      }
-
       // 构建部门统计数据
       final departmentStatsData = departmentStats.map((stat) {
         return {
@@ -187,6 +182,8 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
           'count': stat.employeeCount,
           'average': stat.averageNetSalary,
           'total': stat.totalNetSalary,
+          "max_salary": stat.maxSalary,
+          "min_salary": stat.minSalary,
         };
       }).toList();
 
@@ -350,11 +347,6 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
         final averageSalary = totalEmployees > 0
             ? totalSalary / totalEmployees
             : 0;
-
-        for (var stat in previousDepartmentStats) {
-          // 注意：这里不再使用部门统计数据来计算最高最低工资
-          // 因为最高最低工资应该是个人的实际工资，而不是部门的平均工资
-        }
 
         setState(() {
           _previousMonthData = {

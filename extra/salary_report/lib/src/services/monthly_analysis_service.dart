@@ -167,7 +167,7 @@ class MonthlyAnalysisService {
         {'min': 7000.0, 'max': 8000.0, 'label': '7000-8000'},
         {'min': 8000.0, 'max': 9000.0, 'label': '8000-9000'},
         {'min': 9000.0, 'max': 10000.0, 'label': '9000-10000'},
-        {'min': 10000.0, 'max': double.infinity, 'label': '> 10000'},
+        {'min': 10000.0, 'max': double.infinity, 'label': '10000以上'},
       ];
 
       final rangeStats = <SalaryRangeStats>[];
@@ -240,7 +240,7 @@ class MonthlyAnalysisService {
         {'min': 7000.0, 'max': 8000.0, 'label': '7000-8000'},
         {'min': 8000.0, 'max': 9000.0, 'label': '8000-9000'},
         {'min': 9000.0, 'max': 10000.0, 'label': '9000-10000'},
-        {'min': 10000.0, 'max': double.infinity, 'label': '> 10000'},
+        {'min': 10000.0, 'max': double.infinity, 'label': '10000以上'},
       ];
 
       final deptRangeStats = <DepartmentSalaryRangeStats>[];
@@ -915,6 +915,8 @@ class MonthlyAnalysisService {
     departmentMap.forEach((dept, records) {
       double totalSalary = 0;
       int validRecordCount = 0;
+      double maxSalary = 0; // 添加最高工资变量
+      double minSalary = double.infinity; // 添加最低工资变量
 
       for (var record in records) {
         if (record.netSalary != null) {
@@ -924,10 +926,24 @@ class MonthlyAnalysisService {
             '',
           );
           if (double.tryParse(salaryStr) != null) {
-            totalSalary += double.parse(salaryStr);
+            final salary = double.parse(salaryStr);
+            totalSalary += salary;
             validRecordCount++;
+
+            // 更新最高和最低工资
+            if (salary > maxSalary) {
+              maxSalary = salary;
+            }
+            if (salary < minSalary) {
+              minSalary = salary;
+            }
           }
         }
+      }
+
+      // 如果没有有效记录，将minSalary设为0
+      if (minSalary == double.infinity) {
+        minSalary = 0;
       }
 
       if (validRecordCount > 0) {
@@ -954,6 +970,8 @@ class MonthlyAnalysisService {
             employeeCount: validRecordCount,
             year: statYear,
             month: statMonth,
+            maxSalary: maxSalary, // 添加最高工资
+            minSalary: minSalary, // 添加最低工资
           ),
         );
       }
@@ -1002,6 +1020,8 @@ class MonthlyAnalysisService {
         deptMap.forEach((dept, deptRecords) {
           double totalSalary = 0;
           int validRecordCount = 0;
+          double maxSalary = 0; // 添加最高工资变量
+          double minSalary = double.infinity; // 添加最低工资变量
 
           for (var record in deptRecords) {
             if (record.netSalary != null) {
@@ -1011,10 +1031,24 @@ class MonthlyAnalysisService {
                 '',
               );
               if (double.tryParse(salaryStr) != null) {
-                totalSalary += double.parse(salaryStr);
+                final salary = double.parse(salaryStr);
+                totalSalary += salary;
                 validRecordCount++;
+
+                // 更新最高和最低工资
+                if (salary > maxSalary) {
+                  maxSalary = salary;
+                }
+                if (salary < minSalary) {
+                  minSalary = salary;
+                }
               }
             }
+          }
+
+          // 如果没有有效记录，将minSalary设为0
+          if (minSalary == double.infinity) {
+            minSalary = 0;
           }
 
           if (validRecordCount > 0) {
@@ -1031,6 +1065,8 @@ class MonthlyAnalysisService {
                 employeeCount: validRecordCount,
                 year: statYear,
                 month: statMonth,
+                maxSalary: maxSalary, // 添加最高工资
+                minSalary: minSalary, // 添加最低工资
               ),
             );
           }
