@@ -218,6 +218,7 @@ class MultiMonthComparisonData {
 /*=============================================================================*/
 
 // 季度对比数据模型
+@Deprecated("use `MultiMonthComparisonData` instead")
 class QuarterlyComparisonData {
   final List<MonthlyComparisonData> monthlyComparisons;
   final int year;
@@ -251,6 +252,7 @@ class QuarterlyComparisonData {
 }
 
 // 多季度对比数据模型
+@Deprecated("use `MultiMonthComparisonData` instead")
 class MultiQuarterComparisonData {
   final List<QuarterlyComparisonData> quarterlyComparisons;
   final DateTime startDate;
@@ -268,6 +270,7 @@ class MultiQuarterComparisonData {
 /*=============================================================================*/
 
 // 年度对比数据模型
+@Deprecated("use `MultiMonthComparisonData` instead")
 class YearlyComparisonData {
   final int year;
   final int employeeCount;
@@ -297,6 +300,7 @@ class YearlyComparisonData {
 }
 
 // 多年对比数据模型
+@Deprecated("use `MultiMonthComparisonData` instead")
 class MultiYearComparisonData {
   final List<YearlyComparisonData> yearlyComparisons;
   final DateTime startDate;
