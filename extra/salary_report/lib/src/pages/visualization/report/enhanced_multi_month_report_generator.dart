@@ -893,7 +893,7 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
           2,
         );
 
-        buffer.write('，比上一名低${diff.toStringAsFixed(2)}元（${percentage}%）');
+        buffer.write('，比上一名低${diff.toStringAsFixed(2)}元（$percentage%）');
       }
 
       // 如果部门人数很少（少于5人），添加提示
@@ -1027,15 +1027,13 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
           });
 
       return sortedMonthlyData.map<Map<String, dynamic>>((item) {
-        if (item is Map<String, dynamic>) {
-          return {
-            'month': '${item['year']}年${item['month']}月',
-            'year': item['year'],
-            'monthNum': item['month'],
-            'averageSalary': item['average_salary'],
-          };
-        }
-        return {};
+        return {
+          'month': '${item['year']}年${item['month']}月',
+          'year': item['year'],
+          'monthNum': item['month'],
+          'averageSalary': item['average_salary'],
+        };
+              return {};
       }).toList();
     }
     return null;
@@ -1058,15 +1056,13 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
           });
 
       return sortedMonthlyData.map<Map<String, dynamic>>((item) {
-        if (item is Map<String, dynamic>) {
-          return {
-            'month': '${item['year']}年${item['month']}月',
-            'year': item['year'],
-            'monthNum': item['month'],
-            'totalSalary': item['total_salary'],
-          };
-        }
-        return {};
+        return {
+          'month': '${item['year']}年${item['month']}月',
+          'year': item['year'],
+          'monthNum': item['month'],
+          'totalSalary': item['total_salary'],
+        };
+              return {};
       }).toList();
     }
     return null;
@@ -1610,13 +1606,13 @@ String _generateEmployeeDetails(Map<String, dynamic> analysisData) {
 
       // 描述新入职员工（按部门和岗位）
       if (totalNewEmployees > 0) {
-        buffer.write('新入职${totalNewEmployees}人（');
+        buffer.write('新入职$totalNewEmployees人（');
         int deptCount = 0;
         newEmployeesByDept.forEach((dept, employees) {
           if (deptCount > 0) {
             buffer.write('；');
           }
-          buffer.write('${dept}${employees.length}人');
+          buffer.write('$dept${employees.length}人');
 
           // 由于 MinimalEmployeeInfo 类没有岗位信息，这里只按部门统计
 
@@ -1631,13 +1627,13 @@ String _generateEmployeeDetails(Map<String, dynamic> analysisData) {
           buffer.write('，');
         }
 
-        buffer.write('离职${totalResignedEmployees}人（');
+        buffer.write('离职$totalResignedEmployees人（');
         int deptCount = 0;
         resignedEmployeesByDept.forEach((dept, employees) {
           if (deptCount > 0) {
             buffer.write('；');
           }
-          buffer.write('${dept}${employees.length}人');
+          buffer.write('$dept${employees.length}人');
 
           // 由于 MinimalEmployeeInfo 类没有岗位信息，这里只按部门统计
 

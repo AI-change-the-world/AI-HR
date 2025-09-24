@@ -73,4 +73,8 @@ class QuarterlyReportContentModel {
     required this.salaryStructureData,
     required this.departmentStats,
   });
+
+  @override
+  String toString() =>
+      'QuarterlyReportContentModel{reportTitle: $reportTitle, reportDate: $reportDate, companyName: $companyName, reportTime: $reportTime, startTime: $startTime, endTime: $endTime, compareLast: $compareLast, totalEmployees: $totalEmployees, totalSalary: $totalSalary, averageSalary: $averageSalary, departmentCount: $departmentCount, employeeCount: $employeeCount, employeeDetails: $employeeDetails, departmentDetails: $departmentDetails, salaryRangeDescription: $salaryRangeDescription, salaryRangeFeatureSummary: $salaryRangeFeatureSummary, departmentSalaryAnalysis: $departmentSalaryAnalysis, keySalaryPoint: $keySalaryPoint, salaryRankings: $salaryRankings, basicSalaryRate: $basicSalaryRate, performanceSalaryRate: $performanceSalaryRate, salaryStructure: $salaryStructure, salaryStructureAdvice: $salaryStructureAdvice, salaryStructureData: $salaryStructureData, departmentStats: $departmentStats}';
 }

@@ -504,6 +504,14 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
       final generator = EnhancedReportGeneratorFactory.createGenerator(
         ReportType.singleQuarter,
       );
+
+      _analysisData['salarySummary'] = _salaryDataService.getMonthlySummaryMap(
+        startTime.year,
+        startTime.month,
+        endTime.year,
+        endTime.month,
+      );
+
       final reportPath = await generator.generateEnhancedReport(
         previewContainerKey: _chartContainerKey,
         departmentStats: _departmentStats,

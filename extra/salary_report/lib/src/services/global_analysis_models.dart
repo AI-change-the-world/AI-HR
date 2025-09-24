@@ -253,11 +253,13 @@ class MultiQuarterComparisonData {
   final List<QuarterlyComparisonData> quarterlyComparisons;
   final DateTime startDate;
   final DateTime endDate;
+  Map<String, String?> monthlySummary;
 
   MultiQuarterComparisonData({
     required this.quarterlyComparisons,
     required this.startDate,
     required this.endDate,
+    this.monthlySummary = const {},
   });
 }
 
@@ -297,10 +299,12 @@ class MultiYearComparisonData {
   final List<YearlyComparisonData> yearlyComparisons;
   final DateTime startDate;
   final DateTime endDate;
+  Map<String, String?> monthlySummary;
 
   MultiYearComparisonData({
     required this.yearlyComparisons,
     required this.startDate,
     required this.endDate,
+    this.monthlySummary = const {},
   });
 }

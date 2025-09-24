@@ -77,6 +77,13 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
       final departmentStats =
           analysisData['departmentStats'] as List<DepartmentSalaryStats>;
 
+      analysisData['salarySummary'] = _salaryDataService.getMonthlySummaryMap(
+        widget.year,
+        1,
+        widget.year,
+        12,
+      );
+
       // 确定开始和结束时间
       final startTime = DateTime(widget.year, 1);
       final endTime = widget.isMultiYear && widget.endYear != null

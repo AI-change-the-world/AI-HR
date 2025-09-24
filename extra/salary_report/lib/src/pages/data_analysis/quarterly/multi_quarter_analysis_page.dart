@@ -159,6 +159,11 @@ class _MultiQuarterAnalysisPageState
         chartDataState,
       );
 
+      analysisData['salarySummary'] = ref
+          .read(coreDataProvider(_quarterRangeParams))
+          .value!
+          .monthlySummary;
+
       final reportPath = await generator.generateEnhancedReport(
         previewContainerKey: _chartContainerKey,
         departmentStats: departmentStats,

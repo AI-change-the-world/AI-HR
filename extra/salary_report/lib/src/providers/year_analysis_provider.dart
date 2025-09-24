@@ -166,10 +166,21 @@ final coreDataProvider =
       params,
     ) async {
       final service = DataAnalysisService(IsarDatabase());
-      return await service.getMultiYearComparisonData(
+      final result = await service.getMultiYearComparisonData(
         params.startYear,
         params.endYear,
       );
+      if (result != null) {
+        final map = await service.getMonthlySummaryMap(
+          params.startYear,
+          1,
+          params.endYear,
+          12,
+        );
+        result.monthlySummary = map;
+      }
+
+      return result;
     });
 
 // 考勤统计核心数据提供者 - 独立获取考勤数据

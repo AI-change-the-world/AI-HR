@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/providers/multi_month_analysis_provider.dart';
 import 'package:salary_report/src/providers/multi_month_trend_analysis_provider.dart';
-import 'package:salary_report/src/services/global_analysis_models.dart';
 
 // 部门和岗位趋势分析组件
 class DepartmentPositionTrendAnalysisComponent extends ConsumerWidget {

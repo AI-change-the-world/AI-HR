@@ -12,6 +12,8 @@ import 'package:salary_report/src/utils/monthly_analysis_json_converter.dart';
 import 'package:salary_report/src/services/quarterly/quarterly.dart';
 import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_interface.dart';
 import 'package:salary_report/src/isar/salary_list.dart';
+import 'package:salary_report/src/pages/visualization/report/ai_summary_service.dart';
+import 'package:salary_report/src/utils/quarterly_analysis_json_converter.dart';
 
 /// 增强版季度报告生成器
 class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
@@ -20,6 +22,7 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
   final QuarterlyDocxWriterService _docxService;
   final DataAnalysisService _analysisService;
   final ReportService _reportService;
+  final AISummaryService _aiSummaryService;
 
   EnhancedQuarterlyReportGenerator({
     QuarterlyChartGenerationService? chartService,
@@ -27,13 +30,15 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
     QuarterlyDocxWriterService? docxService,
     DataAnalysisService? analysisService,
     ReportService? reportService,
+    AISummaryService? aiSummaryService,
   }) : _chartService = chartService ?? QuarterlyChartGenerationService(),
        _jsonChartService =
            jsonChartService ?? QuarterlyChartGenerationFromJsonService(),
        _docxService = docxService ?? QuarterlyDocxWriterService(),
        _analysisService =
            analysisService ?? DataAnalysisService(IsarDatabase()),
-       _reportService = reportService ?? ReportService();
+       _reportService = reportService ?? ReportService(),
+       _aiSummaryService = aiSummaryService ?? AISummaryService();
 
   /// 生成包含描述和图表的增强版季度报告
   @override
@@ -53,17 +58,20 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
       logger.info('Starting enhanced quarterly salary report generation...');
 
       // 1. 生成JSON格式的分析数据
-      final jsonString = MonthlyAnalysisJsonConverter.convertAnalysisDataToJson(
-        analysisData: analysisData,
-        departmentStats: departmentStats,
-        attendanceStats: attendanceStats,
-        previousMonthData: previousMonthData,
-        year: year,
-        month: month,
-      );
+      final jsonString =
+          QuarterlyAnalysisJsonConverter.convertAnalysisDataToJson(
+            analysisData: analysisData,
+            departmentStats: departmentStats,
+            attendanceStats: attendanceStats,
+            previousQuarterData: previousMonthData,
+            year: year,
+          );
 
       // 2. 解析JSON数据
       final jsonData = json.decode(jsonString) as Map<String, dynamic>;
+
+      // 优化季度数据处理
+      final optimizedAnalysisData = _optimizeQuarterlyData(analysisData);
 
       // 3. 生成图表图像（从UI）
       final chartImagesFromUI = await _chartService.generateAllCharts(
@@ -87,12 +95,14 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
       );
 
       // 6. 创建报告内容模型
-      final reportContent = _createReportContentModel(
+      final reportContent = await _createReportContentModel(
         jsonData,
-        analysisData,
+        optimizedAnalysisData,
         startTime,
         endTime,
       );
+
+      logger.info('Report content model created. $reportContent');
 
       // 7. 写入报告文件
       final reportPath = await _docxService.writeReport(
@@ -111,6 +121,12 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
         'Fatal error during enhanced quarterly report generation: $e',
         e,
         stackTrace,
+      );
+      logger.severe(
+        'Fatal error during enhanced quarterly report generation: $e',
+      );
+      logger.severe(
+        'Fatal error during enhanced quarterly report generation: $stackTrace',
       );
       rethrow;
     }
@@ -135,12 +151,12 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
   }
 
   /// 创建报告内容模型
-  QuarterlyReportContentModel _createReportContentModel(
+  Future<QuarterlyReportContentModel> _createReportContentModel(
     Map<String, dynamic> jsonData,
     Map<String, dynamic> analysisData,
     DateTime startTime,
     DateTime endTime,
-  ) {
+  ) async {
     // 从JSON数据中提取关键信息来构建报告内容模型
     final keyMetrics = jsonData['key_metrics'] as Map<String, dynamic>;
     final currentMonthMetrics =
@@ -164,6 +180,158 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
       });
     }
 
+    // 转换部门统计数据为 DepartmentSalaryStats 列表，用于 AI 分析
+    final deptStatsList = departmentStats.map((dept) {
+      if (dept is Map<String, dynamic>) {
+        return DepartmentSalaryStats(
+          department: dept['department'] as String,
+          employeeCount: dept['count'] as int,
+          averageNetSalary: (dept['average'] as num).toDouble(),
+          totalNetSalary: (dept['total'] as num).toDouble(),
+          year: DateTime.now().year,
+          month: DateTime.now().month,
+          maxSalary: dept.containsKey('max')
+              ? (dept['max'] as num).toDouble()
+              : 0.0,
+          minSalary: dept.containsKey('min')
+              ? (dept['min'] as num).toDouble()
+              : 0.0,
+        );
+      }
+      return dept as DepartmentSalaryStats;
+    }).toList();
+
+    // 转换薪资区间数据为 AI 分析所需的格式
+    final salaryRangesForAI = salaryRanges.map<Map<String, int>>((range) {
+      if (range is SalaryRangeStats) {
+        return {range.range: range.employeeCount};
+      } else if (range is Map<String, dynamic>) {
+        final rangeLabel = range['range'] as String? ?? 'Unknown';
+        final count =
+            range['employee_count'] as int? ?? range['count'] as int? ?? 0;
+        return {rangeLabel: count};
+      }
+      return {'Unknown': 0};
+    }).toList();
+
+    // 获取月度数据
+    final monthlyData =
+        analysisData['monthlyBreakdown'] as List<dynamic>? ?? [];
+
+    // 获取员工变动数据
+    final employeeChanges =
+        analysisData['monthlyEmployeeChanges'] as List<dynamic>? ?? [];
+
+    // 获取上季度数据
+    final previousQuarterData =
+        analysisData['previousQuarterData'] as Map<String, dynamic>? ?? {};
+
+    // 生成季度工资总额分析的增强提示
+    final totalSalary = (currentMonthMetrics['total_salary'] as num).toDouble();
+    final previousQuarterTotalSalary =
+        previousQuarterData.containsKey('totalSalary')
+        ? (previousQuarterData['totalSalary'] as num).toDouble()
+        : 0.0;
+
+    final basePromptForTotalSalary =
+        '''
+请分析以下季度工资总额数据：
+- 本季度工资总额：${totalSalary.toStringAsFixed(2)}元
+- 上季度工资总额：${previousQuarterTotalSalary.toStringAsFixed(2)}元
+- 环比变化率：${previousQuarterTotalSalary > 0 ? ((totalSalary - previousQuarterTotalSalary) / previousQuarterTotalSalary * 100).toStringAsFixed(2) : "无法计算"}%
+
+请撰写一段关于季度工资总额的分析，包括总体趋势、月度波动原因、与上季度的对比分析，以及可能的影响因素。要求语言严谨、简洁，体现报告风格。仅输出一个连续的段落，不使用任何格式标记。
+''';
+
+    final enhancedPromptForTotalSalary = _generateQuarterlyAIPrompt(
+      basePromptForTotalSalary,
+      analysisData,
+      startTime,
+      endTime,
+    );
+
+    final quarterTotalSalaryAnalysis = await _aiSummaryService.getAnswer(
+      enhancedPromptForTotalSalary,
+    );
+
+    // 生成季度平均工资分析
+    final averageSalary = (currentMonthMetrics['average_salary'] as num)
+        .toDouble();
+    final previousQuarterAverageSalary =
+        previousQuarterData.containsKey('averageSalary')
+        ? (previousQuarterData['averageSalary'] as num).toDouble()
+        : 0.0;
+    final quarterAverageSalaryAnalysis = await _aiSummaryService
+        .generateQuarterlyAverageSalaryAnalysis(
+          averageSalary,
+          previousQuarterAverageSalary,
+          List<Map<String, dynamic>>.from(monthlyData),
+          deptStatsList,
+        );
+
+    // 生成季度员工数量分析
+    final totalEmployees = currentMonthMetrics['total_employees'] as int;
+    final uniqueEmployees =
+        currentMonthMetrics['total_unique_employees'] as int;
+    final previousQuarterTotalEmployees =
+        previousQuarterData.containsKey('totalEmployees')
+        ? previousQuarterData['totalEmployees'] as int
+        : 0;
+    final quarterEmployeeCountAnalysis = await _aiSummaryService
+        .generateQuarterlyEmployeeCountAnalysis(
+          totalEmployees,
+          uniqueEmployees,
+          previousQuarterTotalEmployees,
+          List<Map<String, dynamic>>.from(monthlyData),
+          List<Map<String, dynamic>>.from(employeeChanges),
+        );
+
+    // 生成季度工资构成分析
+    final quarterlySalaryCompositionAnalysis = await _aiSummaryService
+        .generateQuarterlySalaryCompositionAnalysis(salaryStructureData);
+
+    // 生成季度环比变化分析
+    final currentQuarterData = {
+      'year': startTime.year,
+      'quarter': (startTime.month - 1) ~/ 3 + 1,
+      'totalSalary': totalSalary,
+      'averageSalary': averageSalary,
+      'totalEmployees': totalEmployees,
+    };
+    final quarterMoMChangeAnalysis = await _aiSummaryService
+        .generateQuarterlyMoMChangeAnalysis(
+          currentQuarterData,
+          previousQuarterData.isNotEmpty ? previousQuarterData : null,
+        );
+
+    // 生成薪资区间特征总结
+    final salaryRangeFeatureSummary = await _aiSummaryService
+        .generateSalaryRangeFeatureSummary(salaryRangesForAI, deptStatsList);
+
+    // 生成部门工资分析
+    final departmentSalaryAnalysis = await _aiSummaryService
+        .generateDepartmentSalaryAnalysis(deptStatsList);
+
+    // 生成关键薪资点分析
+    final keySalaryPoint = await _aiSummaryService.generateKeySalaryPoint(
+      deptStatsList,
+      salaryRangesForAI,
+    );
+
+    // 生成薪资结构优化建议
+    final salaryStructureAdvice = await _aiSummaryService
+        .generateSalaryStructureAdvice(
+          employeeDetails: jsonData['key_param'] as String,
+          departmentDetails: _generateDepartmentDetails(departmentStats),
+          salaryRange: _generateSalaryRangeDescription(salaryRanges),
+          salaryRangeFeature: salaryRangeFeatureSummary.isNotEmpty
+              ? salaryRangeFeatureSummary
+              : '暂无薪资区间特征数据',
+        );
+
+    // 使用 AI 生成的季度分析内容构建综合分析
+    // 注意：这里不再单独构建综合分析，而是在各个字段中直接使用对应的分析结果
+
     return QuarterlyReportContentModel(
       reportTitle: '季度工资分析报告',
       reportDate:
@@ -173,44 +341,37 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
           '${DateTime.now().year}年${DateTime.now().month}月${DateTime.now().day}日',
       startTime: '${startTime.year}年${startTime.month}月',
       endTime: '${endTime.year}年${endTime.month}月',
-      compareLast: '与上季度对比',
-      totalEmployees: currentMonthMetrics['total_employees'] as int,
-      totalSalary: (currentMonthMetrics['total_salary'] as num).toDouble(),
-      averageSalary: (currentMonthMetrics['average_salary'] as num).toDouble(),
+      compareLast: quarterMoMChangeAnalysis.isNotEmpty
+          ? quarterMoMChangeAnalysis
+          : '与上季度对比',
+      totalEmployees: totalEmployees,
+      totalSalary: totalSalary,
+      averageSalary: averageSalary,
       departmentCount: departmentStats.length,
-      employeeCount: currentMonthMetrics['total_unique_employees'] as int,
-      employeeDetails: jsonData['key_param'] as String,
+      employeeCount: uniqueEmployees,
+      employeeDetails: quarterEmployeeCountAnalysis.isNotEmpty
+          ? quarterEmployeeCountAnalysis
+          : jsonData['key_param'] as String,
       departmentDetails: _generateDepartmentDetails(departmentStats),
       salaryRangeDescription: _generateSalaryRangeDescription(salaryRanges),
-      salaryRangeFeatureSummary: '薪资区间特征总结',
-      departmentSalaryAnalysis: '部门工资分析',
-      keySalaryPoint: '关键工资点',
+      salaryRangeFeatureSummary: salaryRangeFeatureSummary.isNotEmpty
+          ? salaryRangeFeatureSummary
+          : '薪资区间特征总结',
+      departmentSalaryAnalysis: departmentSalaryAnalysis.isNotEmpty
+          ? departmentSalaryAnalysis
+          : '部门工资分析',
+      keySalaryPoint: keySalaryPoint.isNotEmpty ? keySalaryPoint : '关键工资点',
       salaryRankings: _generateSalaryRankings(analysisData),
       basicSalaryRate: 0.7,
       performanceSalaryRate: 0.3,
-      salaryStructure: '薪资结构分析',
-      salaryStructureAdvice: '薪资结构优化建议',
+      salaryStructure: quarterlySalaryCompositionAnalysis.isNotEmpty
+          ? quarterlySalaryCompositionAnalysis
+          : '薪资结构分析',
+      salaryStructureAdvice: salaryStructureAdvice.isNotEmpty
+          ? salaryStructureAdvice
+          : '薪资结构优化建议',
       salaryStructureData: salaryStructureData,
-      departmentStats: departmentStats.map((dept) {
-        if (dept is Map<String, dynamic>) {
-          return DepartmentSalaryStats(
-            department: dept['department'] as String,
-            employeeCount: dept['count'] as int,
-            averageNetSalary: (dept['average'] as num).toDouble(),
-            totalNetSalary: (dept['total'] as num).toDouble(),
-            year: DateTime.now().year,
-            month: DateTime.now().month,
-          );
-        }
-        return DepartmentSalaryStats(
-          department: '未知部门',
-          employeeCount: 0,
-          averageNetSalary: 0.0,
-          totalNetSalary: 0.0,
-          year: DateTime.now().year,
-          month: DateTime.now().month,
-        );
-      }).toList(),
+      departmentStats: deptStatsList,
     );
   }
 
@@ -288,5 +449,163 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
     }
 
     return buffer.toString();
+  }
+
+  /// 为季度报告生成专门的 AI 分析提示
+  ///
+  /// 这个方法创建一个针对季度数据的提示，帮助 AI 更好地理解和分析季度数据的趋势和变化
+  String _generateQuarterlyAIPrompt(
+    String basePrompt,
+    Map<String, dynamic> analysisData,
+    DateTime startTime,
+    DateTime endTime,
+  ) {
+    // 计算季度
+    final quarter = (startTime.month - 1) ~/ 3 + 1;
+
+    // 提取月度趋势数据
+    final monthlyData =
+        analysisData['monthlyBreakdown'] as List<dynamic>? ?? [];
+    final monthlyTrend = _extractMonthlyTrend(monthlyData);
+
+    // 提取部门数据
+    final departmentStats =
+        analysisData['departmentStats'] as List<dynamic>? ?? [];
+    final departmentTrend = _extractDepartmentTrend(departmentStats);
+
+    // 提取员工变动数据
+    final employeeChanges =
+        analysisData['monthlyEmployeeChanges'] as List<dynamic>? ?? [];
+    final employeeChangeTrend = _extractEmployeeChangeTrend(employeeChanges);
+
+    // 构建增强的提示
+    final enhancedPrompt =
+        '''
+$basePrompt
+
+【季度分析补充信息】
+- 分析周期：${startTime.year}年第$quarter季度（${startTime.month}月至${endTime.month}月）
+- 月度趋势：$monthlyTrend
+- 部门情况：$departmentTrend
+- 员工变动：$employeeChangeTrend
+
+请在分析中特别关注季度内的趋势变化、部门间差异、员工流动与薪资的关系，以及与上季度的对比分析。
+''';
+
+    return enhancedPrompt;
+  }
+
+  /// 提取月度趋势数据
+  String _extractMonthlyTrend(List<dynamic> monthlyData) {
+    if (monthlyData.isEmpty) return '无数据';
+
+    final buffer = StringBuffer();
+
+    for (int i = 0; i < monthlyData.length; i++) {
+      final data = monthlyData[i] as Map<String, dynamic>;
+      final month = data['month'] as String? ?? '未知月份';
+      final totalSalary = data['totalSalary'] as num? ?? 0;
+      final averageSalary = data['averageSalary'] as num? ?? 0;
+      final employeeCount = data['employeeCount'] as int? ?? 0;
+
+      if (i > 0) buffer.write('，');
+      buffer.write(
+        '$month 工资总额 ${totalSalary.toStringAsFixed(2)}元，平均工资 ${averageSalary.toStringAsFixed(2)}元，员工数 $employeeCount 人',
+      );
+    }
+
+    return buffer.toString();
+  }
+
+  /// 提取部门趋势数据
+  String _extractDepartmentTrend(List<dynamic> departmentStats) {
+    if (departmentStats.isEmpty) return '无数据';
+
+    final buffer = StringBuffer();
+    int count = 0;
+
+    for (var dept in departmentStats) {
+      if (dept is Map<String, dynamic>) {
+        final department = dept['department'] as String? ?? '未知部门';
+        final employeeCount = dept['count'] as int? ?? 0;
+        final averageSalary = (dept['average'] as num? ?? 0).toDouble();
+
+        if (count > 0) buffer.write('，');
+        buffer.write(
+          '$department 部门 $employeeCount 人，平均工资 ${averageSalary.toStringAsFixed(2)}元',
+        );
+
+        count++;
+        if (count >= 5) {
+          buffer.write('，等');
+          break;
+        }
+      }
+    }
+
+    return buffer.toString();
+  }
+
+  /// 提取员工变动趋势
+  String _extractEmployeeChangeTrend(List<dynamic> employeeChanges) {
+    if (employeeChanges.isEmpty) return '无数据';
+
+    final buffer = StringBuffer();
+
+    for (int i = 0; i < employeeChanges.length; i++) {
+      final change = employeeChanges[i] as Map<String, dynamic>;
+      final month = change['month'] as int? ?? 0;
+      final newEmployees = change['newEmployees'] as List<dynamic>? ?? [];
+      final resignedEmployees =
+          change['resignedEmployees'] as List<dynamic>? ?? [];
+
+      if (i > 0) buffer.write('，');
+      buffer.write(
+        '$month月 新入职 ${newEmployees.length}人，离职 ${resignedEmployees.length}人',
+      );
+    }
+
+    return buffer.toString();
+  }
+
+  /// 优化季度数据处理
+  ///
+  /// 这个方法处理季度数据，确保数据格式一致，并处理可能的缺失值
+  Map<String, dynamic> _optimizeQuarterlyData(
+    Map<String, dynamic> analysisData,
+  ) {
+    final optimizedData = Map<String, dynamic>.from(analysisData);
+
+    // 确保月度数据存在且格式一致
+    if (!optimizedData.containsKey('monthlyBreakdown') ||
+        optimizedData['monthlyBreakdown'] == null) {
+      optimizedData['monthlyBreakdown'] = <Map<String, dynamic>>[];
+    }
+
+    // 确保部门统计数据存在且格式一致
+    if (!optimizedData.containsKey('departmentStats') ||
+        optimizedData['departmentStats'] == null) {
+      optimizedData['departmentStats'] = <Map<String, dynamic>>[];
+    }
+
+    // 确保员工变动数据存在且格式一致
+    if (!optimizedData.containsKey('monthlyEmployeeChanges') ||
+        optimizedData['monthlyEmployeeChanges'] == null) {
+      optimizedData['monthlyEmployeeChanges'] = <Map<String, dynamic>>[];
+    }
+
+    // 确保上季度数据存在且格式一致
+    if (!optimizedData.containsKey('previousQuarterData') ||
+        optimizedData['previousQuarterData'] == null) {
+      optimizedData['previousQuarterData'] = <String, dynamic>{};
+    }
+
+    // 确保薪资结构数据存在且格式一致
+    if (!optimizedData.containsKey('salarySummary') ||
+        optimizedData['salarySummary'] == null) {
+      optimizedData['salarySummary'] = <String, dynamic>{};
+    }
+
+    return optimizedData;
   }
 }

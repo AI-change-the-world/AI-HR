@@ -154,6 +154,11 @@ class _MultiYearAnalysisPageState extends ConsumerState<MultiYearAnalysisPage> {
         chartDataState,
       );
 
+      analysisData['salarySummary'] = ref
+          .read(coreDataProvider(_yearRangeParams))
+          .value!
+          .monthlySummary;
+
       final reportPath = await generator.generateEnhancedReport(
         previewContainerKey: _chartContainerKey,
         departmentStats: departmentStats,
