@@ -24,11 +24,6 @@ class MultiMonthChartGenerationFromJsonService {
       jsonData['salary_ranges_chart_data'] as List<dynamic>,
     );
 
-    // 3. 生成工资最高员工图表
-    Uint8List? topEmployeesChartImage = await _generateTopEmployeesChart(
-      jsonData['top_employees_chart_data'] as List<dynamic>,
-    );
-
     // 4. 生成考勤统计图表
     Uint8List? attendanceChartImage = await _generateAttendanceChart(
       jsonData['attendance_stats_chart_data'] as List<dynamic>,
@@ -40,12 +35,36 @@ class MultiMonthChartGenerationFromJsonService {
           jsonData['department_salary_ranges_chart_data'] as List<dynamic>,
         );
 
+    // 6. 生成同比环比对比图表
+    Uint8List? departmentMonthOverMonthChartImage =
+        await _generateDepartmentMonthOverMonthChart(
+          jsonData['department_month_over_month_data'] as List<dynamic>? ?? [],
+        );
+
+    Uint8List? departmentYearOverYearChartImage =
+        await _generateDepartmentYearOverYearChart(
+          jsonData['department_year_over_year_data'] as List<dynamic>? ?? [],
+        );
+
+    Uint8List? positionMonthOverMonthChartImage =
+        await _generatePositionMonthOverMonthChart(
+          jsonData['position_month_over_month_data'] as List<dynamic>? ?? [],
+        );
+
+    Uint8List? positionYearOverYearChartImage =
+        await _generatePositionYearOverYearChart(
+          jsonData['position_year_over_year_data'] as List<dynamic>? ?? [],
+        );
+
     return ReportChartImagesFromJson(
       departmentChart: departmentChartImage,
       salaryRangeChart: salaryRangeChartImage,
-      topEmployeesChart: topEmployeesChartImage,
       attendanceChart: attendanceChartImage,
       departmentSalaryRangeChart: departmentSalaryRangeChartImage,
+      departmentMonthOverMonthChart: departmentMonthOverMonthChartImage,
+      departmentYearOverYearChart: departmentYearOverYearChartImage,
+      positionMonthOverMonthChart: positionMonthOverMonthChartImage,
+      positionYearOverYearChart: positionYearOverYearChartImage,
     );
   }
 
@@ -316,6 +335,174 @@ class MultiMonthChartGenerationFromJsonService {
     return await _captureWidgetAsImage(chartWidget);
   }
 
+  /// 生成部门环比变化图表
+  Future<Uint8List?> _generateDepartmentMonthOverMonthChart(
+    List<dynamic> departmentMonthOverMonthData,
+  ) async {
+    if (departmentMonthOverMonthData.isEmpty) return null;
+
+    // 转换数据格式
+    final List<DepartmentTrendData> chartData = departmentMonthOverMonthData
+        .map(
+          (data) => DepartmentTrendData(
+            name: data['department'] as String,
+            value: (data['employee_count_change'] as num).toDouble(),
+            percent: (data['employee_count_change_percent'] as num).toDouble(),
+          ),
+        )
+        .toList();
+
+    final chartWidget = _buildChartContainer(
+      SfCartesianChart(
+        title: ChartTitle(text: '部门环比变化'),
+        primaryXAxis: CategoryAxis(
+          labelIntersectAction: AxisLabelIntersectAction.rotate45,
+        ),
+        primaryYAxis: NumericAxis(),
+        series: <CartesianSeries<DepartmentTrendData, String>>[
+          ColumnSeries<DepartmentTrendData, String>(
+            animationDelay: 0,
+            animationDuration: 0,
+            dataSource: chartData,
+            xValueMapper: (data, _) => data.name,
+            yValueMapper: (data, _) => data.value,
+            dataLabelMapper: (data, _) =>
+                '${data.name}\n${data.value > 0 ? '+' : ''}${data.value.toStringAsFixed(0)}人\n(${data.percent > 0 ? '+' : ''}${data.percent.toStringAsFixed(2)}%)',
+            dataLabelSettings: const DataLabelSettings(isVisible: true),
+          ),
+        ],
+      ),
+    );
+
+    return await _captureWidgetAsImage(chartWidget);
+  }
+
+  /// 生成部门同比变化图表
+  Future<Uint8List?> _generateDepartmentYearOverYearChart(
+    List<dynamic> departmentYearOverYearData,
+  ) async {
+    if (departmentYearOverYearData.isEmpty) return null;
+
+    // 转换数据格式
+    final List<DepartmentTrendData> chartData = departmentYearOverYearData
+        .map(
+          (data) => DepartmentTrendData(
+            name: data['department'] as String,
+            value: (data['employee_count_change'] as num).toDouble(),
+            percent: (data['employee_count_change_percent'] as num).toDouble(),
+          ),
+        )
+        .toList();
+
+    final chartWidget = _buildChartContainer(
+      SfCartesianChart(
+        title: ChartTitle(text: '部门同比变化'),
+        primaryXAxis: CategoryAxis(
+          labelIntersectAction: AxisLabelIntersectAction.rotate45,
+        ),
+        primaryYAxis: NumericAxis(),
+        series: <CartesianSeries<DepartmentTrendData, String>>[
+          ColumnSeries<DepartmentTrendData, String>(
+            animationDelay: 0,
+            animationDuration: 0,
+            dataSource: chartData,
+            xValueMapper: (data, _) => data.name,
+            yValueMapper: (data, _) => data.value,
+            dataLabelMapper: (data, _) =>
+                '${data.name}\n${data.value > 0 ? '+' : ''}${data.value.toStringAsFixed(0)}人\n(${data.percent > 0 ? '+' : ''}${data.percent.toStringAsFixed(2)}%)',
+            dataLabelSettings: const DataLabelSettings(isVisible: true),
+          ),
+        ],
+      ),
+    );
+
+    return await _captureWidgetAsImage(chartWidget);
+  }
+
+  /// 生成岗位环比变化图表
+  Future<Uint8List?> _generatePositionMonthOverMonthChart(
+    List<dynamic> positionMonthOverMonthData,
+  ) async {
+    if (positionMonthOverMonthData.isEmpty) return null;
+
+    // 转换数据格式
+    final List<PositionTrendData> chartData = positionMonthOverMonthData
+        .map(
+          (data) => PositionTrendData(
+            name: data['position'] as String,
+            value: (data['employee_count_change'] as num).toDouble(),
+            percent: (data['employee_count_change_percent'] as num).toDouble(),
+          ),
+        )
+        .toList();
+
+    final chartWidget = _buildChartContainer(
+      SfCartesianChart(
+        title: ChartTitle(text: '岗位环比变化'),
+        primaryXAxis: CategoryAxis(
+          labelIntersectAction: AxisLabelIntersectAction.rotate45,
+        ),
+        primaryYAxis: NumericAxis(),
+        series: <CartesianSeries<PositionTrendData, String>>[
+          ColumnSeries<PositionTrendData, String>(
+            animationDelay: 0,
+            animationDuration: 0,
+            dataSource: chartData,
+            xValueMapper: (data, _) => data.name,
+            yValueMapper: (data, _) => data.value,
+            dataLabelMapper: (data, _) =>
+                '${data.name}\n${data.value > 0 ? '+' : ''}${data.value.toStringAsFixed(0)}人\n(${data.percent > 0 ? '+' : ''}${data.percent.toStringAsFixed(2)}%)',
+            dataLabelSettings: const DataLabelSettings(isVisible: true),
+          ),
+        ],
+      ),
+    );
+
+    return await _captureWidgetAsImage(chartWidget);
+  }
+
+  /// 生成岗位同比变化图表
+  Future<Uint8List?> _generatePositionYearOverYearChart(
+    List<dynamic> positionYearOverYearData,
+  ) async {
+    if (positionYearOverYearData.isEmpty) return null;
+
+    // 转换数据格式
+    final List<PositionTrendData> chartData = positionYearOverYearData
+        .map(
+          (data) => PositionTrendData(
+            name: data['position'] as String,
+            value: (data['employee_count_change'] as num).toDouble(),
+            percent: (data['employee_count_change_percent'] as num).toDouble(),
+          ),
+        )
+        .toList();
+
+    final chartWidget = _buildChartContainer(
+      SfCartesianChart(
+        title: ChartTitle(text: '岗位同比变化'),
+        primaryXAxis: CategoryAxis(
+          labelIntersectAction: AxisLabelIntersectAction.rotate45,
+        ),
+        primaryYAxis: NumericAxis(),
+        series: <CartesianSeries<PositionTrendData, String>>[
+          ColumnSeries<PositionTrendData, String>(
+            animationDelay: 0,
+            animationDuration: 0,
+            dataSource: chartData,
+            xValueMapper: (data, _) => data.name,
+            yValueMapper: (data, _) => data.value,
+            dataLabelMapper: (data, _) =>
+                '${data.name}\n${data.value > 0 ? '+' : ''}${data.value.toStringAsFixed(0)}人\n(${data.percent > 0 ? '+' : ''}${data.percent.toStringAsFixed(2)}%)',
+            dataLabelSettings: const DataLabelSettings(isVisible: true),
+          ),
+        ],
+      ),
+    );
+
+    return await _captureWidgetAsImage(chartWidget);
+  }
+
   /// 截图Widget为图像
   Future<Uint8List> _captureWidgetAsImage(Widget widget) async {
     return _screenshotController.captureFromWidget(
@@ -408,6 +595,30 @@ class DepartmentSalaryRangePoint {
   });
 }
 
+class DepartmentTrendData {
+  final String name;
+  final double value;
+  final double percent;
+
+  DepartmentTrendData({
+    required this.name,
+    required this.value,
+    required this.percent,
+  });
+}
+
+class PositionTrendData {
+  final String name;
+  final double value;
+  final double percent;
+
+  PositionTrendData({
+    required this.name,
+    required this.value,
+    required this.percent,
+  });
+}
+
 /// 从JSON生成的图表图像集合
 class ReportChartImagesFromJson {
   final Uint8List? departmentChart;
@@ -415,6 +626,11 @@ class ReportChartImagesFromJson {
   final Uint8List? topEmployeesChart;
   final Uint8List? attendanceChart;
   final Uint8List? departmentSalaryRangeChart;
+  // 新增同比环比对比图表
+  final Uint8List? departmentMonthOverMonthChart;
+  final Uint8List? departmentYearOverYearChart;
+  final Uint8List? positionMonthOverMonthChart;
+  final Uint8List? positionYearOverYearChart;
 
   ReportChartImagesFromJson({
     this.departmentChart,
@@ -422,5 +638,9 @@ class ReportChartImagesFromJson {
     this.topEmployeesChart,
     this.attendanceChart,
     this.departmentSalaryRangeChart,
+    this.departmentMonthOverMonthChart,
+    this.departmentYearOverYearChart,
+    this.positionMonthOverMonthChart,
+    this.positionYearOverYearChart,
   });
 }

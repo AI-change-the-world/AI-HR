@@ -291,12 +291,12 @@ class _ComprehensiveReportPageState
                                   ),
                                   _buildSummaryCard(
                                     '工资总额',
-                                    '¥${NumberFormat('#,##0').format(_calculateTotalSalary())}',
+                                    '${NumberFormat('#,##0').format(_calculateTotalSalary())}元',
                                     Icons.account_balance_wallet,
                                   ),
                                   _buildSummaryCard(
                                     '平均工资',
-                                    '¥${NumberFormat('#,##0').format(_calculateAverageSalary())}',
+                                    '${NumberFormat('#,##0').format(_calculateAverageSalary())}元',
                                     Icons.trending_up,
                                   ),
                                 ],
@@ -308,12 +308,12 @@ class _ComprehensiveReportPageState
                                 children: [
                                   _buildSummaryCard(
                                     '最高工资',
-                                    '¥${NumberFormat('#,##0').format(_calculateHighestSalary())}',
+                                    '${NumberFormat('#,##0').format(_calculateHighestSalary())}元',
                                     Icons.arrow_upward,
                                   ),
                                   _buildSummaryCard(
                                     '最低工资',
-                                    '¥${NumberFormat('#,##0').format(_calculateLowestSalary())}',
+                                    '${NumberFormat('#,##0').format(_calculateLowestSalary())}元',
                                     Icons.arrow_downward,
                                   ),
                                   _buildSummaryCard(

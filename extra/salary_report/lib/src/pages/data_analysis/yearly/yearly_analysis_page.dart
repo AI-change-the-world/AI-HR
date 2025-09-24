@@ -608,12 +608,12 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
                         ),
                         _buildStatCard(
                           '工资总额',
-                          '¥${_previousYearData!['totalSalary'].toStringAsFixed(2)}',
+                          '${_previousYearData!['totalSalary'].toStringAsFixed(2)}元',
                           Icons.account_balance_wallet,
                         ),
                         _buildStatCard(
                           '平均工资',
-                          '¥${_previousYearData!['averageSalary'].toStringAsFixed(2)}',
+                          '${_previousYearData!['averageSalary'].toStringAsFixed(2)}元',
                           Icons.trending_up,
                         ),
                       ],
@@ -643,22 +643,22 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
                       ),
                       _buildStatCard(
                         '工资总额',
-                        '¥${analysisData['totalSalary'].toStringAsFixed(2)}',
+                        '${analysisData['totalSalary'].toStringAsFixed(2)}元',
                         Icons.account_balance_wallet,
                       ),
                       _buildStatCard(
                         '平均工资',
-                        '¥${analysisData['averageSalary'].toStringAsFixed(2)}',
+                        '${analysisData['averageSalary'].toStringAsFixed(2)}元',
                         Icons.trending_up,
                       ),
                       _buildStatCard(
                         '最高工资',
-                        '¥${analysisData['highestSalary'].toStringAsFixed(2)}',
+                        '${analysisData['highestSalary'].toStringAsFixed(2)}元',
                         Icons.arrow_upward,
                       ),
                       _buildStatCard(
                         '最低工资',
-                        '¥${analysisData['lowestSalary'].toStringAsFixed(2)}',
+                        '${analysisData['lowestSalary'].toStringAsFixed(2)}元',
                         Icons.arrow_downward,
                       ),
                     ],

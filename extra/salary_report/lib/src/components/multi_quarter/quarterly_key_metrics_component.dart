@@ -78,22 +78,22 @@ class QuarterlyKeyMetricsComponent extends ConsumerWidget {
                 ),
                 _buildStatCard(
                   '工资总额',
-                  '¥${quarterlyData.totalSalary.toStringAsFixed(2)}',
+                  '${quarterlyData.totalSalary.toStringAsFixed(2)}元',
                   Icons.account_balance_wallet,
                 ),
                 _buildStatCard(
                   '平均工资',
-                  '¥${quarterlyData.averageSalary.toStringAsFixed(2)}',
+                  '${quarterlyData.averageSalary.toStringAsFixed(2)}元',
                   Icons.trending_up,
                 ),
                 _buildStatCard(
                   '最高工资',
-                  '¥${quarterlyData.highestSalary.toStringAsFixed(2)}',
+                  '${quarterlyData.highestSalary.toStringAsFixed(2)}元',
                   Icons.arrow_upward,
                 ),
                 _buildStatCard(
                   '最低工资',
-                  '¥${quarterlyData.lowestSalary.toStringAsFixed(2)}',
+                  '${quarterlyData.lowestSalary.toStringAsFixed(2)}元',
                   Icons.arrow_downward,
                 ),
               ],

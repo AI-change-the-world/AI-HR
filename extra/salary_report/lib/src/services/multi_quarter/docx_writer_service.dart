@@ -140,7 +140,7 @@ class MultiQuarterDocxWriterService {
     for (var item in averageSalaryPerQuarter) {
       // 修改格式，不使用冒号分隔
       buffer.write(
-        '${item["quarter"]}季度平均薪资为¥${(item["averageSalary"] as double).toStringAsFixed(2)}；',
+        '${item["quarter"]}季度平均薪资为${(item["averageSalary"] as double).toStringAsFixed(2)}元；',
       );
     }
     // 移除最后的分号并添加句号
@@ -160,7 +160,7 @@ class MultiQuarterDocxWriterService {
     for (var item in totalSalaryPerQuarter) {
       // 修改格式，不使用冒号分隔
       buffer.write(
-        '${item["quarter"]}季度总工资为¥${(item["totalSalary"] as double).toStringAsFixed(2)}；',
+        '${item["quarter"]}季度总工资为${(item["totalSalary"] as double).toStringAsFixed(2)}元；',
       );
     }
     // 移除最后的分号并添加句号

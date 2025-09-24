@@ -113,10 +113,10 @@ class MonthlyDepartmentDetail extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(flex: 2, child: Text(stat.department)),
                 Expanded(
-                  child: Text('¥${stat.totalNetSalary.toStringAsFixed(2)}'),
+                  child: Text('${stat.totalNetSalary.toStringAsFixed(2)}元'),
                 ),
                 Expanded(
-                  child: Text('¥${stat.averageNetSalary.toStringAsFixed(2)}'),
+                  child: Text('${stat.averageNetSalary.toStringAsFixed(2)}元'),
                 ),
               ],
             ),

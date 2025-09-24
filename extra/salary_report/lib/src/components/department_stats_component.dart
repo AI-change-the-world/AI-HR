@@ -67,12 +67,12 @@ class DepartmentStatsComponent extends StatelessWidget {
                         Expanded(child: Text(stat.employeeCount.toString())),
                         Expanded(
                           child: Text(
-                            '¥${stat.totalNetSalary.toStringAsFixed(2)}',
+                            '${stat.totalNetSalary.toStringAsFixed(2)}元',
                           ),
                         ),
                         Expanded(
                           child: Text(
-                            '¥${stat.averageNetSalary.toStringAsFixed(2)}',
+                            '${stat.averageNetSalary.toStringAsFixed(2)}元',
                           ),
                         ),
                       ],

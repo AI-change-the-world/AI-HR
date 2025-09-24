@@ -221,7 +221,7 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
     for (var dept in departmentStats) {
       if (dept is Map<String, dynamic>) {
         buffer.writeln(
-          '- ${dept['department']}部门：${dept['count']}人，工资总额¥${(dept['total'] as num).toStringAsFixed(2)}，平均工资¥${(dept['average'] as num).toStringAsFixed(2)}',
+          '- ${dept['department']}部门：${dept['count']}人，工资总额${(dept['total'] as num).toStringAsFixed(2)}元，平均工资${(dept['average'] as num).toStringAsFixed(2)}元',
         );
       }
     }
@@ -235,11 +235,11 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
     for (var range in salaryRanges) {
       if (range is SalaryRangeStats) {
         buffer.writeln(
-          '- ${range.range}：${range.employeeCount}人，工资总额¥${range.totalSalary.toStringAsFixed(2)}，平均工资¥${range.averageSalary.toStringAsFixed(2)}',
+          '- ${range.range}：${range.employeeCount}人，工资总额${range.totalSalary.toStringAsFixed(2)}元，平均工资${range.averageSalary.toStringAsFixed(2)}元',
         );
       } else if (range is Map<String, dynamic>) {
         buffer.writeln(
-          '- ${range['range']}：${range['employee_count']}人，工资总额¥${(range['total_salary'] as num).toStringAsFixed(2)}，平均工资¥${(range['average_salary'] as num).toStringAsFixed(2)}',
+          '- ${range['range']}：${range['employee_count']}人，工资总额${(range['total_salary'] as num).toStringAsFixed(2)}元，平均工资${(range['average_salary'] as num).toStringAsFixed(2)}元',
         );
       }
     }

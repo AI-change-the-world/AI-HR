@@ -47,7 +47,7 @@ class YearlyAnalysisJsonConverter {
     final lowestSalary = analysisData['lowestSalary'] as double;
 
     String keyParam =
-        '本年度共有$totalUniqueEmployees 名员工，发放工资$totalEmployees 人次，工资总额为¥${totalSalary.toStringAsFixed(2)}，平均工资为¥${averageSalary.toStringAsFixed(2)}，最高工资为¥${highestSalary.toStringAsFixed(2)}，最低工资为¥${lowestSalary.toStringAsFixed(2)}';
+        '本年度共有$totalUniqueEmployees 名员工，发放工资$totalEmployees 人次，工资总额为${totalSalary.toStringAsFixed(2)}元，平均工资为${averageSalary.toStringAsFixed(2)}元，最高工资为${highestSalary.toStringAsFixed(2)}元，最低工资为${lowestSalary.toStringAsFixed(2)}元';
 
     if (previousYearData != null) {
       final prevTotalEmployees = previousYearData['totalEmployees'] as int;
@@ -65,17 +65,17 @@ class YearlyAnalysisJsonConverter {
       final lowestSalaryChange = lowestSalary - prevLowestSalary;
 
       keyParam +=
-          '，相比上年度（$prevTotalUniqueEmployees 名员工，发放工资$prevTotalEmployees 人次，工资总额为¥${prevTotalSalary.toStringAsFixed(2)}，平均工资为¥${prevAverageSalary.toStringAsFixed(2)}，最高工资为¥${prevHighestSalary.toStringAsFixed(2)}，最低工资为¥${prevLowestSalary.toStringAsFixed(2)}）';
+          '，相比上年度（$prevTotalUniqueEmployees 名员工，发放工资$prevTotalEmployees 人次，工资总额为${prevTotalSalary.toStringAsFixed(2)}元，平均工资为${prevAverageSalary.toStringAsFixed(2)}元，最高工资为${prevHighestSalary.toStringAsFixed(2)}元，最低工资为${prevLowestSalary.toStringAsFixed(2)}元）';
       keyParam +=
           '，员工人数${employeeChange >= 0 ? "增加" : "减少"}${employeeChange.abs()}人';
       keyParam +=
-          '，工资总额${salaryChange >= 0 ? "增加" : "减少"}¥${salaryChange.abs().toStringAsFixed(2)}';
+          '，工资总额${salaryChange >= 0 ? "增加" : "减少"}${salaryChange.abs().toStringAsFixed(2)}元';
       keyParam +=
-          '，平均工资${avgSalaryChange >= 0 ? "上升" : "下降"}¥${avgSalaryChange.abs().toStringAsFixed(2)}';
+          '，平均工资${avgSalaryChange >= 0 ? "上升" : "下降"}${avgSalaryChange.abs().toStringAsFixed(2)}元';
       keyParam +=
-          '，最高工资${highestSalaryChange >= 0 ? "上升" : "下降"}¥${highestSalaryChange.abs().toStringAsFixed(2)}';
+          '，最高工资${highestSalaryChange >= 0 ? "上升" : "下降"}${highestSalaryChange.abs().toStringAsFixed(2)}元';
       keyParam +=
-          '，最低工资${lowestSalaryChange >= 0 ? "上升" : "下降"}¥${lowestSalaryChange.abs().toStringAsFixed(2)}';
+          '，最低工资${lowestSalaryChange >= 0 ? "上升" : "下降"}${lowestSalaryChange.abs().toStringAsFixed(2)}元';
     }
 
     return keyParam;

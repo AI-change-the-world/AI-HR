@@ -1,401 +1,233 @@
+import 'package:flutter/foundation.dart';
 import 'package:riverpod/riverpod.dart';
+import 'package:salary_report/src/isar/data_analysis_service.dart';
+import 'package:salary_report/src/common/logger.dart';
 
-import 'package:salary_report/src/services/data_analysis_service.dart';
-import 'package:salary_report/src/isar/database.dart';
-import 'package:salary_report/src/services/global_analysis_models.dart';
+// 简化的多月份分析数据模型
+@immutable
+class MultiMonthAnalysisData {
+  final Map<String, Map<String, dynamic>> monthlyKeyMetrics;
+  final List<Map<String, dynamic>> chartData;
+  final String cacheKey;
 
-// 多月分析数据模型 - 拆分成独立的状态
+  const MultiMonthAnalysisData({
+    required this.monthlyKeyMetrics,
+    required this.chartData,
+    required this.cacheKey,
+  });
+}
+
+// 状态类
+@immutable
 class MultiMonthAnalysisState {
   final bool isLoading;
-  final MultiMonthComparisonData? comparisonData;
+  final MultiMonthAnalysisData? data;
   final String? error;
 
-  MultiMonthAnalysisState({
-    required this.isLoading,
-    this.comparisonData,
+  const MultiMonthAnalysisState({
+    this.isLoading = false,
+    this.data,
     this.error,
   });
 
   MultiMonthAnalysisState copyWith({
     bool? isLoading,
-    MultiMonthComparisonData? comparisonData,
+    MultiMonthAnalysisData? data,
     String? error,
   }) {
     return MultiMonthAnalysisState(
       isLoading: isLoading ?? this.isLoading,
-      comparisonData: comparisonData ?? this.comparisonData,
+      data: data ?? this.data,
       error: error ?? this.error,
     );
   }
 }
 
-// 关键指标状态
-class KeyMetricsState {
-  final bool isLoading;
-  final List<MonthlyComparisonData>? monthlyData;
-  final String? error;
-
-  KeyMetricsState({required this.isLoading, this.monthlyData, this.error});
-
-  KeyMetricsState copyWith({
-    bool? isLoading,
-    List<MonthlyComparisonData>? monthlyData,
-    String? error,
-  }) {
-    return KeyMetricsState(
-      isLoading: isLoading ?? this.isLoading,
-      monthlyData: monthlyData ?? this.monthlyData,
-      error: error ?? this.error,
-    );
-  }
-}
-
-// 部门统计状态
-class DepartmentStatsState {
-  final bool isLoading;
-  final List<MonthlyComparisonData>? monthlyData;
-  final String? error;
-
-  DepartmentStatsState({required this.isLoading, this.monthlyData, this.error});
-
-  DepartmentStatsState copyWith({
-    bool? isLoading,
-    List<MonthlyComparisonData>? monthlyData,
-    String? error,
-  }) {
-    return DepartmentStatsState(
-      isLoading: isLoading ?? this.isLoading,
-      monthlyData: monthlyData ?? this.monthlyData,
-      error: error ?? this.error,
-    );
-  }
-}
-
-// 考勤统计状态
-class AttendanceStatsState {
-  final bool isLoading;
-  final Map<String, List<AttendanceStats>>? attendanceData;
-  final String? error;
-
-  AttendanceStatsState({
-    required this.isLoading,
-    this.attendanceData,
-    this.error,
-  });
-
-  AttendanceStatsState copyWith({
-    bool? isLoading,
-    Map<String, List<AttendanceStats>>? attendanceData,
-    String? error,
-  }) {
-    return AttendanceStatsState(
-      isLoading: isLoading ?? this.isLoading,
-      attendanceData: attendanceData ?? this.attendanceData,
-      error: error ?? this.error,
-    );
-  }
-}
-
-// 请假比例统计状态
-class LeaveRatioStatsState {
-  final bool isLoading;
-  final List<MonthlyComparisonData>? monthlyData;
-  final String? error;
-
-  LeaveRatioStatsState({required this.isLoading, this.monthlyData, this.error});
-
-  LeaveRatioStatsState copyWith({
-    bool? isLoading,
-    List<MonthlyComparisonData>? monthlyData,
-    String? error,
-  }) {
-    return LeaveRatioStatsState(
-      isLoading: isLoading ?? this.isLoading,
-      monthlyData: monthlyData ?? this.monthlyData,
-      error: error ?? this.error,
-    );
-  }
-}
-
-// 部门变化状态
-class DepartmentChangesState {
-  final bool isLoading;
-  final MultiMonthComparisonData? comparisonData;
-  final String? error;
-
-  DepartmentChangesState({
-    required this.isLoading,
-    this.comparisonData,
-    this.error,
-  });
-
-  DepartmentChangesState copyWith({
-    bool? isLoading,
-    MultiMonthComparisonData? comparisonData,
-    String? error,
-  }) {
-    return DepartmentChangesState(
-      isLoading: isLoading ?? this.isLoading,
-      comparisonData: comparisonData ?? this.comparisonData,
-      error: error ?? this.error,
-    );
-  }
-}
-
-// 图表数据状态
-class ChartDataState {
-  final bool isLoading;
-  final MultiMonthComparisonData? comparisonData;
-  final String? error;
-
-  ChartDataState({required this.isLoading, this.comparisonData, this.error});
-
-  ChartDataState copyWith({
-    bool? isLoading,
-    MultiMonthComparisonData? comparisonData,
-    String? error,
-  }) {
-    return ChartDataState(
-      isLoading: isLoading ?? this.isLoading,
-      comparisonData: comparisonData ?? this.comparisonData,
-      error: error ?? this.error,
-    );
-  }
-}
-
-// 时间范围参数
-class DateRangeParams {
-  final int startYear;
-  final int startMonth;
-  final int endYear;
-  final int endMonth;
-
-  DateRangeParams({
-    required this.startYear,
-    required this.startMonth,
-    required this.endYear,
-    required this.endMonth,
-  });
-
-  // 用于 family 的参数比较
+// Notifier类
+class MultiMonthAnalysisNotifier extends Notifier<MultiMonthAnalysisState> {
   @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is DateRangeParams &&
-        other.startYear == startYear &&
-        other.startMonth == startMonth &&
-        other.endYear == endYear &&
-        other.endMonth == endMonth;
-  }
+  MultiMonthAnalysisState build() => const MultiMonthAnalysisState();
 
-  @override
-  int get hashCode {
-    return Object.hash(startYear, startMonth, endYear, endMonth);
-  }
-}
+  Future<void> loadData({
+    required DataAnalysisService dataAnalysisService,
+    required int startYear,
+    required int startMonth,
+    required int endYear,
+    required int endMonth,
+  }) async {
+    // 检查是否已有相同参数的数据
+    final cacheKey = '$startYear-$startMonth-$endYear-$endMonth';
+    if (state.data != null && state.data!.cacheKey == cacheKey && !state.isLoading) {
+      return; // 数据已存在且参数相同，无需重新加载
+    }
 
-// 核心数据提供者 - 只调用一次 getMultiMonthComparisonData
-final coreDataProvider =
-    FutureProvider.family<MultiMonthComparisonData?, DateRangeParams>((
-      ref,
-      params,
-    ) async {
-      final dataService = DataAnalysisService(IsarDatabase());
-      final comparisonData = await dataService.getMultiMonthComparisonData(
-        params.startYear,
-        params.startMonth,
-        params.endYear,
-        params.endMonth,
-      );
-      return comparisonData;
-    });
+    state = state.copyWith(isLoading: true, error: null);
 
-// 考勤统计核心数据提供者 - 独立获取考勤数据
-final coreAttendanceDataProvider =
-    FutureProvider.family<Map<String, List<AttendanceStats>>, DateRangeParams>((
-      ref,
-      params,
-    ) async {
-      final dataService = DataAnalysisService(IsarDatabase());
-
-      // 按月份获取考勤数据
-      final attendanceData = <String, List<AttendanceStats>>{};
-
-      // 使用更简单的方式生成月份列表
-      final monthList = _generateMonthList(
-        params.startYear,
-        params.startMonth,
-        params.endYear,
-        params.endMonth,
+    try {
+      // 获取部门薪资统计数据
+      final departmentStats = await dataAnalysisService.getMonthlyDepartmentSalaryStats(
+        startYear: startYear,
+        startMonth: startMonth,
+        endYear: endYear,
+        endMonth: endMonth,
       );
 
-      // 遍历每个月份获取考勤数据
-      for (var monthInfo in monthList) {
-        final year = monthInfo['year']!;
-        final month = monthInfo['month']!;
+      // 处理数据
+      final processedData = _processData(departmentStats, cacheKey);
 
-        final attendanceStats = await dataService.getMonthlyAttendanceStats(
-          year: year,
-          month: month,
-        );
-
-        final monthKey = '$year-${month.toString().padLeft(2, '0')}';
-        attendanceData[monthKey] = attendanceStats;
-      }
-
-      return attendanceData;
-    });
-
-// 生成月份列表的辅助函数
-List<Map<String, int>> _generateMonthList(
-  int startYear,
-  int startMonth,
-  int endYear,
-  int endMonth,
-) {
-  final monthList = <Map<String, int>>[];
-
-  int currentYear = startYear;
-  int currentMonth = startMonth;
-
-  while (currentYear < endYear ||
-      (currentYear == endYear && currentMonth <= endMonth)) {
-    monthList.add({'year': currentYear, 'month': currentMonth});
-
-    // 移动到下一个月
-    if (currentMonth == 12) {
-      currentYear++;
-      currentMonth = 1;
-    } else {
-      currentMonth++;
+      state = state.copyWith(
+        isLoading: false,
+        data: processedData,
+        error: null,
+      );
+    } catch (e) {
+      logger.severe('Failed to load multi-month analysis data: $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: '数据加载失败: ${e.toString()}',
+      );
     }
   }
 
-  return monthList;
-}
+  void clearData() {
+    state = const MultiMonthAnalysisState();
+  }
 
-// 关键指标提供者 - 复用核心数据
-final keyMetricsProvider =
-    FutureProvider.family<KeyMetricsState, DateRangeParams>((
-      ref,
-      params,
-    ) async {
-      final coreData = await ref.watch(coreDataProvider(params).future);
+  MultiMonthAnalysisData _processData(
+    List<dynamic> departmentStats,
+    String cacheKey,
+  ) {
+    // 使用Map来避免重复计算
+    final monthlyData = <String, _MonthlyData>{};
+    
+    // 处理部门统计数据
+    for (final stat in departmentStats) {
+      // 假设stat是一个包含年月和部门信息的对象
+      final year = stat.year ?? 0;
+      final month = stat.month ?? 0;
+      final monthKey = '$year-${month.toString().padLeft(2, '0')}';
+      final monthData = monthlyData.putIfAbsent(monthKey, () => _MonthlyData(monthKey));
+      
+      monthData.addDepartment({
+        'department': stat.department ?? '未知部门',
+        'count': stat.employeeCount ?? 0,
+        'total': stat.totalNetSalary ?? 0.0,
+        'average': stat.averageNetSalary ?? 0.0,
+        'highest': stat.averageNetSalary ?? 0.0,
+        'lowest': stat.averageNetSalary ?? 0.0,
+      });
+    }
 
-      return KeyMetricsState(
-        isLoading: false,
-        monthlyData: coreData?.monthlyComparisons,
-      );
-    });
+    // 生成最终数据结构
+    final monthlyKeyMetrics = <String, Map<String, dynamic>>{};
+    final chartData = <Map<String, dynamic>>[];
 
-// 部门统计提供者 - 复用核心数据
-final departmentStatsProvider =
-    FutureProvider.family<DepartmentStatsState, DateRangeParams>((
-      ref,
-      params,
-    ) async {
-      final coreData = await ref.watch(coreDataProvider(params).future);
+    // 按时间排序月份
+    final sortedMonthKeys = monthlyData.keys.toList()
+      ..sort((a, b) {
+        final aParts = a.split('-');
+        final bParts = b.split('-');
+        final aYear = int.parse(aParts[0]);
+        final aMonth = int.parse(aParts[1]);
+        final bYear = int.parse(bParts[0]);
+        final bMonth = int.parse(bParts[1]);
 
-      return DepartmentStatsState(
-        isLoading: false,
-        monthlyData: coreData?.monthlyComparisons,
-      );
-    });
+        if (aYear != bYear) return aYear.compareTo(bYear);
+        return aMonth.compareTo(bMonth);
+      });
 
-// 考勤统计提供者 - 复用考勤核心数据
-final attendanceStatsProvider =
-    FutureProvider.family<AttendanceStatsState, DateRangeParams>((
-      ref,
-      params,
-    ) async {
-      final attendanceData = await ref.watch(
-        coreAttendanceDataProvider(params).future,
-      );
+    // 构建输出数据
+    for (final monthKey in sortedMonthKeys) {
+      final monthData = monthlyData[monthKey]!;
+      final metrics = monthData.getMetrics();
 
-      return AttendanceStatsState(
-        isLoading: false,
-        attendanceData: attendanceData,
-      );
-    });
+      monthlyKeyMetrics[monthKey] = metrics;
 
-// 请假比例统计提供者 - 复用核心数据
-final leaveRatioStatsProvider =
-    FutureProvider.family<LeaveRatioStatsState, DateRangeParams>((
-      ref,
-      params,
-    ) async {
-      final coreData = await ref.watch(coreDataProvider(params).future);
+      final parts = monthKey.split('-');
+      chartData.add({
+        'month': '${parts[0]}年${parts[1]}月',
+        'totalEmployees': metrics['totalEmployees'],
+        'totalSalary': metrics['totalSalary'],
+        'averageSalary': metrics['averageSalary'],
+        'departments': monthData.getDepartmentMap(),
+      });
+    }
 
-      return LeaveRatioStatsState(
-        isLoading: false,
-        monthlyData: coreData?.monthlyComparisons,
-      );
-    });
-
-// 部门变化提供者 - 复用核心数据
-final departmentChangesProvider =
-    FutureProvider.family<DepartmentChangesState, DateRangeParams>((
-      ref,
-      params,
-    ) async {
-      final coreData = await ref.watch(coreDataProvider(params).future);
-
-      return DepartmentChangesState(isLoading: false, comparisonData: coreData);
-    });
-
-// 图表数据提供者 - 复用核心数据
-final chartDataProvider =
-    FutureProvider.family<ChartDataState, DateRangeParams>((ref, params) async {
-      final coreData = await ref.watch(coreDataProvider(params).future);
-
-      return ChartDataState(isLoading: false, comparisonData: coreData);
-    });
-
-// 分页状态模型
-@Deprecated("弃用")
-class PaginationState {
-  final int currentPage;
-  final int itemsPerPage;
-
-  PaginationState({required this.currentPage, required this.itemsPerPage});
-
-  PaginationState copyWith({int? currentPage, int? itemsPerPage}) {
-    return PaginationState(
-      currentPage: currentPage ?? this.currentPage,
-      itemsPerPage: itemsPerPage ?? this.itemsPerPage,
+    return MultiMonthAnalysisData(
+      monthlyKeyMetrics: monthlyKeyMetrics,
+      chartData: chartData,
+      cacheKey: cacheKey,
     );
   }
 }
 
-@Deprecated("弃用")
-class PaginationNotifier extends Notifier<PaginationState> {
-  @override
-  PaginationState build() {
-    // 默认每页显示3个月的数据
-    return PaginationState(currentPage: 0, itemsPerPage: 3);
+// 辅助类，用于优化数据处理
+class _MonthlyData {
+  final String monthKey;
+  final List<Map<String, dynamic>> _departments = [];
+  Map<String, dynamic>? _cachedMetrics;
+  Map<String, dynamic>? _cachedDepartmentMap;
+
+  _MonthlyData(this.monthKey);
+
+  void addDepartment(Map<String, dynamic> department) {
+    _departments.add(department);
+    // 清除缓存
+    _cachedMetrics = null;
+    _cachedDepartmentMap = null;
   }
 
-  // 设置当前页
-  void setCurrentPage(int page) {
-    state = state.copyWith(currentPage: page);
-  }
+  List<Map<String, dynamic>> getDepartments() => _departments;
 
-  // 设置每页显示的项目数
-  void setItemsPerPage(int itemsPerPage) {
-    state = state.copyWith(itemsPerPage: itemsPerPage);
-  }
+  Map<String, dynamic> getMetrics() {
+    if (_cachedMetrics != null) return _cachedMetrics!;
 
-  // 下一页
-  void nextPage(int totalPages) {
-    if (state.currentPage < totalPages - 1) {
-      state = state.copyWith(currentPage: state.currentPage + 1);
+    int totalEmployees = 0;
+    double totalSalary = 0;
+    double highestSalary = 0;
+    double lowestSalary = double.infinity;
+
+    for (final dept in _departments) {
+      totalEmployees += dept['count'] as int;
+      totalSalary += dept['total'] as double;
+      final deptHighest = dept['highest'] as double;
+      final deptLowest = dept['lowest'] as double;
+      if (deptHighest > highestSalary) highestSalary = deptHighest;
+      if (deptLowest < lowestSalary) lowestSalary = deptLowest;
     }
+
+    if (lowestSalary == double.infinity) lowestSalary = 0;
+    final averageSalary = totalEmployees > 0 ? totalSalary / totalEmployees : 0;
+
+    _cachedMetrics = {
+      'totalEmployees': totalEmployees,
+      'totalSalary': totalSalary,
+      'averageSalary': averageSalary,
+      'highestSalary': highestSalary,
+      'lowestSalary': lowestSalary,
+    };
+
+    return _cachedMetrics!;
   }
 
-  // 上一页
-  void previousPage() {
-    if (state.currentPage > 0) {
-      state = state.copyWith(currentPage: state.currentPage - 1);
+  Map<String, dynamic> getDepartmentMap() {
+    if (_cachedDepartmentMap != null) return _cachedDepartmentMap!;
+
+    final departments = <String, dynamic>{};
+    for (final dept in _departments) {
+      departments[dept['department']] = {
+        'count': dept['count'],
+        'averageSalary': dept['average'],
+        'totalSalary': dept['total'],
+      };
     }
+
+    _cachedDepartmentMap = departments;
+    return _cachedDepartmentMap!;
   }
 }
+
+// Provider定义
+final multiMonthAnalysisProvider = StateNotifierProvider<MultiMonthAnalysisNotifier, MultiMonthAnalysisState>(
+  (ref) => MultiMonthAnalysisNotifier(),
+);

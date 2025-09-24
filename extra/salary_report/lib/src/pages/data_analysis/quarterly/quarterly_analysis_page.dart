@@ -707,22 +707,22 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                           ),
                           _buildStatCard(
                             '工资总额',
-                            '¥${_previousQuarterData!['totalSalary'].toStringAsFixed(2)}',
+                            '${_previousQuarterData!['totalSalary'].toStringAsFixed(2)}元',
                             Icons.account_balance_wallet,
                           ),
                           _buildStatCard(
                             '平均工资',
-                            '¥${_previousQuarterData!['averageSalary'].toStringAsFixed(2)}',
+                            '${_previousQuarterData!['averageSalary'].toStringAsFixed(2)}元',
                             Icons.trending_up,
                           ),
                           _buildStatCard(
                             '最高工资',
-                            '¥${_previousQuarterData!['highestSalary'].toStringAsFixed(2)}',
+                            '${_previousQuarterData!['highestSalary'].toStringAsFixed(2)}元',
                             Icons.arrow_upward,
                           ),
                           _buildStatCard(
                             '最低工资',
-                            '¥${_previousQuarterData!['lowestSalary'].toStringAsFixed(2)}',
+                            '${_previousQuarterData!['lowestSalary'].toStringAsFixed(2)}元',
                             Icons.arrow_downward,
                           ),
                         ],
@@ -755,22 +755,22 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                         ),
                         _buildStatCard(
                           '季度工资总额',
-                          '¥${_analysisData['totalSalary'].toStringAsFixed(2)}',
+                          '${_analysisData['totalSalary'].toStringAsFixed(2)}元',
                           Icons.account_balance_wallet,
                         ),
                         _buildStatCard(
                           '季度平均工资',
-                          '¥${_analysisData['averageSalary'].toStringAsFixed(2)}',
+                          '${_analysisData['averageSalary'].toStringAsFixed(2)}元',
                           Icons.trending_up,
                         ),
                         _buildStatCard(
                           '最高工资',
-                          '¥${_analysisData['highestSalary'].toStringAsFixed(2)}',
+                          '${_analysisData['highestSalary'].toStringAsFixed(2)}元',
                           Icons.arrow_upward,
                         ),
                         _buildStatCard(
                           '最低工资',
-                          '¥${_analysisData['lowestSalary'].toStringAsFixed(2)}',
+                          '${_analysisData['lowestSalary'].toStringAsFixed(2)}元',
                           Icons.arrow_downward,
                         ),
                       ],
@@ -856,12 +856,12 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                                     Expanded(child: Text(data['month'])),
                                     Expanded(
                                       child: Text(
-                                        '¥${data['totalSalary'].toStringAsFixed(2)}',
+                                        '${data['totalSalary'].toStringAsFixed(2)}元',
                                       ),
                                     ),
                                     Expanded(
                                       child: Text(
-                                        '¥${data['averageSalary'].toStringAsFixed(2)}',
+                                        '${data['averageSalary'].toStringAsFixed(2)}元',
                                       ),
                                     ),
                                     Expanded(
@@ -992,12 +992,12 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                                         ),
                                         Expanded(
                                           child: Text(
-                                            '¥${range.totalSalary.toStringAsFixed(2)}',
+                                            '${range.totalSalary.toStringAsFixed(2)}元',
                                           ),
                                         ),
                                         Expanded(
                                           child: Text(
-                                            '¥${range.averageSalary.toStringAsFixed(2)}',
+                                            '${range.averageSalary.toStringAsFixed(2)}元',
                                           ),
                                         ),
                                       ],
@@ -1108,12 +1108,12 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
                                         ),
                                         Expanded(
                                           child: Text(
-                                            '¥${deptRange.totalSalary.toStringAsFixed(2)}',
+                                            '${deptRange.totalSalary.toStringAsFixed(2)}元',
                                           ),
                                         ),
                                         Expanded(
                                           child: Text(
-                                            '¥${deptRange.averageSalary.toStringAsFixed(2)}',
+                                            '${deptRange.averageSalary.toStringAsFixed(2)}元',
                                           ),
                                         ),
                                       ],

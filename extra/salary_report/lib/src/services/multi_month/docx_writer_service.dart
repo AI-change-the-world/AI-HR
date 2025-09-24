@@ -132,6 +132,8 @@ class MultiMonthDocxWriterService {
   String _formatAverageSalaryPerMonthData(
     List<Map<String, dynamic>> averageSalaryPerMonth,
   ) {
+    logger.info('averageSalaryPerMonth xxx: $averageSalaryPerMonth');
+
     if (averageSalaryPerMonth.isEmpty) {
       return '';
     }
@@ -140,7 +142,7 @@ class MultiMonthDocxWriterService {
     for (var item in averageSalaryPerMonth) {
       // 修改格式，不使用冒号分隔
       buffer.write(
-        '${item["month"]}平均薪资为¥${(item["averageSalary"] as double).toStringAsFixed(2)}；',
+        '${item["month"]}平均薪资为${(item["averageSalary"] as double).toStringAsFixed(2)}元；',
       );
     }
     // 移除最后的分号并添加句号
@@ -160,7 +162,7 @@ class MultiMonthDocxWriterService {
     for (var item in totalSalaryPerMonth) {
       // 修改格式，不使用冒号分隔
       buffer.write(
-        '${item["month"]}总工资为¥${(item["totalSalary"] as double).toStringAsFixed(2)}；',
+        '${item["month"]}总工资为${(item["totalSalary"] as double).toStringAsFixed(2)}元；',
       );
     }
     // 移除最后的分号并添加句号
@@ -361,6 +363,39 @@ class MultiMonthDocxWriterService {
         ImageContent(
           'department_details_per_month_chart',
           images.departmentDetailsPerMonthChart!,
+        ),
+      );
+    }
+    // 添加同比环比对比图表
+    if (images.departmentMonthOverMonthChart != null) {
+      content.add(
+        ImageContent(
+          'department_month_over_month_chart',
+          images.departmentMonthOverMonthChart!,
+        ),
+      );
+    }
+    if (images.departmentYearOverYearChart != null) {
+      content.add(
+        ImageContent(
+          'department_year_over_year_chart',
+          images.departmentYearOverYearChart!,
+        ),
+      );
+    }
+    if (images.positionMonthOverMonthChart != null) {
+      content.add(
+        ImageContent(
+          'position_month_over_month_chart',
+          images.positionMonthOverMonthChart!,
+        ),
+      );
+    }
+    if (images.positionYearOverYearChart != null) {
+      content.add(
+        ImageContent(
+          'position_year_over_year_chart',
+          images.positionYearOverYearChart!,
         ),
       );
     }

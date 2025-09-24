@@ -75,22 +75,22 @@ class YearlyKeyMetricsComponent extends ConsumerWidget {
                 ),
                 _buildStatCard(
                   '工资总额',
-                  '¥${yearlyData.totalSalary.toStringAsFixed(2)}',
+                  '${yearlyData.totalSalary.toStringAsFixed(2)}元',
                   Icons.account_balance_wallet,
                 ),
                 _buildStatCard(
                   '平均工资',
-                  '¥${yearlyData.averageSalary.toStringAsFixed(2)}',
+                  '${yearlyData.averageSalary.toStringAsFixed(2)}元',
                   Icons.trending_up,
                 ),
                 _buildStatCard(
                   '最高工资',
-                  '¥${yearlyData.highestSalary.toStringAsFixed(2)}',
+                  '${yearlyData.highestSalary.toStringAsFixed(2)}元',
                   Icons.arrow_upward,
                 ),
                 _buildStatCard(
                   '最低工资',
-                  '¥${yearlyData.lowestSalary.toStringAsFixed(2)}',
+                  '${yearlyData.lowestSalary.toStringAsFixed(2)}元',
                   Icons.arrow_downward,
                 ),
               ],

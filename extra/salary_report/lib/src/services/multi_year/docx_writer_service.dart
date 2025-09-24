@@ -140,7 +140,7 @@ class MultiYearDocxWriterService {
     for (var item in averageSalaryPerYear) {
       // 修改格式，不使用冒号分隔
       buffer.write(
-        '${item["year"]}年平均薪资为¥${(item["averageSalary"] as double).toStringAsFixed(2)}；',
+        '${item["year"]}年平均薪资为${(item["averageSalary"] as double).toStringAsFixed(2)}元；',
       );
     }
     // 移除最后的分号并添加句号
@@ -160,7 +160,7 @@ class MultiYearDocxWriterService {
     for (var item in totalSalaryPerYear) {
       // 修改格式，不使用冒号分隔
       buffer.write(
-        '${item["year"]}年总工资为¥${(item["totalSalary"] as double).toStringAsFixed(2)}；',
+        '${item["year"]}年总工资为${(item["totalSalary"] as double).toStringAsFixed(2)}元；',
       );
     }
     // 移除最后的分号并添加句号

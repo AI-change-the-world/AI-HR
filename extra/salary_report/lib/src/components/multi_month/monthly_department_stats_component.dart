@@ -94,11 +94,11 @@ class MonthlyDepartmentStatsComponent extends ConsumerWidget {
                     Expanded(child: Text(stat.employeeCount.toString())),
                     Expanded(
                       child: Text(
-                        '¥${stat.averageNetSalary.toStringAsFixed(2)}',
+                        '${stat.averageNetSalary.toStringAsFixed(2)}元',
                       ),
                     ),
                     Expanded(
-                      child: Text('¥${stat.totalNetSalary.toStringAsFixed(2)}'),
+                      child: Text('${stat.totalNetSalary.toStringAsFixed(2)}元'),
                     ),
                   ],
                 ),

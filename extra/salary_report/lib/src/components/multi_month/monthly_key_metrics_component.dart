@@ -66,22 +66,22 @@ class MonthlyKeyMetricsComponent extends ConsumerWidget {
                 ),
                 _buildStatCard(
                   '工资总额',
-                  '¥${monthlyData.totalSalary.toStringAsFixed(2)}',
+                  '${monthlyData.totalSalary.toStringAsFixed(2)}元',
                   Icons.account_balance_wallet,
                 ),
                 _buildStatCard(
                   '平均工资',
-                  '¥${monthlyData.averageSalary.toStringAsFixed(2)}',
+                  '${monthlyData.averageSalary.toStringAsFixed(2)}元',
                   Icons.trending_up,
                 ),
                 _buildStatCard(
                   '最高工资',
-                  '¥${monthlyData.highestSalary.toStringAsFixed(2)}',
+                  '${monthlyData.highestSalary.toStringAsFixed(2)}元',
                   Icons.arrow_upward,
                 ),
                 _buildStatCard(
                   '最低工资',
-                  '¥${monthlyData.lowestSalary.toStringAsFixed(2)}',
+                  '${monthlyData.lowestSalary.toStringAsFixed(2)}元',
                   Icons.arrow_downward,
                 ),
               ],

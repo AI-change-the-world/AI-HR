@@ -19,6 +19,16 @@ class DepartmentPositionTrendAnalysisComponent extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const Text(
+          '注意：以下部门和岗位趋势分析均以选定时间范围的最后一个月为基准进行对比分析',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.orange,
+          ),
+        ),
+        const SizedBox(height: 12),
+
         // 部门环比变化分析
         const Text(
           '部门环比变化分析',
@@ -73,6 +83,8 @@ class DepartmentMonthOverMonthComponent extends ConsumerWidget {
 
     return trendAnalysisState.when(
       data: (data) {
+        logger.info('部门环比变化数据: ${data.departmentMonthOverMonthData}');
+
         if (data.departmentMonthOverMonthData.isEmpty) {
           return const Card(
             child: Padding(
@@ -94,7 +106,7 @@ class DepartmentMonthOverMonthComponent extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  '说明：展示各部门与上月相比的员工数量、工资总额、平均工资变化情况',
+                  '说明：以选定时间范围的最后一个月为基准，展示各部门与上月相比的员工数量、工资总额、平均工资变化情况',
                   style: TextStyle(fontSize: 12, color: Colors.grey),
                 ),
                 const SizedBox(height: 12),
@@ -155,7 +167,7 @@ class DepartmentYearOverYearComponent extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  '说明：展示各部门与去年同期相比的员工数量、工资总额、平均工资变化情况',
+                  '说明：以选定时间范围的最后一个月为基准，展示各部门与去年同期相比的员工数量、工资总额、平均工资变化情况',
                   style: TextStyle(fontSize: 12, color: Colors.grey),
                 ),
                 const SizedBox(height: 12),
@@ -216,7 +228,7 @@ class PositionMonthOverMonthComponent extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  '说明：展示各岗位与上月相比的员工数量、工资总额、平均工资变化情况',
+                  '说明：以选定时间范围的最后一个月为基准，展示各岗位与上月相比的员工数量、工资总额、平均工资变化情况',
                   style: TextStyle(fontSize: 12, color: Colors.grey),
                 ),
                 const SizedBox(height: 12),
@@ -277,7 +289,7 @@ class PositionYearOverYearComponent extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  '说明：展示各岗位与去年同期相比的员工数量、工资总额、平均工资变化情况',
+                  '说明：以选定时间范围的最后一个月为基准，展示各岗位与去年同期相比的员工数量、工资总额、平均工资变化情况',
                   style: TextStyle(fontSize: 12, color: Colors.grey),
                 ),
                 const SizedBox(height: 12),

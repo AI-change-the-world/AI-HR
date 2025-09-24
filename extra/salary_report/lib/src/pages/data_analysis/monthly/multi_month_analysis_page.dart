@@ -517,83 +517,156 @@ class _MultiMonthAnalysisPageState
     AsyncValue<DepartmentChangesState> departmentChangesState,
     AsyncValue<ChartDataState> chartDataState,
   ) {
-    // 计算整体统计数据
-    int totalEmployees = 0; // 总人次（不去重）
-    int totalUniqueEmployees = 0; // 总人数（去重）
-    double totalSalary = 0;
-    double highestSalary = 0;
-    double lowestSalary = double.infinity;
-    final Set<String> uniqueEmployeeIds = <String>{}; // 用于去重统计员工数
+    // 保存每月的详细数据而不是聚合数据
+    final List<Map<String, dynamic>> monthlyDataList = [];
 
     // 从关键指标状态中获取数据
     if (keyMetricsState is AsyncData &&
         keyMetricsState.value?.monthlyData != null) {
-      for (var monthlyData in keyMetricsState.value!.monthlyData!) {
-        totalEmployees += monthlyData.employeeCount;
-        totalSalary += monthlyData.totalSalary;
+      // 按时间排序月度数据
+      final sortedMonthlyData =
+          List<MonthlyComparisonData>.from(keyMetricsState.value!.monthlyData!)
+            ..sort((a, b) {
+              if (a.year != b.year) {
+                return a.year.compareTo(b.year);
+              }
+              return a.month.compareTo(b.month);
+            });
 
-        // 累加去重后的员工数
-        for (var worker in monthlyData.workers) {
-          final employeeId = '${worker.name}_${worker.department}';
-          uniqueEmployeeIds.add(employeeId);
-        }
-
-        // 使用月度数据中的最高最低工资字段
-        if (monthlyData.highestSalary > highestSalary) {
-          highestSalary = monthlyData.highestSalary;
-        }
-
-        if (monthlyData.lowestSalary < lowestSalary) {
-          lowestSalary = monthlyData.lowestSalary;
-        }
-      }
-    }
-
-    // 设置去重员工总数
-    totalUniqueEmployees = uniqueEmployeeIds.length;
-
-    if (lowestSalary == double.infinity) {
-      lowestSalary = 0;
-    }
-
-    final averageSalary = totalEmployees > 0 ? totalSalary / totalEmployees : 0;
-
-    // 合并所有月份的薪资区间统计数据
-    final salaryRangeStatsMap = <String, SalaryRangeStats>{};
-    if (keyMetricsState is AsyncData &&
-        keyMetricsState.value?.monthlyData != null) {
-      for (var monthlyData in keyMetricsState.value!.monthlyData!) {
-        monthlyData.salaryRangeStats.forEach((rangeName, stat) {
-          if (salaryRangeStatsMap.containsKey(rangeName)) {
-            final existingStat = salaryRangeStatsMap[rangeName]!;
-            salaryRangeStatsMap[rangeName] = SalaryRangeStats(
-              range: rangeName,
-              employeeCount: existingStat.employeeCount + stat.employeeCount,
-              totalSalary: existingStat.totalSalary + stat.totalSalary,
-              averageSalary:
-                  (existingStat.totalSalary + stat.totalSalary) /
-                  (existingStat.employeeCount + stat.employeeCount),
-              year: stat.year,
-              month: stat.month,
-            );
-          } else {
-            salaryRangeStatsMap[rangeName] = stat;
-          }
+      for (var monthlyData in sortedMonthlyData) {
+        // 为每个月份创建详细数据记录
+        monthlyDataList.add({
+          'year': monthlyData.year,
+          'month': monthlyData.month,
+          'employeeCount': monthlyData.employeeCount,
+          'totalSalary': monthlyData.totalSalary,
+          'averageSalary': monthlyData.averageSalary,
+          'highestSalary': monthlyData.highestSalary,
+          'lowestSalary': monthlyData.lowestSalary,
+          'salaryRangeStats': monthlyData.salaryRangeStats,
+          'departmentStats': monthlyData.departmentStats,
+          'workers': monthlyData.workers,
         });
       }
     }
 
-    // 将薪资区间统计数据转换为列表
-    final salaryRanges = salaryRangeStatsMap.values.toList();
+    // 获取部门统计数据（保留每月详细数据）
+    List<Map<String, dynamic>> departmentStatsPerMonth = [];
+    if (departmentStatsState is AsyncData &&
+        departmentStatsState.value?.monthlyData != null) {
+      // 按时间排序月度数据
+      final sortedMonthlyData =
+          List<MonthlyComparisonData>.from(
+            departmentStatsState.value!.monthlyData!,
+          )..sort((a, b) {
+            if (a.year != b.year) {
+              return a.year.compareTo(b.year);
+            }
+            return a.month.compareTo(b.month);
+          });
+
+      for (var monthlyData in sortedMonthlyData) {
+        final departmentData = <Map<String, dynamic>>[];
+        monthlyData.departmentStats.forEach((deptName, stat) {
+          departmentData.add({
+            'department': stat.department,
+            'employeeCount': stat.employeeCount,
+            'totalNetSalary': stat.totalNetSalary,
+            'averageNetSalary': stat.averageNetSalary,
+            'year': stat.year,
+            'month': stat.month,
+            'maxSalary': stat.maxSalary,
+            'minSalary': stat.minSalary,
+          });
+        });
+
+        departmentStatsPerMonth.add({
+          'year': monthlyData.year,
+          'month': monthlyData.month,
+          'departmentStats': departmentData,
+        });
+      }
+    }
+
+    // 获取薪资区间统计数据（保留每月详细数据）
+    List<Map<String, dynamic>> salaryRangesPerMonth = [];
+    if (keyMetricsState is AsyncData &&
+        keyMetricsState.value?.monthlyData != null) {
+      // 按时间排序月度数据
+      final sortedMonthlyData =
+          List<MonthlyComparisonData>.from(keyMetricsState.value!.monthlyData!)
+            ..sort((a, b) {
+              if (a.year != b.year) {
+                return a.year.compareTo(b.year);
+              }
+              return a.month.compareTo(b.month);
+            });
+
+      for (var monthlyData in sortedMonthlyData) {
+        final salaryRangeData = <Map<String, dynamic>>[];
+        monthlyData.salaryRangeStats.forEach((rangeName, stat) {
+          salaryRangeData.add({
+            'range': stat.range,
+            'employeeCount': stat.employeeCount,
+            'totalSalary': stat.totalSalary,
+            'averageSalary': stat.averageSalary,
+            'year': stat.year,
+            'month': stat.month,
+          });
+        });
+
+        salaryRangesPerMonth.add({
+          'year': monthlyData.year,
+          'month': monthlyData.month,
+          'salaryRanges': salaryRangeData,
+        });
+      }
+    }
+
+    // 获取考勤统计数据（保留每月详细数据）
+    List<Map<String, dynamic>> attendanceStatsPerMonth = [];
+    if (attendanceStatsState is AsyncData &&
+        attendanceStatsState.value?.attendanceData != null) {
+      // 获取所有月份并按时间排序
+      final months = attendanceStatsState.value!.attendanceData!.keys.toList()
+        ..sort((a, b) {
+          final dateA = DateTime.parse("$a-01");
+          final dateB = DateTime.parse("$b-01");
+          return dateA.compareTo(dateB);
+        });
+
+      for (var monthKey in months) {
+        final stats = attendanceStatsState.value!.attendanceData![monthKey]!;
+        logger.info('获取考勤数据: $monthKey');
+        final date = DateTime.parse('$monthKey-01');
+
+        final attendanceData = <Map<String, dynamic>>[];
+        for (var stat in stats) {
+          attendanceData.add({
+            'name': stat.name,
+            'department': stat.department,
+            'sickLeaveDays': stat.sickLeaveDays,
+            'leaveDays': stat.leaveDays,
+            'absenceCount': stat.absenceCount,
+            'truancyDays': stat.truancyDays,
+            'year': stat.year,
+            'month': stat.month,
+          });
+        }
+
+        attendanceStatsPerMonth.add({
+          'year': date.year,
+          'month': date.month,
+          'attendanceStats': attendanceData,
+        });
+      }
+    }
 
     return {
-      'totalEmployees': totalEmployees, // 总人次
-      'totalUniqueEmployees': totalUniqueEmployees, // 总人数（去重）
-      'totalSalary': totalSalary,
-      'averageSalary': averageSalary,
-      'highestSalary': highestSalary,
-      'lowestSalary': lowestSalary,
-      'salaryRanges': salaryRanges, // 添加薪资区间数据
+      'monthlyData': monthlyDataList, // 保存每月详细数据
+      'departmentStatsPerMonth': departmentStatsPerMonth, // 保存每月部门统计数据
+      'salaryRangesPerMonth': salaryRangesPerMonth, // 保存每月薪资区间统计数据
+      'attendanceStatsPerMonth': attendanceStatsPerMonth, // 保存每月考勤统计数据
     };
   }
 

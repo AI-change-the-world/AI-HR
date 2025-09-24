@@ -597,22 +597,22 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
                           ),
                           _buildStatCard(
                             '工资总额',
-                            '¥${_previousMonthData!['totalSalary'].toStringAsFixed(2)}',
+                            '${_previousMonthData!['totalSalary'].toStringAsFixed(2)}元',
                             Icons.account_balance_wallet,
                           ),
                           _buildStatCard(
                             '平均工资',
-                            '¥${_previousMonthData!['averageSalary'].toStringAsFixed(2)}',
+                            '${_previousMonthData!['averageSalary'].toStringAsFixed(2)}元',
                             Icons.trending_up,
                           ),
                           _buildStatCard(
                             '最高工资',
-                            '¥${_previousMonthData!['highestSalary'].toStringAsFixed(2)}',
+                            '${_previousMonthData!['highestSalary'].toStringAsFixed(2)}元',
                             Icons.arrow_upward,
                           ),
                           _buildStatCard(
                             '最低工资',
-                            '¥${_previousMonthData!['lowestSalary'].toStringAsFixed(2)}',
+                            '${_previousMonthData!['lowestSalary'].toStringAsFixed(2)}元',
                             Icons.arrow_downward,
                           ),
                         ],
@@ -645,22 +645,22 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
                         ),
                         _buildStatCard(
                           '工资总额',
-                          '¥${_analysisData['totalSalary'].toStringAsFixed(2)}',
+                          '${_analysisData['totalSalary'].toStringAsFixed(2)}元',
                           Icons.account_balance_wallet,
                         ),
                         _buildStatCard(
                           '平均工资',
-                          '¥${_analysisData['averageSalary'].toStringAsFixed(2)}',
+                          '${_analysisData['averageSalary'].toStringAsFixed(2)}元',
                           Icons.trending_up,
                         ),
                         _buildStatCard(
                           '最高工资',
-                          '¥${_analysisData['highestSalary'].toStringAsFixed(2)}',
+                          '${_analysisData['highestSalary'].toStringAsFixed(2)}元',
                           Icons.arrow_upward,
                         ),
                         _buildStatCard(
                           '最低工资',
-                          '¥${_analysisData['lowestSalary'].toStringAsFixed(2)}',
+                          '${_analysisData['lowestSalary'].toStringAsFixed(2)}元',
                           Icons.arrow_downward,
                         ),
                       ],
@@ -789,12 +789,12 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
                                         ),
                                         Expanded(
                                           child: Text(
-                                            '¥${range.totalSalary.toStringAsFixed(2)}',
+                                            '${range.totalSalary.toStringAsFixed(2)}元',
                                           ),
                                         ),
                                         Expanded(
                                           child: Text(
-                                            '¥${range.averageSalary.toStringAsFixed(2)}',
+                                            '${range.averageSalary.toStringAsFixed(2)}元',
                                           ),
                                         ),
                                       ],
@@ -892,12 +892,12 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
                                         ),
                                         Expanded(
                                           child: Text(
-                                            '¥${deptRange.totalSalary.toStringAsFixed(2)}',
+                                            '${deptRange.totalSalary.toStringAsFixed(2)}元',
                                           ),
                                         ),
                                         Expanded(
                                           child: Text(
-                                            '¥${deptRange.averageSalary.toStringAsFixed(2)}',
+                                            '${deptRange.averageSalary.toStringAsFixed(2)}元',
                                           ),
                                         ),
                                       ],
