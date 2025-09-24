@@ -144,7 +144,7 @@ class MonthlySalaryTrendChart extends StatelessWidget {
         LineSeries<Map<String, dynamic>, String>(
           dataSource: monthlyData,
           xValueMapper: (Map<String, dynamic> data, _) =>
-              data['month'] as String,
+              data['month'].toString(),
           yValueMapper: (Map<String, dynamic> data, _) =>
               (data['totalSalary'] as num?)?.toInt() ?? 0,
           dataLabelSettings: const DataLabelSettings(isVisible: true),

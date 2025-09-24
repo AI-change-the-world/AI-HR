@@ -18,6 +18,7 @@ import 'package:salary_report/src/components/monthly_employee_changes_component.
 import 'package:salary_report/src/components/department_stats_component.dart';
 import 'package:salary_report/src/services/yearly/yearly_analysis_json_converter.dart'; // 添加导入
 
+@Deprecated("Deprecated")
 class YearlyAnalysisPage extends StatefulWidget {
   const YearlyAnalysisPage({
     super.key,
@@ -34,6 +35,7 @@ class YearlyAnalysisPage extends StatefulWidget {
   State<YearlyAnalysisPage> createState() => _YearlyAnalysisPageState();
 }
 
+@Deprecated("Deprecated")
 class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
   final GlobalKey _chartContainerKey = GlobalKey();
   bool _isGeneratingReport = false;

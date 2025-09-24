@@ -509,9 +509,7 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
       averageSalary: averageSalary,
       departmentCount: departmentStats.length,
       employeeCount: uniqueEmployees,
-      employeeDetails: quarterEmployeeCountAnalysis.isNotEmpty
-          ? quarterEmployeeCountAnalysis
-          : jsonData['key_param'] as String,
+      employeeDetails: _generateEmployeeDetails(analysisData),
       departmentDetails: _generateDepartmentDetails(departmentStats),
       salaryRangeDescription: _generateSalaryRangeDescription(salaryRanges),
       salaryRangeFeatureSummary: salaryRangeFeatureSummary.isNotEmpty
@@ -619,7 +617,7 @@ $basePrompt
 
     for (int i = 0; i < monthlyData.length; i++) {
       final data = monthlyData[i] as Map<String, dynamic>;
-      final month = data['month'] as String? ?? '未知月份';
+      final month = (data['month'] ?? '未知月份')?.toString();
       final totalSalary = data['totalSalary'] as num? ?? 0;
       final averageSalary = data['averageSalary'] as num? ?? 0;
       final employeeCount = data['employeeCount'] as int? ?? 0;

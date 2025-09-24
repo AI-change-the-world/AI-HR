@@ -18,6 +18,7 @@ import 'package:salary_report/src/components/monthly_employee_changes_component.
 import 'package:salary_report/src/components/single_quarter/quarterly_department_stats_component.dart';
 import 'package:salary_report/src/services/quarterly/quarterly_analysis_json_converter.dart'; // 添加导入
 
+@Deprecated("Deprecated")
 class QuarterlyAnalysisPage extends StatefulWidget {
   const QuarterlyAnalysisPage({
     super.key,
@@ -32,6 +33,7 @@ class QuarterlyAnalysisPage extends StatefulWidget {
   State<QuarterlyAnalysisPage> createState() => _QuarterlyAnalysisPageState();
 }
 
+@Deprecated("Deprecated")
 class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
   late Map<String, dynamic> _analysisData;
   final GlobalKey _chartContainerKey = GlobalKey();
@@ -48,7 +50,7 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
       []; // 部门薪资区间统计数据
   Map<String, dynamic>? _previousQuarterData; // 上一季度数据
   List<Map<String, dynamic>> _monthlyEmployeeChanges = []; // 每月员工变动数据
-  Map<String, dynamic> _summaryData = {};
+  final Map<String, dynamic> _summaryData = {};
 
   // 添加截图相关变量
   final GlobalKey repaintKey = GlobalKey();

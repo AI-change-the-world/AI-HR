@@ -385,8 +385,7 @@ $customPrompt
       final monthlyBreakdown = monthlyData
           .map(
             (data) =>
-                '${data['month']}: 总额${data['totalSalary'].toStringAsFixed(2)}元, ' +
-                '员工数${data['employeeCount']}人',
+                '${data['month']}: 总额${data['totalSalary'].toStringAsFixed(2)}元, ' '员工数${data['employeeCount']}人',
           )
           .join('\n');
 
@@ -402,7 +401,7 @@ $customPrompt
 请分析以下季度工资总额数据：
 - 本季度工资总额：${totalSalary.toStringAsFixed(2)}元
 - 上季度工资总额：${previousQuarterTotalSalary.toStringAsFixed(2)}元
-- 环比变化率：${changeRate}%
+- 环比变化率：$changeRate%
 - 月度明细：
 $monthlyBreakdown
 
@@ -429,16 +428,14 @@ $monthlyBreakdown
       final monthlyBreakdown = monthlyData
           .map(
             (data) =>
-                '${data['month']}: 平均工资${data['averageSalary'].toStringAsFixed(2)}元, ' +
-                '员工数${data['employeeCount']}人',
+                '${data['month']}: 平均工资${data['averageSalary'].toStringAsFixed(2)}元, ' '员工数${data['employeeCount']}人',
           )
           .join('\n');
 
       final departmentData = departmentStats
           .map(
             (dept) =>
-                '${dept.department}: 平均工资${dept.averageNetSalary.toStringAsFixed(2)}元, ' +
-                '员工数${dept.employeeCount}人',
+                '${dept.department}: 平均工资${dept.averageNetSalary.toStringAsFixed(2)}元, ' '员工数${dept.employeeCount}人',
           )
           .join('\n');
 
@@ -454,7 +451,7 @@ $monthlyBreakdown
 请分析以下季度平均工资数据：
 - 本季度平均工资：${averageSalary.toStringAsFixed(2)}元
 - 上季度平均工资：${previousQuarterAverageSalary.toStringAsFixed(2)}元
-- 环比变化率：${changeRate}%
+- 环比变化率：$changeRate%
 - 月度明细：
 $monthlyBreakdown
 - 部门平均工资：
@@ -490,9 +487,7 @@ $departmentData
         employeeChangesText = employeeChanges
             .map(
               (change) =>
-                  '${change['month']}月: 新入职${change['newEmployees'].length}人, ' +
-                  '离职${change['resignedEmployees'].length}人, ' +
-                  '净变化${change['netChange']}人',
+                  '${change['month']}月: 新入职${change['newEmployees'].length}人, ' '离职${change['resignedEmployees'].length}人, ' '净变化${change['netChange']}人',
             )
             .join('\n');
       }
@@ -507,10 +502,10 @@ $departmentData
       final prompt =
           '''
 请分析以下季度员工数量数据：
-- 本季度总人次：${totalEmployees}人
-- 本季度去重后总人数：${uniqueEmployees}人
-- 上季度总人次：${previousQuarterTotalEmployees}人
-- 环比变化率：${changeRate}%
+- 本季度总人次：$totalEmployees人
+- 本季度去重后总人数：$uniqueEmployees人
+- 上季度总人次：$previousQuarterTotalEmployees人
+- 环比变化率：$changeRate%
 - 月度明细：
 $monthlyBreakdown
 ${employeeChangesText.isNotEmpty ? '- 员工变动情况：\n$employeeChangesText' : ''}
@@ -584,9 +579,9 @@ $salaryComposition
       final prompt =
           '''
 请分析以下季度环比变化数据：
-- 工资总额变化率：${totalSalaryChange}%
-- 平均工资变化率：${averageSalaryChange}%
-- 员工数量变化率：${employeeCountChange}%
+- 工资总额变化率：$totalSalaryChange%
+- 平均工资变化率：$averageSalaryChange%
+- 员工数量变化率：$employeeCountChange%
 - 本季度：${currentQuarterData['year']}年第${currentQuarterData['quarter']}季度
 - 上季度：${previousQuarterData['year']}年第${previousQuarterData['quarter']}季度
 
@@ -688,9 +683,7 @@ $salaryComposition
       final trendData = sortedData
           .map(
             (q) =>
-                '${q.year}年第${q.quarter}季度: 员工数${q.employeeCount}人, ' +
-                '工资总额${q.totalSalary.toStringAsFixed(2)}元, ' +
-                '平均工资${q.averageSalary.toStringAsFixed(2)}元',
+                '${q.year}年第${q.quarter}季度: 员工数${q.employeeCount}人, ' '工资总额${q.totalSalary.toStringAsFixed(2)}元, ' '平均工资${q.averageSalary.toStringAsFixed(2)}元',
           )
           .join('\n');
 
@@ -719,9 +712,7 @@ $trendData
       final departmentData = departmentStats
           .map(
             (dept) =>
-                '${dept.department}: 员工数${dept.employeeCount}人, ' +
-                '工资总额${dept.totalNetSalary.toStringAsFixed(2)}元, ' +
-                '平均工资${dept.averageNetSalary.toStringAsFixed(2)}元',
+                '${dept.department}: 员工数${dept.employeeCount}人, ' '工资总额${dept.totalNetSalary.toStringAsFixed(2)}元, ' '平均工资${dept.averageNetSalary.toStringAsFixed(2)}元',
           )
           .join('\n');
 
@@ -784,10 +775,7 @@ $departmentData
             : "N/A";
 
         qoqData.add(
-          '${current.year}年第${current.quarter}季度 vs ${previous.year}年第${previous.quarter}季度: ' +
-              '员工数变化${employeeCountChange}人(${employeeCountChangeRate}%), ' +
-              '工资总额变化${totalSalaryChange.toStringAsFixed(2)}元(${totalSalaryChangeRate}%), ' +
-              '平均工资变化${averageSalaryChange.toStringAsFixed(2)}元(${averageSalaryChangeRate}%)',
+          '${current.year}年第${current.quarter}季度 vs ${previous.year}年第${previous.quarter}季度: ' '员工数变化$employeeCountChange人($employeeCountChangeRate%), ' '工资总额变化${totalSalaryChange.toStringAsFixed(2)}元($totalSalaryChangeRate%), ' '平均工资变化${averageSalaryChange.toStringAsFixed(2)}元($averageSalaryChangeRate%)',
         );
       }
 
@@ -866,10 +854,7 @@ ${qoqData.join('\n')}
                 : "N/A";
 
             yoyData.add(
-              '${currentQuarter.year}年第${currentQuarter.quarter}季度 vs ${lastYearQuarter.year}年第${lastYearQuarter.quarter}季度: ' +
-                  '员工数变化${employeeCountChange}人(${employeeCountChangeRate}%), ' +
-                  '工资总额变化${totalSalaryChange.toStringAsFixed(2)}元(${totalSalaryChangeRate}%), ' +
-                  '平均工资变化${averageSalaryChange.toStringAsFixed(2)}元(${averageSalaryChangeRate}%)',
+              '${currentQuarter.year}年第${currentQuarter.quarter}季度 vs ${lastYearQuarter.year}年第${lastYearQuarter.quarter}季度: ' '员工数变化$employeeCountChange人($employeeCountChangeRate%), ' '工资总额变化${totalSalaryChange.toStringAsFixed(2)}元($totalSalaryChangeRate%), ' '平均工资变化${averageSalaryChange.toStringAsFixed(2)}元($averageSalaryChangeRate%)',
             );
           }
         }
@@ -909,10 +894,7 @@ ${qoqData.join('\n')}
               : "N/A";
 
           yoyData.add(
-            '${currentYear.year}年 vs ${previousYear.year}年: ' +
-                '员工数变化${employeeCountChange}人(${employeeCountChangeRate}%), ' +
-                '工资总额变化${totalSalaryChange.toStringAsFixed(2)}元(${totalSalaryChangeRate}%), ' +
-                '平均工资变化${averageSalaryChange.toStringAsFixed(2)}元(${averageSalaryChangeRate}%)',
+            '${currentYear.year}年 vs ${previousYear.year}年: ' '员工数变化$employeeCountChange人($employeeCountChangeRate%), ' '工资总额变化${totalSalaryChange.toStringAsFixed(2)}元($totalSalaryChangeRate%), ' '平均工资变化${averageSalaryChange.toStringAsFixed(2)}元($averageSalaryChangeRate%)',
           );
         }
       }
@@ -946,9 +928,7 @@ ${yoyData.join('\n')}
       final rangeData = salaryRangeStats
           .map(
             (range) =>
-                '${range.range}: 员工数${range.employeeCount}人, ' +
-                '工资总额${range.totalSalary.toStringAsFixed(2)}元, ' +
-                '平均工资${range.averageSalary.toStringAsFixed(2)}元',
+                '${range.range}: 员工数${range.employeeCount}人, ' '工资总额${range.totalSalary.toStringAsFixed(2)}元, ' '平均工资${range.averageSalary.toStringAsFixed(2)}元',
           )
           .join('\n');
 
@@ -997,8 +977,8 @@ $rangeData
           '''
 请基于以下多季度工资数据，提供综合结论和优化建议：
 
-分析周期：${startQuarter.year}年第${startQuarter.quarter}季度至${endQuarter.year}年第${endQuarter.quarter}季度，共${quarterCount}个季度
-总体变化：工资总额变化${totalSalaryChange.toStringAsFixed(2)}元(${totalSalaryChangeRate}%)，平均工资变化${averageSalaryChange.toStringAsFixed(2)}元(${averageSalaryChangeRate}%)
+分析周期：${startQuarter.year}年第${startQuarter.quarter}季度至${endQuarter.year}年第${endQuarter.quarter}季度，共$quarterCount个季度
+总体变化：工资总额变化${totalSalaryChange.toStringAsFixed(2)}元($totalSalaryChangeRate%)，平均工资变化${averageSalaryChange.toStringAsFixed(2)}元($averageSalaryChangeRate%)
 
 请提供一段关于多季度薪资数据的综合结论，以及针对性的优化建议。要求语言严谨、简洁，体现报告风格。
       ''';
@@ -1038,8 +1018,8 @@ $rangeData
           '''
 请基于以下多年度工资数据，提供综合结论和优化建议：
 
-分析周期：${startYear.year}年至${endYear.year}年，共${yearCount}年
-总体变化：工资总额变化${totalSalaryChange.toStringAsFixed(2)}元(${totalSalaryChangeRate}%)，平均工资变化${averageSalaryChange.toStringAsFixed(2)}元(${averageSalaryChangeRate}%)
+分析周期：${startYear.year}年至${endYear.year}年，共$yearCount年
+总体变化：工资总额变化${totalSalaryChange.toStringAsFixed(2)}元($totalSalaryChangeRate%)，平均工资变化${averageSalaryChange.toStringAsFixed(2)}元($averageSalaryChangeRate%)
 
 请提供一段关于多年度薪资数据的综合结论，以及针对性的优化建议。要求语言严谨、简洁，体现报告风格。
       ''';
@@ -1065,9 +1045,7 @@ $rangeData
       final trendData = sortedData
           .map(
             (y) =>
-                '${y.year}年: 员工数${y.employeeCount}人, ' +
-                '工资总额${y.totalSalary.toStringAsFixed(2)}元, ' +
-                '平均工资${y.averageSalary.toStringAsFixed(2)}元',
+                '${y.year}年: 员工数${y.employeeCount}人, ' '工资总额${y.totalSalary.toStringAsFixed(2)}元, ' '平均工资${y.averageSalary.toStringAsFixed(2)}元',
           )
           .join('\n');
 

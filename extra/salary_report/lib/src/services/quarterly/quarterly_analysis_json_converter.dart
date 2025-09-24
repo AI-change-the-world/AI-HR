@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 
 /// 季度分析数据转JSON工具类
@@ -48,46 +49,54 @@ class QuarterlyAnalysisJsonConverter {
     Map<String, dynamic> analysisData,
     Map<String, dynamic>? previousQuarterData,
   ) {
-    final totalEmployees = analysisData['totalEmployees'] as int;
-    final totalUniqueEmployees = analysisData['totalUniqueEmployees'] as int;
-    final totalSalary = analysisData['totalSalary'] as double;
-    final averageSalary = analysisData['averageSalary'] as double;
-    final highestSalary = analysisData['highestSalary'] as double;
-    final lowestSalary = analysisData['lowestSalary'] as double;
+    logger.info("_generateKeyParam analysisData: ${analysisData.runtimeType}");
 
-    String keyParam =
-        '本季度共有$totalUniqueEmployees 名员工，发放工资$totalEmployees 人次，工资总额为${totalSalary.toStringAsFixed(2)}元，平均工资为${averageSalary.toStringAsFixed(2)}元，最高工资为${highestSalary.toStringAsFixed(2)}元，最低工资为${lowestSalary.toStringAsFixed(2)}元';
+    if (analysisData['comparisonData'] == null ||
+        analysisData['comparisonData'] is! MultiMonthComparisonData) {
+      return "";
+    }
+
+    final comparisonData =
+        analysisData['comparisonData'] as MultiMonthComparisonData;
+
+    final totalMonths = comparisonData.monthlyComparisons.length;
+
+    // 按时间排序月度数据
+    final sortedMonthlyData =
+        List<MonthlyComparisonData>.from(comparisonData.monthlyComparisons)
+          ..sort((a, b) {
+            if (a.year != b.year) {
+              return a.year.compareTo(b.year);
+            }
+            return a.month.compareTo(b.month);
+          });
+
+    final buffer = StringBuffer();
+    buffer.write('本期共有$totalMonths 个月份：');
+
+    // 详细列出每个月份的数据
+    for (int i = 0; i < sortedMonthlyData.length; i++) {
+      final monthlyData = sortedMonthlyData[i];
+      buffer.write('${monthlyData.year}年${monthlyData.month}月');
+      buffer.write('发放工资${monthlyData.employeeCount}人次，');
+      buffer.write('工资总额为${monthlyData.totalSalary.toStringAsFixed(2)}元，');
+      buffer.write('平均工资为${monthlyData.averageSalary.toStringAsFixed(2)}元');
+      if (i < sortedMonthlyData.length - 1) {
+        buffer.write('；');
+      }
+    }
+
+    buffer.write('。');
 
     if (previousQuarterData != null) {
       final prevTotalEmployees = previousQuarterData['totalEmployees'] as int;
       final prevTotalUniqueEmployees =
           previousQuarterData['totalUniqueEmployees'] as int;
-      final prevTotalSalary = previousQuarterData['totalSalary'] as double;
-      final prevAverageSalary = previousQuarterData['averageSalary'] as double;
-      final prevHighestSalary = previousQuarterData['highestSalary'] as double;
-      final prevLowestSalary = previousQuarterData['lowestSalary'] as double;
-
-      final employeeChange = totalUniqueEmployees - prevTotalUniqueEmployees;
-      final salaryChange = totalSalary - prevTotalSalary;
-      final avgSalaryChange = averageSalary - prevAverageSalary;
-      final highestSalaryChange = highestSalary - prevHighestSalary;
-      final lowestSalaryChange = lowestSalary - prevLowestSalary;
-
-      keyParam +=
-          '，相比上季度（$prevTotalUniqueEmployees 名员工，发放工资$prevTotalEmployees 人次，工资总额为${prevTotalSalary.toStringAsFixed(2)}元，平均工资为${prevAverageSalary.toStringAsFixed(2)}元，最高工资为${prevHighestSalary.toStringAsFixed(2)}元，最低工资为${prevLowestSalary.toStringAsFixed(2)}元）';
-      keyParam +=
-          '，员工人数${employeeChange >= 0 ? "增加" : "减少"}${employeeChange.abs()}人';
-      keyParam +=
-          '，工资总额${salaryChange >= 0 ? "增加" : "减少"}${salaryChange.abs().toStringAsFixed(2)}元';
-      keyParam +=
-          '，平均工资${avgSalaryChange >= 0 ? "上升" : "下降"}${avgSalaryChange.abs().toStringAsFixed(2)}元';
-      keyParam +=
-          '，最高工资${highestSalaryChange >= 0 ? "上升" : "下降"}${highestSalaryChange.abs().toStringAsFixed(2)}元';
-      keyParam +=
-          '，最低工资${lowestSalaryChange >= 0 ? "上升" : "下降"}${lowestSalaryChange.abs().toStringAsFixed(2)}元';
+      buffer.write('上季度共发薪$prevTotalEmployees 人次，');
+      buffer.write('员工$prevTotalUniqueEmployees 人。');
     }
 
-    return keyParam;
+    return buffer.toString();
   }
 
   /// 转换关键指标数据
@@ -228,60 +237,77 @@ class QuarterlyAnalysisJsonConverter {
   static List<Map<String, dynamic>> _convertDepartmentSalaryRanges(
     Map<String, dynamic> analysisData,
   ) {
-    final deptSalaryRanges =
-        analysisData['departmentSalaryRangeStats']
-            as List<DepartmentSalaryRangeStats>;
-    return deptSalaryRanges.map((deptRange) {
-      return {
-        'department': deptRange.department,
-        'salary_range': deptRange.salaryRange,
-        'employee_count': deptRange.employeeCount,
-        'total_salary': deptRange.totalSalary,
-        'average_salary': deptRange.averageSalary,
-      };
-    }).toList();
+    if (analysisData['comparisonData'] == null ||
+        analysisData['comparisonData'] is! MultiMonthComparisonData) {
+      return [];
+    }
+
+    final monthlyComparisonData =
+        analysisData['comparisonData'] as MultiMonthComparisonData;
+
+    final lastMonthData = monthlyComparisonData.monthlyComparisons.last;
+    // 实际应用中应该从数据库获取部门薪资区间联合统计数据
+    // 这里暂时返回空列表，或者可以使用最后一个月的数据作为示例
+    return [];
   }
 
   /// 生成部门薪资区间联合统计图表数据
   static List<Map<String, dynamic>> _generateDepartmentSalaryRangesChartData(
     Map<String, dynamic> analysisData,
   ) {
-    final deptSalaryRanges =
-        analysisData['departmentSalaryRangeStats']
-            as List<DepartmentSalaryRangeStats>;
-    // 按部门分组
-    final Map<String, List<Map<String, dynamic>>> groupedData = {};
-    for (var deptRange in deptSalaryRanges) {
-      if (!groupedData.containsKey(deptRange.department)) {
-        groupedData[deptRange.department] = [];
-      }
-      groupedData[deptRange.department]!.add({
-        'salary_range': deptRange.salaryRange,
-        'employee_count': deptRange.employeeCount,
-        'total_salary': deptRange.totalSalary,
-      });
+    if (analysisData['comparisonData'] == null ||
+        analysisData['comparisonData'] is! MultiMonthComparisonData) {
+      return [];
     }
+    final monthlyComparisonData =
+        analysisData['comparisonData'] as MultiMonthComparisonData;
+    final lastMonthData = monthlyComparisonData.monthlyComparisons.last;
+    // 实际应用中应该从数据库获取部门薪资区间联合统计数据
+    // 这里暂时返回空列表，或者可以使用最后一个月的数据作为示例
+    return [];
 
-    // 转换为图表数据格式
-    return groupedData.entries.map((entry) {
-      return {'department': entry.key, 'salary_ranges': entry.value};
-    }).toList();
+    // final deptSalaryRanges =
+    //     analysisData['departmentSalaryRangeStats']
+    //         as List<DepartmentSalaryRangeStats>;
+    // // 按部门分组
+    // final Map<String, List<Map<String, dynamic>>> groupedData = {};
+    // for (var deptRange in deptSalaryRanges) {
+    //   if (!groupedData.containsKey(deptRange.department)) {
+    //     groupedData[deptRange.department] = [];
+    //   }
+    //   groupedData[deptRange.department]!.add({
+    //     'salary_range': deptRange.salaryRange,
+    //     'employee_count': deptRange.employeeCount,
+    //     'total_salary': deptRange.totalSalary,
+    //   });
+    // }
+
+    // // 转换为图表数据格式
+    // return groupedData.entries.map((entry) {
+    //   return {'department': entry.key, 'salary_ranges': entry.value};
+    // }).toList();
   }
 
   /// 转换月度分解数据
   static List<Map<String, dynamic>> _convertMonthlyBreakdown(
     Map<String, dynamic> analysisData,
   ) {
-    final monthlyBreakdown =
-        analysisData['monthlyBreakdown'] as List<Map<String, dynamic>>;
-    return monthlyBreakdown.map((monthData) {
+    if (analysisData['comparisonData'] == null ||
+        analysisData['comparisonData'] is! MultiMonthComparisonData) {
+      return [];
+    }
+    final monthlyComparisonData =
+        analysisData['comparisonData'] as MultiMonthComparisonData;
+
+    return monthlyComparisonData.monthlyComparisons.map((monthlyData) {
       return {
-        'month': monthData['month'],
-        'total_salary': monthData['totalSalary'],
-        'average_salary': monthData['averageSalary'],
-        'employee_count': monthData['employeeCount'],
-        'highest_salary': monthData['highestSalary'],
-        'lowest_salary': monthData['lowestSalary'],
+        'year': monthlyData.year,
+        'month': monthlyData.month,
+        'employee_count': monthlyData.employeeCount,
+        'total_salary': monthlyData.totalSalary,
+        'average_salary': monthlyData.averageSalary,
+        'highest_salary': monthlyData.highestSalary,
+        'lowest_salary': monthlyData.lowestSalary,
       };
     }).toList();
   }
@@ -290,16 +316,22 @@ class QuarterlyAnalysisJsonConverter {
   static List<Map<String, dynamic>> _generateMonthlyBreakdownChartData(
     Map<String, dynamic> analysisData,
   ) {
-    final monthlyBreakdown =
-        analysisData['monthlyBreakdown'] as List<Map<String, dynamic>>;
-    return monthlyBreakdown.map((monthData) {
+    if (analysisData['comparisonData'] == null ||
+        analysisData['comparisonData'] is! MultiMonthComparisonData) {
+      return [];
+    }
+    final monthlyComparisonData =
+        analysisData['comparisonData'] as MultiMonthComparisonData;
+
+    return monthlyComparisonData.monthlyComparisons.map((monthlyData) {
       return {
-        'month': monthData['month'],
-        'total_salary': monthData['totalSalary'],
-        'average_salary': monthData['averageSalary'],
-        'employee_count': monthData['employeeCount'],
-        'highest_salary': monthData['highestSalary'],
-        'lowest_salary': monthData['lowestSalary'],
+        'year': monthlyData.year,
+        'month': monthlyData.month,
+        'employee_count': monthlyData.employeeCount,
+        'total_salary': monthlyData.totalSalary,
+        'average_salary': monthlyData.averageSalary,
+        'highest_salary': monthlyData.highestSalary,
+        'lowest_salary': monthlyData.lowestSalary,
       };
     }).toList();
   }

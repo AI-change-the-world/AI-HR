@@ -11,7 +11,6 @@ import 'package:salary_report/src/services/report_service.dart';
 import 'package:salary_report/src/services/multi_year/multi_year.dart';
 import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_interface.dart';
 import 'package:salary_report/src/pages/visualization/report/ai_summary_service.dart';
-import 'package:salary_report/src/services/multi_year/multi_year_analysis_json_converter.dart';
 
 /// 增强版多年度报告生成器
 class EnhancedMultiYearReportGenerator implements EnhancedReportGenerator {
@@ -243,10 +242,10 @@ class EnhancedMultiYearReportGenerator implements EnhancedReportGenerator {
     final conclusionsAndRecommendations = await _aiSummaryService.getAnswer('''
 请基于以下多年度工资数据分析，提供综合结论和优化建议：
 
-年度趋势分析：${yearlyTrendAnalysis}
-部门对比分析：${departmentComparisonAnalysis}
-同比分析：${yearOverYearAnalysis}
-薪资区间分析：${salaryRangeAnalysis}
+年度趋势分析：$yearlyTrendAnalysis
+部门对比分析：$departmentComparisonAnalysis
+同比分析：$yearOverYearAnalysis
+薪资区间分析：$salaryRangeAnalysis
 
 请提供一段关于多年度薪资数据的综合结论，以及针对性的优化建议。要求语言严谨、简洁，体现报告风格。
       ''');
@@ -345,7 +344,7 @@ class EnhancedMultiYearReportGenerator implements EnhancedReportGenerator {
           : 0.0;
 
       buffer.writeln(
-        '- ${deptName}部门：平均员工数 ${avgEmployeeCount}人，'
+        '- $deptName部门：平均员工数 $avgEmployeeCount人，'
         '平均工资总额 ${avgTotalSalary.toStringAsFixed(2)}元，'
         '平均工资 ${avgSalary.toStringAsFixed(2)}元',
       );
