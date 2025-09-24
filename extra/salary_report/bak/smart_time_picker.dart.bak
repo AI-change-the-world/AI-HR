@@ -73,24 +73,8 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
       _startDate = widget.initialRange!.startDate;
       _endDate = widget.initialRange!.endDate;
     } else {
-      final now = DateTime.now();
-      _startDate = now;
-      
-      // 根据模式设置结束时间
-      switch (widget.mode) {
-        case TimePickerMode.month:
-          _endDate = now; // 月份模式允许选择范围，默认相同
-          break;
-        case TimePickerMode.year:
-          _endDate = DateTime(now.year, 12, 31); // 年度模式：同一年的最后一天
-          break;
-        case TimePickerMode.quarter:
-          final currentQuarter = ((now.month - 1) ~/ 3) + 1;
-          final lastMonthOfQuarter = currentQuarter * 3;
-          _endDate = DateTime(now.year, lastMonthOfQuarter, 
-            _getLastDayOfMonth(now.year, lastMonthOfQuarter)); // 季度模式：同一季度的最后一天
-          break;
-      }
+      _startDate = DateTime.now();
+      _endDate = DateTime.now();
     }
 
     // 初始化可用年份
@@ -172,14 +156,14 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
         color = const Color(0xFF6C63FF);
         break;
       case TimePickerMode.year:
-        title = '选择年份';
-        subtitle = '多年度分析还在开发中，敬请期待';
+        title = '选择年份范围';
+        subtitle = '选择要分析的起始和结束年份';
         icon = Icons.date_range_rounded;
         color = const Color(0xFF10B981);
         break;
       case TimePickerMode.quarter:
-        title = '选择季度';
-        subtitle = '多季度分析还在开发中，敬请期待';
+        title = '选择季度范围';
+        subtitle = '选择要分析的起始和结束季度';
         icon = Icons.view_week_rounded;
         color = const Color(0xFFFF6B6B);
         break;
@@ -251,86 +235,85 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
           ),
           child: Column(
             children: [
-              // 开始/结束时间切换按钮（仅在月份模式下显示）
-              if (widget.mode == TimePickerMode.month)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _isSelectingStart = true;
-                          });
-                        },
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
+              // 开始/结束时间切换按钮
+              Container(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isSelectingStart = true;
+                        });
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: _isSelectingStart
+                              ? const Color(0xFF6C63FF)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
                             color: _isSelectingStart
                                 ? const Color(0xFF6C63FF)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: _isSelectingStart
-                                  ? const Color(0xFF6C63FF)
-                                  : Colors.grey.shade300,
-                            ),
+                                : Colors.grey.shade300,
                           ),
-                          child: Center(
-                            child: Text(
-                              '开始时间',
-                              style: TextStyle(
-                                color: _isSelectingStart
-                                    ? Colors.white
-                                    : const Color(0xFF6C63FF),
-                                fontWeight: _isSelectingStart
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '开始时间',
+                            style: TextStyle(
+                              color: _isSelectingStart
+                                  ? Colors.white
+                                  : const Color(0xFF6C63FF),
+                              fontWeight: _isSelectingStart
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _isSelectingStart = false;
-                          });
-                        },
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
+                    ),
+                    const SizedBox(height: 12),
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isSelectingStart = false;
+                        });
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: !_isSelectingStart
+                              ? const Color(0xFF10B981)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
                             color: !_isSelectingStart
                                 ? const Color(0xFF10B981)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: !_isSelectingStart
-                                  ? const Color(0xFF10B981)
-                                  : Colors.grey.shade300,
-                            ),
+                                : Colors.grey.shade300,
                           ),
-                          child: Center(
-                            child: Text(
-                              '结束时间',
-                              style: TextStyle(
-                                color: !_isSelectingStart
-                                    ? Colors.white
-                                    : const Color(0xFF10B981),
-                                fontWeight: !_isSelectingStart
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '结束时间',
+                            style: TextStyle(
+                              color: !_isSelectingStart
+                                  ? Colors.white
+                                  : const Color(0xFF10B981),
+                              fontWeight: !_isSelectingStart
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                             ),
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
+              ),
               const Divider(),
               // 当前选择结果展示
               Container(
@@ -496,7 +479,7 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
   }
 
   Widget _buildYearSelector() {
-    final currentYear = _startDate.year; // 只使用开始时间的年份
+    final currentYear = _isSelectingStart ? _startDate.year : _endDate.year;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -509,15 +492,6 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Color(0xFF2D3748),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '注：当前仅支持单年度分析',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-              fontStyle: FontStyle.italic,
             ),
           ),
           const SizedBox(height: 16),
@@ -538,9 +512,11 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
               return GestureDetector(
                 onTap: () {
                   setState(() {
-                    // 年度模式下，开始和结束时间设置为相同的年份
-                    _startDate = DateTime(year);
-                    _endDate = DateTime(year, 12, 31); // 设置为该年的最后一天
+                    if (_isSelectingStart) {
+                      _startDate = DateTime(year);
+                    } else {
+                      _endDate = DateTime(year);
+                    }
                   });
                 },
                 child: Container(
@@ -575,7 +551,7 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
   }
 
   Widget _buildQuarterSelector() {
-    final currentDate = _startDate; // 只使用开始时间
+    final currentDate = _isSelectingStart ? _startDate : _endDate;
     final currentQuarter = ((currentDate.month - 1) ~/ 3) + 1;
 
     final quarters = [
@@ -594,11 +570,11 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
           _buildYearDropdown(currentDate.year, (year) {
             setState(() {
               final firstMonthOfQuarter = (currentQuarter - 1) * 3 + 1;
-              final lastMonthOfQuarter = currentQuarter * 3;
-              // 季度模式下，开始和结束时间设置为同一个季度
-              _startDate = DateTime(year, firstMonthOfQuarter);
-              _endDate = DateTime(year, lastMonthOfQuarter, 
-                _getLastDayOfMonth(year, lastMonthOfQuarter));
+              if (_isSelectingStart) {
+                _startDate = DateTime(year, firstMonthOfQuarter);
+              } else {
+                _endDate = DateTime(year, firstMonthOfQuarter);
+              }
             });
           }),
           const SizedBox(height: 20),
@@ -620,15 +596,6 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
                     color: Color(0xFF2D3748),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '注：当前仅支持单季度分析',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
                 const SizedBox(height: 16),
                 Column(
                   children: quarters.map((quarter) {
@@ -641,17 +608,17 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
                           setState(() {
                             final firstMonthOfQuarter =
                                 ((quarter['value'] as int) - 1) * 3 + 1;
-                            final lastMonthOfQuarter = (quarter['value'] as int) * 3;
-                            // 季度模式下，开始和结束时间设置为同一个季度
-                            _startDate = DateTime(
-                              currentDate.year,
-                              firstMonthOfQuarter,
-                            );
-                            _endDate = DateTime(
-                              currentDate.year,
-                              lastMonthOfQuarter,
-                              _getLastDayOfMonth(currentDate.year, lastMonthOfQuarter),
-                            );
+                            if (_isSelectingStart) {
+                              _startDate = DateTime(
+                                currentDate.year,
+                                firstMonthOfQuarter,
+                              );
+                            } else {
+                              _endDate = DateTime(
+                                currentDate.year,
+                                firstMonthOfQuarter,
+                              );
+                            }
                           });
                         },
                         child: Container(
@@ -921,11 +888,11 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
             flex: 2,
             child: ElevatedButton(
               onPressed: () {
+                // 确保开始时间不晚于结束时间
                 DateTime finalStartDate = _startDate;
                 DateTime finalEndDate = _endDate;
 
-                // 仅在月份模式下检查时间顺序
-                if (widget.mode == TimePickerMode.month && _startDate.isAfter(_endDate)) {
+                if (_startDate.isAfter(_endDate)) {
                   finalStartDate = _endDate;
                   finalEndDate = _startDate;
                 }
@@ -959,13 +926,5 @@ class _SmartTimePickerState extends State<SmartTimePicker> {
         ],
       ),
     );
-  }
-
-  /// 获取指定年月的最后一天
-  int _getLastDayOfMonth(int year, int month) {
-    // 获取下个月的第一天，然后减去一天
-    final nextMonth = month == 12 ? DateTime(year + 1, 1) : DateTime(year, month + 1);
-    final lastDay = nextMonth.subtract(const Duration(days: 1));
-    return lastDay.day;
   }
 }

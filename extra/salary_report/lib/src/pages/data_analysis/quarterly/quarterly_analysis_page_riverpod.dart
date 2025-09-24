@@ -161,6 +161,13 @@ class _QuarterlyAnalysisPageRiverpodState
           .value!
           .monthlySummary;
 
+      analysisData["totalUniqueEmployees"] =
+          keyMetricsState.value!.monthlyData?.findDuplicates().length ?? 0;
+      analysisData["totalEmployees"] =
+          (keyMetricsState.value! as QuarterlyKeyMetricsState)
+              .quarterData?["totalEmployees"] ??
+          0;
+
       logger.info('salarySummary     ${analysisData['salarySummary']}');
 
       // 季度特有数据：上一季度对比数据
@@ -174,8 +181,10 @@ class _QuarterlyAnalysisPageRiverpodState
       }
 
       // 季度特有数据：季度汇总数据
-      if (keyMetricsState is AsyncData && keyMetricsState.value is QuarterlyKeyMetricsState) {
-        final quarterlyState = keyMetricsState.value as QuarterlyKeyMetricsState;
+      if (keyMetricsState is AsyncData &&
+          keyMetricsState.value is QuarterlyKeyMetricsState) {
+        final quarterlyState =
+            keyMetricsState.value as QuarterlyKeyMetricsState;
         if (quarterlyState.quarterData != null) {
           analysisData['quarterData'] = quarterlyState.quarterData;
         }
@@ -424,7 +433,8 @@ class _QuarterlyAnalysisPageRiverpodState
       // 聚合所有月份的薪资区间数据
       for (var monthData in monthlyDataList) {
         if (monthData['salaryRangeStats'] is Map) {
-          final salaryRangeStats = monthData['salaryRangeStats'] as Map<String, dynamic>;
+          final salaryRangeStats =
+              monthData['salaryRangeStats'] as Map<String, dynamic>;
           salaryRangeStats.forEach((rangeName, stat) {
             if (stat is SalaryRangeStats) {
               if (aggregatedSalaryRanges.containsKey(rangeName)) {
@@ -433,7 +443,8 @@ class _QuarterlyAnalysisPageRiverpodState
                   range: rangeName,
                   employeeCount: existing.employeeCount + stat.employeeCount,
                   totalSalary: existing.totalSalary + stat.totalSalary,
-                  averageSalary: (existing.totalSalary + stat.totalSalary) /
+                  averageSalary:
+                      (existing.totalSalary + stat.totalSalary) /
                       (existing.employeeCount + stat.employeeCount),
                   year: existing.year,
                   month: existing.month,
@@ -845,8 +856,7 @@ class _QuarterlyAnalysisPageRiverpodState
   ) {
     return keyMetricsState.when(
       data: (state) {
-        if (state is! QuarterlyKeyMetricsState ||
-            (state).quarterData == null) {
+        if (state is! QuarterlyKeyMetricsState || (state).quarterData == null) {
           return const Center(child: Text('暂无关键指标数据'));
         }
 

@@ -173,6 +173,16 @@ class MinimalEmployeeInfo {
   int get hashCode => Object.hash(name, department);
 }
 
+extension FindDuplicateEmployeesExtension on List<MonthlyComparisonData> {
+  List<MinimalEmployeeInfo> findDuplicates() {
+    final uniqueEmployees = <MinimalEmployeeInfo>{};
+    for (final employee in this) {
+      uniqueEmployees.addAll(employee.workers);
+    }
+    return uniqueEmployees.toList();
+  }
+}
+
 // 月度对比数据模型
 class MonthlyComparisonData {
   final int year;
