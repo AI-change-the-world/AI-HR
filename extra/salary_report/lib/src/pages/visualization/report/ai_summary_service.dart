@@ -9,11 +9,11 @@ class AISummaryService {
   final LLMClient _llmClient;
 
   AISummaryService() : _llmClient = LLMClient();
-  
+
   /// 直接使用自定义提示获取 AI 回答
   Future<String> getAnswer(String prompt) async {
     if (!AIConfig.aiEnabled) return "";
-    
+
     try {
       return await _llmClient.getAnswer(prompt);
     } catch (e) {
@@ -183,7 +183,7 @@ $departmentData
       return ""; // Fallback to empty
     }
   }
-  
+
   /// 使用自定义提示生成薪资区间特征总结
   Future<String> generateSalaryRangeFeatureSummaryWithCustomPrompt(
     List<Map<String, int>> salaryRanges,
@@ -211,9 +211,8 @@ $departmentData
       final prompt = customPrompt
           .replaceAll('{{salary_range_descriptions}}', salaryRangeDescriptions)
           .replaceAll('{{department_data}}', departmentData);
-          
-      final summary = await _llmClient.getAnswer(
-        '''
+
+      final summary = await _llmClient.getAnswer('''
 薪资分布数据：
 $salaryRangeDescriptions
 
@@ -221,11 +220,12 @@ $salaryRangeDescriptions
 $departmentData
 
 $customPrompt
-        ''',
-      );
+        ''');
       return summary.isNotEmpty ? summary : "无法生成薪资区间特征总结";
     } catch (e) {
-      logger.info('AI salary range feature summary with custom prompt failed: $e');
+      logger.info(
+        'AI salary range feature summary with custom prompt failed: $e',
+      );
       return ""; // Fallback to empty
     }
   }
@@ -257,7 +257,7 @@ $departmentData
       return ""; // Fallback to empty
     }
   }
-  
+
   /// 使用自定义提示生成部门薪资分析
   Future<String> generateDepartmentSalaryAnalysisWithCustomPrompt(
     List<DepartmentSalaryStats> departmentStats,
@@ -273,7 +273,7 @@ $departmentData
           )
           .join('; ');
 
-      final prompt = 
+      final prompt =
           '''
 部门薪资数据：
 $departmentData
@@ -282,7 +282,9 @@ $customPrompt
           ''';
       return await _llmClient.getAnswer(prompt);
     } catch (e) {
-      logger.info('AI department salary analysis with custom prompt failed: $e');
+      logger.info(
+        'AI department salary analysis with custom prompt failed: $e',
+      );
       return ""; // Fallback to empty
     }
   }
@@ -326,7 +328,7 @@ $salaryRangeDescriptions
       return ""; // Fallback to empty
     }
   }
-  
+
   /// 使用自定义提示生成关键薪资点分析
   Future<String> generateKeySalaryPointWithCustomPrompt(
     List<DepartmentSalaryStats> departmentStats,
@@ -369,25 +371,34 @@ $customPrompt
   }
 
   /// 生成季度工资总额分析
+  @Deprecated("Deprecated")
   Future<String> generateQuarterlyTotalSalaryAnalysis(
     double totalSalary,
     double previousQuarterTotalSalary,
     List<Map<String, dynamic>> monthlyData,
   ) async {
+    logger.info('monthlyData   $monthlyData');
+
     if (!AIConfig.aiEnabled) return "";
 
     try {
       final monthlyBreakdown = monthlyData
-          .map((data) => 
-              '${data['month']}: 总额${data['totalSalary'].toStringAsFixed(2)}元, ' +
-              '员工数${data['employeeCount']}人')
+          .map(
+            (data) =>
+                '${data['month']}: 总额${data['totalSalary'].toStringAsFixed(2)}元, ' +
+                '员工数${data['employeeCount']}人',
+          )
           .join('\n');
-      
-      final changeRate = previousQuarterTotalSalary > 0 
-          ? ((totalSalary - previousQuarterTotalSalary) / previousQuarterTotalSalary * 100).toStringAsFixed(2)
+
+      final changeRate = previousQuarterTotalSalary > 0
+          ? ((totalSalary - previousQuarterTotalSalary) /
+                    previousQuarterTotalSalary *
+                    100)
+                .toStringAsFixed(2)
           : "无法计算";
-      
-      final prompt = '''
+
+      final prompt =
+          '''
 请分析以下季度工资总额数据：
 - 本季度工资总额：${totalSalary.toStringAsFixed(2)}元
 - 上季度工资总额：${previousQuarterTotalSalary.toStringAsFixed(2)}元
@@ -397,7 +408,7 @@ $monthlyBreakdown
 
 请撰写一段关于季度工资总额的分析，包括总体趋势、月度波动原因、与上季度的对比分析，以及可能的影响因素。要求语言严谨、简洁，体现报告风格。仅输出一个连续的段落，不使用任何格式标记。
       ''';
-      
+
       return await _llmClient.getAnswer(prompt);
     } catch (e) {
       logger.info('AI quarterly total salary analysis failed: $e');
@@ -416,22 +427,30 @@ $monthlyBreakdown
 
     try {
       final monthlyBreakdown = monthlyData
-          .map((data) => 
-              '${data['month']}: 平均工资${data['averageSalary'].toStringAsFixed(2)}元, ' +
-              '员工数${data['employeeCount']}人')
+          .map(
+            (data) =>
+                '${data['month']}: 平均工资${data['averageSalary'].toStringAsFixed(2)}元, ' +
+                '员工数${data['employeeCount']}人',
+          )
           .join('\n');
-      
+
       final departmentData = departmentStats
-          .map((dept) => 
-              '${dept.department}: 平均工资${dept.averageNetSalary.toStringAsFixed(2)}元, ' +
-              '员工数${dept.employeeCount}人')
+          .map(
+            (dept) =>
+                '${dept.department}: 平均工资${dept.averageNetSalary.toStringAsFixed(2)}元, ' +
+                '员工数${dept.employeeCount}人',
+          )
           .join('\n');
-      
-      final changeRate = previousQuarterAverageSalary > 0 
-          ? ((averageSalary - previousQuarterAverageSalary) / previousQuarterAverageSalary * 100).toStringAsFixed(2)
+
+      final changeRate = previousQuarterAverageSalary > 0
+          ? ((averageSalary - previousQuarterAverageSalary) /
+                    previousQuarterAverageSalary *
+                    100)
+                .toStringAsFixed(2)
           : "无法计算";
-      
-      final prompt = '''
+
+      final prompt =
+          '''
 请分析以下季度平均工资数据：
 - 本季度平均工资：${averageSalary.toStringAsFixed(2)}元
 - 上季度平均工资：${previousQuarterAverageSalary.toStringAsFixed(2)}元
@@ -443,7 +462,7 @@ $departmentData
 
 请撰写一段关于季度平均工资的分析，包括总体水平评估、部门间差异、月度波动原因，以及与上季度的对比分析。要求语言严谨、简洁，体现报告风格。仅输出一个连续的段落，不使用任何格式标记。
       ''';
-      
+
       return await _llmClient.getAnswer(prompt);
     } catch (e) {
       logger.info('AI quarterly average salary analysis failed: $e');
@@ -465,22 +484,28 @@ $departmentData
       final monthlyBreakdown = monthlyData
           .map((data) => '${data['month']}: ${data['employeeCount']}人')
           .join('\n');
-      
+
       String employeeChangesText = "";
       if (employeeChanges.isNotEmpty) {
         employeeChangesText = employeeChanges
-            .map((change) => 
-                '${change['month']}月: 新入职${change['newEmployees'].length}人, ' +
-                '离职${change['resignedEmployees'].length}人, ' +
-                '净变化${change['netChange']}人')
+            .map(
+              (change) =>
+                  '${change['month']}月: 新入职${change['newEmployees'].length}人, ' +
+                  '离职${change['resignedEmployees'].length}人, ' +
+                  '净变化${change['netChange']}人',
+            )
             .join('\n');
       }
-      
-      final changeRate = previousQuarterTotalEmployees > 0 
-          ? ((totalEmployees - previousQuarterTotalEmployees) / previousQuarterTotalEmployees * 100).toStringAsFixed(2)
+
+      final changeRate = previousQuarterTotalEmployees > 0
+          ? ((totalEmployees - previousQuarterTotalEmployees) /
+                    previousQuarterTotalEmployees *
+                    100)
+                .toStringAsFixed(2)
           : "无法计算";
-      
-      final prompt = '''
+
+      final prompt =
+          '''
 请分析以下季度员工数量数据：
 - 本季度总人次：${totalEmployees}人
 - 本季度去重后总人数：${uniqueEmployees}人
@@ -492,7 +517,7 @@ ${employeeChangesText.isNotEmpty ? '- 员工变动情况：\n$employeeChangesTex
 
 请撰写一段关于季度员工数量的分析，包括人员规模、稳定性、流动性，以及与上季度的对比分析。要求语言严谨、简洁，体现报告风格。仅输出一个连续的段落，不使用任何格式标记。
       ''';
-      
+
       return await _llmClient.getAnswer(prompt);
     } catch (e) {
       logger.info('AI quarterly employee count analysis failed: $e');
@@ -508,17 +533,20 @@ ${employeeChangesText.isNotEmpty ? '- 员工变动情况：\n$employeeChangesTex
 
     try {
       final salaryComposition = salaryStructureData
-          .map((item) => 
-              '${item['category']}: ${item['value'].toStringAsFixed(2)}元')
+          .map(
+            (item) =>
+                '${item['category']}: ${item['value'].toStringAsFixed(2)}元',
+          )
           .join('\n');
-      
-      final prompt = '''
+
+      final prompt =
+          '''
 请分析以下季度工资构成数据：
 $salaryComposition
 
 请撰写一段关于季度工资构成的分析，包括各组成部分的占比、合理性评估，以及优化建议。要求语言严谨、简洁，体现报告风格。仅输出一个连续的段落，不使用任何格式标记。
       ''';
-      
+
       return await _llmClient.getAnswer(prompt);
     } catch (e) {
       logger.info('AI quarterly salary composition analysis failed: $e');
@@ -534,11 +562,27 @@ $salaryComposition
     if (!AIConfig.aiEnabled || previousQuarterData == null) return "";
 
     try {
-      final totalSalaryChange = ((currentQuarterData['totalSalary'] - previousQuarterData['totalSalary']) / previousQuarterData['totalSalary'] * 100).toStringAsFixed(2);
-      final averageSalaryChange = ((currentQuarterData['averageSalary'] - previousQuarterData['averageSalary']) / previousQuarterData['averageSalary'] * 100).toStringAsFixed(2);
-      final employeeCountChange = ((currentQuarterData['totalEmployees'] - previousQuarterData['totalEmployees']) / previousQuarterData['totalEmployees'] * 100).toStringAsFixed(2);
-      
-      final prompt = '''
+      final totalSalaryChange =
+          ((currentQuarterData['totalSalary'] -
+                      previousQuarterData['totalSalary']) /
+                  previousQuarterData['totalSalary'] *
+                  100)
+              .toStringAsFixed(2);
+      final averageSalaryChange =
+          ((currentQuarterData['averageSalary'] -
+                      previousQuarterData['averageSalary']) /
+                  previousQuarterData['averageSalary'] *
+                  100)
+              .toStringAsFixed(2);
+      final employeeCountChange =
+          ((currentQuarterData['totalEmployees'] -
+                      previousQuarterData['totalEmployees']) /
+                  previousQuarterData['totalEmployees'] *
+                  100)
+              .toStringAsFixed(2);
+
+      final prompt =
+          '''
 请分析以下季度环比变化数据：
 - 工资总额变化率：${totalSalaryChange}%
 - 平均工资变化率：${averageSalaryChange}%
@@ -548,7 +592,7 @@ $salaryComposition
 
 请撰写一段关于季度环比变化的分析，包括各指标变化的原因、相互关系，以及对公司的影响。要求语言严谨、简洁，体现报告风格。仅输出一个连续的段落，不使用任何格式标记。
       ''';
-      
+
       return await _llmClient.getAnswer(prompt);
     } catch (e) {
       logger.info('AI quarterly MoM change analysis failed: $e');
@@ -623,4 +667,422 @@ $salaryComposition
 工资构成： {{salary_composition_q}}
 环比变化： {{quarter_mom_change}}
 """;
+
+  /// 生成季度趋势分析
+  Future<String> generateQuarterlyTrendAnalysis(
+    List<QuarterlyComparisonData> quarterlyComparisons,
+  ) async {
+    if (!AIConfig.aiEnabled) return "";
+
+    try {
+      // 按时间排序
+      final sortedData =
+          List<QuarterlyComparisonData>.from(quarterlyComparisons)
+            ..sort((a, b) {
+              if (a.year != b.year) {
+                return a.year.compareTo(b.year);
+              }
+              return a.quarter.compareTo(b.quarter);
+            });
+
+      final trendData = sortedData
+          .map(
+            (q) =>
+                '${q.year}年第${q.quarter}季度: 员工数${q.employeeCount}人, ' +
+                '工资总额${q.totalSalary.toStringAsFixed(2)}元, ' +
+                '平均工资${q.averageSalary.toStringAsFixed(2)}元',
+          )
+          .join('\n');
+
+      final prompt =
+          '''
+请分析以下多季度工资趋势数据：
+$trendData
+
+请撰写一段关于多季度工资趋势的分析，包括总体趋势、季节性波动、长期变化等方面。要求语言严谨、简洁，体现报告风格。仅输出一个连续的段落，不使用任何格式标记。
+      ''';
+
+      return await _llmClient.getAnswer(prompt);
+    } catch (e) {
+      logger.info('AI quarterly trend analysis failed: $e');
+      return ""; // Fallback to empty
+    }
+  }
+
+  /// 生成部门对比分析
+  Future<String> generateDepartmentComparisonAnalysis(
+    List<DepartmentSalaryStats> departmentStats,
+  ) async {
+    if (!AIConfig.aiEnabled) return "";
+
+    try {
+      final departmentData = departmentStats
+          .map(
+            (dept) =>
+                '${dept.department}: 员工数${dept.employeeCount}人, ' +
+                '工资总额${dept.totalNetSalary.toStringAsFixed(2)}元, ' +
+                '平均工资${dept.averageNetSalary.toStringAsFixed(2)}元',
+          )
+          .join('\n');
+
+      final prompt =
+          '''
+请分析以下部门薪资对比数据：
+$departmentData
+
+请撰写一段关于部门间薪资差异的分析，包括差异原因、合理性评估、潜在问题等方面。要求语言严谨、简洁，体现报告风格。仅输出一个连续的段落，不使用任何格式标记。
+      ''';
+
+      return await _llmClient.getAnswer(prompt);
+    } catch (e) {
+      logger.info('AI department comparison analysis failed: $e');
+      return ""; // Fallback to empty
+    }
+  }
+
+  /// 生成季度环比分析
+  Future<String> generateQuarterOverQuarterAnalysis(
+    List<QuarterlyComparisonData> quarterlyComparisons,
+  ) async {
+    if (!AIConfig.aiEnabled || quarterlyComparisons.length < 2) return "";
+
+    try {
+      // 按时间排序
+      final sortedData =
+          List<QuarterlyComparisonData>.from(quarterlyComparisons)
+            ..sort((a, b) {
+              if (a.year != b.year) {
+                return a.year.compareTo(b.year);
+              }
+              return a.quarter.compareTo(b.quarter);
+            });
+
+      final qoqData = <String>[];
+      for (int i = 1; i < sortedData.length; i++) {
+        final current = sortedData[i];
+        final previous = sortedData[i - 1];
+
+        final employeeCountChange =
+            current.employeeCount - previous.employeeCount;
+        final employeeCountChangeRate = previous.employeeCount > 0
+            ? (employeeCountChange / previous.employeeCount * 100)
+                  .toStringAsFixed(2)
+            : "N/A";
+
+        final totalSalaryChange = current.totalSalary - previous.totalSalary;
+        final totalSalaryChangeRate = previous.totalSalary > 0
+            ? (totalSalaryChange / previous.totalSalary * 100).toStringAsFixed(
+                2,
+              )
+            : "N/A";
+
+        final averageSalaryChange =
+            current.averageSalary - previous.averageSalary;
+        final averageSalaryChangeRate = previous.averageSalary > 0
+            ? (averageSalaryChange / previous.averageSalary * 100)
+                  .toStringAsFixed(2)
+            : "N/A";
+
+        qoqData.add(
+          '${current.year}年第${current.quarter}季度 vs ${previous.year}年第${previous.quarter}季度: ' +
+              '员工数变化${employeeCountChange}人(${employeeCountChangeRate}%), ' +
+              '工资总额变化${totalSalaryChange.toStringAsFixed(2)}元(${totalSalaryChangeRate}%), ' +
+              '平均工资变化${averageSalaryChange.toStringAsFixed(2)}元(${averageSalaryChangeRate}%)',
+        );
+      }
+
+      final prompt =
+          '''
+请分析以下季度环比变化数据：
+${qoqData.join('\n')}
+
+请撰写一段关于季度环比变化的分析，包括变化趋势、波动原因、关键时点等方面。要求语言严谨、简洁，体现报告风格。仅输出一个连续的段落，不使用任何格式标记。
+      ''';
+
+      return await _llmClient.getAnswer(prompt);
+    } catch (e) {
+      logger.info('AI quarter over quarter analysis failed: $e');
+      return ""; // Fallback to empty
+    }
+  }
+
+  /// 生成年度同比分析
+  Future<String> generateYearOverYearAnalysis(
+    List<dynamic>
+    comparisons, // 可以是 QuarterlyComparisonData 或 YearlyComparisonData
+  ) async {
+    if (!AIConfig.aiEnabled || comparisons.length < 2) return "";
+
+    try {
+      final yoyData = <String>[];
+
+      if (comparisons.isNotEmpty &&
+          comparisons.first is QuarterlyComparisonData) {
+        // 处理季度数据
+        final quarterlyData = comparisons.cast<QuarterlyComparisonData>();
+
+        // 按时间排序
+        final sortedData = List<QuarterlyComparisonData>.from(quarterlyData)
+          ..sort((a, b) {
+            if (a.year != b.year) {
+              return a.year.compareTo(b.year);
+            }
+            return a.quarter.compareTo(b.quarter);
+          });
+
+        // 查找同比数据（去年同季度）
+        for (var currentQuarter in sortedData) {
+          QuarterlyComparisonData? lastYearQuarter;
+          try {
+            lastYearQuarter = sortedData.firstWhere(
+              (q) =>
+                  q.year == currentQuarter.year - 1 &&
+                  q.quarter == currentQuarter.quarter,
+            );
+          } catch (e) {
+            lastYearQuarter = null;
+          }
+
+          if (lastYearQuarter != null) {
+            final employeeCountChange =
+                currentQuarter.employeeCount - lastYearQuarter.employeeCount;
+            final employeeCountChangeRate = lastYearQuarter.employeeCount > 0
+                ? (employeeCountChange / lastYearQuarter.employeeCount * 100)
+                      .toStringAsFixed(2)
+                : "N/A";
+
+            final totalSalaryChange =
+                currentQuarter.totalSalary - lastYearQuarter.totalSalary;
+            final totalSalaryChangeRate = lastYearQuarter.totalSalary > 0
+                ? (totalSalaryChange / lastYearQuarter.totalSalary * 100)
+                      .toStringAsFixed(2)
+                : "N/A";
+
+            final averageSalaryChange =
+                currentQuarter.averageSalary - lastYearQuarter.averageSalary;
+            final averageSalaryChangeRate = lastYearQuarter.averageSalary > 0
+                ? (averageSalaryChange / lastYearQuarter.averageSalary * 100)
+                      .toStringAsFixed(2)
+                : "N/A";
+
+            yoyData.add(
+              '${currentQuarter.year}年第${currentQuarter.quarter}季度 vs ${lastYearQuarter.year}年第${lastYearQuarter.quarter}季度: ' +
+                  '员工数变化${employeeCountChange}人(${employeeCountChangeRate}%), ' +
+                  '工资总额变化${totalSalaryChange.toStringAsFixed(2)}元(${totalSalaryChangeRate}%), ' +
+                  '平均工资变化${averageSalaryChange.toStringAsFixed(2)}元(${averageSalaryChangeRate}%)',
+            );
+          }
+        }
+      } else if (comparisons.isNotEmpty &&
+          comparisons.first is YearlyComparisonData) {
+        // 处理年度数据
+        final yearlyData = comparisons.cast<YearlyComparisonData>();
+
+        // 按年份排序
+        final sortedData = List<YearlyComparisonData>.from(yearlyData)
+          ..sort((a, b) => a.year.compareTo(b.year));
+
+        // 计算同比变化
+        for (int i = 1; i < sortedData.length; i++) {
+          final currentYear = sortedData[i];
+          final previousYear = sortedData[i - 1];
+
+          final employeeCountChange =
+              currentYear.employeeCount - previousYear.employeeCount;
+          final employeeCountChangeRate = previousYear.employeeCount > 0
+              ? (employeeCountChange / previousYear.employeeCount * 100)
+                    .toStringAsFixed(2)
+              : "N/A";
+
+          final totalSalaryChange =
+              currentYear.totalSalary - previousYear.totalSalary;
+          final totalSalaryChangeRate = previousYear.totalSalary > 0
+              ? (totalSalaryChange / previousYear.totalSalary * 100)
+                    .toStringAsFixed(2)
+              : "N/A";
+
+          final averageSalaryChange =
+              currentYear.averageSalary - previousYear.averageSalary;
+          final averageSalaryChangeRate = previousYear.averageSalary > 0
+              ? (averageSalaryChange / previousYear.averageSalary * 100)
+                    .toStringAsFixed(2)
+              : "N/A";
+
+          yoyData.add(
+            '${currentYear.year}年 vs ${previousYear.year}年: ' +
+                '员工数变化${employeeCountChange}人(${employeeCountChangeRate}%), ' +
+                '工资总额变化${totalSalaryChange.toStringAsFixed(2)}元(${totalSalaryChangeRate}%), ' +
+                '平均工资变化${averageSalaryChange.toStringAsFixed(2)}元(${averageSalaryChangeRate}%)',
+          );
+        }
+      }
+
+      if (yoyData.isEmpty) {
+        return "无法获取同比数据进行分析。";
+      }
+
+      final prompt =
+          '''
+请分析以下同比变化数据：
+${yoyData.join('\n')}
+
+请撰写一段关于同比变化的分析，包括变化趋势、年度对比、长期发展等方面。要求语言严谨、简洁，体现报告风格。仅输出一个连续的段落，不使用任何格式标记。
+      ''';
+
+      return await _llmClient.getAnswer(prompt);
+    } catch (e) {
+      logger.info('AI year over year analysis failed: $e');
+      return ""; // Fallback to empty
+    }
+  }
+
+  /// 生成薪资区间分析
+  Future<String> generateSalaryRangeAnalysis(
+    List<SalaryRangeStats> salaryRangeStats,
+  ) async {
+    if (!AIConfig.aiEnabled) return "";
+
+    try {
+      final rangeData = salaryRangeStats
+          .map(
+            (range) =>
+                '${range.range}: 员工数${range.employeeCount}人, ' +
+                '工资总额${range.totalSalary.toStringAsFixed(2)}元, ' +
+                '平均工资${range.averageSalary.toStringAsFixed(2)}元',
+          )
+          .join('\n');
+
+      final prompt =
+          '''
+请分析以下薪资区间数据：
+$rangeData
+
+请撰写一段关于薪资区间分布的分析，包括分布特点、集中趋势、差异原因等方面。要求语言严谨、简洁，体现报告风格。仅输出一个连续的段落，不使用任何格式标记。
+      ''';
+
+      return await _llmClient.getAnswer(prompt);
+    } catch (e) {
+      logger.info('AI salary range analysis failed: $e');
+      return ""; // Fallback to empty
+    }
+  }
+
+  /// 生成多季度结论
+  Future<String> generateMultiQuarterConclusions(
+    MultiQuarterComparisonData comparisonData,
+  ) async {
+    if (!AIConfig.aiEnabled) return "";
+
+    try {
+      // 提取关键数据
+      final quarterCount = comparisonData.quarterlyComparisons.length;
+      final startQuarter = comparisonData.quarterlyComparisons.first;
+      final endQuarter = comparisonData.quarterlyComparisons.last;
+
+      final totalSalaryChange =
+          endQuarter.totalSalary - startQuarter.totalSalary;
+      final totalSalaryChangeRate = startQuarter.totalSalary > 0
+          ? (totalSalaryChange / startQuarter.totalSalary * 100)
+                .toStringAsFixed(2)
+          : "N/A";
+
+      final averageSalaryChange =
+          endQuarter.averageSalary - startQuarter.averageSalary;
+      final averageSalaryChangeRate = startQuarter.averageSalary > 0
+          ? (averageSalaryChange / startQuarter.averageSalary * 100)
+                .toStringAsFixed(2)
+          : "N/A";
+
+      final prompt =
+          '''
+请基于以下多季度工资数据，提供综合结论和优化建议：
+
+分析周期：${startQuarter.year}年第${startQuarter.quarter}季度至${endQuarter.year}年第${endQuarter.quarter}季度，共${quarterCount}个季度
+总体变化：工资总额变化${totalSalaryChange.toStringAsFixed(2)}元(${totalSalaryChangeRate}%)，平均工资变化${averageSalaryChange.toStringAsFixed(2)}元(${averageSalaryChangeRate}%)
+
+请提供一段关于多季度薪资数据的综合结论，以及针对性的优化建议。要求语言严谨、简洁，体现报告风格。
+      ''';
+
+      return await _llmClient.getAnswer(prompt);
+    } catch (e) {
+      logger.info('AI multi-quarter conclusions failed: $e');
+      return ""; // Fallback to empty
+    }
+  }
+
+  /// 生成多年度结论
+  Future<String> generateMultiYearConclusions(
+    MultiYearComparisonData comparisonData,
+  ) async {
+    if (!AIConfig.aiEnabled) return "";
+
+    try {
+      // 提取关键数据
+      final yearCount = comparisonData.yearlyComparisons.length;
+      final startYear = comparisonData.yearlyComparisons.first;
+      final endYear = comparisonData.yearlyComparisons.last;
+
+      final totalSalaryChange = endYear.totalSalary - startYear.totalSalary;
+      final totalSalaryChangeRate = startYear.totalSalary > 0
+          ? (totalSalaryChange / startYear.totalSalary * 100).toStringAsFixed(2)
+          : "N/A";
+
+      final averageSalaryChange =
+          endYear.averageSalary - startYear.averageSalary;
+      final averageSalaryChangeRate = startYear.averageSalary > 0
+          ? (averageSalaryChange / startYear.averageSalary * 100)
+                .toStringAsFixed(2)
+          : "N/A";
+
+      final prompt =
+          '''
+请基于以下多年度工资数据，提供综合结论和优化建议：
+
+分析周期：${startYear.year}年至${endYear.year}年，共${yearCount}年
+总体变化：工资总额变化${totalSalaryChange.toStringAsFixed(2)}元(${totalSalaryChangeRate}%)，平均工资变化${averageSalaryChange.toStringAsFixed(2)}元(${averageSalaryChangeRate}%)
+
+请提供一段关于多年度薪资数据的综合结论，以及针对性的优化建议。要求语言严谨、简洁，体现报告风格。
+      ''';
+
+      return await _llmClient.getAnswer(prompt);
+    } catch (e) {
+      logger.info('AI multi-year conclusions failed: $e');
+      return ""; // Fallback to empty
+    }
+  }
+
+  /// 生成年度趋势分析
+  Future<String> generateYearlyTrendAnalysis(
+    List<YearlyComparisonData> yearlyComparisons,
+  ) async {
+    if (!AIConfig.aiEnabled) return "";
+
+    try {
+      // 按年份排序
+      final sortedData = List<YearlyComparisonData>.from(yearlyComparisons)
+        ..sort((a, b) => a.year.compareTo(b.year));
+
+      final trendData = sortedData
+          .map(
+            (y) =>
+                '${y.year}年: 员工数${y.employeeCount}人, ' +
+                '工资总额${y.totalSalary.toStringAsFixed(2)}元, ' +
+                '平均工资${y.averageSalary.toStringAsFixed(2)}元',
+          )
+          .join('\n');
+
+      final prompt =
+          '''
+请分析以下多年度工资趋势数据：
+$trendData
+
+请撰写一段关于多年度工资趋势的分析，包括总体趋势、年度波动、长期变化等方面。要求语言严谨、简洁，体现报告风格。仅输出一个连续的段落，不使用任何格式标记。
+      ''';
+
+      return await _llmClient.getAnswer(prompt);
+    } catch (e) {
+      logger.info('AI yearly trend analysis failed: $e');
+      return ""; // Fallback to empty
+    }
+  }
 }

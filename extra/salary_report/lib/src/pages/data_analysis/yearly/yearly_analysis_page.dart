@@ -16,7 +16,7 @@ import 'package:salary_report/src/common/scroll_screenshot.dart'; // 添加截�
 import 'package:salary_report/src/common/toast.dart'; // 添加Toast导入
 import 'package:salary_report/src/components/monthly_employee_changes_component.dart'; // 导入月度员工变化组件
 import 'package:salary_report/src/components/department_stats_component.dart';
-import 'package:salary_report/src/utils/yearly_analysis_json_converter.dart'; // 添加导入
+import 'package:salary_report/src/services/yearly/yearly_analysis_json_converter.dart'; // 添加导入
 
 class YearlyAnalysisPage extends StatefulWidget {
   const YearlyAnalysisPage({
@@ -77,12 +77,8 @@ class _YearlyAnalysisPageState extends State<YearlyAnalysisPage> {
       final departmentStats =
           analysisData['departmentStats'] as List<DepartmentSalaryStats>;
 
-      analysisData['salarySummary'] = _salaryDataService.getMonthlySummaryMap(
-        widget.year,
-        1,
-        widget.year,
-        12,
-      );
+      analysisData['salarySummary'] = await _salaryDataService
+          .getMonthlySummaryMap(widget.year, 1, widget.year, 12);
 
       // 确定开始和结束时间
       final startTime = DateTime(widget.year, 1);

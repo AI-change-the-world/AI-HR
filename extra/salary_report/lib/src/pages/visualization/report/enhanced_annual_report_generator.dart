@@ -8,7 +8,6 @@ import 'package:salary_report/src/services/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/services/report_service.dart';
-import 'package:salary_report/src/utils/monthly_analysis_json_converter.dart';
 import 'package:salary_report/src/services/yearly/yearly.dart';
 import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_interface.dart';
 import 'package:salary_report/src/isar/salary_list.dart';
@@ -52,13 +51,12 @@ class EnhancedAnnualReportGenerator implements EnhancedReportGenerator {
       logger.info('Starting enhanced annual salary report generation...');
 
       // 1. 生成JSON格式的分析数据
-      final jsonString = MonthlyAnalysisJsonConverter.convertAnalysisDataToJson(
+      final jsonString = YearlyAnalysisJsonConverter.convertAnalysisDataToJson(
         analysisData: analysisData,
         departmentStats: departmentStats,
         attendanceStats: attendanceStats,
-        previousMonthData: previousMonthData,
+        previousYearData: previousMonthData,
         year: year,
-        month: month,
       );
 
       // 2. 解析JSON数据

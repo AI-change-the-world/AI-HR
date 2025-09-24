@@ -306,6 +306,124 @@ class MonthlyAnalysisService {
     }
   }
 
+  Future<List<MonthlyComparisonData>> getMonthlyComparisonDataList(
+    int startYear,
+    int startMonth,
+    int endYear,
+    int endMonth,
+  ) async {
+    final monthList = generateMonthList(
+      startYear,
+      startMonth,
+      endYear,
+      endMonth,
+    );
+
+    final monthlyComparisonDataList = <MonthlyComparisonData>[];
+
+    // 遍历月份列表获取数据
+    for (var monthInfo in monthList) {
+      final year = monthInfo['year']!;
+      final month = monthInfo['month']!;
+
+      // 获取月度工资数据用于员工信息收集
+      final monthlySalaryData = await getMonthlySalaryData(year, month);
+
+      // 收集员工信息
+      final workers = <MinimalEmployeeInfo>[];
+      if (monthlySalaryData != null) {
+        for (var record in monthlySalaryData.records) {
+          if (record.name != null && record.department != null) {
+            workers.add(
+              MinimalEmployeeInfo(
+                name: record.name!,
+                department: record.department!,
+              ),
+            );
+          }
+        }
+      }
+
+      // 获取部门统计数据
+      final departmentStatsList = await getDepartmentAggregation(year, month);
+      final departmentStatsMap = <String, DepartmentSalaryStats>{};
+      for (var stat in departmentStatsList) {
+        departmentStatsMap[stat.department] = stat;
+      }
+
+      // 获取薪资范围统计数据
+      final salaryRangeStatsList = await getSalaryRangeAggregation(year, month);
+      final salaryRangeStatsMap = <String, SalaryRangeStats>{};
+      for (var stat in salaryRangeStatsList) {
+        salaryRangeStatsMap[stat.range] = stat;
+      }
+
+      // 计算总体统计数据
+      int totalEmployeeCount = 0;
+      double totalSalary = 0.0;
+      double averageSalary = 0.0;
+      double highestSalary = 0.0; // 初始化最高工资
+      double lowestSalary = double.infinity; // 初始化最低工资
+
+      // 重新计算月度总工资和员工数（正确的方式）
+      double monthlyTotalSalary = 0.0;
+      int monthlyTotalEmployeeCount = 0;
+
+      // 获取月度工资数据用于最高最低工资计算
+      if (monthlySalaryData != null) {
+        for (var record in monthlySalaryData.records) {
+          if (record.netSalary != null) {
+            final salaryStr = record.netSalary!.replaceAll(
+              RegExp(r'[^\d.-]'),
+              '',
+            );
+            final salary = double.tryParse(salaryStr) ?? 0;
+            monthlyTotalSalary += salary;
+            monthlyTotalEmployeeCount++;
+
+            // 更新最高和最低工资
+            if (salary > highestSalary) {
+              highestSalary = salary;
+            }
+            if (salary < lowestSalary && salary > 0) {
+              // 忽略0工资
+              lowestSalary = salary;
+            }
+          }
+        }
+      }
+
+      // 使用正确的月度统计数据
+      totalEmployeeCount = monthlyTotalEmployeeCount;
+      totalSalary = monthlyTotalSalary;
+      averageSalary = totalEmployeeCount > 0
+          ? totalSalary / totalEmployeeCount
+          : 0.0;
+
+      // 确保最低工资有合理的默认值
+      if (lowestSalary == double.infinity) {
+        lowestSalary = 0.0;
+      }
+
+      monthlyComparisonDataList.add(
+        MonthlyComparisonData(
+          year: year,
+          month: month,
+          employeeCount: totalEmployeeCount,
+          totalSalary: totalSalary,
+          averageSalary: averageSalary,
+          highestSalary: highestSalary,
+          lowestSalary: lowestSalary,
+          departmentStats: departmentStatsMap,
+          salaryRangeStats: salaryRangeStatsMap,
+          workers: workers, // 添加员工列表字段
+        ),
+      );
+    }
+
+    return monthlyComparisonDataList;
+  }
+
   /// 多月数据对比功能
   Future<MultiMonthComparisonData?> getMultiMonthComparisonData(
     int startYear,
@@ -322,123 +440,17 @@ class MonthlyAnalysisService {
       }
 
       // 生成需要查询的月份列表
-      final monthList = generateMonthList(
+      final monthlyComparisonDataList = await getMonthlyComparisonDataList(
         startYear,
         startMonth,
         endYear,
         endMonth,
       );
 
-      logger.info('Generated month list: $monthList');
-      final monthlyComparisons = <MonthlyComparisonData>[];
-
-      // 遍历月份列表获取数据
-      for (var monthInfo in monthList) {
-        final year = monthInfo['year']!;
-        final month = monthInfo['month']!;
-
-        // 获取月度工资数据用于员工信息收集
-        final monthlySalaryData = await getMonthlySalaryData(year, month);
-
-        // 收集员工信息
-        final workers = <MinimalEmployeeInfo>[];
-        if (monthlySalaryData != null) {
-          for (var record in monthlySalaryData.records) {
-            if (record.name != null && record.department != null) {
-              workers.add(
-                MinimalEmployeeInfo(
-                  name: record.name!,
-                  department: record.department!,
-                ),
-              );
-            }
-          }
-        }
-
-        // 获取部门统计数据
-        final departmentStatsList = await getDepartmentAggregation(year, month);
-        final departmentStatsMap = <String, DepartmentSalaryStats>{};
-        for (var stat in departmentStatsList) {
-          departmentStatsMap[stat.department] = stat;
-        }
-
-        // 获取薪资范围统计数据
-        final salaryRangeStatsList = await getSalaryRangeAggregation(
-          year,
-          month,
-        );
-        final salaryRangeStatsMap = <String, SalaryRangeStats>{};
-        for (var stat in salaryRangeStatsList) {
-          salaryRangeStatsMap[stat.range] = stat;
-        }
-
-        // 计算总体统计数据
-        int totalEmployeeCount = 0;
-        double totalSalary = 0.0;
-        double averageSalary = 0.0;
-        double highestSalary = 0.0; // 初始化最高工资
-        double lowestSalary = double.infinity; // 初始化最低工资
-
-        // 重新计算月度总工资和员工数（正确的方式）
-        double monthlyTotalSalary = 0.0;
-        int monthlyTotalEmployeeCount = 0;
-
-        // 获取月度工资数据用于最高最低工资计算
-        if (monthlySalaryData != null) {
-          for (var record in monthlySalaryData.records) {
-            if (record.netSalary != null) {
-              final salaryStr = record.netSalary!.replaceAll(
-                RegExp(r'[^\d.-]'),
-                '',
-              );
-              final salary = double.tryParse(salaryStr) ?? 0;
-              monthlyTotalSalary += salary;
-              monthlyTotalEmployeeCount++;
-
-              // 更新最高和最低工资
-              if (salary > highestSalary) {
-                highestSalary = salary;
-              }
-              if (salary < lowestSalary && salary > 0) {
-                // 忽略0工资
-                lowestSalary = salary;
-              }
-            }
-          }
-        }
-
-        // 使用正确的月度统计数据
-        totalEmployeeCount = monthlyTotalEmployeeCount;
-        totalSalary = monthlyTotalSalary;
-        averageSalary = totalEmployeeCount > 0
-            ? totalSalary / totalEmployeeCount
-            : 0.0;
-
-        // 确保最低工资有合理的默认值
-        if (lowestSalary == double.infinity) {
-          lowestSalary = 0.0;
-        }
-
-        monthlyComparisons.add(
-          MonthlyComparisonData(
-            year: year,
-            month: month,
-            employeeCount: totalEmployeeCount,
-            totalSalary: totalSalary,
-            averageSalary: averageSalary,
-            highestSalary: highestSalary,
-            lowestSalary: lowestSalary,
-            departmentStats: departmentStatsMap,
-            salaryRangeStats: salaryRangeStatsMap,
-            workers: workers, // 添加员工列表字段
-          ),
-        );
-      }
-
       logger.info('Returning monthly comparison data');
 
       return MultiMonthComparisonData(
-        monthlyComparisons: monthlyComparisons,
+        monthlyComparisons: monthlyComparisonDataList,
         startDate: DateTime(startYear, startMonth),
         endDate: DateTime(endYear, endMonth),
       );

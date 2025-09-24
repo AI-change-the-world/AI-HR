@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:salary_report/src/utils/monthly_analysis_json_converter.dart';
+import 'package:salary_report/src/services/monthly/monthly_analysis_json_converter.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/isar/salary_list.dart';
 

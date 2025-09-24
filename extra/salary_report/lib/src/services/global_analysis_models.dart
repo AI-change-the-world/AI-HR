@@ -219,6 +219,7 @@ class MultiMonthComparisonData {
 
 // 季度对比数据模型
 class QuarterlyComparisonData {
+  final List<MonthlyComparisonData> monthlyComparisons;
   final int year;
   final int quarter;
   final int employeeCount;
@@ -245,6 +246,7 @@ class QuarterlyComparisonData {
     required this.uniqueEmployees,
     required this.totalEmployeeCount,
     required this.workers,
+    required this.monthlyComparisons,
   });
 }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
+import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/isar/report_generation_record.dart';
 import 'package:salary_report/src/services/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart';
@@ -15,7 +16,7 @@ import 'package:salary_report/src/common/scroll_screenshot.dart'; // 添加截�
 import 'package:salary_report/src/common/toast.dart'; // 添加Toast导入
 import 'package:salary_report/src/components/monthly_employee_changes_component.dart'; // 导入月度员工变化组件
 import 'package:salary_report/src/components/single_quarter/quarterly_department_stats_component.dart';
-import 'package:salary_report/src/utils/quarterly_analysis_json_converter.dart'; // 添加导入
+import 'package:salary_report/src/services/quarterly/quarterly_analysis_json_converter.dart'; // 添加导入
 
 class QuarterlyAnalysisPage extends StatefulWidget {
   const QuarterlyAnalysisPage({
@@ -47,6 +48,7 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
       []; // 部门薪资区间统计数据
   Map<String, dynamic>? _previousQuarterData; // 上一季度数据
   List<Map<String, dynamic>> _monthlyEmployeeChanges = []; // 每月员工变动数据
+  Map<String, dynamic> _summaryData = {};
 
   // 添加截图相关变量
   final GlobalKey repaintKey = GlobalKey();
@@ -172,6 +174,10 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
           widget.year,
           month,
         );
+
+        if (monthlySalaryData != null) {
+          _summaryData['${widget.year}-$month'] = monthlySalaryData.summaryData;
+        }
 
         // 收集员工唯一标识用于去重统计（姓名+身份证，若无身份证则仅用姓名）
         final Set<String> uniqueEmployeeIds = <String>{};
@@ -505,12 +511,17 @@ class _QuarterlyAnalysisPageState extends State<QuarterlyAnalysisPage> {
         ReportType.singleQuarter,
       );
 
-      _analysisData['salarySummary'] = _salaryDataService.getMonthlySummaryMap(
-        startTime.year,
-        startTime.month,
-        endTime.year,
-        endTime.month,
-      );
+      logger.info('_monthlyEmployeeChanges   $_monthlyEmployeeChanges');
+
+      _analysisData['salarySummary'] = await _salaryDataService
+          .getMonthlySummaryMap(
+            startTime.year,
+            startTime.month,
+            endTime.year,
+            endTime.month,
+          );
+
+      _analysisData['monthlyEmployeeChanges'] = _monthlyEmployeeChanges;
 
       final reportPath = await generator.generateEnhancedReport(
         previewContainerKey: _chartContainerKey,

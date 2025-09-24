@@ -10,7 +10,6 @@ import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:salary_report/src/services/multi_month/multi_month.dart';
 import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_interface.dart';
-import 'package:salary_report/src/utils/multi_month_analysis_json_converter.dart';
 import 'package:salary_report/src/pages/visualization/report/ai_summary_service.dart';
 
 /// 增强版多月报告生成器
@@ -1033,7 +1032,7 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
           'monthNum': item['month'],
           'averageSalary': item['average_salary'],
         };
-              return {};
+        return {};
       }).toList();
     }
     return null;
@@ -1062,7 +1061,7 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
           'monthNum': item['month'],
           'totalSalary': item['total_salary'],
         };
-              return {};
+        return {};
       }).toList();
     }
     return null;

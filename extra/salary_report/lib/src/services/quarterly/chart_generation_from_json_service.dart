@@ -24,11 +24,6 @@ class QuarterlyChartGenerationFromJsonService {
       jsonData['salary_ranges_chart_data'] as List<dynamic>,
     );
 
-    // 3. 生成工资最高员工图表
-    Uint8List? topEmployeesChartImage = await _generateTopEmployeesChart(
-      jsonData['top_employees_chart_data'] as List<dynamic>,
-    );
-
     // 4. 生成考勤统计图表
     Uint8List? attendanceChartImage = await _generateAttendanceChart(
       jsonData['attendance_stats_chart_data'] as List<dynamic>,
@@ -43,7 +38,6 @@ class QuarterlyChartGenerationFromJsonService {
     return ReportChartImagesFromJson(
       departmentChart: departmentChartImage,
       salaryRangeChart: salaryRangeChartImage,
-      topEmployeesChart: topEmployeesChartImage,
       attendanceChart: attendanceChartImage,
       departmentSalaryRangeChart: departmentSalaryRangeChartImage,
     );

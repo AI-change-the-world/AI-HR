@@ -211,6 +211,7 @@ class QuarterlyAnalysisService {
             uniqueEmployees: uniqueEmployees, // 添加去重员工信息
             totalEmployeeCount: totalEmployeeCount, // 添加去重后的员工总数
             workers: workers, // 添加员工列表字段
+            monthlyComparisons: [],
           ),
         );
       }

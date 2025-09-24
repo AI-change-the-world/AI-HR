@@ -15,7 +15,7 @@ import 'package:toastification/toastification.dart';
 import 'package:salary_report/src/isar/salary_list.dart';
 import 'package:salary_report/src/components/employee_changes_component.dart';
 import 'package:salary_report/src/components/department_stats_component.dart';
-import 'package:salary_report/src/utils/monthly_analysis_json_converter.dart';
+import 'package:salary_report/src/services/monthly/monthly_analysis_json_converter.dart';
 
 class MonthlyAnalysisPage extends StatefulWidget {
   const MonthlyAnalysisPage({
