@@ -49,12 +49,14 @@ class MultiMonthReportContentModel {
   final int departmentCount;
   final int employeeCount;
   final String employeeDetails;
+  final String payrollInfo;
   final String departmentDetails;
   final String salaryRangeDescription;
   final String salaryRangeFeatureSummary;
   final String departmentSalaryAnalysis;
   final String keySalaryPoint;
   final String salaryRankings;
+  final String salaryOrder; // 部门平均薪资排名
   final double basicSalaryRate;
   final double performanceSalaryRate;
   final String salaryStructure;
@@ -94,12 +96,14 @@ class MultiMonthReportContentModel {
     required this.departmentCount,
     required this.employeeCount,
     required this.employeeDetails,
+    required this.payrollInfo,
     required this.departmentDetails,
     required this.salaryRangeDescription,
     required this.salaryRangeFeatureSummary,
     required this.departmentSalaryAnalysis,
     required this.keySalaryPoint,
     required this.salaryRankings,
+    required this.salaryOrder,
     required this.basicSalaryRate,
     required this.performanceSalaryRate,
     required this.salaryStructure,

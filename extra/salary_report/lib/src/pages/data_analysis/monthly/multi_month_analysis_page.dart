@@ -438,6 +438,20 @@ class _MultiMonthAnalysisPageState
       );
 
       logger.info('analysisData     $analysisData');
+      if (keyMetricsState.value!.monthlyData != null) {
+        analysisData['comparisonData'] = MultiMonthComparisonData(
+          monthlyComparisons: keyMetricsState.value!.monthlyData!,
+          startDate: startTime,
+          endDate: endTime,
+        );
+      }
+
+      analysisData['salarySummary'] = ref
+          .read(coreDataProvider(_dateRangeParams))
+          .value!
+          .monthlySummary;
+
+      logger.info('salarySummary     ${analysisData['salarySummary']}');
 
       // 准备同比环比分析数据
       List<Map<String, dynamic>> departmentMonthOverMonthData = [];
@@ -662,11 +676,171 @@ class _MultiMonthAnalysisPageState
       }
     }
 
+    // 计算聚合数据用于报告生成
+    int totalEmployees = 0;
+    double totalSalary = 0.0;
+    double averageSalary = 0.0;
+    double highestSalary = 0.0;
+    double lowestSalary = double.infinity;
+
+    // 聚合部门统计数据
+    final Map<String, DepartmentSalaryStats> aggregatedDepartmentStats = {};
+
+    // 聚合薪资区间数据
+    final Map<String, SalaryRangeStats> aggregatedSalaryRanges = {};
+
+    if (monthlyDataList.isNotEmpty) {
+      // 计算总体统计数据（使用最新月份的数据）
+      final latestMonth = monthlyDataList.last;
+      totalEmployees = latestMonth['employeeCount'] as int? ?? 0;
+      totalSalary = (latestMonth['totalSalary'] as num? ?? 0).toDouble();
+      averageSalary = (latestMonth['averageSalary'] as num? ?? 0).toDouble();
+      highestSalary = (latestMonth['highestSalary'] as num? ?? 0).toDouble();
+      lowestSalary = (latestMonth['lowestSalary'] as num? ?? double.infinity)
+          .toDouble();
+
+      // 聚合所有月份的部门统计数据
+      for (var monthData in departmentStatsPerMonth) {
+        if (monthData['departmentStats'] is List) {
+          final deptList = monthData['departmentStats'] as List;
+          for (var dept in deptList) {
+            if (dept is Map<String, dynamic>) {
+              final deptName = dept['department'] as String;
+              if (aggregatedDepartmentStats.containsKey(deptName)) {
+                final existing = aggregatedDepartmentStats[deptName]!;
+                aggregatedDepartmentStats[deptName] = DepartmentSalaryStats(
+                  department: deptName,
+                  employeeCount:
+                      existing.employeeCount +
+                      (dept['employeeCount'] as int? ?? 0),
+                  totalNetSalary:
+                      existing.totalNetSalary +
+                      (dept['totalNetSalary'] as num? ?? 0).toDouble(),
+                  averageNetSalary:
+                      (existing.totalNetSalary +
+                          (dept['totalNetSalary'] as num? ?? 0).toDouble()) /
+                      (existing.employeeCount +
+                          (dept['employeeCount'] as int? ?? 0)),
+                  year: existing.year,
+                  month: existing.month,
+                  maxSalary: [
+                    existing.maxSalary,
+                    (dept['maxSalary'] as num? ?? 0).toDouble(),
+                  ].reduce((a, b) => a > b ? a : b),
+                  minSalary: [
+                    existing.minSalary,
+                    (dept['minSalary'] as num? ?? double.infinity).toDouble(),
+                  ].reduce((a, b) => a < b ? a : b),
+                );
+              } else {
+                aggregatedDepartmentStats[deptName] = DepartmentSalaryStats(
+                  department: deptName,
+                  employeeCount: dept['employeeCount'] as int? ?? 0,
+                  totalNetSalary: (dept['totalNetSalary'] as num? ?? 0)
+                      .toDouble(),
+                  averageNetSalary: (dept['averageNetSalary'] as num? ?? 0)
+                      .toDouble(),
+                  year: dept['year'] as int? ?? DateTime.now().year,
+                  month: dept['month'] as int? ?? DateTime.now().month,
+                  maxSalary: (dept['maxSalary'] as num? ?? 0).toDouble(),
+                  minSalary: (dept['minSalary'] as num? ?? double.infinity)
+                      .toDouble(),
+                );
+              }
+            }
+          }
+        }
+      }
+
+      // 聚合所有月份的薪资区间数据
+      for (var monthData in salaryRangesPerMonth) {
+        if (monthData['salaryRanges'] is List) {
+          final rangeList = monthData['salaryRanges'] as List;
+          for (var range in rangeList) {
+            if (range is Map<String, dynamic>) {
+              final rangeName = range['range'] as String;
+              if (aggregatedSalaryRanges.containsKey(rangeName)) {
+                final existing = aggregatedSalaryRanges[rangeName]!;
+                aggregatedSalaryRanges[rangeName] = SalaryRangeStats(
+                  range: rangeName,
+                  employeeCount:
+                      existing.employeeCount +
+                      (range['employeeCount'] as int? ?? 0),
+                  totalSalary:
+                      existing.totalSalary +
+                      (range['totalSalary'] as num? ?? 0).toDouble(),
+                  averageSalary:
+                      (existing.totalSalary +
+                          (range['totalSalary'] as num? ?? 0).toDouble()) /
+                      (existing.employeeCount +
+                          (range['employeeCount'] as int? ?? 0)),
+                  year: existing.year,
+                  month: existing.month,
+                );
+              } else {
+                aggregatedSalaryRanges[rangeName] = SalaryRangeStats(
+                  range: rangeName,
+                  employeeCount: range['employeeCount'] as int? ?? 0,
+                  totalSalary: (range['totalSalary'] as num? ?? 0).toDouble(),
+                  averageSalary: (range['averageSalary'] as num? ?? 0)
+                      .toDouble(),
+                  year: range['year'] as int? ?? DateTime.now().year,
+                  month: range['month'] as int? ?? DateTime.now().month,
+                );
+              }
+            }
+          }
+        }
+      }
+    }
+
     return {
-      'monthlyData': monthlyDataList, // 保存每月详细数据
-      'departmentStatsPerMonth': departmentStatsPerMonth, // 保存每月部门统计数据
-      'salaryRangesPerMonth': salaryRangesPerMonth, // 保存每月薪资区间统计数据
-      'attendanceStatsPerMonth': attendanceStatsPerMonth, // 保存每月考勤统计数据
+      // 原始每月详细数据
+      'monthlyData': monthlyDataList,
+      'departmentStatsPerMonth': departmentStatsPerMonth,
+      'salaryRangesPerMonth': salaryRangesPerMonth,
+      'attendanceStatsPerMonth': attendanceStatsPerMonth,
+
+      // 聚合数据（用于兼容现有的报告生成逻辑）
+      'totalEmployees': totalEmployees,
+      'totalSalary': totalSalary,
+      'averageSalary': averageSalary,
+      'highestSalary': highestSalary,
+      'lowestSalary': lowestSalary,
+      'departmentStats': aggregatedDepartmentStats.values.toList(),
+      'salaryRanges': aggregatedSalaryRanges.values.toList(),
+
+      // 用于图表生成的格式化数据
+      'employeeCountPerMonth': monthlyDataList
+          .map(
+            (data) => {
+              'month': '${data['year']}年${data['month']}月',
+              'year': data['year'],
+              'monthNum': data['month'],
+              'employeeCount': data['employeeCount'],
+            },
+          )
+          .toList(),
+      'averageSalaryPerMonth': monthlyDataList
+          .map(
+            (data) => {
+              'month': '${data['year']}年${data['month']}月',
+              'year': data['year'],
+              'monthNum': data['month'],
+              'averageSalary': data['averageSalary'],
+            },
+          )
+          .toList(),
+      'totalSalaryPerMonth': monthlyDataList
+          .map(
+            (data) => {
+              'month': '${data['year']}年${data['month']}月',
+              'year': data['year'],
+              'monthNum': data['month'],
+              'totalSalary': data['totalSalary'],
+            },
+          )
+          .toList(),
     };
   }
 

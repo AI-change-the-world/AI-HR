@@ -171,6 +171,52 @@ $departmentData
       return ""; // Fallback to empty
     }
   }
+  
+  /// 使用自定义提示生成薪资区间特征总结
+  Future<String> generateSalaryRangeFeatureSummaryWithCustomPrompt(
+    List<Map<String, int>> salaryRanges,
+    List<DepartmentSalaryStats> departmentStats,
+    String customPrompt,
+  ) async {
+    if (!AIConfig.aiEnabled) return "";
+
+    try {
+      final salaryRangeDescriptions = salaryRanges
+          .map(
+            (range) => range.entries
+                .map((entry) => '${entry.key}: ${entry.value}人次')
+                .join('\n'),
+          )
+          .join('\n');
+
+      final departmentData = departmentStats
+          .map(
+            (dept) =>
+                '${dept.department}: ${dept.employeeCount}人次, 工资总额${dept.totalNetSalary.toStringAsFixed(2)}, 平均工资${dept.averageNetSalary.toStringAsFixed(2)}',
+          )
+          .join('; ');
+
+      final prompt = customPrompt
+          .replaceAll('{{salary_range_descriptions}}', salaryRangeDescriptions)
+          .replaceAll('{{department_data}}', departmentData);
+          
+      final summary = await _llmClient.getAnswer(
+        '''
+薪资分布数据：
+$salaryRangeDescriptions
+
+部门薪资数据：
+$departmentData
+
+$customPrompt
+        ''',
+      );
+      return summary.isNotEmpty ? summary : "无法生成薪资区间特征总结";
+    } catch (e) {
+      logger.info('AI salary range feature summary with custom prompt failed: $e');
+      return ""; // Fallback to empty
+    }
+  }
 
   /// 生成部门薪资分析
   Future<String> generateDepartmentSalaryAnalysis(
@@ -196,6 +242,35 @@ $departmentData
       return await _llmClient.getAnswer(prompt);
     } catch (e) {
       logger.info('AI department salary analysis failed: $e');
+      return ""; // Fallback to empty
+    }
+  }
+  
+  /// 使用自定义提示生成部门薪资分析
+  Future<String> generateDepartmentSalaryAnalysisWithCustomPrompt(
+    List<DepartmentSalaryStats> departmentStats,
+    String customPrompt,
+  ) async {
+    if (!AIConfig.aiEnabled) return "";
+
+    try {
+      final departmentData = departmentStats
+          .map(
+            (dept) =>
+                '${dept.department}: ${dept.employeeCount}人次, 工资总额${dept.totalNetSalary.toStringAsFixed(2)}, 平均工资${dept.averageNetSalary.toStringAsFixed(2)}',
+          )
+          .join('; ');
+
+      final prompt = 
+          '''
+部门薪资数据：
+$departmentData
+
+$customPrompt
+          ''';
+      return await _llmClient.getAnswer(prompt);
+    } catch (e) {
+      logger.info('AI department salary analysis with custom prompt failed: $e');
       return ""; // Fallback to empty
     }
   }
@@ -236,6 +311,47 @@ $salaryRangeDescriptions
       return await _llmClient.getAnswer(prompt);
     } catch (e) {
       logger.info('AI key salary point analysis failed: $e');
+      return ""; // Fallback to empty
+    }
+  }
+  
+  /// 使用自定义提示生成关键薪资点分析
+  Future<String> generateKeySalaryPointWithCustomPrompt(
+    List<DepartmentSalaryStats> departmentStats,
+    List<Map<String, int>> salaryRanges,
+    String customPrompt,
+  ) async {
+    if (!AIConfig.aiEnabled) return "";
+
+    try {
+      final departmentData = departmentStats
+          .map(
+            (dept) =>
+                '${dept.department}: ${dept.employeeCount}人次, 工资总额${dept.totalNetSalary.toStringAsFixed(2)}, 平均工资${dept.averageNetSalary.toStringAsFixed(2)}',
+          )
+          .join('; ');
+
+      final salaryRangeDescriptions = salaryRanges
+          .map(
+            (range) => range.entries
+                .map((entry) => '${entry.key}: ${entry.value}人次')
+                .join('\n'),
+          )
+          .join('\n');
+
+      final prompt =
+          '''
+部门薪资数据：
+$departmentData
+
+薪资分布数据：
+$salaryRangeDescriptions
+
+$customPrompt
+      ''';
+      return await _llmClient.getAnswer(prompt);
+    } catch (e) {
+      logger.info('AI key salary point analysis with custom prompt failed: $e');
       return ""; // Fallback to empty
     }
   }

@@ -22,6 +22,39 @@ class DataAnalysisService {
     return _monthlyService.getMonthlySalaryData(year, month);
   }
 
+  Future<String?> getMonthlySummary(int year, int month) async {
+    return (await _database.isar!.salaryLists
+            .filter()
+            .yearEqualTo(year)
+            .monthEqualTo(month)
+            .findFirst())
+        ?.extraInfo;
+  }
+
+  Future<Map<String, String?>> getMonthlySummaryMap(
+    int startYear,
+    int startMonth,
+    int endYear,
+    int endMonth,
+  ) async {
+    final range = _monthlyService.generateMonthList(
+      startYear,
+      startMonth,
+      endYear,
+      endMonth,
+    );
+
+    var result = <String, String?>{};
+
+    for (var month in range) {
+      final summary = await getMonthlySummary(month['year']!, month['month']!);
+
+      result["${month['year']!}-${month['month']!}"] = summary;
+    }
+
+    return result;
+  }
+
   Future<MultiMonthSalaryData?> getMultiMonthSalaryData(
     int startYear,
     int startMonth,

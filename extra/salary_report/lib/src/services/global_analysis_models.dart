@@ -205,11 +205,13 @@ class MultiMonthComparisonData {
   final List<MonthlyComparisonData> monthlyComparisons;
   final DateTime startDate;
   final DateTime endDate;
+  Map<String, String?> monthlySummary;
 
   MultiMonthComparisonData({
     required this.monthlyComparisons,
     required this.startDate,
     required this.endDate,
+    this.monthlySummary = const {},
   });
 }
 

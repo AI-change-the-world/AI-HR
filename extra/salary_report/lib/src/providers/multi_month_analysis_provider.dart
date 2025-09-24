@@ -213,6 +213,13 @@ final coreDataProvider =
         logger.info(
           '获取多月对比数据成功, 总计 ${comparisonData.monthlyComparisons.length} 个月数据',
         );
+        final monthlySummary = await dataService.getMonthlySummaryMap(
+          params.startYear,
+          params.startMonth,
+          params.endYear,
+          params.endMonth,
+        );
+        comparisonData.monthlySummary = monthlySummary;
       }
 
       return comparisonData;
