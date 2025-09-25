@@ -3,9 +3,9 @@
 import 'package:salary_report/src/services/report_types.dart';
 import 'package:salary_report/src/services/enhanced_report_generator_interface.dart';
 import 'package:salary_report/src/services/monthly/enhanced_monthly_report_generator.dart';
-import 'package:salary_report/src/services/enhanced_multi_month_report_generator.dart';
-import 'package:salary_report/src/services/enhanced_quarterly_report_generator.dart';
-import 'package:salary_report/src/services/enhanced_annual_report_generator.dart';
+import 'package:salary_report/src/services/multi_month/enhanced_multi_month_report_generator.dart';
+import 'package:salary_report/src/services/quarterly/enhanced_quarterly_report_generator.dart';
+import 'package:salary_report/src/services/yearly/enhanced_annual_report_generator.dart';
 
 /// 增强版报告生成器工厂
 class EnhancedReportGeneratorFactory {
