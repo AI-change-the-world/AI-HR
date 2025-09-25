@@ -90,7 +90,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     _modelNameController.text = AIConfig.modelName;
     _companyNameController.text = AIConfig.companyName;
     _companyDescriptionController.text = AIConfig.companyDescription;
-    
+
     // 只有AI开关需要setState，因为它影响UI状态
     setState(() {
       _aiEnabled = AIConfig.aiEnabled;
@@ -373,6 +373,17 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                         ),
                       ),
                     ],
+                  ),
+                ),
+              ),
+              SizedBox(height: 10),
+              Center(
+                child: Text(
+                  "Powered by xiaoshuyui, All rights reserved.",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w300,
                   ),
                 ),
               ),

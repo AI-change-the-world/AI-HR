@@ -7,6 +7,7 @@ import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/isar/report_generation_record.dart';
 
 import 'package:salary_report/src/components/salary_charts.dart';
+import 'package:salary_report/src/rust/api/simple.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_factory.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
@@ -19,7 +20,8 @@ import 'package:salary_report/src/components/time_unit_employee_changes_componen
 import 'package:salary_report/src/components/department_stats_component.dart';
 import 'package:salary_report/src/services/yearly/yearly_analysis_json_converter.dart';
 import 'package:salary_report/src/providers/yearly_analysis_provider.dart';
-import 'package:salary_report/src/providers/multi_month_analysis_provider.dart' as multi_month;
+import 'package:salary_report/src/providers/multi_month_analysis_provider.dart'
+    as multi_month;
 
 class YearlyAnalysisPageRiverpod extends ConsumerStatefulWidget {
   const YearlyAnalysisPageRiverpod({
@@ -34,10 +36,12 @@ class YearlyAnalysisPageRiverpod extends ConsumerStatefulWidget {
   final int? endYear;
 
   @override
-  ConsumerState<YearlyAnalysisPageRiverpod> createState() => _YearlyAnalysisPageRiverpodState();
+  ConsumerState<YearlyAnalysisPageRiverpod> createState() =>
+      _YearlyAnalysisPageRiverpodState();
 }
 
-class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageRiverpod> {
+class _YearlyAnalysisPageRiverpodState
+    extends ConsumerState<YearlyAnalysisPageRiverpod> {
   final GlobalKey _chartContainerKey = GlobalKey();
   bool _isGeneratingReport = false;
   late YearParams _yearParams;
@@ -82,10 +86,18 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
       );
 
       // 获取分析数据
-      final coreData = await ref.read(multi_month.coreDataProvider(_yearParams).future);
-      final departmentStats = await ref.read(departmentStatsProvider(_yearParams).future);
-      final attendanceStats = await ref.read(attendanceStatsProvider(_yearParams).future);
-      final previousYearState = await ref.read(previousYearStateProvider(_yearParams).future);
+      final coreData = await ref.read(
+        multi_month.coreDataProvider(_yearParams).future,
+      );
+      final departmentStats = await ref.read(
+        departmentStatsProvider(_yearParams).future,
+      );
+      final attendanceStats = await ref.read(
+        attendanceStatsProvider(_yearParams).future,
+      );
+      final previousYearState = await ref.read(
+        previousYearStateProvider(_yearParams).future,
+      );
 
       // 准备年度分析数据，包含每月详细数据
       final analysisData = await _prepareYearlyAnalysisData(
@@ -97,15 +109,22 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
 
       final reportPath = await generator.generateEnhancedReport(
         previewContainerKey: _chartContainerKey,
-        departmentStats: departmentStats.monthlyData?.expand((month) => 
-          month.departmentStats.values).toList() ?? [],
+        departmentStats:
+            departmentStats.monthlyData
+                ?.expand((month) => month.departmentStats.values)
+                .toList() ??
+            [],
         analysisData: analysisData,
         endTime: endTime,
         year: widget.year,
         month: 0, // 年度报告没有月份
         isMultiMonth: widget.isMultiYear,
         startTime: startTime,
-        attendanceStats: attendanceStats.attendanceData?.values.expand((list) => list).toList() ?? [],
+        attendanceStats:
+            attendanceStats.attendanceData?.values
+                .expand((list) => list)
+                .toList() ??
+            [],
         previousMonthData: previousYearState.previousYearData,
       );
 
@@ -137,6 +156,7 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
           _isGeneratingReport = false;
         });
       }
+      beep();
     }
   }
 
@@ -144,10 +164,18 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
 
   /// 生成JSON格式的分析报告
   Future<String> _generateJsonReport() async {
-    final coreData = await ref.read(multi_month.coreDataProvider(_yearParams).future);
-    final departmentStats = await ref.read(departmentStatsProvider(_yearParams).future);
-    final attendanceStats = await ref.read(attendanceStatsProvider(_yearParams).future);
-    final previousYearState = await ref.read(previousYearStateProvider(_yearParams).future);
+    final coreData = await ref.read(
+      multi_month.coreDataProvider(_yearParams).future,
+    );
+    final departmentStats = await ref.read(
+      departmentStatsProvider(_yearParams).future,
+    );
+    final attendanceStats = await ref.read(
+      attendanceStatsProvider(_yearParams).future,
+    );
+    final previousYearState = await ref.read(
+      previousYearStateProvider(_yearParams).future,
+    );
 
     return YearlyAnalysisJsonConverter.convertAnalysisDataToJson(
       analysisData: <String, dynamic>{
@@ -156,9 +184,16 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
         'endDate': coreData?.endDate,
         'monthlySummary': coreData?.monthlySummary ?? {},
       },
-      departmentStats: departmentStats.monthlyData?.expand((month) => 
-        month.departmentStats.values).toList() ?? [],
-      attendanceStats: attendanceStats.attendanceData?.values.expand((list) => list).toList() ?? [],
+      departmentStats:
+          departmentStats.monthlyData
+              ?.expand((month) => month.departmentStats.values)
+              .toList() ??
+          [],
+      attendanceStats:
+          attendanceStats.attendanceData?.values
+              .expand((list) => list)
+              .toList() ??
+          [],
       previousYearData: previousYearState.previousYearData,
       year: widget.year,
     );
@@ -182,33 +217,47 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
     if (coreData?.monthlyComparisons != null) {
       final departmentStatsPerMonth = <Map<String, dynamic>>[];
       final aggregatedDepartmentStats = <String, Map<String, dynamic>>{};
-      
+
       for (var monthData in coreData!.monthlyComparisons) {
         // 添加每月部门统计数据
         departmentStatsPerMonth.add({
           'year': monthData.year,
           'month': monthData.month,
-          'departmentStats': monthData.departmentStats.values.map((dept) => {
-            'department': dept.department,
-            'employeeCount': dept.employeeCount,
-            'totalNetSalary': dept.totalNetSalary,
-            'averageNetSalary': dept.averageNetSalary,
-            'maxSalary': dept.maxSalary,
-            'minSalary': dept.minSalary,
-            'year': dept.year,
-            'month': dept.month,
-          }).toList(),
+          'departmentStats': monthData.departmentStats.values
+              .map(
+                (dept) => {
+                  'department': dept.department,
+                  'employeeCount': dept.employeeCount,
+                  'totalNetSalary': dept.totalNetSalary,
+                  'averageNetSalary': dept.averageNetSalary,
+                  'maxSalary': dept.maxSalary,
+                  'minSalary': dept.minSalary,
+                  'year': dept.year,
+                  'month': dept.month,
+                },
+              )
+              .toList(),
         });
 
         // 聚合部门统计数据
         for (var dept in monthData.departmentStats.values) {
           if (aggregatedDepartmentStats.containsKey(dept.department)) {
             final existing = aggregatedDepartmentStats[dept.department]!;
-            existing['employeeCount'] = (existing['employeeCount'] as int) + dept.employeeCount;
-            existing['totalNetSalary'] = (existing['totalNetSalary'] as double) + dept.totalNetSalary;
-            existing['averageNetSalary'] = (existing['totalNetSalary'] as double) / (existing['employeeCount'] as int);
-            existing['maxSalary'] = math.max(existing['maxSalary'] as double, dept.maxSalary);
-            existing['minSalary'] = math.min(existing['minSalary'] as double, dept.minSalary);
+            existing['employeeCount'] =
+                (existing['employeeCount'] as int) + dept.employeeCount;
+            existing['totalNetSalary'] =
+                (existing['totalNetSalary'] as double) + dept.totalNetSalary;
+            existing['averageNetSalary'] =
+                (existing['totalNetSalary'] as double) /
+                (existing['employeeCount'] as int);
+            existing['maxSalary'] = math.max(
+              existing['maxSalary'] as double,
+              dept.maxSalary,
+            );
+            existing['minSalary'] = math.min(
+              existing['minSalary'] as double,
+              dept.minSalary,
+            );
           } else {
             aggregatedDepartmentStats[dept.department] = {
               'department': dept.department,
@@ -223,9 +272,10 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
           }
         }
       }
-      
+
       analysisData['departmentStatsPerMonth'] = departmentStatsPerMonth;
-      analysisData['departmentStats'] = aggregatedDepartmentStats.values.toList();
+      analysisData['departmentStats'] = aggregatedDepartmentStats.values
+          .toList();
     }
 
     // 添加每月员工数量、平均工资、总工资数据
@@ -318,16 +368,23 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
   Widget build(BuildContext context) {
     final keyMetricsState = ref.watch(keyMetricsProvider(_yearParams));
     final previousYearState = ref.watch(previousYearStateProvider(_yearParams));
-    final employeeChangesState = ref.watch(employeeChangesProvider(_yearParams));
-    final departmentStatsState = ref.watch(departmentStatsProvider(_yearParams));
-    final attendanceStatsState = ref.watch(attendanceStatsProvider(_yearParams));
+    final employeeChangesState = ref.watch(
+      employeeChangesProvider(_yearParams),
+    );
+    final departmentStatsState = ref.watch(
+      departmentStatsProvider(_yearParams),
+    );
+    final attendanceStatsState = ref.watch(
+      attendanceStatsProvider(_yearParams),
+    );
 
     // 检查是否所有数据都已加载完成
-    final bool isLoading = keyMetricsState is AsyncLoading || 
-                          previousYearState is AsyncLoading || 
-                          employeeChangesState is AsyncLoading || 
-                          departmentStatsState is AsyncLoading || 
-                          attendanceStatsState is AsyncLoading;
+    final bool isLoading =
+        keyMetricsState is AsyncLoading ||
+        previousYearState is AsyncLoading ||
+        employeeChangesState is AsyncLoading ||
+        departmentStatsState is AsyncLoading ||
+        attendanceStatsState is AsyncLoading;
 
     if (isLoading) {
       return Scaffold(
@@ -337,20 +394,18 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
     }
 
     // 检查是否有错误
-    final bool hasError = keyMetricsState is AsyncError || 
-                         previousYearState is AsyncError || 
-                         employeeChangesState is AsyncError || 
-                         departmentStatsState is AsyncError || 
-                         attendanceStatsState is AsyncError;
+    final bool hasError =
+        keyMetricsState is AsyncError ||
+        previousYearState is AsyncError ||
+        employeeChangesState is AsyncError ||
+        departmentStatsState is AsyncError ||
+        attendanceStatsState is AsyncError;
 
     if (hasError) {
       return Scaffold(
         appBar: AppBar(title: Text('${widget.year}年 工资分析')),
         body: Center(
-          child: Text(
-            '加载数据时发生错误，请重试',
-            style: TextStyle(color: Colors.red),
-          ),
+          child: Text('加载数据时发生错误，请重试', style: TextStyle(color: Colors.red)),
         ),
       );
     }
@@ -491,7 +546,9 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
   }
 
   // 构建上一年数据部分
-  Widget _buildPreviousYearSection(AsyncValue<PreviousYearState> previousYearState) {
+  Widget _buildPreviousYearSection(
+    AsyncValue<PreviousYearState> previousYearState,
+  ) {
     return previousYearState.when(
       data: (state) {
         if (state.previousYearData == null) {
@@ -507,10 +564,7 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
                 children: [
                   TextSpan(
                     text: '上一年对比  ',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   TextSpan(
                     text: '${previousYearData['year']}年基本情况',
@@ -559,7 +613,9 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
   }
 
   // 构建关键指标部分
-  Widget _buildKeyMetricsSection(AsyncValue<multi_month.KeyMetricsState> keyMetricsState) {
+  Widget _buildKeyMetricsSection(
+    AsyncValue<multi_month.KeyMetricsState> keyMetricsState,
+  ) {
     return keyMetricsState.when(
       data: (state) {
         if (state is! YearlyKeyMetricsState || (state).yearData == null) {
@@ -572,10 +628,7 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
           children: [
             const Text(
               '年度关键指标',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -623,36 +676,40 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
   }
 
   // 构建员工变动部分
-  Widget _buildEmployeeChangesSection(AsyncValue<multi_month.DepartmentChangesState> employeeChangesState) {
+  Widget _buildEmployeeChangesSection(
+    AsyncValue<multi_month.DepartmentChangesState> employeeChangesState,
+  ) {
     return employeeChangesState.when(
       data: (state) {
-        if (state.comparisonData?.monthlyComparisons == null || state.comparisonData!.monthlyComparisons.isEmpty) {
+        if (state.comparisonData?.monthlyComparisons == null ||
+            state.comparisonData!.monthlyComparisons.isEmpty) {
           return const Center(child: Text('暂无员工变动数据'));
         }
 
         // 转换数据格式为组件需要的格式
-        final monthlyChanges = state.comparisonData!.monthlyComparisons.map((month) => {
-          'month': month.month,
-          'employeeCount': month.employeeCount,
-          'newEmployees': <MinimalEmployeeInfo>[],
-          'resignedEmployees': <MinimalEmployeeInfo>[],
-          'netChange': 0,
-        }).toList();
+        final monthlyChanges = state.comparisonData!.monthlyComparisons
+            .map(
+              (month) => {
+                'month': month.month,
+                'employeeCount': month.employeeCount,
+                'newEmployees': <MinimalEmployeeInfo>[],
+                'resignedEmployees': <MinimalEmployeeInfo>[],
+                'netChange': 0,
+              },
+            )
+            .toList();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               '每月员工变动情况',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             YearlyTimeUnitEmployeeChangesComponent(
-                      yearlyChanges: monthlyChanges,
-                    ),
+              yearlyChanges: monthlyChanges,
+            ),
           ],
         );
       },
@@ -662,7 +719,9 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
   }
 
   // 构建月度趋势图部分
-  Widget _buildMonthlyTrendSection(AsyncValue<multi_month.KeyMetricsState> keyMetricsState) {
+  Widget _buildMonthlyTrendSection(
+    AsyncValue<multi_month.KeyMetricsState> keyMetricsState,
+  ) {
     return keyMetricsState.when(
       data: (state) {
         if (state.monthlyData == null || state.monthlyData!.isEmpty) {
@@ -674,10 +733,7 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
           children: [
             const Text(
               '月度趋势',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             Card(
@@ -685,15 +741,19 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
                 height: 300,
                 padding: const EdgeInsets.all(16.0),
                 child: MonthlySalaryTrendChart(
-                  monthlyData: state.monthlyData!.map((month) => {
-                    'month': month.month,
-                    'monthLabel': '${month.month}月',
-                    'totalSalary': month.totalSalary,
-                    'averageSalary': month.averageSalary,
-                    'employeeCount': month.employeeCount,
-                    'highestSalary': month.highestSalary,
-                    'lowestSalary': month.lowestSalary,
-                  }).toList(),
+                  monthlyData: state.monthlyData!
+                      .map(
+                        (month) => {
+                          'month': month.month,
+                          'monthLabel': '${month.month}月',
+                          'totalSalary': month.totalSalary,
+                          'averageSalary': month.averageSalary,
+                          'employeeCount': month.employeeCount,
+                          'highestSalary': month.highestSalary,
+                          'lowestSalary': month.lowestSalary,
+                        },
+                      )
+                      .toList(),
                 ),
               ),
             ),
@@ -706,7 +766,9 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
   }
 
   // 构建部门统计部分
-  Widget _buildDepartmentStatsSection(AsyncValue<multi_month.DepartmentStatsState> departmentStatsState) {
+  Widget _buildDepartmentStatsSection(
+    AsyncValue<multi_month.DepartmentStatsState> departmentStatsState,
+  ) {
     return departmentStatsState.when(
       data: (state) {
         if (state.monthlyData == null || state.monthlyData!.isEmpty) {
@@ -714,8 +776,9 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
         }
 
         // 从月度数据中提取部门统计
-        final departmentStats = state.monthlyData!.expand((month) => 
-          month.departmentStats.values).toList();
+        final departmentStats = state.monthlyData!
+            .expand((month) => month.departmentStats.values)
+            .toList();
 
         return DepartmentStatsComponent(
           departmentStats: departmentStats,
@@ -728,7 +791,9 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
   }
 
   // 构建按月部门工资对比部分
-  Widget _buildMonthlyDepartmentStatsSection(AsyncValue<multi_month.DepartmentStatsState> departmentStatsState) {
+  Widget _buildMonthlyDepartmentStatsSection(
+    AsyncValue<multi_month.DepartmentStatsState> departmentStatsState,
+  ) {
     return departmentStatsState.when(
       data: (state) {
         if (state.monthlyData == null || state.monthlyData!.isEmpty) {
@@ -738,7 +803,10 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
         // 转换数据格式
         final monthlyDepartmentStats = <String, List<DepartmentSalaryStats>>{};
         for (var monthData in state.monthlyData!) {
-          monthlyDepartmentStats['${monthData.month}月'] = monthData.departmentStats.values.toList();
+          monthlyDepartmentStats['${monthData.month}月'] = monthData
+              .departmentStats
+              .values
+              .toList();
         }
 
         return MonthlyDetailContainer(
@@ -757,7 +825,9 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
   }
 
   // 构建按月考勤统计部分
-  Widget _buildMonthlyAttendanceStatsSection(AsyncValue<multi_month.AttendanceStatsState> attendanceStatsState) {
+  Widget _buildMonthlyAttendanceStatsSection(
+    AsyncValue<multi_month.AttendanceStatsState> attendanceStatsState,
+  ) {
     return attendanceStatsState.when(
       data: (state) {
         if (state.attendanceData == null || state.attendanceData!.isEmpty) {

@@ -55,9 +55,12 @@ class MultiMonthReportContentModel {
   final String salaryRangeFeatureSummary;
   final String departmentSalaryAnalysis;
   final String keySalaryPoint;
+  @Deprecated("弃用")
   final String salaryRankings;
   final String salaryOrder; // 部门平均薪资排名
+  @Deprecated("弃用")
   final double basicSalaryRate;
+  @Deprecated("弃用")
   final double performanceSalaryRate;
   final String salaryStructure;
   final String salaryStructureAdvice;
@@ -102,10 +105,10 @@ class MultiMonthReportContentModel {
     required this.salaryRangeFeatureSummary,
     required this.departmentSalaryAnalysis,
     required this.keySalaryPoint,
-    required this.salaryRankings,
+    @Deprecated("弃用") required this.salaryRankings,
     required this.salaryOrder,
-    required this.basicSalaryRate,
-    required this.performanceSalaryRate,
+    @Deprecated("弃用") required this.basicSalaryRate,
+    @Deprecated("弃用") required this.performanceSalaryRate,
     required this.salaryStructure,
     required this.salaryStructureAdvice,
     required this.salaryStructureData,

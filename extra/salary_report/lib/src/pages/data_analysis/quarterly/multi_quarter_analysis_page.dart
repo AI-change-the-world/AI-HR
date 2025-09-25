@@ -10,6 +10,7 @@ import 'package:salary_report/src/components/multi_quarter/quarterly_attendance_
 import 'package:salary_report/src/components/multi_quarter/department_changes_component.dart';
 import 'package:salary_report/src/common/scroll_screenshot.dart'; // 添加截图导入
 import 'package:salary_report/src/common/toast.dart'; // 添加Toast导入
+import 'package:salary_report/src/rust/api/simple.dart';
 import 'package:toastification/toastification.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
@@ -209,6 +210,7 @@ class _MultiQuarterAnalysisPageState
           _isGeneratingReport = false;
         });
       }
+      beep();
     }
   }
 

@@ -43,7 +43,9 @@ class QuarterlyReportContentModel {
   final String departmentSalaryAnalysis;
   final String keySalaryPoint;
   final String salaryRankings;
+  @Deprecated("弃用")
   final double basicSalaryRate;
+  @Deprecated("弃用")
   final double performanceSalaryRate;
   final String salaryStructure;
   final String salaryStructureAdvice;

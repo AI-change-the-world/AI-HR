@@ -6,6 +6,13 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib", "staticlib"]
 
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows-sys = { version = "0.61.0", features = [
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_System_Diagnostics_Debug",
+] }
+
 [dependencies]
 anyhow = "1.0.99"
 flutter_rust_bridge = "=2.11.1"

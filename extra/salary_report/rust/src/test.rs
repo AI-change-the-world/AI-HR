@@ -9,7 +9,7 @@ mod tests {
 
     #[test]
     fn example() -> anyhow::Result<()> {
-        let book = reader::xlsx::read("../test.xlsx")?;  // 修改文件路径
+        let book = reader::xlsx::read("../test.xlsx")?; // 修改文件路径
         let sheet = book.get_sheet(&0).unwrap();
 
         // 打印前几行用于查看表头
@@ -128,7 +128,6 @@ mod tests {
         // 使用现有的test.xlsx文件进行测试
         let summary = parse_salary_report("../test.xlsx")?;
 
-
         // 检查基本数据
         println!("Total records: {}", summary.total_records);
         println!("Number of records: {}", summary.records.len());
@@ -179,13 +178,13 @@ mod tests {
         assert!(!first_record.department.is_empty());
         assert!(!first_record.position.is_empty());
         assert!(!first_record.attendance.is_empty());
-        assert!(!first_record.pre_tax_salary.is_empty());  // 修复这行
+        assert!(!first_record.pre_tax_salary.is_empty()); // 修复这行
         assert!(!first_record.social_security_tax.is_empty());
         assert!(!first_record.net_salary.is_empty());
 
         // 验证考勤相关字段
         assert!(!first_record.payroll_days.is_empty());
-        assert!(!first_record.sick_leave.is_empty());  // 修改字段名
+        assert!(!first_record.sick_leave.is_empty()); // 修改字段名
         assert!(!first_record.performance_score.is_empty());
 
         println!("First record: {:?}", first_record);
@@ -199,7 +198,7 @@ mod tests {
 
     #[test]
     fn test_read_second_row_headers() -> anyhow::Result<()> {
-        let book = reader::xlsx::read("../test.xlsx")?;  // 修改文件路径
+        let book = reader::xlsx::read("../test.xlsx")?; // 修改文件路径
         let sheet = book
             .get_sheet(&0)
             .ok_or_else(|| anyhow::anyhow!("无法获取工作表"))?;
@@ -328,5 +327,16 @@ mod tests {
         }
 
         Ok(())
+    }
+
+    use windows_sys::Win32::System::Diagnostics::Debug::MessageBeep;
+    use windows_sys::Win32::UI::WindowsAndMessaging::{MB_ICONASTERISK, MB_OK};
+
+    #[test]
+    fn test_beep() {
+        unsafe {
+            // 播放提示音
+            MessageBeep(MB_OK);
+        }
     }
 }

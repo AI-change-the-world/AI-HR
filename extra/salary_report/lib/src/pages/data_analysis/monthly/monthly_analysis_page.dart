@@ -6,6 +6,7 @@ import 'package:salary_report/src/common/toast.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
 import 'package:salary_report/src/isar/report_generation_record.dart';
 import 'package:salary_report/src/pages/visualization/report/enhanced_monthly_report_generator.dart';
+import 'package:salary_report/src/rust/api/simple.dart';
 import 'package:salary_report/src/services/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/components/attendance_pagination.dart';
@@ -423,6 +424,7 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
           _isGeneratingReport = false;
         });
       }
+      beep();
     }
   }
 

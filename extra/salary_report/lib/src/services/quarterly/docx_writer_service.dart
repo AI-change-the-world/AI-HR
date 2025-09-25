@@ -112,13 +112,6 @@ class QuarterlyDocxWriterService {
       ..add(TextContent('salary_reason', data.departmentSalaryAnalysis))
       ..add(TextContent('key_salary_point', data.keySalaryPoint))
       ..add(TextContent('salary_order', data.salaryRankings))
-      ..add(TextContent('basic_rate', data.basicSalaryRate.toStringAsFixed(2)))
-      ..add(
-        TextContent(
-          'performance_rate',
-          data.performanceSalaryRate.toStringAsFixed(2),
-        ),
-      )
       ..add(TextContent('salary_structure_analysis', data.salaryStructure))
       ..add(TextContent('salary_structure', data.salaryStructure))
       ..add(TextContent('salary_structure_advice', data.salaryStructureAdvice));

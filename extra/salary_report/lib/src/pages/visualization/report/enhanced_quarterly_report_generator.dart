@@ -77,7 +77,9 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
           departmentDetailsPerMonth,
         ),
         attendanceStats: attendanceStats,
-        departmentSalaryRangeData: _extractDepartmentSalaryRangeData(analysisData),
+        departmentSalaryRangeData: _extractDepartmentSalaryRangeData(
+          analysisData,
+        ),
       );
 
       logger.info('analysisData analysisData analysisData: $analysisData');
@@ -1030,11 +1032,15 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
   }
 
   /// 提取部门薪资区间数据
-  List<Map<String, dynamic>>? _extractDepartmentSalaryRangeData(Map<String, dynamic> analysisData) {
+  List<Map<String, dynamic>>? _extractDepartmentSalaryRangeData(
+    Map<String, dynamic> analysisData,
+  ) {
     // 这里可以根据实际的数据结构来提取部门薪资区间数据
     // 如果没有这类数据，返回null
     if (analysisData.containsKey('departmentSalaryRangeData')) {
-      return List<Map<String, dynamic>>.from(analysisData['departmentSalaryRangeData']);
+      return List<Map<String, dynamic>>.from(
+        analysisData['departmentSalaryRangeData'],
+      );
     }
     return null;
   }
@@ -1051,13 +1057,16 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
     // 从analysisData中提取关键指标
     final totalEmployees = analysisData['totalEmployees'] as int? ?? 0;
     final totalSalary = (analysisData['totalSalary'] as num? ?? 0).toDouble();
-    final averageSalary = (analysisData['averageSalary'] as num? ?? 0).toDouble();
-    final highestSalary = (analysisData['highestSalary'] as num? ?? 0).toDouble();
+    final averageSalary = (analysisData['averageSalary'] as num? ?? 0)
+        .toDouble();
+    final highestSalary = (analysisData['highestSalary'] as num? ?? 0)
+        .toDouble();
     final lowestSalary = (analysisData['lowestSalary'] as num? ?? 0).toDouble();
     final uniqueEmployees = analysisData['totalUniqueEmployees'] as int? ?? 0;
 
     // 获取部门统计信息
     final departmentStats = _getAggregatedDepartmentStats(analysisData);
+    logger.info('部门统计信息：$departmentStats');
 
     // 获取薪资区间信息
     final salaryRanges = _getAggregatedSalaryRanges(analysisData);
@@ -1178,11 +1187,19 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
       'averageSalary': averageSalary,
       'totalEmployees': totalEmployees,
     };
-    final quarterMoMChangeAnalysis = await _aiSummaryService
-        .generateQuarterlyMoMChangeAnalysis(
-          currentQuarterData,
-          previousQuarterData.isNotEmpty ? previousQuarterData : null,
-        );
+
+    logger.info('Last Quarter Data: $previousQuarterData');
+    String quarterMoMChangeAnalysis = "";
+    if (previousQuarterData.isNotEmpty &&
+        previousQuarterData['totalEmployees'] != null &&
+        previousQuarterData['totalEmployees'] is int &&
+        previousQuarterData['totalEmployees'] > 0) {
+      quarterMoMChangeAnalysis = await _aiSummaryService
+          .generateQuarterlyMoMChangeAnalysis(
+            currentQuarterData,
+            previousQuarterData.isNotEmpty ? previousQuarterData : null,
+          );
+    }
 
     // 为季度报告创建增强的 AI 分析提示
     final basePromptForSalaryRange = '''
@@ -1284,7 +1301,7 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
       endTime: '${endTime.year}年${endTime.month}月',
       compareLast: quarterMoMChangeAnalysis.isNotEmpty
           ? quarterMoMChangeAnalysis
-          : '与上季度对比',
+          : '',
       totalEmployees: totalEmployees,
       totalSalary: totalSalary,
       averageSalary: averageSalary,
@@ -1300,7 +1317,7 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
           ? departmentSalaryAnalysis
           : '部门工资分析',
       keySalaryPoint: keySalaryPoint.isNotEmpty ? keySalaryPoint : '关键工资点',
-      salaryRankings: "",
+      salaryRankings: _generateSalaryOrder(deptStatsList),
       basicSalaryRate: 0.7,
       performanceSalaryRate: 0.3,
       salaryStructure: salaryStructureDescription, // 使用生成的薪资结构描述

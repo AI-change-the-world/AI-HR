@@ -9,6 +9,7 @@ import 'package:salary_report/src/isar/report_generation_record.dart';
 import 'package:salary_report/src/components/attendance_pagination.dart';
 import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_factory.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
+import 'package:salary_report/src/rust/api/simple.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:toastification/toastification.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
@@ -137,12 +138,9 @@ class _QuarterlyAnalysisPageRiverpodState
           .value!
           .monthlySummary;
 
-      analysisData["totalUniqueEmployees"] =
-          keyMetricsState.value!.monthlyData?.findUniques().length ?? 0;
-      analysisData["totalEmployees"] =
-          (keyMetricsState.value! as QuarterlyKeyMetricsState)
-              .quarterData?["totalEmployees"] ??
-          0;
+      // 使用_prepareAnalysisData中计算的正确数据
+      // analysisData中已经包含了正确计算的totalEmployees和totalUniqueEmployees
+      // 这里不需要重复设置，避免覆盖正确的计算结果
 
       logger.info('salarySummary     ${analysisData['salarySummary']}');
 
@@ -208,6 +206,7 @@ class _QuarterlyAnalysisPageRiverpodState
           _isGeneratingReport = false;
         });
       }
+      beep();
     }
   }
 
@@ -332,6 +331,7 @@ class _QuarterlyAnalysisPageRiverpodState
 
     // 计算聚合数据用于报告生成
     int totalEmployees = 0;
+    int totalUniqueEmployees = 0;
     double totalSalary = 0.0;
     double averageSalary = 0.0;
     double highestSalary = 0.0;
@@ -343,15 +343,63 @@ class _QuarterlyAnalysisPageRiverpodState
     // 聚合薪资区间数据
     final Map<String, SalaryRangeStats> aggregatedSalaryRanges = {};
 
+    // 计算唯一员工数量
+    final Set<String> uniqueEmployees = <String>{};
+
     if (monthlyDataList.isNotEmpty) {
-      // 计算总体统计数据（使用最新月份的数据）
+      // 计算季度累计统计数据
+      double quarterTotalSalary = 0.0;
+      int quarterTotalEmployeeCount = 0;
+      double quarterHighestSalary = 0.0;
+      double quarterLowestSalary = double.infinity;
+
+      // 累计所有月份的数据
+      for (var monthData in monthlyDataList) {
+        quarterTotalSalary += (monthData['totalSalary'] as num? ?? 0)
+            .toDouble();
+        quarterTotalEmployeeCount += (monthData['employeeCount'] as int? ?? 0);
+
+        final monthHighest = (monthData['highestSalary'] as num? ?? 0)
+            .toDouble();
+        final monthLowest =
+            (monthData['lowestSalary'] as num? ?? double.infinity).toDouble();
+
+        if (monthHighest > quarterHighestSalary) {
+          quarterHighestSalary = monthHighest;
+        }
+        if (monthLowest < quarterLowestSalary &&
+            monthLowest != double.infinity) {
+          quarterLowestSalary = monthLowest;
+        }
+
+        // 收集唯一员工信息
+        if (monthData['workers'] is List) {
+          final workers = monthData['workers'] as List;
+          for (var worker in workers) {
+            if (worker is Map<String, dynamic>) {
+              final name = worker['name'] as String? ?? '';
+              final department = worker['department'] as String? ?? '';
+              if (name.isNotEmpty) {
+                uniqueEmployees.add('$name-$department'); // 使用姓名+部门作为唯一标识
+              }
+            }
+          }
+        }
+      }
+
+      totalUniqueEmployees = uniqueEmployees.length;
+
+      // 使用最后一个月的员工数作为当前员工数（因为这代表季度末的员工数量）
       final latestMonth = monthlyDataList.last;
-      totalEmployees = latestMonth['employeeCount'] as int? ?? 0;
-      totalSalary = (latestMonth['totalSalary'] as num? ?? 0).toDouble();
-      averageSalary = (latestMonth['averageSalary'] as num? ?? 0).toDouble();
-      highestSalary = (latestMonth['highestSalary'] as num? ?? 0).toDouble();
-      lowestSalary = (latestMonth['lowestSalary'] as num? ?? double.infinity)
-          .toDouble();
+      totalEmployees = quarterTotalEmployeeCount; // 季度总发薪人次
+      totalSalary = quarterTotalSalary; // 季度工资总额
+      averageSalary = quarterTotalEmployeeCount > 0
+          ? quarterTotalSalary / quarterTotalEmployeeCount
+          : 0.0; // 季度平均工资
+      highestSalary = quarterHighestSalary; // 季度最高工资
+      lowestSalary = quarterLowestSalary == double.infinity
+          ? 0.0
+          : quarterLowestSalary; // 季度最低工资
 
       // 聚合所有月份的部门统计数据
       for (var monthData in departmentStatsPerMonth) {
@@ -362,19 +410,20 @@ class _QuarterlyAnalysisPageRiverpodState
               final deptName = dept['department'] as String;
               if (aggregatedDepartmentStats.containsKey(deptName)) {
                 final existing = aggregatedDepartmentStats[deptName]!;
+                final newEmployeeCount =
+                    existing.employeeCount +
+                    (dept['employeeCount'] as int? ?? 0);
+                final newTotalSalary =
+                    existing.totalNetSalary +
+                    (dept['totalNetSalary'] as num? ?? 0).toDouble();
+
                 aggregatedDepartmentStats[deptName] = DepartmentSalaryStats(
                   department: deptName,
-                  employeeCount:
-                      existing.employeeCount +
-                      (dept['employeeCount'] as int? ?? 0),
-                  totalNetSalary:
-                      existing.totalNetSalary +
-                      (dept['totalNetSalary'] as num? ?? 0).toDouble(),
-                  averageNetSalary:
-                      (existing.totalNetSalary +
-                          (dept['totalNetSalary'] as num? ?? 0).toDouble()) /
-                      (existing.employeeCount +
-                          (dept['employeeCount'] as int? ?? 0)),
+                  employeeCount: newEmployeeCount,
+                  totalNetSalary: newTotalSalary,
+                  averageNetSalary: newEmployeeCount > 0
+                      ? newTotalSalary / newEmployeeCount
+                      : 0.0,
                   year: existing.year,
                   month: existing.month,
                   maxSalary: [
@@ -415,13 +464,17 @@ class _QuarterlyAnalysisPageRiverpodState
             if (stat is SalaryRangeStats) {
               if (aggregatedSalaryRanges.containsKey(rangeName)) {
                 final existing = aggregatedSalaryRanges[rangeName]!;
+                final newEmployeeCount =
+                    existing.employeeCount + stat.employeeCount;
+                final newTotalSalary = existing.totalSalary + stat.totalSalary;
+
                 aggregatedSalaryRanges[rangeName] = SalaryRangeStats(
                   range: rangeName,
-                  employeeCount: existing.employeeCount + stat.employeeCount,
-                  totalSalary: existing.totalSalary + stat.totalSalary,
-                  averageSalary:
-                      (existing.totalSalary + stat.totalSalary) /
-                      (existing.employeeCount + stat.employeeCount),
+                  employeeCount: newEmployeeCount,
+                  totalSalary: newTotalSalary,
+                  averageSalary: newEmployeeCount > 0
+                      ? newTotalSalary / newEmployeeCount
+                      : 0.0,
                   year: existing.year,
                   month: existing.month,
                 );
@@ -442,6 +495,7 @@ class _QuarterlyAnalysisPageRiverpodState
 
       // 聚合数据（用于兼容现有的报告生成逻辑）
       'totalEmployees': totalEmployees,
+      'totalUniqueEmployees': totalUniqueEmployees,
       'totalSalary': totalSalary,
       'averageSalary': averageSalary,
       'highestSalary': highestSalary,

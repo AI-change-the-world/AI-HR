@@ -40,6 +40,8 @@ class QuarterlyChartGenerationService {
       departmentStatsPerMonth: departmentStatsPerMonth,
     );
 
+    logger.info('Generating salaryStructureData $salaryStructureData');
+
     final salaryRangeChartImage = await _generateSalaryRangeChart(salaryRanges);
     final salaryStructureChartImage =
         salaryStructureData != null && salaryStructureData.isNotEmpty
@@ -47,12 +49,15 @@ class QuarterlyChartGenerationService {
         : null;
 
     // 生成考勤统计图表
-    final attendanceChartImage = attendanceStats != null && attendanceStats.isNotEmpty
+    final attendanceChartImage =
+        attendanceStats != null && attendanceStats.isNotEmpty
         ? await _generateAttendanceChart(attendanceStats)
         : null;
 
     // 生成部门薪资区间联合统计图表
-    final departmentSalaryRangeChartImage = departmentSalaryRangeData != null && departmentSalaryRangeData.isNotEmpty
+    final departmentSalaryRangeChartImage =
+        departmentSalaryRangeData != null &&
+            departmentSalaryRangeData.isNotEmpty
         ? await _generateDepartmentSalaryRangeChart(departmentSalaryRangeData)
         : null;
 
@@ -164,6 +169,8 @@ class QuarterlyChartGenerationService {
       }
     }
 
+    logger.info('seriesData: $seriesData');
+
     // 配置 series
     final colors = [
       Colors.blue,
@@ -181,12 +188,32 @@ class QuarterlyChartGenerationService {
     for (var dept in allDepartments) {
       seriesList.add(
         ColumnSeries<Map<String, dynamic>, String>(
+          animationDelay: 0,
+          animationDuration: 0,
           dataSource: seriesData[dept]!,
           xValueMapper: (data, _) => data['month'],
           yValueMapper: (data, _) => data['employeeCount'],
           name: dept,
           color: colors[colorIndex % colors.length],
-          dataLabelSettings: const DataLabelSettings(isVisible: true),
+
+          dataLabelSettings: DataLabelSettings(
+            isVisible: true,
+            labelAlignment: ChartDataLabelAlignment.top,
+            builder:
+                (
+                  dynamic data,
+                  dynamic point,
+                  dynamic series,
+                  int pointIndex,
+                  int seriesIndex,
+                ) {
+                  // 自定义显示：人数 + 部门名
+                  return Text(
+                    '${dept} (${data['employeeCount']})',
+                    style: const TextStyle(fontSize: 12, color: Colors.black),
+                  );
+                },
+          ),
         ),
       );
       colorIndex++;
@@ -196,7 +223,11 @@ class QuarterlyChartGenerationService {
     final chartWidget = _buildChartContainer(
       SfCartesianChart(
         title: ChartTitle(text: '各月部门人员数量对比'),
-        legend: Legend(isVisible: true, position: LegendPosition.bottom),
+        legend: Legend(
+          isVisible: true,
+          position: LegendPosition.bottom, // 显示在底部
+          overflowMode: LegendItemOverflowMode.wrap, // 超出自动换行
+        ),
         primaryXAxis: CategoryAxis(
           labelIntersectAction: AxisLabelIntersectAction.rotate45,
           title: AxisTitle(text: '月份'),

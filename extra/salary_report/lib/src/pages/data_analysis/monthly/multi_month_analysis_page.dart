@@ -4,6 +4,7 @@ import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/isar/report_generation_record.dart';
 import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_factory.dart';
 import 'package:salary_report/src/pages/visualization/report/report_types.dart';
+import 'package:salary_report/src/rust/api/simple.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:toastification/toastification.dart';
@@ -519,6 +520,7 @@ class _MultiMonthAnalysisPageState
           _isGeneratingReport = false;
         });
       }
+      beep();
     }
   }
 
