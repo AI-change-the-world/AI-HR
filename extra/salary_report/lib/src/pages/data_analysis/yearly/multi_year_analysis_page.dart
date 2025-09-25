@@ -18,8 +18,8 @@ import 'package:salary_report/src/components/salary_charts.dart';
 import 'package:salary_report/src/components/monthly_employee_changes_component.dart'; // 导入月度员工变化组件
 import 'package:salary_report/src/services/monthly_analysis_service.dart'; // 导入月度分析服务
 import 'package:salary_report/src/isar/database.dart'; // 导入数据库
-import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_factory.dart';
-import 'package:salary_report/src/pages/visualization/report/report_types.dart';
+import 'package:salary_report/src/services/enhanced_report_generator_factory.dart';
+import 'package:salary_report/src/services/report_types.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 
 // 多年分析页面

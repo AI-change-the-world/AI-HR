@@ -1,11 +1,11 @@
 // src/report/enhanced_report_generator_factory.dart
 
-import 'package:salary_report/src/pages/visualization/report/report_types.dart';
-import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_interface.dart';
-import 'package:salary_report/src/pages/visualization/report/enhanced_monthly_report_generator.dart';
-import 'package:salary_report/src/pages/visualization/report/enhanced_multi_month_report_generator.dart';
-import 'package:salary_report/src/pages/visualization/report/enhanced_quarterly_report_generator.dart';
-import 'package:salary_report/src/pages/visualization/report/enhanced_annual_report_generator.dart';
+import 'package:salary_report/src/services/report_types.dart';
+import 'package:salary_report/src/services/enhanced_report_generator_interface.dart';
+import 'package:salary_report/src/services/monthly/enhanced_monthly_report_generator.dart';
+import 'package:salary_report/src/services/enhanced_multi_month_report_generator.dart';
+import 'package:salary_report/src/services/enhanced_quarterly_report_generator.dart';
+import 'package:salary_report/src/services/enhanced_annual_report_generator.dart';
 
 /// 增强版报告生成器工厂
 class EnhancedReportGeneratorFactory {

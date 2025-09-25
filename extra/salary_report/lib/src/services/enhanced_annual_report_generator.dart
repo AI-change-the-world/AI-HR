@@ -7,8 +7,8 @@ import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:salary_report/src/services/yearly/yearly.dart';
-import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_interface.dart';
-import 'package:salary_report/src/pages/visualization/report/ai_summary_service.dart';
+import 'package:salary_report/src/services/enhanced_report_generator_interface.dart';
+import 'package:salary_report/src/services/ai_summary_service.dart';
 import 'package:salary_report/src/isar/salary_list.dart';
 
 /// 增强版年度报告生成器

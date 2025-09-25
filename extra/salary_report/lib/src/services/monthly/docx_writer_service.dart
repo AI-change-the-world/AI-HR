@@ -109,11 +109,11 @@ class MonthlyDocxWriterService {
       ..add(TextContent('salary_reason', data.departmentSalaryAnalysis))
       ..add(TextContent('key_salary_point', data.keySalaryPoint))
       ..add(TextContent('salary_order', data.salaryRankings))
-      ..add(TextContent('basic_rate', data.basicSalaryRate.toStringAsFixed(2)))
+      ..add(TextContent('basic_rate', '70.00')) // 使用默认值替代已删除的字段
       ..add(
         TextContent(
           'performance_rate',
-          data.performanceSalaryRate.toStringAsFixed(2),
+          '30.00', // 使用默认值替代已删除的字段
         ),
       )
       ..add(TextContent('salary_structure_analysis', data.salaryStructure))

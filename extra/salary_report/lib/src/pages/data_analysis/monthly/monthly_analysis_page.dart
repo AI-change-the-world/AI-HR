@@ -5,7 +5,7 @@ import 'package:salary_report/src/common/scroll_screenshot.dart';
 import 'package:salary_report/src/common/toast.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
 import 'package:salary_report/src/isar/report_generation_record.dart';
-import 'package:salary_report/src/pages/visualization/report/enhanced_monthly_report_generator.dart';
+import 'package:salary_report/src/services/monthly/enhanced_monthly_report_generator.dart';
 import 'package:salary_report/src/rust/api/simple.dart';
 import 'package:salary_report/src/services/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart';
@@ -16,7 +16,6 @@ import 'package:toastification/toastification.dart';
 import 'package:salary_report/src/isar/salary_list.dart';
 import 'package:salary_report/src/components/employee_changes_component.dart';
 import 'package:salary_report/src/components/department_stats_component.dart';
-import 'package:salary_report/src/services/monthly/monthly_analysis_json_converter.dart';
 
 class MonthlyAnalysisPage extends StatefulWidget {
   const MonthlyAnalysisPage({
@@ -428,10 +427,11 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
     }
   }
 
-  /// 生成JSON格式的分析报告
+  /// 生成自然语言分析报告
   Future<String> _generateJsonReport() {
+    final generator = EnhancedMonthlyReportGenerator();
     return Future.value(
-      MonthlyAnalysisJsonConverter.convertAnalysisDataToJson(
+      generator.generateNaturalLanguageReport(
         analysisData: _analysisData,
         departmentStats: _departmentStats,
         attendanceStats: _attendanceStats,
@@ -452,7 +452,7 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: const Text('JSON分析报告'),
+              title: const Text('自然语言分析报告'),
               content: SingleChildScrollView(child: Text(jsonReport)),
               actions: [
                 TextButton(
@@ -470,7 +470,7 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
       if (mounted) {
         toastification.show(
           context: context,
-          title: const Text('生成JSON报告失败'),
+          title: const Text('生成自然语言报告失败'),
           description: Text('错误信息: $e'),
           type: ToastificationType.error,
           style: ToastificationStyle.flat,
@@ -542,7 +542,7 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
             IconButton(
               icon: const Icon(Icons.code),
               onPressed: _showJsonReport,
-              tooltip: '查看JSON报告',
+              tooltip: '查看自然语言报告',
             ),
           SizedBox(width: 8),
         ],

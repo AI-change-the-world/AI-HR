@@ -9,13 +9,12 @@ import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:salary_report/src/services/monthly/monthly.dart';
-import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_interface.dart';
-import 'package:salary_report/src/pages/visualization/report/ai_summary_service.dart';
+import 'package:salary_report/src/services/enhanced_report_generator_interface.dart';
+import 'package:salary_report/src/services/ai_summary_service.dart';
 
 /// 增强版单月报告生成器
 class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
   final MonthlyChartGenerationService _chartService;
-  final MonthlyChartGenerationFromJsonService _jsonChartService;
   final MonthlyDocxWriterService _docxService;
   final DataAnalysisService _analysisService;
   final ReportService _reportService;
@@ -23,14 +22,11 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
 
   EnhancedMonthlyReportGenerator({
     MonthlyChartGenerationService? chartService,
-    MonthlyChartGenerationFromJsonService? jsonChartService,
     MonthlyDocxWriterService? docxService,
     DataAnalysisService? analysisService,
     ReportService? reportService,
     AISummaryService? aiSummaryService,
   }) : _chartService = chartService ?? MonthlyChartGenerationService(),
-       _jsonChartService =
-           jsonChartService ?? MonthlyChartGenerationFromJsonService(),
        _docxService = docxService ?? MonthlyDocxWriterService(),
        _analysisService =
            analysisService ?? DataAnalysisService(IsarDatabase()),
@@ -54,60 +50,46 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
     try {
       logger.info('Starting enhanced monthly salary report generation...');
 
-      // 1. 生成JSON格式的分析数据
-      final jsonString = MonthlyAnalysisJsonConverter.convertAnalysisDataToJson(
-        analysisData: analysisData,
-        departmentStats: departmentStats,
-        attendanceStats: attendanceStats,
-        previousMonthData: previousMonthData,
-        year: year,
-        month: month,
-      );
-
-      // 2. 解析JSON数据
-      final jsonData = json.decode(jsonString) as Map<String, dynamic>;
-
-      // 3. 构建薪资结构数据
+      // 1. 构建薪资结构数据
       final salaryStructureData = createSalaryStructureData(
         analysisData.containsKey('salarySummary')
             ? analysisData['salarySummary'] as Map<String, dynamic>
             : null,
       );
 
-      // 4. 生成图表图像（从UI）
-      final chartImagesFromUI = await _chartService.generateAllCharts(
+      // 2. 准备顶级员工数据
+      final topEmployeesData = _prepareTopEmployeesData(analysisData);
+
+      // 3. 准备部门薪资区间数据
+      final departmentSalaryRangeData = _prepareDepartmentSalaryRangeData(
+        analysisData,
+      );
+
+      // 4. 生成所有图表
+      final chartImages = await _chartService.generateAllCharts(
         previewContainerKey: previewContainerKey,
         departmentStats: departmentStats,
         salaryRanges: _convertToSalaryRangeMap(
           analysisData['salaryRanges'] as List<dynamic>,
         ),
-        salaryStructureData: salaryStructureData, // 添加薪资结构数据
+        salaryStructureData: salaryStructureData,
+        attendanceStats: attendanceStats,
+        topEmployeesData: topEmployeesData,
+        departmentSalaryRangeData: departmentSalaryRangeData,
       );
 
-      // 5. 生成图表图像（从JSON数据）
-      final chartImagesFromJson = await _jsonChartService
-          .generateAllChartsFromJson(jsonData: jsonData);
-
-      // 6. 创建组合图表图像集合
-      final combinedChartImages = MonthlyReportChartImages(
-        mainChart: chartImagesFromUI.mainChart,
-        departmentDetailsChart: chartImagesFromJson.departmentChart,
-        salaryRangeChart: chartImagesFromJson.salaryRangeChart,
-        salaryStructureChart: chartImagesFromUI.salaryStructureChart, // 薪资结构饼图
-      );
-
-      // 7. 创建报告内容模型
+      // 5. 创建报告内容模型
       final reportContent = await _createReportContentModel(
-        jsonData,
         analysisData,
         startTime,
         endTime,
+        previousMonthData: previousMonthData,
       );
 
-      // 8. 写入报告文件
+      // 6. 写入报告文件
       final reportPath = await _docxService.writeReport(
         data: reportContent,
-        images: combinedChartImages,
+        images: chartImages,
       );
 
       // 9. 添加报告记录到数据库
@@ -125,6 +107,65 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
       logger.severe(stackTrace);
       rethrow;
     }
+  }
+
+  /// 准备顶级员工数据
+  List<dynamic>? _prepareTopEmployeesData(Map<String, dynamic> analysisData) {
+    if (!analysisData.containsKey('topSalaryEmployees')) return null;
+
+    final topEmployees = analysisData['topSalaryEmployees'] as List<dynamic>;
+    return topEmployees.map((employee) {
+      if (employee is Map<String, dynamic>) {
+        return {
+          'name': employee['name'] ?? '',
+          'net_salary':
+              double.tryParse(
+                employee['netSalary']?.toString().replaceAll(
+                      RegExp(r'[^\d.-]'),
+                      '',
+                    ) ??
+                    '0',
+              ) ??
+              0.0,
+        };
+      }
+      return {'name': employee.toString(), 'net_salary': 0.0};
+    }).toList();
+  }
+
+  /// 准备部门薪资区间数据
+  List<dynamic>? _prepareDepartmentSalaryRangeData(
+    Map<String, dynamic> analysisData,
+  ) {
+    if (!analysisData.containsKey('departmentSalaryRangeStats')) return null;
+
+    final deptSalaryRangeStats =
+        analysisData['departmentSalaryRangeStats'] as List<dynamic>;
+
+    // 按部门分组数据
+    final Map<String, List<Map<String, dynamic>>> departmentGroups = {};
+
+    for (var stat in deptSalaryRangeStats) {
+      if (stat is Map<String, dynamic>) {
+        final department = stat['department'] as String? ?? '';
+        final salaryRange = stat['salaryRange'] as String? ?? '';
+        final employeeCount = stat['employeeCount'] as int? ?? 0;
+
+        if (!departmentGroups.containsKey(department)) {
+          departmentGroups[department] = [];
+        }
+
+        departmentGroups[department]!.add({
+          'salary_range': salaryRange,
+          'employee_count': employeeCount,
+        });
+      }
+    }
+
+    // 转换为所需格式
+    return departmentGroups.entries.map((entry) {
+      return {'department': entry.key, 'salary_ranges': entry.value};
+    }).toList();
   }
 
   /// 创建薪资结构数据
@@ -206,15 +247,12 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
 
   /// 创建报告内容模型
   Future<MonthlyReportContentModel> _createReportContentModel(
-    Map<String, dynamic> jsonData,
     Map<String, dynamic> analysisData,
     DateTime startTime,
-    DateTime endTime,
-  ) async {
-    // 从JSON数据中提取关键信息来构建报告内容模型
-    final keyMetrics = jsonData['key_metrics'] as Map<String, dynamic>;
-    final currentMonthMetrics =
-        keyMetrics['current_month'] as Map<String, dynamic>;
+    DateTime endTime, {
+    Map<String, dynamic>? previousMonthData,
+  }) async {
+    // 直接从analysisData中提取关键信息来构建报告内容模型
 
     // 获取部门统计信息
     final departmentStats = analysisData['departmentStats'] as List<dynamic>;
@@ -272,7 +310,7 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
 
     final salaryStructureAdvice = await _aiSummaryService
         .generateSalaryStructureAdvice(
-          employeeDetails: jsonData['key_param'] as String,
+          employeeDetails: _generateEmployeeDetails(analysisData),
           departmentDetails: _generateDepartmentDetails(departmentStats),
           salaryRange: _generateSalaryRangeDescription(salaryRanges),
           salaryRangeFeature: salaryRangeFeatureSummary.isNotEmpty
@@ -288,13 +326,16 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
       reportTime: reportTime,
       startTime: '${startTime.year}年${startTime.month}月',
       endTime: '${endTime.year}年${endTime.month}月',
-      compareLast: jsonData['salary_info'] as String,
-      totalEmployees: currentMonthMetrics['total_employees'] as int,
-      totalSalary: (currentMonthMetrics['total_salary'] as num).toDouble(),
-      averageSalary: (currentMonthMetrics['average_salary'] as num).toDouble(),
+      compareLast: _generateKeyMetricsDescription(
+        analysisData,
+        previousMonthData,
+      ),
+      totalEmployees: analysisData['totalEmployees'] as int? ?? 0,
+      totalSalary: (analysisData['totalSalary'] as num? ?? 0).toDouble(),
+      averageSalary: (analysisData['averageSalary'] as num? ?? 0).toDouble(),
       departmentCount: departmentStats.length,
-      employeeCount: currentMonthMetrics['total_unique_employees'] as int,
-      employeeDetails: jsonData['key_param'] as String,
+      employeeCount: analysisData['totalUniqueEmployees'] as int? ?? 0,
+      employeeDetails: _generateEmployeeDetails(analysisData),
       departmentDetails: _generateDepartmentDetails(departmentStats),
       salaryRangeDescription: _generateSalaryRangeDescription(salaryRanges),
       salaryRangeFeatureSummary: salaryRangeFeatureSummary.isNotEmpty
@@ -305,8 +346,6 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
           : '部门工资分析',
       keySalaryPoint: keySalaryPoint.isNotEmpty ? keySalaryPoint : '关键工资点',
       salaryRankings: _generateSalaryRankings(analysisData),
-      basicSalaryRate: 0.7,
-      performanceSalaryRate: 0.3,
       salaryStructure: salaryStructureDescription, // 使用生成的薪资结构描述
       salaryStructureAdvice: salaryStructureAdvice.isNotEmpty
           ? salaryStructureAdvice
@@ -587,6 +626,343 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
         buffer.write('。');
       }
     }
+
+    return buffer.toString();
+  }
+
+  /// 生成员工详情描述
+  String _generateEmployeeDetails(Map<String, dynamic> analysisData) {
+    final totalEmployees = analysisData['totalEmployees'] as int? ?? 0;
+    final totalUniqueEmployees =
+        analysisData['totalUniqueEmployees'] as int? ?? 0;
+    final totalSalary = (analysisData['totalSalary'] as num? ?? 0).toDouble();
+    final averageSalary = (analysisData['averageSalary'] as num? ?? 0)
+        .toDouble();
+
+    return '本月共有$totalUniqueEmployees名员工（总发薪人次$totalEmployees），'
+        '工资总额为${totalSalary.toStringAsFixed(2)}元，'
+        '平均工资为${averageSalary.toStringAsFixed(2)}元。';
+  }
+
+  /// 生成关键指标的自然语言描述（从MonthlyAnalysisJsonConverter整合）
+  String _generateKeyMetricsDescription(
+    Map<String, dynamic> analysisData,
+    Map<String, dynamic>? previousMonthData,
+  ) {
+    final totalEmployees = analysisData['totalEmployees'] as int? ?? 0;
+    final totalUniqueEmployees =
+        analysisData['totalUniqueEmployees'] as int? ?? 0;
+    final totalSalary = (analysisData['totalSalary'] as num? ?? 0).toDouble();
+    final averageSalary = (analysisData['averageSalary'] as num? ?? 0)
+        .toDouble();
+    final highestSalary = (analysisData['highestSalary'] as num? ?? 0)
+        .toDouble();
+    final lowestSalary = (analysisData['lowestSalary'] as num? ?? 0).toDouble();
+
+    final buffer = StringBuffer();
+    buffer.write('本月共有员工$totalEmployees人，去重后实际员工数为$totalUniqueEmployees人。');
+    buffer.write('工资总额为${totalSalary.toStringAsFixed(2)}元，');
+    buffer.write('平均工资为${averageSalary.toStringAsFixed(2)}元，');
+    buffer.write('最高工资为${highestSalary.toStringAsFixed(2)}元，');
+    buffer.write('最低工资为${lowestSalary.toStringAsFixed(2)}元。');
+
+    if (previousMonthData != null) {
+      final prevTotalSalary = (previousMonthData['totalSalary'] as num? ?? 0)
+          .toDouble();
+      final prevAverageSalary =
+          (previousMonthData['averageSalary'] as num? ?? 0).toDouble();
+      final prevHighestSalary =
+          (previousMonthData['highestSalary'] as num? ?? 0).toDouble();
+      final prevLowestSalary = (previousMonthData['lowestSalary'] as num? ?? 0)
+          .toDouble();
+
+      final totalSalaryChange = totalSalary - prevTotalSalary;
+      final averageSalaryChange = averageSalary - prevAverageSalary;
+      final highestSalaryChange = highestSalary - prevHighestSalary;
+      final lowestSalaryChange = lowestSalary - prevLowestSalary;
+
+      final totalSalaryChangePercent = prevTotalSalary > 0
+          ? (totalSalaryChange / prevTotalSalary * 100).toStringAsFixed(2)
+          : '0.00';
+      final averageSalaryChangePercent = prevAverageSalary > 0
+          ? (averageSalaryChange / prevAverageSalary * 100).toStringAsFixed(2)
+          : '0.00';
+      final highestSalaryChangePercent = prevHighestSalary > 0
+          ? (highestSalaryChange / prevHighestSalary * 100).toStringAsFixed(2)
+          : '0.00';
+      final lowestSalaryChangePercent = prevLowestSalary > 0
+          ? (lowestSalaryChange / prevLowestSalary * 100).toStringAsFixed(2)
+          : '0.00';
+
+      buffer.write(
+        '与上月相比，工资总额${totalSalaryChange >= 0 ? "增加" : "减少"}${totalSalaryChange.abs().toStringAsFixed(2)}元($totalSalaryChangePercent%)，',
+      );
+      buffer.write(
+        '平均工资${averageSalaryChange >= 0 ? "上升" : "下降"}${averageSalaryChange.abs().toStringAsFixed(2)}元($averageSalaryChangePercent%)，',
+      );
+      buffer.write(
+        '最高工资${highestSalaryChange >= 0 ? "上升" : "下降"}${highestSalaryChange.abs().toStringAsFixed(2)}元($highestSalaryChangePercent%)，',
+      );
+      buffer.write(
+        '最低工资${lowestSalaryChange >= 0 ? "上升" : "下降"}${lowestSalaryChange.abs().toStringAsFixed(2)}元($lowestSalaryChangePercent%)。',
+      );
+    }
+
+    return buffer.toString();
+  }
+
+  /// 生成考勤统计数据的自然语言描述（从MonthlyAnalysisJsonConverter整合）
+  String _generateAttendanceStatsDescription(
+    List<AttendanceStats> attendanceStats,
+  ) {
+    if (attendanceStats.isEmpty) {
+      return '暂无考勤统计数据。';
+    }
+
+    final buffer = StringBuffer();
+    buffer.write('考勤情况统计如下：');
+
+    for (int i = 0; i < attendanceStats.length && i < 10; i++) {
+      final stat = attendanceStats[i];
+      buffer.write('${stat.name}(${stat.department})，');
+      buffer.write('病假${stat.sickLeaveDays}天，');
+      buffer.write('事假${stat.leaveDays}天，');
+      buffer.write('缺勤${stat.absenceCount}次，');
+      buffer.write('旷工${stat.truancyDays}天');
+      if (i < attendanceStats.length - 1 && i < 9) {
+        buffer.write('；');
+      }
+    }
+
+    if (attendanceStats.length > 10) {
+      buffer.write('；还有${attendanceStats.length - 10}条记录未显示');
+    }
+
+    buffer.write('。');
+    return buffer.toString();
+  }
+
+  /// 生成员工变动情况的自然语言描述（从MonthlyAnalysisJsonConverter整合）
+  String _generateEmployeeChangesDescription(
+    Map<String, dynamic> analysisData,
+    Map<String, dynamic>? previousMonthData,
+  ) {
+    if (previousMonthData == null ||
+        !analysisData.containsKey('currentEmployees') ||
+        !previousMonthData.containsKey('previousEmployees')) {
+      return '无人员变动数据';
+    }
+
+    // 获取当前月和上月的员工列表
+    final currentEmployees =
+        analysisData['currentEmployees'] as List<MinimalEmployeeInfo>;
+    final previousEmployees =
+        previousMonthData['previousEmployees'] as List<MinimalEmployeeInfo>;
+
+    // 创建员工标识集合（姓名+部门）
+    final currentEmployeeSet = <String>{};
+    final previousEmployeeSet = <String>{};
+
+    // 构建当前月员工标识
+    for (var emp in currentEmployees) {
+      currentEmployeeSet.add('${emp.name}_${emp.department}');
+    }
+
+    // 构建上月员工标识
+    for (var emp in previousEmployees) {
+      previousEmployeeSet.add('${emp.name}_${emp.department}');
+    }
+
+    // 计算新增和离职员工
+    final newEmployees = currentEmployeeSet.difference(previousEmployeeSet);
+    final resignedEmployees = previousEmployeeSet.difference(
+      currentEmployeeSet,
+    );
+
+    // 构建自然语言描述
+    final buffer = StringBuffer();
+
+    if (newEmployees.isEmpty && resignedEmployees.isEmpty) {
+      buffer.write('本月无人员变动');
+    } else {
+      if (newEmployees.isNotEmpty) {
+        buffer.write('本月新增${newEmployees.length}名员工');
+        // 列出新增员工的姓名和部门
+        final newEmployeeDetails = <String>[];
+        for (var emp in currentEmployees) {
+          final identifier = '${emp.name}_${emp.department}';
+          if (newEmployees.contains(identifier) &&
+              newEmployeeDetails.length < 5) {
+            newEmployeeDetails.add('${emp.name}(${emp.department})');
+          }
+        }
+        if (newEmployeeDetails.isNotEmpty) {
+          buffer.write('，分别为${newEmployeeDetails.join('、')}');
+        }
+      }
+
+      if (resignedEmployees.isNotEmpty) {
+        if (buffer.isNotEmpty) buffer.write('；');
+        buffer.write('本月离职${resignedEmployees.length}名员工');
+        // 列出离职员工的姓名和部门
+        final resignedEmployeeDetails = <String>[];
+        for (var emp in previousEmployees) {
+          final identifier = '${emp.name}_${emp.department}';
+          if (resignedEmployees.contains(identifier) &&
+              resignedEmployeeDetails.length < 5) {
+            resignedEmployeeDetails.add('${emp.name}(${emp.department})');
+          }
+        }
+        if (resignedEmployeeDetails.isNotEmpty) {
+          buffer.write('，分别为${resignedEmployeeDetails.join('、')}');
+        }
+      }
+    }
+
+    return buffer.toString();
+  }
+
+  /// 生成工资最高员工的自然语言描述（从MonthlyAnalysisJsonConverter整合）
+  String _generateTopEmployeesDescription(Map<String, dynamic> analysisData) {
+    if (!analysisData.containsKey('topSalaryEmployees')) {
+      return '暂无工资最高员工数据。';
+    }
+
+    final topEmployees = analysisData['topSalaryEmployees'] as List;
+
+    if (topEmployees.isEmpty) {
+      return '暂无工资最高员工数据。';
+    }
+
+    final buffer = StringBuffer();
+    buffer.write('工资最高的员工有：');
+
+    for (int i = 0; i < topEmployees.length && i < 5; i++) {
+      final employee = topEmployees[i];
+      if (employee is Map<String, dynamic>) {
+        final name = employee['name'] as String? ?? '';
+        final department = employee['department'] as String? ?? '';
+        final salaryStr =
+            employee['netSalary']?.toString().replaceAll(
+              RegExp(r'[^\d.-]'),
+              '',
+            ) ??
+            '0';
+        final salary = double.tryParse(salaryStr) ?? 0;
+        buffer.write('$name($department)，工资为${salary.toStringAsFixed(2)}元');
+        if (i < topEmployees.length - 1 && i < 4) {
+          buffer.write('；');
+        }
+      }
+    }
+
+    buffer.write('。');
+    return buffer.toString();
+  }
+
+  /// 生成工资最低员工的自然语言描述（从MonthlyAnalysisJsonConverter整合）
+  String _generateBottomEmployeesDescription(
+    Map<String, dynamic> analysisData,
+  ) {
+    if (!analysisData.containsKey('bottomSalaryEmployees')) {
+      return '暂无工资最低员工数据。';
+    }
+
+    final bottomEmployees = analysisData['bottomSalaryEmployees'] as List;
+
+    if (bottomEmployees.isEmpty) {
+      return '暂无工资最低员工数据。';
+    }
+
+    final buffer = StringBuffer();
+    buffer.write('工资最低的员工有：');
+
+    for (int i = 0; i < bottomEmployees.length && i < 5; i++) {
+      final employee = bottomEmployees[i];
+      if (employee is Map<String, dynamic>) {
+        final name = employee['name'] as String? ?? '';
+        final department = employee['department'] as String? ?? '';
+        final salaryStr =
+            employee['netSalary']?.toString().replaceAll(
+              RegExp(r'[^\d.-]'),
+              '',
+            ) ??
+            '0';
+        final salary = double.tryParse(salaryStr) ?? 0;
+        buffer.write('$name($department)，工资为${salary.toStringAsFixed(2)}元');
+        if (i < bottomEmployees.length - 1 && i < 4) {
+          buffer.write('；');
+        }
+      }
+    }
+
+    buffer.write('。');
+    return buffer.toString();
+  }
+
+  /// 生成完整的自然语言报告（从MonthlyAnalysisJsonConverter整合）
+  String generateNaturalLanguageReport({
+    required Map<String, dynamic> analysisData,
+    required List<DepartmentSalaryStats> departmentStats,
+    required List<AttendanceStats> attendanceStats,
+    required Map<String, dynamic>? previousMonthData,
+    required int year,
+    required int month,
+  }) {
+    final buffer = StringBuffer();
+
+    // 报告标题
+    buffer.write('月度工资分析报告（$year年$month月）\n\n');
+
+    // 关键参数
+    buffer.write('一、基本情况\n');
+    buffer.write(_generateEmployeeDetails(analysisData));
+    if (previousMonthData != null) {
+      buffer.write(
+        _generateEmployeeChangesDescription(analysisData, previousMonthData),
+      );
+    }
+    buffer.write('\n\n');
+
+    // 关键指标
+    buffer.write('二、关键指标\n');
+    buffer.write(
+      _generateKeyMetricsDescription(analysisData, previousMonthData),
+    );
+    buffer.write('\n\n');
+
+    // 部门统计
+    buffer.write('三、部门统计\n');
+    buffer.write(
+      _generateDepartmentDetails(
+        analysisData['departmentStats'] as List<dynamic>,
+      ),
+    );
+    buffer.write('\n\n');
+
+    // 薪资区间分布
+    buffer.write('四、薪资区间分布\n');
+    buffer.write(
+      _generateSalaryRangeDescription(
+        analysisData['salaryRanges'] as List<dynamic>,
+      ),
+    );
+    buffer.write('\n\n');
+
+    // 工资最高员工
+    buffer.write('五、工资最高员工\n');
+    buffer.write(_generateTopEmployeesDescription(analysisData));
+    buffer.write('\n\n');
+
+    // 工资最低员工
+    buffer.write('六、工资最低员工\n');
+    buffer.write(_generateBottomEmployeesDescription(analysisData));
+    buffer.write('\n\n');
+
+    // 考勤统计
+    buffer.write('七、考勤统计\n');
+    buffer.write(_generateAttendanceStatsDescription(attendanceStats));
+    buffer.write('\n\n');
 
     return buffer.toString();
   }

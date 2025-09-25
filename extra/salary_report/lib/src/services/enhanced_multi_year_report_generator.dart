@@ -9,8 +9,8 @@ import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:salary_report/src/services/multi_year/multi_year.dart';
-import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_interface.dart';
-import 'package:salary_report/src/pages/visualization/report/ai_summary_service.dart';
+import 'package:salary_report/src/services/enhanced_report_generator_interface.dart';
+import 'package:salary_report/src/services/ai_summary_service.dart';
 
 /// 增强版多年度报告生成器
 class EnhancedMultiYearReportGenerator implements EnhancedReportGenerator {

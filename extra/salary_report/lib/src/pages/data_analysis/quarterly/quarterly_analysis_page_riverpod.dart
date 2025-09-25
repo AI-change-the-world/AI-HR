@@ -6,8 +6,8 @@ import 'package:salary_report/src/components/monthly_employee_changes_component.
 import 'package:salary_report/src/isar/report_generation_record.dart';
 
 import 'package:salary_report/src/components/attendance_pagination.dart';
-import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_factory.dart';
-import 'package:salary_report/src/pages/visualization/report/report_types.dart';
+import 'package:salary_report/src/services/enhanced_report_generator_factory.dart';
+import 'package:salary_report/src/services/report_types.dart';
 import 'package:salary_report/src/rust/api/simple.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:toastification/toastification.dart';

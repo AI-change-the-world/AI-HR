@@ -9,12 +9,18 @@ class MonthlyReportChartImages {
   final Uint8List? departmentDetailsChart;
   final Uint8List? salaryRangeChart;
   final Uint8List? salaryStructureChart;
+  final Uint8List? attendanceChart;
+  final Uint8List? topEmployeesChart;
+  final Uint8List? departmentSalaryRangeChart;
 
   MonthlyReportChartImages({
     this.mainChart,
     this.departmentDetailsChart,
     this.salaryRangeChart,
     this.salaryStructureChart,
+    this.attendanceChart,
+    this.topEmployeesChart,
+    this.departmentSalaryRangeChart,
   });
 }
 
@@ -39,8 +45,6 @@ class MonthlyReportContentModel {
   final String departmentSalaryAnalysis;
   final String keySalaryPoint;
   final String salaryRankings;
-  final double basicSalaryRate;
-  final double performanceSalaryRate;
   final String salaryStructure;
   final String salaryStructureAdvice;
   final List<Map<String, dynamic>> salaryStructureData;
@@ -66,8 +70,6 @@ class MonthlyReportContentModel {
     required this.departmentSalaryAnalysis,
     required this.keySalaryPoint,
     required this.salaryRankings,
-    required this.basicSalaryRate,
-    required this.performanceSalaryRate,
     required this.salaryStructure,
     required this.salaryStructureAdvice,
     required this.salaryStructureData,

@@ -14,8 +14,8 @@ import 'package:salary_report/src/rust/api/simple.dart';
 import 'package:toastification/toastification.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
-import 'package:salary_report/src/pages/visualization/report/enhanced_report_generator_factory.dart';
-import 'package:salary_report/src/pages/visualization/report/report_types.dart';
+import 'package:salary_report/src/services/enhanced_report_generator_factory.dart';
+import 'package:salary_report/src/services/report_types.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 
 // 多季度分析页面
