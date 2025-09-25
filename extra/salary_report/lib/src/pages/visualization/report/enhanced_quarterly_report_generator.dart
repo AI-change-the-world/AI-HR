@@ -65,7 +65,7 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
       final departmentDetailsPerMonth = _getDepartmentDetailsPerMonth(
         analysisData,
       );
-      logger.info('departmentDetailsPerMonth: ${departmentDetailsPerMonth}');
+      logger.info('departmentDetailsPerMonth: $departmentDetailsPerMonth');
 
       final chartImages = await _chartService.generateAllCharts(
         previewContainerKey: previewContainerKey,

@@ -209,7 +209,7 @@ class QuarterlyChartGenerationService {
                 ) {
                   // 自定义显示：人数 + 部门名
                   return Text(
-                    '${dept} (${data['employeeCount']})',
+                    '$dept (${data['employeeCount']})',
                     style: const TextStyle(fontSize: 12, color: Colors.black),
                   );
                 },
