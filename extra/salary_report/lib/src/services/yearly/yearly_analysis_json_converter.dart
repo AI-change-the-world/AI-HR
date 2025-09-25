@@ -244,4 +244,129 @@ class YearlyAnalysisJsonConverter {
       };
     }).toList();
   }
+
+  /// 生成年度自然语言报告
+  static String generateYearlyNaturalLanguageReport({
+    required MultiMonthComparisonData yearlyData,
+    required List<AttendanceStats> attendanceStats,
+    required int year,
+  }) {
+    final buffer = StringBuffer();
+    
+    // 报告标题
+    buffer.writeln('# $year年度薪资分析报告');
+    buffer.writeln();
+    
+    // 概述
+    buffer.writeln('## 年度概述');
+    if (yearlyData.monthlyComparisons.isNotEmpty) {
+      final totalEmployees = yearlyData.monthlyComparisons
+          .map((m) => m.employeeCount)
+          .reduce((a, b) => a + b);
+      final totalSalary = yearlyData.monthlyComparisons
+          .map((m) => m.totalSalary)
+          .reduce((a, b) => a + b);
+      final averageSalary = totalSalary / yearlyData.monthlyComparisons.length;
+      
+      buffer.writeln('本年度共发放工资 $totalEmployees 人次，工资总额为 ${totalSalary.toStringAsFixed(2)} 元，');
+      buffer.writeln('平均工资为 ${averageSalary.toStringAsFixed(2)} 元。');
+    }
+    buffer.writeln();
+    
+    // 月度趋势分析
+    buffer.writeln('## 月度趋势分析');
+    if (yearlyData.monthlyComparisons.isNotEmpty) {
+      buffer.writeln('各月份薪资发放情况如下：');
+      
+      // 按月份排序
+      final sortedMonthly = List<MonthlyComparisonData>.from(yearlyData.monthlyComparisons)
+        ..sort((a, b) => a.month.compareTo(b.month));
+      
+      for (var monthData in sortedMonthly) {
+        buffer.writeln('- ${monthData.month}月：发放工资 ${monthData.employeeCount} 人次，'
+            '工资总额 ${monthData.totalSalary.toStringAsFixed(2)} 元，'
+            '平均工资 ${monthData.averageSalary.toStringAsFixed(2)} 元');
+      }
+    }
+    buffer.writeln();
+    
+    // 部门分析
+    buffer.writeln('## 部门薪资分析');
+    if (yearlyData.monthlyComparisons.isNotEmpty) {
+      // 聚合所有月份的部门数据
+      final departmentAggregation = <String, Map<String, dynamic>>{};
+      
+      for (var monthData in yearlyData.monthlyComparisons) {
+        for (var entry in monthData.departmentStats.entries) {
+          final deptName = entry.key;
+          final deptStats = entry.value;
+          
+          if (departmentAggregation.containsKey(deptName)) {
+            final existing = departmentAggregation[deptName]!;
+            existing['employeeCount'] = (existing['employeeCount'] as int) + deptStats.employeeCount;
+            existing['totalSalary'] = (existing['totalSalary'] as double) + deptStats.totalNetSalary;
+            existing['months'] = (existing['months'] as int) + 1;
+          } else {
+            departmentAggregation[deptName] = {
+              'employeeCount': deptStats.employeeCount,
+              'totalSalary': deptStats.totalNetSalary,
+              'months': 1,
+            };
+          }
+        }
+      }
+      
+      // 计算各部门年度平均数据
+      for (var deptName in departmentAggregation.keys) {
+        final data = departmentAggregation[deptName]!;
+        final avgEmployeeCount = (data['employeeCount'] as int) / (data['months'] as int);
+         final avgSalary = (data['totalSalary'] as double) / (data['employeeCount'] as int);
+        
+        buffer.writeln('- $deptName：年度平均 ${avgEmployeeCount.toStringAsFixed(1)} 人，'
+            '年度总工资 ${(data['totalSalary'] as double).toStringAsFixed(2)} 元，'
+            '平均工资 ${avgSalary.toStringAsFixed(2)} 元');
+      }
+    }
+    buffer.writeln();
+    
+    // 考勤分析
+    if (attendanceStats.isNotEmpty) {
+      buffer.writeln('## 年度考勤分析');
+      
+      // 按部门聚合考勤数据
+      final attendanceByDept = <String, Map<String, int>>{};
+      
+      for (var attendance in attendanceStats) {
+        if (!attendanceByDept.containsKey(attendance.department)) {
+          attendanceByDept[attendance.department] = {
+            'sickLeaveDays': 0,
+            'leaveDays': 0,
+            'absenceCount': 0,
+            'truancyDays': 0,
+          };
+        }
+        
+        final deptData = attendanceByDept[attendance.department]!;
+        deptData['sickLeaveDays'] = (deptData['sickLeaveDays']!) + attendance.sickLeaveDays.toInt();
+        deptData['leaveDays'] = (deptData['leaveDays']!) + attendance.leaveDays.toInt();
+        deptData['absenceCount'] = (deptData['absenceCount']!) + attendance.absenceCount;
+        deptData['truancyDays'] = (deptData['truancyDays']!) + attendance.truancyDays;
+      }
+      
+      for (var entry in attendanceByDept.entries) {
+        final deptName = entry.key;
+        final data = entry.value;
+        buffer.writeln('- $deptName：病假 ${data['sickLeaveDays']} 天，'
+            '事假 ${data['leaveDays']} 天，'
+            '缺勤 ${data['absenceCount']} 次，'
+            '旷工 ${data['truancyDays']} 天');
+      }
+    }
+    
+    buffer.writeln();
+    buffer.writeln('---');
+    buffer.writeln('报告生成时间：${DateTime.now().toString()}');
+    
+    return buffer.toString();
+  }
 }

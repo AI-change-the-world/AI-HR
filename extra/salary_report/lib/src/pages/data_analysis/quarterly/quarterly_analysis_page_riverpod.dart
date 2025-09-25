@@ -162,7 +162,7 @@ class _QuarterlyAnalysisPageRiverpodState
           .monthlySummary;
 
       analysisData["totalUniqueEmployees"] =
-          keyMetricsState.value!.monthlyData?.findDuplicates().length ?? 0;
+          keyMetricsState.value!.monthlyData?.findUniques().length ?? 0;
       analysisData["totalEmployees"] =
           (keyMetricsState.value! as QuarterlyKeyMetricsState)
               .quarterData?["totalEmployees"] ??

@@ -46,6 +46,11 @@ class YearlyChartGenerationFromJsonService {
       topEmployeesChart: topEmployeesChartImage,
       attendanceChart: attendanceChartImage,
       departmentSalaryRangeChart: departmentSalaryRangeChartImage,
+      // 年度报告暂时不支持这些图表，设置为 null
+      departmentMonthOverMonthChart: null,
+      departmentYearOverYearChart: null,
+      positionMonthOverMonthChart: null,
+      positionYearOverYearChart: null,
     );
   }
 
@@ -415,6 +420,11 @@ class ReportChartImagesFromJson {
   final Uint8List? topEmployeesChart;
   final Uint8List? attendanceChart;
   final Uint8List? departmentSalaryRangeChart;
+  // 新增年度同比环比对比图表
+  final Uint8List? departmentMonthOverMonthChart;
+  final Uint8List? departmentYearOverYearChart;
+  final Uint8List? positionMonthOverMonthChart;
+  final Uint8List? positionYearOverYearChart;
 
   ReportChartImagesFromJson({
     this.departmentChart,
@@ -422,5 +432,9 @@ class ReportChartImagesFromJson {
     this.topEmployeesChart,
     this.attendanceChart,
     this.departmentSalaryRangeChart,
+    this.departmentMonthOverMonthChart,
+    this.departmentYearOverYearChart,
+    this.positionMonthOverMonthChart,
+    this.positionYearOverYearChart,
   });
 }

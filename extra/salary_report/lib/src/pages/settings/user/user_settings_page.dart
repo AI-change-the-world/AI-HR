@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:salary_report/src/common/ai_config.dart';
 import 'package:salary_report/src/common/toast.dart';
 
@@ -19,6 +20,9 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
   // 公司名称设置
   String _companyName = '';
 
+  // 版本信息
+  String _versionDisplay = '';
+
   // 文本控制器
   late TextEditingController _baseUrlController;
   late TextEditingController _apiKeyController;
@@ -34,6 +38,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     _modelNameController = TextEditingController();
     _companyNameController = TextEditingController();
     _loadSettings();
+    _loadVersionInfo();
   }
 
   @override
@@ -43,6 +48,41 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     _modelNameController.dispose();
     _companyNameController.dispose();
     super.dispose();
+  }
+
+  // 加载版本信息
+  Future<void> _loadVersionInfo() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      final version = packageInfo.version;
+      
+      setState(() {
+        _versionDisplay = _formatVersion(version);
+      });
+    } catch (e) {
+      // 如果获取失败，使用默认版本
+      setState(() {
+        _versionDisplay = _formatVersion('0.0.1');
+      });
+    }
+  }
+
+  // 格式化版本号显示
+  String _formatVersion(String version) {
+    final parts = version.split('.');
+    if (parts.length >= 3) {
+      final x = parts[0];
+      final y = parts[1];
+      final z = parts[2];
+      
+      // 如果z不为0，显示开发版本
+      if (z != '0') {
+        return '$x.$y.$z 开发版本';
+      } else {
+        return '$x.$y.$z';
+      }
+    }
+    return version;
   }
 
   // 加载设置
@@ -295,6 +335,61 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                   child: const Text(
                     '保存设置',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // 版本信息
+              const Text(
+                '版本信息',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.lightBlue,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Card(
+                elevation: 3,
+                shadowColor: Colors.lightBlue.withValues(alpha: 0.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '当前版本',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            '应用程序版本号',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        _versionDisplay.isEmpty ? '加载中...' : _versionDisplay,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: _versionDisplay.contains('开发版本') 
+                              ? Colors.orange 
+                              : Colors.lightBlue,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

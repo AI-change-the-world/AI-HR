@@ -62,6 +62,11 @@ class _MultiQuarterAnalysisPageState
       repaintBoundaryKey: repaintKey,
       scrollController: controller,
     );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // 截图并保存
+      ToastUtils.info(context, title: "当前，多季度报告模块正在开发中，部分功能尚不稳定，请见谅。");
+    });
   }
 
   @override
@@ -334,8 +339,9 @@ class _MultiQuarterAnalysisPageState
           ),
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
-            onPressed: _isGeneratingReport ? null : _generateSalaryReport,
-            tooltip: '生成报告',
+            // onPressed: _isGeneratingReport ? null : _generateSalaryReport,
+            onPressed: null,
+            tooltip: '多季度报告开发中',
           ),
           SizedBox(width: 8),
         ],

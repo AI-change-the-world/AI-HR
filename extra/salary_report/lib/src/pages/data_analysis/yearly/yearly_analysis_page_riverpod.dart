@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -83,24 +84,29 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
       // 获取分析数据
       final coreData = await ref.read(multi_month.coreDataProvider(_yearParams).future);
       final departmentStats = await ref.read(departmentStatsProvider(_yearParams).future);
+      final attendanceStats = await ref.read(attendanceStatsProvider(_yearParams).future);
+      final previousYearState = await ref.read(previousYearStateProvider(_yearParams).future);
+
+      // 准备年度分析数据，包含每月详细数据
+      final analysisData = await _prepareYearlyAnalysisData(
+        coreData,
+        departmentStats,
+        attendanceStats,
+        previousYearState,
+      );
 
       final reportPath = await generator.generateEnhancedReport(
         previewContainerKey: _chartContainerKey,
         departmentStats: departmentStats.monthlyData?.expand((month) => 
           month.departmentStats.values).toList() ?? [],
-        analysisData: <String, dynamic>{
-          'monthlyComparisons': coreData?.monthlyComparisons ?? [],
-          'startDate': coreData?.startDate,
-          'endDate': coreData?.endDate,
-          'monthlySummary': coreData?.monthlySummary ?? {},
-        },
+        analysisData: analysisData,
         endTime: endTime,
         year: widget.year,
         month: 0, // 年度报告没有月份
         isMultiMonth: widget.isMultiYear,
         startTime: startTime,
-        attendanceStats: [], // 年度报告不需要考勤数据
-        previousMonthData: null, // 年度报告不需要上月数据
+        attendanceStats: attendanceStats.attendanceData?.values.expand((list) => list).toList() ?? [],
+        previousMonthData: previousYearState.previousYearData,
       );
 
       if (mounted) {
@@ -156,6 +162,118 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
       previousYearData: previousYearState.previousYearData,
       year: widget.year,
     );
+  }
+
+  /// 准备年度分析数据
+  Future<Map<String, dynamic>> _prepareYearlyAnalysisData(
+    MultiMonthComparisonData? coreData,
+    multi_month.DepartmentStatsState departmentStats,
+    multi_month.AttendanceStatsState attendanceStats,
+    PreviousYearState previousYearState,
+  ) async {
+    final analysisData = <String, dynamic>{
+      'monthlyComparisons': coreData?.monthlyComparisons ?? [],
+      'startDate': coreData?.startDate,
+      'endDate': coreData?.endDate,
+      'monthlySummary': coreData?.monthlySummary ?? {},
+    };
+
+    // 添加部门统计数据（如果有的话）
+    if (coreData?.monthlyComparisons != null) {
+      final departmentStatsPerMonth = <Map<String, dynamic>>[];
+      final aggregatedDepartmentStats = <String, Map<String, dynamic>>{};
+      
+      for (var monthData in coreData!.monthlyComparisons) {
+        // 添加每月部门统计数据
+        departmentStatsPerMonth.add({
+          'year': monthData.year,
+          'month': monthData.month,
+          'departmentStats': monthData.departmentStats.values.map((dept) => {
+            'department': dept.department,
+            'employeeCount': dept.employeeCount,
+            'totalNetSalary': dept.totalNetSalary,
+            'averageNetSalary': dept.averageNetSalary,
+            'maxSalary': dept.maxSalary,
+            'minSalary': dept.minSalary,
+            'year': dept.year,
+            'month': dept.month,
+          }).toList(),
+        });
+
+        // 聚合部门统计数据
+        for (var dept in monthData.departmentStats.values) {
+          if (aggregatedDepartmentStats.containsKey(dept.department)) {
+            final existing = aggregatedDepartmentStats[dept.department]!;
+            existing['employeeCount'] = (existing['employeeCount'] as int) + dept.employeeCount;
+            existing['totalNetSalary'] = (existing['totalNetSalary'] as double) + dept.totalNetSalary;
+            existing['averageNetSalary'] = (existing['totalNetSalary'] as double) / (existing['employeeCount'] as int);
+            existing['maxSalary'] = math.max(existing['maxSalary'] as double, dept.maxSalary);
+            existing['minSalary'] = math.min(existing['minSalary'] as double, dept.minSalary);
+          } else {
+            aggregatedDepartmentStats[dept.department] = {
+              'department': dept.department,
+              'employeeCount': dept.employeeCount,
+              'totalNetSalary': dept.totalNetSalary,
+              'averageNetSalary': dept.averageNetSalary,
+              'maxSalary': dept.maxSalary,
+              'minSalary': dept.minSalary,
+              'year': dept.year,
+              'month': dept.month,
+            };
+          }
+        }
+      }
+      
+      analysisData['departmentStatsPerMonth'] = departmentStatsPerMonth;
+      analysisData['departmentStats'] = aggregatedDepartmentStats.values.toList();
+    }
+
+    // 添加每月员工数量、平均工资、总工资数据
+    if (coreData?.monthlyComparisons != null) {
+      final employeeCountPerMonth = <Map<String, dynamic>>[];
+      final averageSalaryPerMonth = <Map<String, dynamic>>[];
+      final totalSalaryPerMonth = <Map<String, dynamic>>[];
+
+      for (var monthData in coreData!.monthlyComparisons) {
+        employeeCountPerMonth.add({
+          'month': '${monthData.year}年${monthData.month}月',
+          'year': monthData.year,
+          'monthNum': monthData.month,
+          'employeeCount': monthData.employeeCount,
+        });
+
+        averageSalaryPerMonth.add({
+          'month': '${monthData.year}年${monthData.month}月',
+          'year': monthData.year,
+          'monthNum': monthData.month,
+          'averageSalary': monthData.averageSalary,
+        });
+
+        totalSalaryPerMonth.add({
+          'month': '${monthData.year}年${monthData.month}月',
+          'year': monthData.year,
+          'monthNum': monthData.month,
+          'totalSalary': monthData.totalSalary,
+        });
+      }
+
+      analysisData['employeeCountPerMonth'] = employeeCountPerMonth;
+      analysisData['averageSalaryPerMonth'] = averageSalaryPerMonth;
+      analysisData['totalSalaryPerMonth'] = totalSalaryPerMonth;
+    }
+
+    // 添加薪资结构数据（如果有的话）
+    if (coreData?.monthlySummary != null) {
+      analysisData['salarySummary'] = coreData!.monthlySummary;
+    }
+
+    // 添加上年度对比数据
+    if (previousYearState.previousYearData != null) {
+      analysisData['departmentYearOverYearData'] = [];
+      analysisData['positionYearOverYearData'] = [];
+    }
+
+    return analysisData;
   }
 
   /// 显示JSON报告
@@ -436,7 +554,7 @@ class _YearlyAnalysisPageRiverpodState extends ConsumerState<YearlyAnalysisPageR
         );
       },
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (error, stackTrace) => const SizedBox.shrink(),
     );
   }
 

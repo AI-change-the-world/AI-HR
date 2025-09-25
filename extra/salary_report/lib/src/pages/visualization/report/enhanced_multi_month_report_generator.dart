@@ -1537,7 +1537,7 @@ String _generateEmployeeDetails(Map<String, dynamic> analysisData) {
       }
 
       buffer.write(
-        '${monthlyData.year}年${monthlyData.month}月发放工资${monthlyData.employeeCount}人次',
+        '${monthlyData.year}年${monthlyData.month}月共有员工${monthlyData.employeeCount}人',
       );
 
       // 展示各部门员工分布

@@ -118,9 +118,7 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
       // 8. 添加报告记录到数据库
       await _reportService.addReportRecord(reportPath);
 
-      logger.info(
-        'Enhanced quarterly report generation complete: $reportPath',
-      );
+      logger.info('Enhanced quarterly report generation complete: $reportPath');
 
       return reportPath;
     } catch (e, stackTrace) {
@@ -900,7 +898,7 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
         }
 
         buffer.write(
-          '${monthlyData.year}年${monthlyData.month}月发放工资${monthlyData.employeeCount}人次',
+          '${monthlyData.year}年${monthlyData.month}月共有员工${monthlyData.employeeCount}人',
         );
 
         // 展示各部门员工分布
@@ -1295,7 +1293,9 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
   }
 
   /// 生成季度趋势分析总结
-  String _generateQuarterlyTrendAnalysisSummary(Map<String, dynamic> analysisData) {
+  String _generateQuarterlyTrendAnalysisSummary(
+    Map<String, dynamic> analysisData,
+  ) {
     final buffer = StringBuffer();
     buffer.writeln('季度趋势分析总结：');
 
@@ -1324,7 +1324,8 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
       final deptStats = analysisData['departmentStats'] as List;
       if (deptStats.isNotEmpty) {
         buffer.writeln('2. 部门情况：');
-        for (var dept in deptStats.take(3)) { // 只显示前3个部门
+        for (var dept in deptStats.take(3)) {
+          // 只显示前3个部门
           if (dept is Map<String, dynamic>) {
             final deptName = dept['department'] as String? ?? '未知部门';
             final empCount = dept['employeeCount'] as int? ?? 0;

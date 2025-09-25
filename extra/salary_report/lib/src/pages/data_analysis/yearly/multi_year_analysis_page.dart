@@ -59,6 +59,11 @@ class _MultiYearAnalysisPageState extends ConsumerState<MultiYearAnalysisPage> {
       repaintBoundaryKey: repaintKey,
       scrollController: controller,
     );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // 截图并保存
+      ToastUtils.info(context, title: "当前，多年度报告模块正在开发中，部分功能尚不稳定，请见谅。");
+    });
   }
 
   @override
@@ -340,8 +345,9 @@ class _MultiYearAnalysisPageState extends ConsumerState<MultiYearAnalysisPage> {
           ),
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
-            onPressed: _isGeneratingReport ? null : _generateSalaryReport,
-            tooltip: '生成报告',
+            // onPressed: _isGeneratingReport ? null : _generateSalaryReport,
+            onPressed: null,
+            tooltip: '多年报告开发中',
           ),
           SizedBox(width: 8),
         ],
