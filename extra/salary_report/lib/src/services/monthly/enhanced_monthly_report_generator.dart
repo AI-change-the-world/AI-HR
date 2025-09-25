@@ -325,8 +325,9 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
           '${DateTime.now().year}年${DateTime.now().month}月${DateTime.now().day}日',
       companyName: AIConfig.companyName,
       reportTime: reportTime,
-      startTime: '${startTime.year}年${startTime.month}月',
-      endTime: '${endTime.year}年${endTime.month}月',
+      startTime: '${startTime.year}年${startTime.month}月1日',
+      endTime:
+          '${endTime.year}年${endTime.month}月${getLastDayOfMonth(endTime.year, endTime.month)}日',
       compareLast: _generateKeyMetricsDescription(
         analysisData,
         previousMonthData,
@@ -356,6 +357,12 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
           .map((dept) => _convertToDepartmentSalaryStats(dept))
           .toList(),
     );
+  }
+
+  int getLastDayOfMonth(int year, int month) {
+    // DateTime(year, month + 1, 0) → 当月最后一天
+    final lastDay = DateTime(year, month + 1, 0);
+    return lastDay.day;
   }
 
   /// 生成部门详情描述
