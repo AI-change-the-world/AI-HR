@@ -35,7 +35,7 @@ class EnhancedAnnualReportGenerator implements EnhancedReportGenerator {
   @override
   Future<String> generateEnhancedReport({
     required GlobalKey previewContainerKey,
-    required List<DepartmentSalaryStats> departmentStats,
+    required dynamic departmentStats,
     required Map<String, dynamic> analysisData,
     required List<AttendanceStats> attendanceStats,
     required Map<String, dynamic>? previousMonthData,
@@ -50,9 +50,7 @@ class EnhancedAnnualReportGenerator implements EnhancedReportGenerator {
 
       // 1. 生成JSON格式的分析数据
       // 需要将analysisData转换为年度比较数据
-      final yearlyComparisonData = _convertToYearlyComparisonData(
-        analysisData,
-      );
+      final yearlyComparisonData = _convertToYearlyComparisonData(analysisData);
 
       final jsonString = YearlyAnalysisJsonConverter.convertAnalysisDataToJson(
         analysisData: <String, dynamic>{
@@ -1094,7 +1092,8 @@ class EnhancedAnnualReportGenerator implements EnhancedReportGenerator {
       totalSalary: (currentYearMetrics['total_salary'] as num).toDouble(),
       averageSalary: (currentYearMetrics['average_salary'] as num).toDouble(),
       departmentCount: departmentStats.length,
-      employeeCount: currentYearMetrics['total_unique_employees'] as int? ??
+      employeeCount:
+          currentYearMetrics['total_unique_employees'] as int? ??
           currentYearMetrics['total_employees'] as int,
       employeeDetails: _generateEmployeeDetails(analysisData),
       payrollInfo: _generatePayrollInfo(jsonData),
@@ -1247,7 +1246,9 @@ class EnhancedAnnualReportGenerator implements EnhancedReportGenerator {
   }
 
   /// 生成年度趋势分析总结
-  String _generateYearlyTrendAnalysisSummary(Map<String, dynamic> analysisData) {
+  String _generateYearlyTrendAnalysisSummary(
+    Map<String, dynamic> analysisData,
+  ) {
     final buffer = StringBuffer();
     buffer.writeln('年度趋势分析总结：');
 
@@ -1276,7 +1277,8 @@ class EnhancedAnnualReportGenerator implements EnhancedReportGenerator {
       final deptStats = analysisData['departmentStats'] as List;
       if (deptStats.isNotEmpty) {
         buffer.writeln('2. 部门情况：');
-        for (var dept in deptStats.take(3)) { // 只显示前3个部门
+        for (var dept in deptStats.take(3)) {
+          // 只显示前3个部门
           if (dept is Map<String, dynamic>) {
             final deptName = dept['department'] as String? ?? '未知部门';
             final empCount = dept['employeeCount'] as int? ?? 0;
@@ -1454,7 +1456,9 @@ class EnhancedAnnualReportGenerator implements EnhancedReportGenerator {
     // 提取员工变动数据
     final employeeChanges =
         analysisData['monthlyEmployeeChanges'] as List<dynamic>? ?? [];
-    final employeeChangeTrend = _extractYearlyEmployeeChangeTrend(employeeChanges);
+    final employeeChangeTrend = _extractYearlyEmployeeChangeTrend(
+      employeeChanges,
+    );
 
     // 构建增强的提示
     final enhancedPrompt =
@@ -1702,7 +1706,8 @@ String _generatePayrollInfo(Map<String, dynamic> jsonData) {
   final keyMetrics = jsonData['key_metrics'] as Map<String, dynamic>? ?? {};
   final currentPeriod =
       keyMetrics['current_year'] as Map<String, dynamic>? ??
-      keyMetrics['current_month'] as Map<String, dynamic>? ?? {};
+      keyMetrics['current_month'] as Map<String, dynamic>? ??
+      {};
 
   final totalSalary = currentPeriod['total_salary'] as num? ?? 0;
   final averageSalary = currentPeriod['average_salary'] as num? ?? 0;

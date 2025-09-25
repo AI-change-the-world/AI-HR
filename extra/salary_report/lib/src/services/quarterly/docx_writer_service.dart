@@ -171,6 +171,11 @@ class QuarterlyDocxWriterService {
       content.add(ImageContent('chart_overall', images.mainChart!));
     }
     if (images.departmentDetailsChart != null) {
+      File departmentDetailsChartFile = File("test.png");
+      departmentDetailsChartFile.writeAsBytesSync(
+        images.departmentDetailsChart!,
+      );
+
       content.add(
         ImageContent(
           'department_details_chart',

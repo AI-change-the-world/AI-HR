@@ -63,6 +63,8 @@ flutter:
     - assets/salary_report_template_multi_month.docx
     - assets/salary_report_template_quarterly.docx
     - assets/salary_report_template_annual.docx
+    - assets/salary_report_template_multi_year.docx
+    - assets/salary_report_template_multi_quarter.docx
 
 icons_launcher:
   image_path: "../../aihr-icon.png"

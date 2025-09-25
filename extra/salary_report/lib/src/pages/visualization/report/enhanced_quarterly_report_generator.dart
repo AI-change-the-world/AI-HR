@@ -15,7 +15,6 @@ import 'package:salary_report/src/pages/visualization/report/ai_summary_service.
 /// 增强版季度报告生成器
 class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
   final QuarterlyChartGenerationService _chartService;
-  final QuarterlyChartGenerationFromJsonService _jsonChartService;
   final QuarterlyDocxWriterService _docxService;
   final DataAnalysisService _analysisService;
   final ReportService _reportService;
@@ -23,14 +22,11 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
 
   EnhancedQuarterlyReportGenerator({
     QuarterlyChartGenerationService? chartService,
-    QuarterlyChartGenerationFromJsonService? jsonChartService,
     QuarterlyDocxWriterService? docxService,
     DataAnalysisService? analysisService,
     ReportService? reportService,
     AISummaryService? aiSummaryService,
   }) : _chartService = chartService ?? QuarterlyChartGenerationService(),
-       _jsonChartService =
-           jsonChartService ?? QuarterlyChartGenerationFromJsonService(),
        _docxService = docxService ?? QuarterlyDocxWriterService(),
        _analysisService =
            analysisService ?? DataAnalysisService(IsarDatabase()),
@@ -41,7 +37,7 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
   @override
   Future<String> generateEnhancedReport({
     required GlobalKey previewContainerKey,
-    required List<DepartmentSalaryStats> departmentStats,
+    required dynamic departmentStats,
     required Map<String, dynamic> analysisData,
     required List<AttendanceStats> attendanceStats,
     required Map<String, dynamic>? previousMonthData,
@@ -51,22 +47,9 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
     required DateTime startTime,
     required DateTime endTime,
   }) async {
+    assert(departmentStats is Map);
     try {
       logger.info('Starting enhanced quarterly salary report generation...');
-
-      // 1. 生成JSON格式的分析数据
-      final jsonString =
-          QuarterlyAnalysisJsonConverter.convertAnalysisDataToJson(
-            analysisData: analysisData,
-            departmentStats: departmentStats,
-            attendanceStats: attendanceStats,
-            previousQuarterData: previousMonthData,
-            year: year,
-            quarter: month, // 使用传入的quarter参数
-          );
-
-      // 2. 解析JSON数据
-      final jsonData = json.decode(jsonString) as Map<String, dynamic>;
 
       // 3. 生成自然语言报告（如果支持的话）
       // 注意：这里可能需要根据实际的QuarterlyAnalysisJsonConverter实现来调整
@@ -79,31 +62,28 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
       );
 
       // 3. 生成图表图像（从UI）
-      final chartImagesFromUI = await _chartService.generateAllCharts(
+      final departmentDetailsPerMonth = _getDepartmentDetailsPerMonth(
+        analysisData,
+      );
+      logger.info('departmentDetailsPerMonth: ${departmentDetailsPerMonth}');
+
+      final chartImages = await _chartService.generateAllCharts(
         previewContainerKey: previewContainerKey,
         departmentStats: departmentStats,
         salaryRanges: _convertToSalaryRangeMap(
           _getAggregatedSalaryRanges(analysisData),
         ),
-      );
-
-      // 4. 生成图表图像（从JSON数据）
-      final chartImagesFromJson = await _jsonChartService
-          .generateAllChartsFromJson(jsonData: jsonData);
-
-      // 5. 创建组合图表图像集合
-      final combinedChartImages = QuarterlyReportChartImages(
-        mainChart: chartImagesFromUI.mainChart,
-        departmentDetailsChart: chartImagesFromJson.departmentChart,
-        salaryRangeChart: chartImagesFromJson.salaryRangeChart,
-        salaryStructureChart: null, // 季度报告可能不支持薪资结构图表
+        departmentStatsPerMonth: _convertDepartmentDetailsToChartFormat(
+          departmentDetailsPerMonth,
+        ),
+        attendanceStats: attendanceStats,
+        departmentSalaryRangeData: _extractDepartmentSalaryRangeData(analysisData),
       );
 
       logger.info('analysisData analysisData analysisData: $analysisData');
 
       // 6. 创建报告内容模型
       final reportContent = await _createReportContentModel(
-        jsonData,
         analysisData,
         startTime,
         endTime,
@@ -112,7 +92,7 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
       // 7. 写入报告文件
       final reportPath = await _docxService.writeReport(
         data: reportContent,
-        images: combinedChartImages,
+        images: chartImages,
       );
 
       // 8. 添加报告记录到数据库
@@ -783,6 +763,10 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
   ) {
     final departmentDetailsPerMonth = <Map<String, dynamic>>[];
 
+    logger.info(
+      "获取每月部门详情数据  ${analysisData.containsKey('departmentStatsPerMonth')}  ${analysisData['departmentStatsPerMonth'].runtimeType}",
+    );
+
     if (analysisData.containsKey('departmentStatsPerMonth') &&
         analysisData['departmentStatsPerMonth'] is List) {
       final monthlyDeptList = analysisData['departmentStatsPerMonth'] as List;
@@ -819,6 +803,36 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
     }
 
     return departmentDetailsPerMonth;
+  }
+
+  /// 将部门详情数据转换为图表所需格式
+  List<Map<String, dynamic>>? _convertDepartmentDetailsToChartFormat(
+    List<Map<String, dynamic>> departmentDetailsPerMonth,
+  ) {
+    if (departmentDetailsPerMonth.isEmpty) return null;
+
+    final List<Map<String, dynamic>> chartData = [];
+
+    for (var monthData in departmentDetailsPerMonth) {
+      final departments =
+          monthData['departmentStats'] as List<Map<String, dynamic>>;
+      chartData.add({
+        'year': monthData['year'],
+        'month': monthData['monthNum'],
+        'departments': departments
+            .map(
+              (dept) => {
+                'department': dept['department'],
+                'employeeCount': dept['employeeCount'],
+              },
+            )
+            .toList(),
+      });
+    }
+
+    logger.info('chartData: $chartData');
+
+    return chartData;
   }
 
   /// 获取最后一个月的部门统计数据
@@ -1015,20 +1029,32 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
     return buffer.toString();
   }
 
+  /// 提取部门薪资区间数据
+  List<Map<String, dynamic>>? _extractDepartmentSalaryRangeData(Map<String, dynamic> analysisData) {
+    // 这里可以根据实际的数据结构来提取部门薪资区间数据
+    // 如果没有这类数据，返回null
+    if (analysisData.containsKey('departmentSalaryRangeData')) {
+      return List<Map<String, dynamic>>.from(analysisData['departmentSalaryRangeData']);
+    }
+    return null;
+  }
+
   /// 创建报告内容模型
   Future<QuarterlyReportContentModel> _createReportContentModel(
-    Map<String, dynamic> jsonData,
     Map<String, dynamic> analysisData,
     DateTime startTime,
     DateTime endTime,
   ) async {
-    // 从JSON数据中提取关键信息来构建报告内容模型
-    final keyMetrics = jsonData['key_metrics'] as Map<String, dynamic>;
+    // 直接从analysisData中提取关键信息来构建报告内容模型
+    logger.info('Creating report content model from analysisData');
 
-    logger.info('keyMetrics data $keyMetrics');
-
-    final currentMonthMetrics =
-        keyMetrics['current_quarter'] as Map<String, dynamic>;
+    // 从analysisData中提取关键指标
+    final totalEmployees = analysisData['totalEmployees'] as int? ?? 0;
+    final totalSalary = (analysisData['totalSalary'] as num? ?? 0).toDouble();
+    final averageSalary = (analysisData['averageSalary'] as num? ?? 0).toDouble();
+    final highestSalary = (analysisData['highestSalary'] as num? ?? 0).toDouble();
+    final lowestSalary = (analysisData['lowestSalary'] as num? ?? 0).toDouble();
+    final uniqueEmployees = analysisData['totalUniqueEmployees'] as int? ?? 0;
 
     // 获取部门统计信息
     final departmentStats = _getAggregatedDepartmentStats(analysisData);
@@ -1085,7 +1111,6 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
         analysisData['previousQuarterData'] as Map<String, dynamic>? ?? {};
 
     // 生成季度工资总额分析的增强提示
-    final totalSalary = (currentMonthMetrics['total_salary'] as num).toDouble();
     final previousQuarterTotalSalary =
         previousQuarterData.containsKey('totalSalary')
         ? (previousQuarterData['totalSalary'] as num).toDouble()
@@ -1115,8 +1140,6 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
     );
 
     // 生成季度平均工资分析
-    final averageSalary = (currentMonthMetrics['average_salary'] as num)
-        .toDouble();
     final previousQuarterAverageSalary =
         previousQuarterData.containsKey('averageSalary')
         ? (previousQuarterData['averageSalary'] as num).toDouble()
@@ -1130,9 +1153,6 @@ class EnhancedQuarterlyReportGenerator implements EnhancedReportGenerator {
         );
 
     // 生成季度员工数量分析
-    final totalEmployees = currentMonthMetrics['total_employees'] as int;
-    final uniqueEmployees =
-        currentMonthMetrics['total_unique_employees'] as int;
     final previousQuarterTotalEmployees =
         previousQuarterData.containsKey('totalEmployees')
         ? previousQuarterData['totalEmployees'] as int

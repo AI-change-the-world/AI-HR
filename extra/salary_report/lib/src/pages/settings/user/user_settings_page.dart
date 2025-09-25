@@ -13,12 +13,6 @@ class UserSettingsPage extends StatefulWidget {
 class _UserSettingsPageState extends State<UserSettingsPage> {
   // 大模型设置
   bool _aiEnabled = false;
-  String _baseUrl = '';
-  String _apiKey = '';
-  String _modelName = '';
-
-  // 公司名称设置
-  String _companyName = '';
 
   // 版本信息
   String _versionDisplay = '';
@@ -28,6 +22,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
   late TextEditingController _apiKeyController;
   late TextEditingController _modelNameController;
   late TextEditingController _companyNameController;
+  late TextEditingController _companyDescriptionController;
 
   @override
   void initState() {
@@ -37,6 +32,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     _apiKeyController = TextEditingController();
     _modelNameController = TextEditingController();
     _companyNameController = TextEditingController();
+    _companyDescriptionController = TextEditingController();
     _loadSettings();
     _loadVersionInfo();
   }
@@ -47,6 +43,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     _apiKeyController.dispose();
     _modelNameController.dispose();
     _companyNameController.dispose();
+    _companyDescriptionController.dispose();
     super.dispose();
   }
 
@@ -55,7 +52,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
       final version = packageInfo.version;
-      
+
       setState(() {
         _versionDisplay = _formatVersion(version);
       });
@@ -74,7 +71,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
       final x = parts[0];
       final y = parts[1];
       final z = parts[2];
-      
+
       // 如果z不为0，显示开发版本
       if (z != '0') {
         return '$x.$y.$z 开发版本';
@@ -87,36 +84,27 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
 
   // 加载设置
   Future<void> _loadSettings() async {
-    // 先从AIConfig获取当前设置
-    final aiEnabled = AIConfig.aiEnabled;
-    final baseUrl = AIConfig.baseUrl;
-    final apiKey = AIConfig.apiKey;
-    final modelName = AIConfig.modelName;
-    final companyName = AIConfig.companyName;
-
-    // 更新状态
+    // 从AIConfig获取当前设置并直接设置到controller
+    _baseUrlController.text = AIConfig.baseUrl;
+    _apiKeyController.text = AIConfig.apiKey;
+    _modelNameController.text = AIConfig.modelName;
+    _companyNameController.text = AIConfig.companyName;
+    _companyDescriptionController.text = AIConfig.companyDescription;
+    
+    // 只有AI开关需要setState，因为它影响UI状态
     setState(() {
-      _aiEnabled = aiEnabled;
-      _baseUrl = baseUrl;
-      _apiKey = apiKey;
-      _modelName = modelName;
-      _companyName = companyName;
-
-      // 更新控制器文本
-      _baseUrlController.text = baseUrl;
-      _apiKeyController.text = apiKey;
-      _modelNameController.text = modelName;
-      _companyNameController.text = companyName;
+      _aiEnabled = AIConfig.aiEnabled;
     });
   }
 
   // 保存设置
   Future<void> _saveSettings() async {
     await AIConfig.setAiEnabled(_aiEnabled);
-    await AIConfig.setBaseUrl(_baseUrl);
-    await AIConfig.setApiKey(_apiKey);
-    await AIConfig.setModelName(_modelName);
-    await AIConfig.setCompanyName(_companyName);
+    await AIConfig.setBaseUrl(_baseUrlController.text);
+    await AIConfig.setApiKey(_apiKeyController.text);
+    await AIConfig.setModelName(_modelNameController.text);
+    await AIConfig.setCompanyName(_companyNameController.text);
+    await AIConfig.setCompanyDescription(_companyDescriptionController.text);
 
     if (context.mounted) {
       ToastUtils.success(null, title: '设置已保存');
@@ -183,12 +171,25 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                         decoration: const InputDecoration(
                           hintText: '请输入公司名称，用于生成报告抬头',
                           border: OutlineInputBorder(),
+                          hintStyle: TextStyle(color: Colors.grey),
                         ),
-                        onChanged: (value) {
-                          setState(() {
-                            _companyName = value;
-                          });
-                        },
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        '公司介绍',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _companyDescriptionController,
+                        decoration: InputDecoration(
+                          hintText: '请输入公司介绍，包括业务范围、规模、特色等信息，用于AI分析时提供上下文',
+                          border: OutlineInputBorder(),
+                          hintStyle: TextStyle(color: Colors.grey),
+                          alignLabelWithHint: true,
+                        ),
+                        maxLines: 5,
+                        minLines: 3,
                       ),
                     ],
                   ),
@@ -263,11 +264,6 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                           hintText: '请输入大模型API的Base URL',
                           border: OutlineInputBorder(),
                         ),
-                        onChanged: (value) {
-                          setState(() {
-                            _baseUrl = value;
-                          });
-                        },
                       ),
                       const SizedBox(height: 16),
 
@@ -285,11 +281,6 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                           border: OutlineInputBorder(),
                         ),
                         obscureText: true,
-                        onChanged: (value) {
-                          setState(() {
-                            _apiKey = value;
-                          });
-                        },
                       ),
                       const SizedBox(height: 16),
 
@@ -306,11 +297,6 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                           hintText: '请输入模型名称，如gpt-4',
                           border: OutlineInputBorder(),
                         ),
-                        onChanged: (value) {
-                          setState(() {
-                            _modelName = value;
-                          });
-                        },
                       ),
                     ],
                   ),
@@ -372,10 +358,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                           SizedBox(height: 4),
                           Text(
                             '应用程序版本号',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
                           ),
                         ],
                       ),
@@ -384,8 +367,8 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: _versionDisplay.contains('开发版本') 
-                              ? Colors.orange 
+                          color: _versionDisplay.contains('开发版本')
+                              ? Colors.orange
                               : Colors.lightBlue,
                         ),
                       ),

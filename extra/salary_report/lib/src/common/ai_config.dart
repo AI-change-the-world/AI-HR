@@ -6,12 +6,14 @@ class AIConfig {
   static const String _apiKeyKey = 'api_key';
   static const String _modelNameKey = 'model_name';
   static const String _companyNameKey = 'company_name';
+  static const String _companyDescriptionKey = 'company_description';
 
   static bool _aiEnabled = false;
   static String _baseUrl = '';
   static String _apiKey = '';
   static String _modelName = '';
   static String _companyName = '';
+  static String _companyDescription = '';
 
   // 初始化配置
   static Future<void> init() async {
@@ -21,6 +23,7 @@ class AIConfig {
     _apiKey = prefs.getString(_apiKeyKey) ?? '';
     _modelName = prefs.getString(_modelNameKey) ?? '';
     _companyName = prefs.getString(_companyNameKey) ?? '';
+    _companyDescription = prefs.getString(_companyDescriptionKey) ?? '';
   }
 
   // 获取AI是否启用
@@ -37,6 +40,9 @@ class AIConfig {
 
   // 获取公司名称
   static String get companyName => _companyName;
+
+  // 获取公司介绍
+  static String get companyDescription => _companyDescription;
 
   // 设置AI启用状态
   static Future<void> setAiEnabled(bool enabled) async {
@@ -71,5 +77,12 @@ class AIConfig {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_companyNameKey, name);
     _companyName = name;
+  }
+
+  // 设置公司介绍
+  static Future<void> setCompanyDescription(String description) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_companyDescriptionKey, description);
+    _companyDescription = description;
   }
 }

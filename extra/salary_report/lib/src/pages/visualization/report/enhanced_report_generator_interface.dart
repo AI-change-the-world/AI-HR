@@ -20,7 +20,7 @@ abstract class EnhancedReportGenerator {
   /// 返回生成的报告文件路径
   Future<String> generateEnhancedReport({
     required GlobalKey previewContainerKey,
-    required List<DepartmentSalaryStats> departmentStats,
+    required dynamic departmentStats,
     required Map<String, dynamic> analysisData,
     required List<AttendanceStats> attendanceStats,
     required Map<String, dynamic>? previousMonthData,

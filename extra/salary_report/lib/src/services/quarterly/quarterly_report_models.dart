@@ -9,12 +9,16 @@ class QuarterlyReportChartImages {
   final Uint8List? departmentDetailsChart;
   final Uint8List? salaryRangeChart;
   final Uint8List? salaryStructureChart;
+  final Uint8List? attendanceChart;
+  final Uint8List? departmentSalaryRangeChart;
 
   QuarterlyReportChartImages({
     this.mainChart,
     this.departmentDetailsChart,
     this.salaryRangeChart,
     this.salaryStructureChart,
+    this.attendanceChart,
+    this.departmentSalaryRangeChart,
   });
 }
 

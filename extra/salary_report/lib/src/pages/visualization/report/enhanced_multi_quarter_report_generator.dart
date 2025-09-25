@@ -41,7 +41,7 @@ class EnhancedMultiQuarterReportGenerator implements EnhancedReportGenerator {
   @override
   Future<String> generateEnhancedReport({
     required GlobalKey previewContainerKey,
-    required List<DepartmentSalaryStats> departmentStats,
+    required dynamic departmentStats,
     required Map<String, dynamic> analysisData,
     required List<AttendanceStats> attendanceStats,
     required Map<String, dynamic>? previousMonthData,

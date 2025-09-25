@@ -15,7 +15,6 @@ import 'package:salary_report/src/components/salary_charts.dart';
 import 'package:salary_report/src/common/scroll_screenshot.dart';
 import 'package:salary_report/src/common/toast.dart';
 import 'package:salary_report/src/components/single_quarter/quarterly_department_stats_component.dart';
-import 'package:salary_report/src/services/quarterly/quarterly_analysis_json_converter.dart';
 import 'package:salary_report/src/providers/quarterly_analysis_provider.dart';
 import 'package:salary_report/src/providers/multi_month_analysis_provider.dart'
     as multi_month;
@@ -94,40 +93,17 @@ class _QuarterlyAnalysisPageRiverpodState
       );
 
       // 获取部门统计数据
-      List<DepartmentSalaryStats> departmentStats = [];
+      Map<String, int> departmentStats = {};
       if (departmentStatsState is AsyncData &&
           departmentStatsState.value?.monthlyData != null) {
-        // 合并所有月份的部门统计数据
-        final departmentStatsMap = <String, DepartmentSalaryStats>{};
-
-        for (var monthlyData in departmentStatsState.value!.monthlyData!) {
-          monthlyData.departmentStats.forEach((deptName, stat) {
-            if (departmentStatsMap.containsKey(deptName)) {
-              final existingStat = departmentStatsMap[deptName]!;
-              departmentStatsMap[deptName] = DepartmentSalaryStats(
-                department: deptName,
-                employeeCount: existingStat.employeeCount + stat.employeeCount,
-                totalNetSalary:
-                    existingStat.totalNetSalary + stat.totalNetSalary,
-                averageNetSalary:
-                    (existingStat.totalNetSalary + stat.totalNetSalary) /
-                    (existingStat.employeeCount + stat.employeeCount),
-                year: stat.year,
-                month: stat.month,
-                maxSalary: stat.maxSalary > existingStat.maxSalary
-                    ? stat.maxSalary
-                    : existingStat.maxSalary,
-                minSalary: stat.minSalary < existingStat.minSalary
-                    ? stat.minSalary
-                    : existingStat.minSalary,
-              );
-            } else {
-              departmentStatsMap[deptName] = stat;
-            }
-          });
+        // 因为这是季度报告，不需要合并，直接获取最后一个月的数据
+        final last = departmentStatsState.value!.monthlyData?.last;
+        if (last != null) {
+          for (final w in last.workers) {
+            departmentStats[w.department] =
+                (departmentStats[w.department] ?? 0) + 1;
+          }
         }
-
-        departmentStats = departmentStatsMap.values.toList();
       }
 
       // 获取考勤统计数据
@@ -507,82 +483,6 @@ class _QuarterlyAnalysisPageRiverpodState
     };
   }
 
-  /// 生成JSON格式的分析报告
-  Future<String> _generateJsonReport() async {
-    final coreData = await ref.read(
-      multi_month.coreDataProvider(_quarterParams).future,
-    );
-    final departmentStats = await ref.read(
-      departmentStatsProvider(_quarterParams).future,
-    );
-    final attendanceStats = await ref.read(
-      attendanceStatsProvider(_quarterParams).future,
-    );
-    final previousQuarterState = await ref.read(
-      previousQuarterStateProvider(_quarterParams).future,
-    );
-
-    return QuarterlyAnalysisJsonConverter.convertAnalysisDataToJson(
-      analysisData: <String, dynamic>{
-        'monthlyComparisons': coreData?.monthlyComparisons ?? [],
-        'startDate': coreData?.startDate,
-        'endDate': coreData?.endDate,
-        'monthlySummary': coreData?.monthlySummary ?? {},
-      },
-      departmentStats:
-          departmentStats.monthlyData
-              ?.expand((month) => month.departmentStats.values)
-              .toList() ??
-          [],
-      attendanceStats:
-          attendanceStats.attendanceData?.values
-              .expand((list) => list)
-              .toList() ??
-          [],
-      previousQuarterData: previousQuarterState.previousQuarterData,
-      year: widget.year,
-      quarter: widget.quarter,
-    );
-  }
-
-  /// 显示JSON报告
-  Future<void> _showJsonReport() async {
-    try {
-      final jsonReport = await _generateJsonReport();
-
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('JSON分析报告'),
-              content: SingleChildScrollView(child: Text(jsonReport)),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('关闭'),
-                ),
-              ],
-            );
-          },
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        toastification.show(
-          context: context,
-          title: const Text('生成JSON报告失败'),
-          description: Text('错误信息: $e'),
-          type: ToastificationType.error,
-          style: ToastificationStyle.flat,
-          autoCloseDuration: const Duration(seconds: 5),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final keyMetricsState = ref.watch(keyMetricsProvider(_quarterParams));
@@ -661,12 +561,6 @@ class _QuarterlyAnalysisPageRiverpodState
             },
             tooltip: '截图报告',
           ),
-          if (kDebugMode)
-            IconButton(
-              icon: const Icon(Icons.code),
-              onPressed: _showJsonReport,
-              tooltip: '查看JSON报告',
-            ),
           SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
