@@ -599,7 +599,216 @@ class MonthlyAnalysisService {
     return results;
   }
 
+  (int, int) getLastMonth(int year, int month) {
+    if (month == 1) {
+      return (year - 1, 12);
+    } else {
+      return (year, month - 1);
+    }
+  }
+
+  Future<String> getMonthlyDepartmentEmployeeCountDescription({
+    required int year,
+    required int month,
+  }) async {
+    final isar = _database.isar!;
+    final salaryList = await isar.salaryLists
+        .filter()
+        .yearEqualTo(year)
+        .monthEqualTo(month)
+        .findFirst();
+    if (salaryList == null) return '';
+
+    final lastTime = getLastMonth(year, month);
+
+    final lastSalaryList = await isar.salaryLists
+        .filter()
+        .yearEqualTo(lastTime.$1)
+        .monthEqualTo(lastTime.$2)
+        .findFirst();
+
+    final departmentDescription = StringBuffer();
+    departmentDescription.write('其中，');
+
+    Map<String, List<MinimalEmployeeInfo>> departmentEmployeeCounts = {};
+    for (var r in salaryList.records) {
+      final info = MinimalEmployeeInfo(
+        name: r.name!,
+        department: r.department ?? "",
+      );
+      if (departmentEmployeeCounts.containsKey(info.department)) {
+        departmentEmployeeCounts[info.department]!.add(info);
+      } else {
+        departmentEmployeeCounts[info.department] = [info];
+      }
+    }
+
+    for (var entry in departmentEmployeeCounts.entries) {
+      departmentDescription.write('，${entry.key}部门有${entry.value.length}人');
+    }
+    departmentDescription.write('。');
+
+    if (lastSalaryList != null) {
+      departmentDescription.write('相比于上个月，');
+      if (lastSalaryList.records.length == salaryList.records.length) {
+        departmentDescription.write('部门人数没有变化。');
+      } else if (lastSalaryList.records.length > salaryList.records.length) {
+        departmentDescription.write(
+          '部门人数减少${lastSalaryList.records.length - salaryList.records.length}人。',
+        );
+      } else {
+        departmentDescription.write(
+          '部门人数增加${salaryList.records.length - lastSalaryList.records.length}人。',
+        );
+      }
+
+      String details = describeDepartmentChanges(
+        lastSalaryList.records,
+        salaryList.records,
+      );
+      if (details.isNotEmpty) {
+        departmentDescription.write(details);
+      }
+    }
+    return departmentDescription.toString();
+  }
+
+  String describeDepartmentChanges(
+    List<SalaryListRecord> lastMonth,
+    List<SalaryListRecord> thisMonth,
+  ) {
+    final buffer = StringBuffer();
+
+    final lastMap = {for (var e in lastMonth) e.name!: e};
+    final thisMap = {for (var e in thisMonth) e.name!: e};
+
+    final joined = <SalaryListRecord>[];
+    final left = <SalaryListRecord>[];
+    final transferred = <Map<String, String>>[];
+
+    // 遍历上月数据
+    for (var entry in lastMonth) {
+      final name = entry.name!;
+      if (!thisMap.containsKey(name)) {
+        left.add(entry);
+      } else {
+        final thisDept = thisMap[name]!.department;
+        if (entry.department != thisDept) {
+          transferred.add({
+            "name": name,
+            "from": entry.department ?? "",
+            "to": thisDept ?? "",
+          });
+        }
+      }
+    }
+
+    // 遍历本月数据
+    for (var entry in thisMonth) {
+      final name = entry.name!;
+      if (!lastMap.containsKey(name)) {
+        joined.add(entry);
+      }
+    }
+
+    // 拼接自然语言描述
+    if (joined.isNotEmpty) {
+      buffer.write("本月新增 ${joined.length} 人：");
+      buffer.write(joined.map((e) => "${e.name}(${e.department})").join("，"));
+      buffer.write("。");
+    }
+    if (left.isNotEmpty) {
+      buffer.write(" 离职 ${left.length} 人：");
+      buffer.write(left.map((e) => "${e.name}(${e.department})").join("，"));
+      buffer.write("。");
+    }
+    if (transferred.isNotEmpty) {
+      buffer.write(" 转岗 ${transferred.length} 人：");
+      buffer.write(
+        transferred
+            .map((e) => "${e['name']}：${e['from']} → ${e['to']}")
+            .join("，"),
+      );
+      buffer.write("。");
+    }
+
+    if (buffer.isEmpty) {
+      return "本月人员结构无明显变化。";
+    }
+
+    return buffer.toString().trim();
+  }
+
+  /// 计算基尼系数
+  Future<(double, String)> caculateGiniCoefficient({
+    required int year,
+    required int month,
+  }) async {
+    final isar = _database.isar!;
+
+    final salaryList = await isar.salaryLists
+        .filter()
+        .yearEqualTo(year)
+        .monthEqualTo(month)
+        .findFirst();
+    if (salaryList == null) return (0.0, '');
+
+    final gini = calculateGiniCoefficient(salaryList.records);
+    final giniLevel = describeGini(gini);
+
+    return (gini, giniLevel);
+  }
+
+  double calculateGiniCoefficient(List<SalaryListRecord> records) {
+    // 提取工资，转换为 double
+    List<double> salaries = records
+        .map((r) => double.tryParse(r.netSalary ?? '0') ?? 0.0)
+        .where((s) => s > 0)
+        .toList();
+
+    if (salaries.isEmpty) return 0.0;
+
+    // 按升序排序
+    salaries.sort();
+
+    int n = salaries.length;
+    double cumulativeIncome = 0.0;
+    double weightedSum = 0.0;
+
+    for (int i = 0; i < n; i++) {
+      cumulativeIncome += salaries[i];
+      weightedSum += (i + 1) * salaries[i];
+    }
+
+    double meanIncome = cumulativeIncome / n;
+    if (meanIncome == 0) return 0.0;
+
+    // Gini 公式: G = (2 * Σ(i*xi)) / (n * Σxi) - (n+1)/n
+    double gini = (2 * weightedSum) / (n * cumulativeIncome) - (n + 1) / n;
+
+    return gini;
+  }
+
+  /// 给出自然语言描述
+  String describeGini(double gini) {
+    String level;
+    if (gini < 0.2) {
+      level = "收入分配非常平均，极为健康";
+    } else if (gini < 0.3) {
+      level = "收入分配较为均衡，比较健康";
+    } else if (gini < 0.4) {
+      level = "收入分配存在一定差距，整体尚可接受";
+    } else if (gini < 0.5) {
+      level = "收入分配差距较大，需要关注";
+    } else {
+      level = "收入差距过大，结构不健康";
+    }
+
+    return "当前的基尼系数为 ${gini.toStringAsFixed(3)}，$level。";
+  }
+
   /// 查询某年某月工资最高的前N名员工
+  @Deprecated("工资排名会有攀比心理，而且泄露出去不好")
   Future<List<SalaryListRecord>> getTopSalaryEmployees({
     required int year,
     required int month,
@@ -637,6 +846,7 @@ class MonthlyAnalysisService {
   }
 
   /// 查询某年某月工资最低的前N名员工
+  @Deprecated("工资排名会有攀比心理，而且泄露出去不好")
   Future<List<SalaryListRecord>> getBottomSalaryEmployees({
     required int year,
     required int month,

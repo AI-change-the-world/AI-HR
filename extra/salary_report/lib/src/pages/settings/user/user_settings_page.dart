@@ -44,6 +44,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     _modelNameController.dispose();
     _companyNameController.dispose();
     _companyDescriptionController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -110,6 +111,9 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
       ToastUtils.success(null, title: '设置已保存');
     }
   }
+
+  final PageController _pageController = PageController();
+  int _currentIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -209,7 +213,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
               const SizedBox(height: 12),
               Card(
                 elevation: 3,
-                shadowColor: Colors.lightBlue.withValues(alpha: 0.2),
+                shadowColor: Colors.lightBlue.withAlpha(50),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -251,52 +255,190 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Base URL输入
-                      const Text(
-                        'Base URL',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        enabled: _aiEnabled,
-                        controller: _baseUrlController,
-                        decoration: const InputDecoration(
-                          hintText: '请输入大模型API的Base URL',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
+                      // TabBar 放在开关下面
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 自定义 TabBar
+                          Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _currentIndex = 0;
+                                    _pageController.animateToPage(
+                                      0,
+                                      duration: const Duration(
+                                        milliseconds: 300,
+                                      ),
+                                      curve: Curves.ease,
+                                    );
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
+                                  margin: const EdgeInsets.only(right: 12),
+                                  decoration: BoxDecoration(
+                                    color: _currentIndex == 0
+                                        ? Colors.lightBlue
+                                        : Colors.grey[200],
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    '明文配置',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: _currentIndex == 0
+                                          ? Colors.white
+                                          : Colors.grey[700],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _currentIndex = 1;
+                                    _pageController.animateToPage(
+                                      1,
+                                      duration: const Duration(
+                                        milliseconds: 300,
+                                      ),
+                                      curve: Curves.ease,
+                                    );
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: _currentIndex == 1
+                                        ? Colors.lightBlue
+                                        : Colors.grey[200],
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    '密文配置',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: _currentIndex == 1
+                                          ? Colors.white
+                                          : Colors.grey[700],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
 
-                      // API Key输入
-                      const Text(
-                        'API Key',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        enabled: _aiEnabled,
-                        controller: _apiKeyController,
-                        decoration: const InputDecoration(
-                          hintText: '请输入API密钥',
-                          border: OutlineInputBorder(),
-                        ),
-                        obscureText: true,
-                      ),
-                      const SizedBox(height: 16),
+                          const SizedBox(height: 16),
 
-                      // Model Name输入
-                      const Text(
-                        '模型名称',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        enabled: _aiEnabled,
-                        controller: _modelNameController,
-                        decoration: const InputDecoration(
-                          hintText: '请输入模型名称，如gpt-4',
-                          border: OutlineInputBorder(),
-                        ),
+                          // PageView 替换 TabBarView
+                          SizedBox(
+                            height: 260,
+                            child: PageView(
+                              controller: _pageController,
+                              onPageChanged: (index) {
+                                setState(() => _currentIndex = index);
+                              },
+                              children: [
+                                // 明文配置 Tab
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Base URL',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    TextField(
+                                      enabled: _aiEnabled,
+                                      controller: _baseUrlController,
+                                      decoration: const InputDecoration(
+                                        hintText: '请输入大模型API的Base URL',
+                                        border: OutlineInputBorder(),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    const Text(
+                                      'API Key',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    TextField(
+                                      enabled: _aiEnabled,
+                                      controller: _apiKeyController,
+                                      decoration: const InputDecoration(
+                                        hintText: '请输入API密钥',
+                                        border: OutlineInputBorder(),
+                                      ),
+                                      obscureText: true,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    const Text(
+                                      '模型名称',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    TextField(
+                                      enabled: _aiEnabled,
+                                      controller: _modelNameController,
+                                      decoration: const InputDecoration(
+                                        hintText: '请输入模型名称，如 gpt-4',
+                                        border: OutlineInputBorder(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                // 密文配置 Tab
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      '密文配置',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Expanded(
+                                      child: TextField(
+                                        decoration: const InputDecoration(
+                                          hintText: '请输入密文串，每次使用时会自动解密获取参数',
+                                          border: OutlineInputBorder(),
+                                          alignLabelWithHint: true,
+                                        ),
+                                        maxLines: null,
+                                        expands: true,
+                                        enabled: _aiEnabled,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const Text(
+                                      '密文配置更安全，推荐使用。',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

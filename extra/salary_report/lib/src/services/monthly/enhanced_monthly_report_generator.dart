@@ -110,6 +110,7 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
   }
 
   /// 准备顶级员工数据
+  @Deprecated("工资排名没有用，不要增加攀比心理")
   List<dynamic>? _prepareTopEmployeesData(Map<String, dynamic> analysisData) {
     if (!analysisData.containsKey('topSalaryEmployees')) return null;
 
@@ -310,7 +311,7 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
 
     final salaryStructureAdvice = await _aiSummaryService
         .generateSalaryStructureAdvice(
-          employeeDetails: _generateEmployeeDetails(analysisData),
+          employeeDetails: analysisData["monthlySimpleDescription"],
           departmentDetails: _generateDepartmentDetails(departmentStats),
           salaryRange: _generateSalaryRangeDescription(salaryRanges),
           salaryRangeFeature: salaryRangeFeatureSummary.isNotEmpty
@@ -335,7 +336,7 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
       averageSalary: (analysisData['averageSalary'] as num? ?? 0).toDouble(),
       departmentCount: departmentStats.length,
       employeeCount: analysisData['totalUniqueEmployees'] as int? ?? 0,
-      employeeDetails: _generateEmployeeDetails(analysisData),
+      employeeDetails: analysisData["monthlySimpleDescription"],
       departmentDetails: _generateDepartmentDetails(departmentStats),
       salaryRangeDescription: _generateSalaryRangeDescription(salaryRanges),
       salaryRangeFeatureSummary: salaryRangeFeatureSummary.isNotEmpty
@@ -630,25 +631,16 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
     return buffer.toString();
   }
 
-  /// 生成员工详情描述
-  String _generateEmployeeDetails(Map<String, dynamic> analysisData) {
-    final totalEmployees = analysisData['totalEmployees'] as int? ?? 0;
-    final totalUniqueEmployees =
-        analysisData['totalUniqueEmployees'] as int? ?? 0;
-    final totalSalary = (analysisData['totalSalary'] as num? ?? 0).toDouble();
-    final averageSalary = (analysisData['averageSalary'] as num? ?? 0)
-        .toDouble();
-
-    return '本月共有$totalUniqueEmployees名员工（总发薪人次$totalEmployees），'
-        '工资总额为${totalSalary.toStringAsFixed(2)}元，'
-        '平均工资为${averageSalary.toStringAsFixed(2)}元。';
-  }
-
   /// 生成关键指标的自然语言描述（从MonthlyAnalysisJsonConverter整合）
   String _generateKeyMetricsDescription(
     Map<String, dynamic> analysisData,
     Map<String, dynamic>? previousMonthData,
   ) {
+    logger.info("_generateKeyMetricsDescription $analysisData");
+
+    final gini = analysisData['giniCoef'] as double? ?? 0.0;
+    final lastGini = analysisData['lastMonthGiniCoef'] as double? ?? 0.0;
+
     final totalEmployees = analysisData['totalEmployees'] as int? ?? 0;
     final totalUniqueEmployees =
         analysisData['totalUniqueEmployees'] as int? ?? 0;
@@ -660,11 +652,14 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
     final lowestSalary = (analysisData['lowestSalary'] as num? ?? 0).toDouble();
 
     final buffer = StringBuffer();
-    buffer.write('本月共有员工$totalEmployees人，去重后实际员工数为$totalUniqueEmployees人。');
+    buffer.write('本月共有员工$totalEmployees人，');
     buffer.write('工资总额为${totalSalary.toStringAsFixed(2)}元，');
     buffer.write('平均工资为${averageSalary.toStringAsFixed(2)}元，');
     buffer.write('最高工资为${highestSalary.toStringAsFixed(2)}元，');
     buffer.write('最低工资为${lowestSalary.toStringAsFixed(2)}元。');
+    if (gini > 0) {
+      buffer.write(analysisData['giniCoefDetails'] as String? ?? "");
+    }
 
     if (previousMonthData != null) {
       final prevTotalSalary = (previousMonthData['totalSalary'] as num? ?? 0)
@@ -706,6 +701,17 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
       buffer.write(
         '最低工资${lowestSalaryChange >= 0 ? "上升" : "下降"}${lowestSalaryChange.abs().toStringAsFixed(2)}元($lowestSalaryChangePercent%)。',
       );
+      if (lastGini > 0) {
+        final diff = gini - lastGini;
+        if (diff == 0) {
+          buffer.write(" 与上月相比，GINI系数无变化。");
+        } else {
+          buffer.write(
+            " 与上月相比，GINI系数${diff >= 0 ? "上升" : "下降"}${diff.abs().toStringAsFixed(2)}，",
+          );
+          buffer.write(diff > 0 ? "工资差距有所扩大。" : "工资差距有所缩小。");
+        }
+      }
     }
 
     return buffer.toString();
@@ -861,6 +867,7 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
   }
 
   /// 生成工资最低员工的自然语言描述（从MonthlyAnalysisJsonConverter整合）
+  @Deprecated("工资排名没有用，不要增加攀比心理")
   String _generateBottomEmployeesDescription(
     Map<String, dynamic> analysisData,
   ) {
@@ -916,7 +923,7 @@ class EnhancedMonthlyReportGenerator implements EnhancedReportGenerator {
 
     // 关键参数
     buffer.write('一、基本情况\n');
-    buffer.write(_generateEmployeeDetails(analysisData));
+    buffer.write(analysisData["monthlySimpleDescription"]);
     if (previousMonthData != null) {
       buffer.write(
         _generateEmployeeChangesDescription(analysisData, previousMonthData),

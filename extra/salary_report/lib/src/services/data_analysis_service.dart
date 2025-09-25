@@ -22,6 +22,23 @@ class DataAnalysisService {
     return _monthlyService.getMonthlySalaryData(year, month);
   }
 
+  Future<(double, String)> getMonthlyGinicoef(int year, int month) async {
+    return await _monthlyService.caculateGiniCoefficient(
+      year: year,
+      month: month,
+    );
+  }
+
+  Future<String> getMonthlyDepartmentEmployeeCountDescription(
+    int year,
+    int month,
+  ) async {
+    return await _monthlyService.getMonthlyDepartmentEmployeeCountDescription(
+      year: year,
+      month: month,
+    );
+  }
+
   Future<String?> getMonthlySummary(int year, int month) async {
     return (await _database.isar!.salaryLists
             .filter()
@@ -617,6 +634,7 @@ class DataAnalysisService {
   }
 
   /// 查询某年某月工资最低的前N名员工
+  @Deprecated("工资排名会有攀比心理，而且泄露出去不好")
   Future<List<SalaryListRecord>> getBottomSalaryEmployees({
     required int year,
     required int month,
@@ -638,6 +656,7 @@ class DataAnalysisService {
   }
 
   /// 查询某年某月工资最高的前N名员工
+  @Deprecated("工资排名会有攀比心理，而且泄露出去不好")
   Future<List<SalaryListRecord>> getTopSalaryEmployees({
     required int year,
     required int month,

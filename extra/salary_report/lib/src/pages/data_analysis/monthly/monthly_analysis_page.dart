@@ -202,19 +202,31 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
       final departmentSalaryRangeStats = await _salaryDataService
           .getDepartmentSalaryRangeAggregation(widget.year, widget.month);
 
-      // 获取工资最高的前10名员工
-      final topSalaryEmployees = await _salaryDataService.getTopSalaryEmployees(
-        year: widget.year,
-        month: widget.month,
-        limit: 10,
+      final giniDetails = await _salaryDataService.getMonthlyGinicoef(
+        widget.year,
+        widget.month,
       );
 
-      // 获取工资最低的前10名员工
-      final bottomSalaryEmployees = await _salaryDataService
-          .getBottomSalaryEmployees(
-            year: widget.year,
-            month: widget.month,
-            limit: 10,
+      final int prevYear;
+      final int prevMonth;
+
+      if (widget.month == 1) {
+        prevYear = widget.year - 1;
+        prevMonth = 12;
+      } else {
+        prevYear = widget.year;
+        prevMonth = widget.month - 1;
+      }
+
+      final lastMonthGiniDetails = await _salaryDataService.getMonthlyGinicoef(
+        prevYear,
+        prevMonth,
+      );
+
+      final monthlySimpleDescription = await _salaryDataService
+          .getMonthlyDepartmentEmployeeCountDescription(
+            widget.year,
+            widget.month,
           );
 
       // 获取工资汇总数据
@@ -235,8 +247,13 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
           'monthlyData': monthlyData,
           'salaryRanges': salaryRanges,
           'departmentSalaryRangeStats': departmentSalaryRangeStats,
-          'topSalaryEmployees': topSalaryEmployees,
-          'bottomSalaryEmployees': bottomSalaryEmployees,
+          'giniCoef': giniDetails.$1,
+          'giniCoefDetails': giniDetails.$2,
+          "lastMonthGiniCoef": lastMonthGiniDetails.$1,
+          'lastMonthGiniCoefDetails': lastMonthGiniDetails.$2,
+          'monthlySimpleDescription': monthlySimpleDescription,
+          // 'topSalaryEmployees': topSalaryEmployees,
+          // 'bottomSalaryEmployees': bottomSalaryEmployees,
           'salarySummary': salarySummary,
           'currentEmployees': currentEmployees, // 当月员工列表
         };
@@ -427,59 +444,6 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
     }
   }
 
-  /// 生成自然语言分析报告
-  Future<String> _generateJsonReport() {
-    final generator = EnhancedMonthlyReportGenerator();
-    return Future.value(
-      generator.generateNaturalLanguageReport(
-        analysisData: _analysisData,
-        departmentStats: _departmentStats,
-        attendanceStats: _attendanceStats,
-        previousMonthData: _previousMonthData,
-        year: widget.year,
-        month: widget.month,
-      ),
-    );
-  }
-
-  /// 显示JSON报告
-  Future<void> _showJsonReport() async {
-    try {
-      final jsonReport = await _generateJsonReport();
-
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('自然语言分析报告'),
-              content: SingleChildScrollView(child: Text(jsonReport)),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('关闭'),
-                ),
-              ],
-            );
-          },
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        toastification.show(
-          context: context,
-          title: const Text('生成自然语言报告失败'),
-          description: Text('错误信息: $e'),
-          type: ToastificationType.error,
-          style: ToastificationStyle.flat,
-          autoCloseDuration: const Duration(seconds: 5),
-        );
-      }
-    }
-  }
-
   final GlobalKey repaintKey = GlobalKey();
   final ScrollController controller = ScrollController();
   late ScrollableStitcher screenshotUtil;
@@ -537,13 +501,6 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
             onPressed: _isGeneratingReport ? null : _generateSalaryReport,
             tooltip: '生成报告',
           ),
-          SizedBox(width: 8),
-          if (kDebugMode)
-            IconButton(
-              icon: const Icon(Icons.code),
-              onPressed: _showJsonReport,
-              tooltip: '查看自然语言报告',
-            ),
           SizedBox(width: 8),
         ],
       ),
@@ -905,188 +862,6 @@ class _MonthlyAnalysisPageState extends State<MonthlyAnalysisPage> {
                                       ],
                                     ),
                                   );
-                                }),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // 工资最高的员工
-                    const Text(
-                      '工资最高的员工（前10名）',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          children: [
-                            const Row(
-                              children: [
-                                Expanded(
-                                  flex: 2,
-                                  child: Text(
-                                    '姓名',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    '部门',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    '职位',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    '实发工资',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const Divider(),
-                            ...(_analysisData['topSalaryEmployees'] as List)
-                                .map<Widget>((record) {
-                                  // 确保类型正确
-                                  if (record is SalaryListRecord) {
-                                    return Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 8.0,
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            flex: 2,
-                                            child: Text(record.name ?? ''),
-                                          ),
-                                          Expanded(
-                                            child: Text(
-                                              record.department ?? '',
-                                            ),
-                                          ),
-                                          Expanded(
-                                            child: Text(record.position ?? ''),
-                                          ),
-                                          Expanded(
-                                            child: Text(record.netSalary ?? ''),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  }
-                                  return const SizedBox.shrink();
-                                }),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // 工资最低的员工
-                    const Text(
-                      '工资最低的员工（前10名）',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          children: [
-                            const Row(
-                              children: [
-                                Expanded(
-                                  flex: 2,
-                                  child: Text(
-                                    '姓名',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    '部门',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    '职位',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    '实发工资',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const Divider(),
-                            ...(_analysisData['bottomSalaryEmployees'] as List)
-                                .map<Widget>((record) {
-                                  // 确保类型正确
-                                  if (record is SalaryListRecord) {
-                                    return Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 8.0,
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            flex: 2,
-                                            child: Text(record.name ?? ''),
-                                          ),
-                                          Expanded(
-                                            child: Text(
-                                              record.department ?? '',
-                                            ),
-                                          ),
-                                          Expanded(
-                                            child: Text(record.position ?? ''),
-                                          ),
-                                          Expanded(
-                                            child: Text(record.netSalary ?? ''),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  }
-                                  return const SizedBox.shrink();
                                 }),
                           ],
                         ),
