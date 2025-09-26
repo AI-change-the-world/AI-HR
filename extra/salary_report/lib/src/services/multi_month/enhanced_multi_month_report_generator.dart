@@ -901,23 +901,59 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
         trendData['departmentDetailsPerMonth'] as List<Map<String, dynamic>>? ??
         [];
 
+    // 先判断数据充分性
+    if (totalSalaryData.isEmpty && averageSalaryData.isEmpty) {
+      return '在对多月薪资趋势进行分析后发现，由于数据采集期间较短，暂无法形成有效的趋势分析结论。建议在累积更多月份数据后再进行深入的趋势分析，以获得更准确的变化特征和发展趋势。';
+    }
+
+    // 整理总工资数据
+    final totalSalaryTrend = totalSalaryData.isNotEmpty
+        ? totalSalaryData
+              .map(
+                (d) =>
+                    '${d['month']}总薪资${(num.tryParse(d['totalSalary'].toString()) ?? 0).toStringAsFixed(0)}元',
+              )
+              .join('，')
+        : '暂无总薪资趋势数据';
+
+    // 整理人均工资数据
+    final averageSalaryTrend = averageSalaryData.isNotEmpty
+        ? averageSalaryData
+              .map(
+                (d) =>
+                    '${d['month']}人均薪资${(num.tryParse(d['averageSalary'].toString()) ?? 0).toStringAsFixed(0)}元',
+              )
+              .join('，')
+        : '暂无人均薪资趋势数据';
+
+    // 统计部门数量
+    final departmentCount = departmentData.isNotEmpty
+        ? departmentData.map((d) => d['department']).toSet().length
+        : 0;
+
     final prompt =
         '''
-请基于以下多月趋势数据，生成趋势分析总结：
+作为一名专业的HR分析师，请你基于以下具体数据撰写一段专业的薪资趋势分析总结：
 
-1. 总工资支出趋势：
-${totalSalaryData.map((d) => '${d['month']}: ${d['totalSalary']}元').join('\n')}
+数据基础：
+- 总工资支出趋势：$totalSalaryTrend
+- 人均工资趋势：$averageSalaryTrend
+- 部门数量：$departmentCount个部门
+- 环比同比变化情况数据已获取
 
-2. 人均工资趋势：
-${averageSalaryData.map((d) => '${d['month']}: ${d['averageSalary']}元').join('\n')}
+分析要求：
+1. 必须使用上述提供的具体数据进行分析，不得虚构数据
+2. 必须使用专业、严谨的HR分析语言
+3. 必须使用中文标点符号（逗号、顿号、句号等）
+4. 必须覆盖总薪资趋势、人均薪资趋势、部门变化、关键发现四个方面
+5. 禁止使用markdown格式和换行符，输出一段连续文字
 
-3. 部门数量：${departmentData.map((d) => d['department']).toSet().length}个部门
-
-4. 环比同比变化情况数据已获取
-
-请用报告风格的语言，简洁严谨地总结趋势特点和关键发现。不要分段，不要使用 markdown 符号。
+请用报告风格的语言，简洁严谨地总结趋势特点和关键发现。
 ''';
-    return await _aiSummaryService.getAnswer(prompt);
+
+    final result = await _aiSummaryService.getAnswer(prompt);
+
+    return result;
   }
 
   /// 生成结构分析总结
@@ -933,21 +969,52 @@ ${averageSalaryData.map((d) => '${d['month']}: ${d['averageSalary']}元').join('
             as List<Map<String, dynamic>>? ??
         [];
 
+    // 先判断数据充分性
+    if (salaryComposition.isEmpty && departmentProportion.isEmpty) {
+      return '在对多月薪资结构进行分析后发现，由于数据采集期间较短，暂无法形成有效的结构分析结论。建议在累积更多月份数据后再进行深入的结构分析，以获得更准确的结构变化特征。';
+    }
+
+    // 整理薪资构成数据
+    final salaryCompositionSummary = salaryComposition.isNotEmpty
+        ? '共${salaryComposition.length}个月份的数据，包括基本工资、岗位工资、绩效工资、补贴工资、饭补、电脑补贴等的比例变化'
+        : '暂无薪资构成数据';
+
+    // 整理部门占比数据
+    final departmentProportionSummary = departmentProportion.isNotEmpty
+        ? '共${departmentProportion.map((d) => d['department']).toSet().length}个部门的工资占比数据'
+        : '暂无部门占比数据';
+
+    // 获取最新月份的具体数据作为示例
+    final latestMonthData = salaryComposition.isNotEmpty
+        ? salaryComposition.last
+        : null;
+
+    final latestMonthExample = latestMonthData != null
+        ? '以${latestMonthData['month']}为例，基本工资占比${((num.tryParse(latestMonthData['basicSalaryRatio'].toString()) ?? 0) * 100).toStringAsFixed(1)}%，绩效工资占比${((num.tryParse(latestMonthData['performanceSalaryRatio'].toString()) ?? 0) * 100).toStringAsFixed(1)}%'
+        : '暂无具体月份示例';
+
     final prompt =
         '''
-请基于以下薪资结构变化数据，生成结构分析总结：
+作为一名专业的HR分析师，请你基于以下具体数据撰写一段专业的薪资结构分析总结：
 
-1. 薪资构成比例变化：
-${salaryComposition.isNotEmpty ? '共${salaryComposition.length}个月份的数据，包括基本工资、绩效工资、补贴的比例变化' : '暂无薪资构成数据'}
+数据基础：
+- 薪资构成比例变化：$salaryCompositionSummary
+- 部门工资占比变化：$departmentProportionSummary
+- 最新月份示例：$latestMonthExample
 
-2. 部门工资占比变化：
-${departmentProportion.isNotEmpty ? '共${departmentProportion.map((d) => d['department']).toSet().length}个部门的工资占比数据' : '暂无部门占比数据'}
+分析要求：
+1. 必须使用上述提供的具体数据进行分析，不得虚构数据
+2. 必须使用专业、严谨的HR分析语言
+3. 必须使用中文标点符号（逗号、顿号、句号等）
+4. 必须覆盖薪资构成变化、部门占比变化、合理性评估三个方面
+5. 禁止使用markdown格式和换行符，输出一段连续文字
 
-3. 薪资结构的合理性评估
-
-请用报告风格的语言，简洁严谨地分析结构变化特点。不要分段，不要使用 markdown 符号。
+请用报告风格的语言，简洁严谨地分析结构变化特点。
 ''';
-    return await _aiSummaryService.getAnswer(prompt);
+
+    final result = await _aiSummaryService.getAnswer(prompt);
+
+    return result;
   }
 
   /// 生成异常分析总结
@@ -956,19 +1023,45 @@ ${departmentProportion.isNotEmpty ? '共${departmentProportion.map((d) => d['dep
   ) async {
     final anomalies =
         anomalyData['anomalies'] as List<Map<String, dynamic>>? ?? [];
+
     if (anomalies.isEmpty) {
-      return '本期未发现明显的薪资异常波动。';
+      return '在对多月薪资数据进行异常检测后发现，整体薪资波动保持在合理范围内，未发现明显的异常波动现象。各部门薪资变化相对稳定，月度环比波动基本控制在正常区间，体现出公司薪酬管理的稳定性和规范性。';
     }
+
+    // 整理异常情况数据
+    final anomalyDescriptions = anomalies
+        .map((a) => a['description'] as String? ?? '未知异常')
+        .where((desc) => desc != '未知异常')
+        .toList();
+
+    final anomalyCount = anomalies.length;
+    final anomalyTypeCount = anomalies
+        .map((a) => a['type'] as String? ?? 'unknown')
+        .toSet()
+        .length;
 
     final prompt =
         '''
-请基于以下异常波动数据，生成异常分析总结：
+作为一名专业的HR分析师，请你基于以下具体数据撰写一段专业的薪资异常分析报告：
 
-异常情况：${anomalies.map((a) => a['description']).join('；')}
+数据基础：
+- 检测到异常情况数量：$anomalyCount个
+- 异常类型数量：$anomalyTypeCount种
+- 具体异常情况：${anomalyDescriptions.join('；')}
 
-请分析可能的原因并提出关注建议。不要分段，不要使用 markdown 符号。
+分析要求：
+1. 必须使用上述提供的具体数据进行分析，不得虚构数据
+2. 必须使用专业、严谨的HR分析语言
+3. 必须使用中文标点符号（逗号、顿号、句号等）
+4. 必须覆盖异常情况描述、可能原因分析、关注建议三个方面
+5. 禁止使用markdown格式和换行符，输出一段连续文字
+
+请用报告风格的语言，简洁严谨地分析异常情况及其影响。
 ''';
-    return await _aiSummaryService.getAnswer(prompt);
+
+    final result = await _aiSummaryService.getAnswer(prompt);
+
+    return result;
   }
 
   /// 生成员工详情
@@ -1312,19 +1405,46 @@ ${departmentProportion.isNotEmpty ? '共${departmentProportion.map((d) => d['dep
     Map<String, dynamic> structureData,
     Map<String, double> salaryStructureRatios,
   ) async {
+    final basicRate = salaryStructureRatios['basicSalaryRate'] ?? 0.0;
+    final performanceRate =
+        salaryStructureRatios['performanceSalaryRate'] ?? 0.0;
+    final allowanceRate = salaryStructureRatios['allowanceRate'] ?? 0.0;
+
+    // 判断数据充分性
+    if (basicRate == 0.0 && performanceRate == 0.0 && allowanceRate == 0.0) {
+      return '在对多月薪资结构进行分析后发现，由于数据采集期间较短或薪资结构数据不够充分，暂无法形成有效的薪资结构优化建议。建议在累积更多月份的薪资构成数据后，再进行深度的薪资结构分析和优化建议制定。';
+    }
+
+    final salaryComposition =
+        structureData['salaryCompositionTrend']
+            as List<Map<String, dynamic>>? ??
+        [];
+    final dataMonthCount = salaryComposition.length;
+
     final prompt =
         '''
-基于以下薪资结构数据，请提供薪资结构优化建议：
+作为一名专业的HR分析师，请你基于以下具体数据撰写一段专业的薪资结构优化建议：
 
-当前薪资结构比例：
-- 基本工资占比：${(salaryStructureRatios['basicSalaryRate']! * 100).toStringAsFixed(1)}%
-- 绩效工资占比：${(salaryStructureRatios['performanceSalaryRate']! * 100).toStringAsFixed(1)}%
-- 补贴占比：${(salaryStructureRatios['allowanceRate']! * 100).toStringAsFixed(1)}%
+数据基础：
+- 数据覆盖月份：$dataMonthCount个月
+- 基本工资占比：${(basicRate * 100).toStringAsFixed(1)}%
+- 绩效工资占比：${(performanceRate * 100).toStringAsFixed(1)}%
+- 补贴占比：${(allowanceRate * 100).toStringAsFixed(1)}%
+- 结构数据样本量：$dataMonthCount个月份数据
 
-请分析薪资结构的合理性，并提出优化建议。不要分段，不要使用 markdown 符号。
+分析要求：
+1. 必须使用上述提供的具体数据进行分析，不得虚构数据
+2. 必须使用专业、严谨的HR分析语言
+3. 必须使用中文标点符号（逗号、顿号、句号等）
+4. 必须覆盖结构合理性评估、优化方向建议、实施建议三个方面
+5. 禁止使用markdown格式和换行符，输出一段连续文字
+
+请用报告风格的语言，简洁严谨地提出薪资结构优化建议。
 ''';
 
-    return await _aiSummaryService.getAnswer(prompt);
+    final result = await _aiSummaryService.getAnswer(prompt);
+
+    return result;
   }
 
   /// 生成薪资区间描述
@@ -1499,44 +1619,72 @@ ${departmentProportion.isNotEmpty ? '共${departmentProportion.map((d) => d['dep
         trendData['departmentDetailsPerMonth'] as List<Map<String, dynamic>>? ??
         [];
 
-    // 整理月度薪资数据
-    final monthlyDataSummary = totalSalaryData
-        .map(
-          (data) =>
-              '${data['month']}总薪资${(num.tryParse(data['totalSalary'].toString()) ?? 0).toStringAsFixed(0)}元',
-        )
-        .join('，');
+    // 先判断是否有数据，避免大模型缺乏数据进行分析
+    if (totalSalaryData.isEmpty && departmentData.isEmpty) {
+      return '在对多月薪资数据进行分析后发现，由于数据采集期间较短或数据不充分，暂无法形成有效的薪资区间分布分析。建议在累积更多月份数据后再进行深度分析，以获得更准确的薪资区间分布特征和优化建议。';
+    }
 
-    // 整理部门薪资数据
+    // 整理月度薪资数据（只包含有效数据）
+    final validMonthlyData = totalSalaryData
+        .where(
+          (data) =>
+              (num.tryParse(data['totalSalary']?.toString() ?? '0') ?? 0) > 0,
+        )
+        .toList();
+
+    final monthlyDataSummary = validMonthlyData.isNotEmpty
+        ? validMonthlyData
+              .map(
+                (data) =>
+                    '${data['month']}总薪资${(num.tryParse(data['totalSalary'].toString()) ?? 0).toStringAsFixed(0)}元',
+              )
+              .join('，')
+        : '暂无有效月度薪资数据';
+
+    // 整理部门薪资数据（只包含有效数据）
     final departmentMap = <String, List<double>>{};
     for (final data in departmentData) {
       final dept = data['department'] as String? ?? '未知部门';
-      final avgSalary = (num.tryParse(data['averageSalary'].toString()) ?? 0)
-          .toDouble();
-      if (avgSalary > 0) {
+      final avgSalary =
+          (num.tryParse(data['averageSalary']?.toString() ?? '0') ?? 0)
+              .toDouble();
+      if (avgSalary > 0 && dept != '未知部门') {
         departmentMap.putIfAbsent(dept, () => []).add(avgSalary);
       }
     }
 
-    final departmentSummary = departmentMap.entries
-        .map((entry) {
-          final dept = entry.key;
-          final salaries = entry.value;
-          final avgSalary = salaries.reduce((a, b) => a + b) / salaries.length;
-          return '$dept平均薪资${avgSalary.toStringAsFixed(0)}元';
-        })
-        .join('，');
+    final departmentSummary = departmentMap.isNotEmpty
+        ? departmentMap.entries
+              .map((entry) {
+                final dept = entry.key;
+                final salaries = entry.value;
+                final avgSalary =
+                    salaries.reduce((a, b) => a + b) / salaries.length;
+                return '$dept平均薪资${avgSalary.toStringAsFixed(0)}元';
+              })
+              .join('，')
+        : '暂无有效部门薪资数据';
 
+    // 构建专业报告格式的prompt
     final prompt =
         '''
-请基于以下多月薪资数据分析，提供薪资区间分布的深度洞察：
+作为一名专业的HR分析师，请你基于以下具体数据撰写一段专业的薪资区间分布分析报告：
 
-月度薪资数据：$monthlyDataSummary
-部门薪资情况：$departmentSummary
+数据基础：
+- 月度薪资情况：$monthlyDataSummary
+- 部门薪资分布：$departmentSummary
 
-分析要点：1.薪资区间分布的合理性评估 2.不同部门薪资水平的差异化特点 3.薪资结构优化建议 4.人才梯队建设建议
+参考报告模板：
+在对多月薪资数据进行分析后发现，整体薪资区间分布较为集中，大部分员工集中在5000至7000元区间，体现出公司目前以基础薪资为主的薪酬结构。从部门维度看，研发部薪资水平略高于其他部门，具备一定的技术岗位溢价特征；赛事运营中心、人事部及地推部的薪资水平相对接近，整体处于基础薪资水平，差异化不明显，显示出非核心部门在薪酬上的均衡性。薪资区间的合理性总体可接受，但高薪区间人数比例偏低，可能影响公司对高端人才的吸引力。在薪资结构优化方面，建议逐步拉开不同层级之间的差距，增加绩效和激励型薪酬的占比，以形成更合理的薪资梯度。同时，在人才梯队建设上，应在保持基础岗位稳定性的前提下，加大对关键岗位和高潜人才的薪酬倾斜，既能增强核心人员的留任动力，也有助于建立更加健康和可持续的人才发展体系。
 
-要求：请用专业的HR分析语言提供具有指导价值的分析结论，不要分段，不要使用 markdown 符号。
+分析要求：
+1. 必须使用上述提供的具体数据进行分析，不得虚构数据
+2. 必须使用专业、严谨的HR分析语言
+3. 必须使用中文标点符号（逗号、顿号、句号等）
+4. 必须覆盖薪资区间分布、部门差异、优化建议、人才梯队四个方面
+5. 禁止使用markdown格式和换行符，输出一段连续文字
+
+请基于以上要求生成分析报告。
 ''';
 
     final result = await _aiSummaryService.getAnswer(prompt);
