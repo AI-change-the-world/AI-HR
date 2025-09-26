@@ -106,6 +106,16 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
         ),
       );
 
+      // 7.1. 生成薪资结构堆叠百分比柱状图
+      final salaryStructureStackedChart = await _chartService
+          .generateSalaryStructureStackedChart(
+            structureAnalysisData['salaryCompositionTrend']
+                    as List<Map<String, dynamic>>? ??
+                [],
+          );
+
+      chartImages.salaryStructureStackedChart = salaryStructureStackedChart;
+
       // 8. 创建报告内容模型
       final reportContent = await _createReportContentModel(
         analysisData: analysisData,
@@ -376,30 +386,55 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
 
     while (currentMonth.isBefore(endMonth) ||
         currentMonth.isAtSameMomentAs(endMonth)) {
-      // 薪资构成变化
+      // 薪资构成变化 - 使用正确的字段名称
       final salarySummary = await _analysisService.getSalarySummaryData(
         year: currentMonth.year,
         month: currentMonth.month,
       );
 
       if (salarySummary != null) {
+        // 计算各项薪资的具体数值和比例
+        final basicSalary =
+            (num.tryParse(salarySummary['基本工资'].toString()) ?? 0).toDouble();
+        final positionSalary =
+            (num.tryParse(salarySummary['岗位工资'].toString()) ?? 0).toDouble();
+        final performanceSalary =
+            (num.tryParse(salarySummary['绩效工资'].toString()) ?? 0).toDouble();
+        final allowanceSalary =
+            (num.tryParse(salarySummary['补贴工资'].toString()) ?? 0).toDouble();
+        final mealAllowance =
+            (num.tryParse(salarySummary['饭补'].toString()) ?? 0).toDouble();
+        final computerAllowance =
+            (num.tryParse(salarySummary['电脑补贴等'].toString()) ?? 0).toDouble();
+
         final totalSalary =
-            (num.tryParse(salarySummary['税前工资'].toString()))?.toDouble() ?? 0.0;
+            basicSalary +
+            positionSalary +
+            performanceSalary +
+            allowanceSalary +
+            mealAllowance +
+            computerAllowance;
+
         if (totalSalary > 0) {
           salaryCompositionTrend.add({
             'month': '${currentMonth.year}年${currentMonth.month}月',
-            'basicSalaryRatio':
-                ((num.tryParse(salarySummary['基本工资'].toString()))?.toDouble() ??
-                    0.0) /
-                totalSalary,
-            'performanceRatio':
-                ((num.tryParse(salarySummary['绩效工资'].toString()))?.toDouble() ??
-                    0.0) /
-                totalSalary,
-            'allowanceRatio':
-                ((num.tryParse(salarySummary['补贴工资'].toString()))?.toDouble() ??
-                    0.0) /
-                totalSalary,
+            'year': currentMonth.year,
+            'monthNum': currentMonth.month,
+            // 具体数值
+            'basicSalaryAmount': basicSalary,
+            'positionSalaryAmount': positionSalary,
+            'performanceSalaryAmount': performanceSalary,
+            'allowanceSalaryAmount': allowanceSalary,
+            'mealAllowanceAmount': mealAllowance,
+            'computerAllowanceAmount': computerAllowance,
+            'totalAmount': totalSalary,
+            // 比例数据
+            'basicSalaryRatio': basicSalary / totalSalary,
+            'positionSalaryRatio': positionSalary / totalSalary,
+            'performanceSalaryRatio': performanceSalary / totalSalary,
+            'allowanceSalaryRatio': allowanceSalary / totalSalary,
+            'mealAllowanceRatio': mealAllowance / totalSalary,
+            'computerAllowanceRatio': computerAllowance / totalSalary,
           });
         }
       }
@@ -419,7 +454,10 @@ class EnhancedMultiMonthReportGenerator implements EnhancedReportGenerator {
         for (final dept in deptStats) {
           departmentProportionTrend.add({
             'month': '${currentMonth.year}年${currentMonth.month}月',
+            'year': currentMonth.year,
+            'monthNum': currentMonth.month,
             'department': dept.department,
+            'amount': dept.totalNetSalary,
             'proportion': dept.totalNetSalary / totalDeptSalary,
           });
         }
@@ -877,7 +915,7 @@ ${averageSalaryData.map((d) => '${d['month']}: ${d['averageSalary']}元').join('
 
 4. 环比同比变化情况数据已获取
 
-请用报告风格的语言，简洁严谨地总结趋势特点和关键发现。
+请用报告风格的语言，简洁严谨地总结趋势特点和关键发现。不要分段，不要使用 markdown 符号。
 ''';
     return await _aiSummaryService.getAnswer(prompt);
   }
@@ -907,7 +945,7 @@ ${departmentProportion.isNotEmpty ? '共${departmentProportion.map((d) => d['dep
 
 3. 薪资结构的合理性评估
 
-请用报告风格的语言，简洁严谨地分析结构变化特点。
+请用报告风格的语言，简洁严谨地分析结构变化特点。不要分段，不要使用 markdown 符号。
 ''';
     return await _aiSummaryService.getAnswer(prompt);
   }
@@ -928,7 +966,7 @@ ${departmentProportion.isNotEmpty ? '共${departmentProportion.map((d) => d['dep
 
 异常情况：${anomalies.map((a) => a['description']).join('；')}
 
-请分析可能的原因并提出关注建议。
+请分析可能的原因并提出关注建议。不要分段，不要使用 markdown 符号。
 ''';
     return await _aiSummaryService.getAnswer(prompt);
   }
@@ -1283,7 +1321,7 @@ ${departmentProportion.isNotEmpty ? '共${departmentProportion.map((d) => d['dep
 - 绩效工资占比：${(salaryStructureRatios['performanceSalaryRate']! * 100).toStringAsFixed(1)}%
 - 补贴占比：${(salaryStructureRatios['allowanceRate']! * 100).toStringAsFixed(1)}%
 
-请分析薪资结构的合理性，并提出优化建议。
+请分析薪资结构的合理性，并提出优化建议。不要分段，不要使用 markdown 符号。
 ''';
 
     return await _aiSummaryService.getAnswer(prompt);
@@ -1454,19 +1492,56 @@ ${departmentProportion.isNotEmpty ? '共${departmentProportion.map((d) => d['dep
   Future<String> _generateRangeDistributionInsights(
     Map<String, dynamic> analysisData,
   ) async {
-    final prompt = '''
-请基于多月薪资数据分析，提供薪资区间分布的深度洞察：
+    final trendData = analysisData['trendData'] as Map<String, dynamic>? ?? {};
+    final totalSalaryData =
+        trendData['totalSalaryPerMonth'] as List<Map<String, dynamic>>? ?? [];
+    final departmentData =
+        trendData['departmentDetailsPerMonth'] as List<Map<String, dynamic>>? ??
+        [];
 
-分析要点：
-1. 薪资区间分布的合理性评估
-2. 不同部门薪资水平的差异化特点
-3. 薪资结构优化建议
-4. 人才梯队建设建议
+    // 整理月度薪资数据
+    final monthlyDataSummary = totalSalaryData
+        .map(
+          (data) =>
+              '${data['month']}总薪资${(num.tryParse(data['totalSalary'].toString()) ?? 0).toStringAsFixed(0)}元',
+        )
+        .join('，');
 
-请用专业的HR分析语言，提供具有指导价值的分析结论。
+    // 整理部门薪资数据
+    final departmentMap = <String, List<double>>{};
+    for (final data in departmentData) {
+      final dept = data['department'] as String? ?? '未知部门';
+      final avgSalary = (num.tryParse(data['averageSalary'].toString()) ?? 0)
+          .toDouble();
+      if (avgSalary > 0) {
+        departmentMap.putIfAbsent(dept, () => []).add(avgSalary);
+      }
+    }
+
+    final departmentSummary = departmentMap.entries
+        .map((entry) {
+          final dept = entry.key;
+          final salaries = entry.value;
+          final avgSalary = salaries.reduce((a, b) => a + b) / salaries.length;
+          return '$dept平均薪资${avgSalary.toStringAsFixed(0)}元';
+        })
+        .join('，');
+
+    final prompt =
+        '''
+请基于以下多月薪资数据分析，提供薪资区间分布的深度洞察：
+
+月度薪资数据：$monthlyDataSummary
+部门薪资情况：$departmentSummary
+
+分析要点：1.薪资区间分布的合理性评估 2.不同部门薪资水平的差异化特点 3.薪资结构优化建议 4.人才梯队建设建议
+
+要求：请用专业的HR分析语言提供具有指导价值的分析结论，不要分段，不要使用 markdown 符号。
 ''';
 
-    return await _aiSummaryService.getAnswer(prompt);
+    final result = await _aiSummaryService.getAnswer(prompt);
+
+    return result;
   }
 
   /// 生成薪资结构描述
@@ -1476,25 +1551,81 @@ ${departmentProportion.isNotEmpty ? '共${departmentProportion.map((d) => d['dep
     final salaryComposition =
         structureData['salaryCompositionTrend'] as List? ?? [];
 
-    logger.info('salaryComposition: $salaryComposition');
-
-    final buffer = StringBuffer();
-    buffer.write('多月薪资结构分析：');
-
-    if (salaryComposition.isNotEmpty) {
-      final latest = salaryComposition.last as Map<String, dynamic>;
-      final basicRatio =
-          (num.tryParse(latest['basicSalaryRatio'].toString()) ?? 0).toDouble();
-      final performanceRatio =
-          (num.tryParse(latest['performanceRatio'].toString()) ?? 0).toDouble();
-      final allowanceRatio =
-          (num.tryParse(latest['allowanceRatio'].toString()) ?? 0).toDouble();
-
-      buffer.write('基本工资占比${(basicRatio * 100).toStringAsFixed(1)}%，');
-      buffer.write('绩效工资占比${(performanceRatio * 100).toStringAsFixed(1)}%，');
-      buffer.write('补贴占比${(allowanceRatio * 100).toStringAsFixed(1)}%；');
+    if (salaryComposition.isEmpty) {
+      return '在多月的薪资结构观察中，尚未形成可供分析的数据。';
     }
 
+    final buffer = StringBuffer();
+    buffer.write('在多月的薪资结构分析中，');
+
+    final List<String> monthDescriptions = [];
+
+    for (final monthData in salaryComposition) {
+      final month = monthData['month'] as String;
+      final totalAmount =
+          (num.tryParse(monthData['totalAmount'].toString()) ?? 0).toDouble();
+
+      // 收集各类工资项
+      final items = <String>[];
+
+      void addItem(String label, double amount, double ratio) {
+        if (amount > 0) {
+          items.add(
+            '$label${amount.toStringAsFixed(2)}元，占比${(ratio * 100).toStringAsFixed(1)}%',
+          );
+        }
+      }
+
+      addItem(
+        '基本工资',
+        (num.tryParse(monthData['basicSalaryAmount'].toString()) ?? 0)
+            .toDouble(),
+        (num.tryParse(monthData['basicSalaryRatio'].toString()) ?? 0)
+            .toDouble(),
+      );
+      addItem(
+        '岗位工资',
+        (num.tryParse(monthData['positionSalaryAmount'].toString()) ?? 0)
+            .toDouble(),
+        (num.tryParse(monthData['positionSalaryRatio'].toString()) ?? 0)
+            .toDouble(),
+      );
+      addItem(
+        '绩效工资',
+        (num.tryParse(monthData['performanceSalaryAmount'].toString()) ?? 0)
+            .toDouble(),
+        (num.tryParse(monthData['performanceSalaryRatio'].toString()) ?? 0)
+            .toDouble(),
+      );
+      addItem(
+        '补贴',
+        (num.tryParse(monthData['allowanceSalaryAmount'].toString()) ?? 0)
+            .toDouble(),
+        (num.tryParse(monthData['allowanceSalaryRatio'].toString()) ?? 0)
+            .toDouble(),
+      );
+      addItem(
+        '饭补',
+        (num.tryParse(monthData['mealAllowanceAmount'].toString()) ?? 0)
+            .toDouble(),
+        (num.tryParse(monthData['mealAllowanceRatio'].toString()) ?? 0)
+            .toDouble(),
+      );
+      addItem(
+        '电脑补贴等',
+        (num.tryParse(monthData['computerAllowanceAmount'].toString()) ?? 0)
+            .toDouble(),
+        (num.tryParse(monthData['computerAllowanceRatio'].toString()) ?? 0)
+            .toDouble(),
+      );
+
+      final detail = items.isNotEmpty ? '其中${items.join('，')}' : '未见明显构成差异';
+      monthDescriptions.add(
+        '$month总薪资${totalAmount.toStringAsFixed(2)}元，$detail。',
+      );
+    }
+
+    buffer.write(monthDescriptions.join(' '));
     return buffer.toString();
   }
 

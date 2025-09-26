@@ -332,9 +332,12 @@ class MultiMonthDocxWriterService {
       content.add(ImageContent('salary_range_chart', images.salaryRangeChart!));
     }
     // 添加薪资结构饼图
-    if (images.salaryStructureChart != null) {
+    if (images.salaryStructureStackedChart != null) {
       content.add(
-        ImageContent('salary_structure_chart', images.salaryStructureChart!),
+        ImageContent(
+          'salary_structure_chart',
+          images.salaryStructureStackedChart!,
+        ),
       );
     }
     // 添加多月报告专用图表

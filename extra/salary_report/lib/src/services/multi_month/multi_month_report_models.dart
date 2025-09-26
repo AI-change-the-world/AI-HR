@@ -17,6 +17,7 @@ class MultiMonthReportChartImages {
   final Uint8List? departmentYearOverYearChart;
   final Uint8List? positionMonthOverMonthChart;
   final Uint8List? positionYearOverYearChart;
+  Uint8List? salaryStructureStackedChart;
 
   MultiMonthReportChartImages({
     this.mainChart,
@@ -31,6 +32,7 @@ class MultiMonthReportChartImages {
     this.departmentYearOverYearChart,
     this.positionMonthOverMonthChart,
     this.positionYearOverYearChart,
+    this.salaryStructureStackedChart,
   });
 }
 

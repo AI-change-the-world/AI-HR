@@ -3,6 +3,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/services/multi_month/multi_month_report_models.dart';
@@ -463,5 +464,128 @@ class MultiMonthChartGenerationService {
       color: Colors.white,
       child: chart,
     );
+  }
+
+  /// 生成薪资结构堆叠百分比柱状图
+  Future<Uint8List?> generateSalaryStructureStackedChart(
+    List<Map<String, dynamic>> salaryCompositionTrend,
+  ) async {
+    if (salaryCompositionTrend.isEmpty) return null;
+
+    // 准备数据系列
+    final List<StackedColumnSeries<Map<String, dynamic>, String>> seriesList =
+        [];
+
+    // 定义薪资结构字段和颜色
+    final salaryFields = [
+      {
+        'field': 'basicSalaryRatio',
+        'name': '基本工资',
+        'color': const Color(0xFF3498DB),
+      },
+      {
+        'field': 'positionSalaryRatio',
+        'name': '岗位工资',
+        'color': const Color(0xFF2ECC71),
+      },
+      {
+        'field': 'performanceSalaryRatio',
+        'name': '绩效工资',
+        'color': const Color(0xFFE74C3C),
+      },
+      {
+        'field': 'allowanceSalaryRatio',
+        'name': '补贴工资',
+        'color': const Color(0xFFF39C12),
+      },
+      {
+        'field': 'mealAllowanceRatio',
+        'name': '饭补',
+        'color': const Color(0xFF9B59B6),
+      },
+      {
+        'field': 'computerAllowanceRatio',
+        'name': '电脑补贴等',
+        'color': const Color(0xFF1ABC9C),
+      },
+    ];
+
+    // 为每个薪资组成部分创建一个数据系列
+    for (final field in salaryFields) {
+      final fieldName = field['field'] as String;
+      final seriesName = field['name'] as String;
+      final color = field['color'] as Color;
+
+      // 检查是否有该字段的数据
+      final hasData = salaryCompositionTrend.any(
+        (data) => (num.tryParse(data[fieldName]?.toString() ?? '0') ?? 0) > 0,
+      );
+
+      if (hasData) {
+        seriesList.add(
+          StackedColumnSeries<Map<String, dynamic>, String>(
+            animationDelay: 0,
+            animationDuration: 0,
+            name: seriesName,
+            color: color,
+            dataSource: salaryCompositionTrend,
+            xValueMapper: (data, _) => data['month'] as String,
+            yValueMapper: (data, _) =>
+                (num.tryParse(data[fieldName]?.toString() ?? '0') ?? 0)
+                    .toDouble() *
+                100,
+            dataLabelMapper: (data, _) {
+              final ratio =
+                  (num.tryParse(data[fieldName]?.toString() ?? '0') ?? 0)
+                      .toDouble();
+              return ratio > 0.05
+                  ? '${(ratio * 100).toStringAsFixed(1)}%'
+                  : ''; // 只显示大于5%的标签
+            },
+            dataLabelSettings: const DataLabelSettings(
+              isVisible: true,
+              labelAlignment: ChartDataLabelAlignment.middle,
+              textStyle: TextStyle(
+                fontSize: 10,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        );
+      }
+    }
+
+    final chartWidget = _buildChartContainer(
+      SfCartesianChart(
+        title: ChartTitle(
+          text: '薪资结构占比变化趋势',
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        legend: Legend(
+          isVisible: true,
+          position: LegendPosition.bottom,
+          itemPadding: 8,
+        ),
+        primaryXAxis: CategoryAxis(
+          title: AxisTitle(text: '月份'),
+          labelIntersectAction: AxisLabelIntersectAction.rotate45,
+        ),
+        primaryYAxis: NumericAxis(
+          title: AxisTitle(text: '占比 (%)'),
+          minimum: 0,
+          maximum: 100,
+          interval: 20,
+          numberFormat: NumberFormat.decimalPattern(),
+        ),
+        series: seriesList,
+        tooltipBehavior: TooltipBehavior(
+          enable: true,
+          format: 'point.x: point.y%',
+        ),
+      ),
+    );
+
+    return await _captureWidgetAsImage(chartWidget);
   }
 }
