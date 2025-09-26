@@ -3,6 +3,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/services/multi_month/multi_month_report_models.dart';
 import 'package:screenshot/screenshot.dart';
@@ -24,6 +25,7 @@ class MultiMonthChartGenerationService {
     List<Map<String, dynamic>>? totalSalaryPerMonth, // 每月总工资变化数据
     List<Map<String, dynamic>>? departmentDetailsPerMonth, // 每月各部门详情数据
     List<Map<String, dynamic>>? lastMonthDepartmentStats, // 最后一个月部门统计数据（用于图表生成）
+    List<Map<String, dynamic>>? departmentStatsPerMonth, // 多月部门数据
   }) async {
     // 1. Capture the existing chart from the UI
     Uint8List? mainChartImage;
@@ -75,9 +77,9 @@ class MultiMonthChartGenerationService {
     Uint8List? totalSalaryPerMonthChart;
     Uint8List? departmentDetailsPerMonthChart;
 
-    if (employeeCountPerMonth != null && employeeCountPerMonth.isNotEmpty) {
-      employeeCountPerMonthChart = await _generateEmployeeCountPerMonthChart(
-        employeeCountPerMonth,
+    if (departmentStatsPerMonth != null && departmentStatsPerMonth.isNotEmpty) {
+      employeeCountPerMonthChart = await _generateMultiMonthDepartmentChart(
+        departmentStatsPerMonth,
       );
     }
 
@@ -207,6 +209,116 @@ class MultiMonthChartGenerationService {
     return await _captureWidgetAsImage(chartWidget);
   }
 
+  /// 生成多月部门人员图表
+  Future<Uint8List?> _generateMultiMonthDepartmentChart(
+    List<Map<String, dynamic>> departmentStatsPerMonth,
+  ) async {
+    logger.info('生成多月部门人员图表');
+
+    // 收集所有月份和部门
+    final Set<String> allMonths = {};
+    final Set<String> allDepartments = {};
+    for (var monthData in departmentStatsPerMonth) {
+      final monthLabel = '${monthData['year']}年${monthData['month']}月';
+      allMonths.add(monthLabel);
+
+      final departments =
+          monthData['departments'] as List<Map<String, dynamic>>;
+      for (var dept in departments) {
+        allDepartments.add(dept['department'] as String);
+      }
+    }
+
+    // 转换数据：每个部门生成一组 series 数据
+    final Map<String, List<Map<String, dynamic>>> seriesData = {};
+    for (var dept in allDepartments) {
+      seriesData[dept] = [];
+      for (var monthData in departmentStatsPerMonth) {
+        final monthLabel = '${monthData['year']}年${monthData['month']}月';
+        final departments =
+            monthData['departments'] as List<Map<String, dynamic>>;
+        final deptData = departments.firstWhere(
+          (d) => d['department'] == dept,
+          orElse: () => {'employeeCount': 0},
+        );
+        seriesData[dept]!.add({
+          'month': monthLabel,
+          'employeeCount': deptData['employeeCount'] ?? 0,
+        });
+      }
+    }
+
+    logger.info('seriesData: $seriesData');
+
+    // 配置 series
+    final colors = [
+      Colors.blue,
+      Colors.red,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.teal,
+      Colors.pink,
+      Colors.indigo,
+    ];
+    int colorIndex = 0;
+
+    final List<ColumnSeries<Map<String, dynamic>, String>> seriesList = [];
+    for (var dept in allDepartments) {
+      seriesList.add(
+        ColumnSeries<Map<String, dynamic>, String>(
+          animationDelay: 0,
+          animationDuration: 0,
+          dataSource: seriesData[dept]!,
+          xValueMapper: (data, _) => data['month'],
+          yValueMapper: (data, _) => data['employeeCount'],
+          name: dept,
+          color: colors[colorIndex % colors.length],
+
+          dataLabelSettings: DataLabelSettings(
+            isVisible: true,
+            labelAlignment: ChartDataLabelAlignment.top,
+            builder:
+                (
+                  dynamic data,
+                  dynamic point,
+                  dynamic series,
+                  int pointIndex,
+                  int seriesIndex,
+                ) {
+                  // 自定义显示：人数 + 部门名
+                  return Text(
+                    '$dept (${data['employeeCount']})',
+                    style: const TextStyle(fontSize: 12, color: Colors.black),
+                  );
+                },
+          ),
+        ),
+      );
+      colorIndex++;
+    }
+
+    // 生成图表
+    final chartWidget = _buildChartContainer(
+      SfCartesianChart(
+        title: ChartTitle(text: '各月部门人员数量对比'),
+        legend: Legend(
+          isVisible: true,
+          position: LegendPosition.bottom, // 显示在底部
+          overflowMode: LegendItemOverflowMode.wrap, // 超出自动换行
+        ),
+        primaryXAxis: CategoryAxis(
+          labelIntersectAction: AxisLabelIntersectAction.rotate45,
+          title: AxisTitle(text: '月份'),
+        ),
+        primaryYAxis: NumericAxis(minimum: 0, title: AxisTitle(text: '人数')),
+        series: seriesList,
+      ),
+    );
+
+    return await _captureWidgetAsImage(chartWidget);
+  }
+
   /// 生成每月人数变化图表
   Future<Uint8List?> _generateEmployeeCountPerMonthChart(
     List<Map<String, dynamic>> employeeCountPerMonth,
@@ -270,7 +382,7 @@ class MultiMonthChartGenerationService {
             animationDuration: 0,
             dataSource: totalSalaryPerMonth,
             xValueMapper: (d, _) => d['month'],
-            yValueMapper: (d, _) => d['totalSalary'],
+            yValueMapper: (d, _) => num.tryParse(d['totalSalary'].toString()),
             dataLabelSettings: const DataLabelSettings(isVisible: true),
           ),
         ],

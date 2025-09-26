@@ -162,7 +162,7 @@ class MultiMonthDocxWriterService {
     for (var item in totalSalaryPerMonth) {
       // 修改格式，不使用冒号分隔
       buffer.write(
-        '${item["month"]}总工资为${(item["totalSalary"] as double).toStringAsFixed(2)}元；',
+        '${item["month"]}总工资为${(double.tryParse(item["totalSalary"].toString()) ?? 0.0).toStringAsFixed(2)}元；',
       );
     }
     // 移除最后的分号并添加句号
@@ -180,6 +180,10 @@ class MultiMonthDocxWriterService {
 
     final departmentDetailsData = StringBuffer();
     for (var monthData in departmentDetailsPerMonth) {
+      if (monthData["departments"] == null) {
+        continue;
+      }
+
       // 修改格式，显示各部门详情
       departmentDetailsData.write(
         '${monthData["month"]}总共有${(monthData["departments"] as List).length}个部门：',

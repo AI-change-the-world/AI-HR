@@ -385,7 +385,8 @@ $customPrompt
       final monthlyBreakdown = monthlyData
           .map(
             (data) =>
-                '${data['month']}: 总额${data['totalSalary'].toStringAsFixed(2)}元, ' '员工数${data['employeeCount']}人',
+                '${data['month']}: 总额${data['totalSalary'].toStringAsFixed(2)}元, '
+                '员工数${data['employeeCount']}人',
           )
           .join('\n');
 
@@ -428,14 +429,16 @@ $monthlyBreakdown
       final monthlyBreakdown = monthlyData
           .map(
             (data) =>
-                '${data['month']}: 平均工资${data['averageSalary'].toStringAsFixed(2)}元, ' '员工数${data['employeeCount']}人',
+                '${data['month']}: 平均工资${data['averageSalary'].toStringAsFixed(2)}元, '
+                '员工数${data['employeeCount']}人',
           )
           .join('\n');
 
       final departmentData = departmentStats
           .map(
             (dept) =>
-                '${dept.department}: 平均工资${dept.averageNetSalary.toStringAsFixed(2)}元, ' '员工数${dept.employeeCount}人',
+                '${dept.department}: 平均工资${dept.averageNetSalary.toStringAsFixed(2)}元, '
+                '员工数${dept.employeeCount}人',
           )
           .join('\n');
 
@@ -487,7 +490,9 @@ $departmentData
         employeeChangesText = employeeChanges
             .map(
               (change) =>
-                  '${change['month']}月: 新入职${change['newEmployees'].length}人, ' '离职${change['resignedEmployees'].length}人, ' '净变化${change['netChange']}人',
+                  '${change['month']}月: 新入职${change['newEmployees'].length}人, '
+                  '离职${change['resignedEmployees'].length}人, '
+                  '净变化${change['netChange']}人',
             )
             .join('\n');
       }
@@ -683,7 +688,9 @@ $salaryComposition
       final trendData = sortedData
           .map(
             (q) =>
-                '${q.year}年第${q.quarter}季度: 员工数${q.employeeCount}人, ' '工资总额${q.totalSalary.toStringAsFixed(2)}元, ' '平均工资${q.averageSalary.toStringAsFixed(2)}元',
+                '${q.year}年第${q.quarter}季度: 员工数${q.employeeCount}人, '
+                '工资总额${q.totalSalary.toStringAsFixed(2)}元, '
+                '平均工资${q.averageSalary.toStringAsFixed(2)}元',
           )
           .join('\n');
 
@@ -712,7 +719,9 @@ $trendData
       final departmentData = departmentStats
           .map(
             (dept) =>
-                '${dept.department}: 员工数${dept.employeeCount}人, ' '工资总额${dept.totalNetSalary.toStringAsFixed(2)}元, ' '平均工资${dept.averageNetSalary.toStringAsFixed(2)}元',
+                '${dept.department}: 员工数${dept.employeeCount}人, '
+                '工资总额${dept.totalNetSalary.toStringAsFixed(2)}元, '
+                '平均工资${dept.averageNetSalary.toStringAsFixed(2)}元',
           )
           .join('\n');
 
@@ -775,7 +784,10 @@ $departmentData
             : "N/A";
 
         qoqData.add(
-          '${current.year}年第${current.quarter}季度 vs ${previous.year}年第${previous.quarter}季度: ' '员工数变化$employeeCountChange人($employeeCountChangeRate%), ' '工资总额变化${totalSalaryChange.toStringAsFixed(2)}元($totalSalaryChangeRate%), ' '平均工资变化${averageSalaryChange.toStringAsFixed(2)}元($averageSalaryChangeRate%)',
+          '${current.year}年第${current.quarter}季度 vs ${previous.year}年第${previous.quarter}季度: '
+          '员工数变化$employeeCountChange人($employeeCountChangeRate%), '
+          '工资总额变化${totalSalaryChange.toStringAsFixed(2)}元($totalSalaryChangeRate%), '
+          '平均工资变化${averageSalaryChange.toStringAsFixed(2)}元($averageSalaryChangeRate%)',
         );
       }
 
@@ -854,7 +866,10 @@ ${qoqData.join('\n')}
                 : "N/A";
 
             yoyData.add(
-              '${currentQuarter.year}年第${currentQuarter.quarter}季度 vs ${lastYearQuarter.year}年第${lastYearQuarter.quarter}季度: ' '员工数变化$employeeCountChange人($employeeCountChangeRate%), ' '工资总额变化${totalSalaryChange.toStringAsFixed(2)}元($totalSalaryChangeRate%), ' '平均工资变化${averageSalaryChange.toStringAsFixed(2)}元($averageSalaryChangeRate%)',
+              '${currentQuarter.year}年第${currentQuarter.quarter}季度 vs ${lastYearQuarter.year}年第${lastYearQuarter.quarter}季度: '
+              '员工数变化$employeeCountChange人($employeeCountChangeRate%), '
+              '工资总额变化${totalSalaryChange.toStringAsFixed(2)}元($totalSalaryChangeRate%), '
+              '平均工资变化${averageSalaryChange.toStringAsFixed(2)}元($averageSalaryChangeRate%)',
             );
           }
         }
@@ -894,7 +909,10 @@ ${qoqData.join('\n')}
               : "N/A";
 
           yoyData.add(
-            '${currentYear.year}年 vs ${previousYear.year}年: ' '员工数变化$employeeCountChange人($employeeCountChangeRate%), ' '工资总额变化${totalSalaryChange.toStringAsFixed(2)}元($totalSalaryChangeRate%), ' '平均工资变化${averageSalaryChange.toStringAsFixed(2)}元($averageSalaryChangeRate%)',
+            '${currentYear.year}年 vs ${previousYear.year}年: '
+            '员工数变化$employeeCountChange人($employeeCountChangeRate%), '
+            '工资总额变化${totalSalaryChange.toStringAsFixed(2)}元($totalSalaryChangeRate%), '
+            '平均工资变化${averageSalaryChange.toStringAsFixed(2)}元($averageSalaryChangeRate%)',
           );
         }
       }
@@ -928,7 +946,9 @@ ${yoyData.join('\n')}
       final rangeData = salaryRangeStats
           .map(
             (range) =>
-                '${range.range}: 员工数${range.employeeCount}人, ' '工资总额${range.totalSalary.toStringAsFixed(2)}元, ' '平均工资${range.averageSalary.toStringAsFixed(2)}元',
+                '${range.range}: 员工数${range.employeeCount}人, '
+                '工资总额${range.totalSalary.toStringAsFixed(2)}元, '
+                '平均工资${range.averageSalary.toStringAsFixed(2)}元',
           )
           .join('\n');
 
@@ -1031,6 +1051,165 @@ $rangeData
     }
   }
 
+  /// 生成多月趋势分析
+  Future<String> generateMultiMonthTrendAnalysis(
+    List<Map<String, dynamic>> monthlyData,
+    String analysisType,
+  ) async {
+    if (!AIConfig.aiEnabled) return "";
+
+    final dataStr = monthlyData
+        .map(
+          (data) =>
+              '${data['month']}: ${data[analysisType]?.toStringAsFixed(2) ?? '0.00'}',
+        )
+        .join(', ');
+
+    final prompt =
+        '''
+请基于以下$analysisType的多月趋势数据：
+$dataStr
+
+分析趋势特点，包括：
+1. 总体变化趋势（上升、下降、波动）
+2. 周期性变化特征
+3. 异常月份及可能原因
+4. 关键影响因素分析
+
+请用报告风格的语言，简洁严谨地分析。
+''';
+
+    try {
+      return await _llmClient.getAnswer(prompt);
+    } catch (e) {
+      logger.info('AI multi-month trend analysis failed: $e');
+      return "";
+    }
+  }
+
+  /// 生成环比同比变化分析
+  Future<String> generateComparisonAnalysis(
+    List<Map<String, dynamic>> comparisonData,
+    String comparisonType, // 'month_over_month' or 'year_over_year'
+  ) async {
+    if (!AIConfig.aiEnabled) return "";
+
+    if (comparisonData.isEmpty) {
+      return '本期暂无${comparisonType == 'month_over_month' ? '环比' : '同比'}数据。';
+    }
+
+    final dataStr = comparisonData
+        .take(5)
+        .map(
+          (data) =>
+              '${data['month'] ?? ''}${data['department'] ?? data['position'] ?? ''}: '
+              '变化率${data['change_percent']?.toStringAsFixed(2) ?? '0.00'}%',
+        )
+        .join(', ');
+
+    final prompt =
+        '''
+请基于以下${comparisonType == 'month_over_month' ? '环比' : '同比'}变化数据：
+$dataStr
+
+分析变化特点，包括：
+1. 主要变化趋势
+2. 变化幅度评估
+3. 关键影响因素
+4. 需要关注的异常变化
+
+请用报告风格的语言分析。
+''';
+
+    try {
+      return await _llmClient.getAnswer(prompt);
+    } catch (e) {
+      logger.info('AI comparison analysis failed: $e');
+      return "";
+    }
+  }
+
+  /// 生成员工变动分析
+  Future<String> generateEmployeeChangeAnalysis(
+    List<Map<String, dynamic>> employeeChanges,
+  ) async {
+    if (!AIConfig.aiEnabled) return "";
+
+    if (employeeChanges.isEmpty) {
+      return '本期员工结构保持稳定。';
+    }
+
+    final totalNew = employeeChanges.fold<int>(
+      0,
+      (sum, change) => sum + (change['newEmployees'] as List? ?? []).length,
+    );
+    final totalLeft = employeeChanges.fold<int>(
+      0,
+      (sum, change) => sum + (change['leftEmployees'] as List? ?? []).length,
+    );
+    final netChange = totalNew - totalLeft;
+
+    final prompt =
+        '''
+请基于以下员工变动数据分析：
+- 总新增员工：$totalNew人
+- 总离职员工：$totalLeft人  
+- 净变化：$netChange人
+
+分析要点：
+1. 人员流动特征
+2. 流动率水平评估
+3. 对组织稳定性的影响
+4. 人力资源管理建议
+
+请用报告风格的语言分析。
+''';
+
+    try {
+      return await _llmClient.getAnswer(prompt);
+    } catch (e) {
+      logger.info('AI employee change analysis failed: $e');
+      return "";
+    }
+  }
+
+  /// 生成异常波动分析
+  Future<String> generateAnomalyAnalysis(
+    List<Map<String, dynamic>> anomalies,
+  ) async {
+    if (!AIConfig.aiEnabled) return "";
+
+    if (anomalies.isEmpty) {
+      return '本期未发现明显的薪资异常波动。';
+    }
+
+    final anomalyStr = anomalies
+        .take(10)
+        .map((anomaly) => '${anomaly['description'] ?? ''}')
+        .join('; ');
+
+    final prompt =
+        '''
+请基于以下薪资异常波动情况：
+$anomalyStr
+
+提供分析：
+1. 异常产生的可能原因
+2. 风险评估
+3. 应对建议
+4. 预防措施
+
+请用报告风格的语言分析。
+''';
+
+    try {
+      return await _llmClient.getAnswer(prompt);
+    } catch (e) {
+      logger.info('AI anomaly analysis failed: $e');
+      return "";
+    }
+  }
+
   /// 生成年度趋势分析
   Future<String> generateYearlyTrendAnalysis(
     List<YearlyComparisonData> yearlyComparisons,
@@ -1045,7 +1224,9 @@ $rangeData
       final trendData = sortedData
           .map(
             (y) =>
-                '${y.year}年: 员工数${y.employeeCount}人, ' '工资总额${y.totalSalary.toStringAsFixed(2)}元, ' '平均工资${y.averageSalary.toStringAsFixed(2)}元',
+                '${y.year}年: 员工数${y.employeeCount}人, '
+                '工资总额${y.totalSalary.toStringAsFixed(2)}元, '
+                '平均工资${y.averageSalary.toStringAsFixed(2)}元',
           )
           .join('\n');
 

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:salary_report/src/common/scroll_screenshot.dart';
@@ -13,7 +12,6 @@ import 'package:salary_report/src/components/attendance_pagination.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:toastification/toastification.dart';
-import 'package:salary_report/src/isar/salary_list.dart';
 import 'package:salary_report/src/components/employee_changes_component.dart';
 import 'package:salary_report/src/components/department_stats_component.dart';
 
