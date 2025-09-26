@@ -3,16 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:salary_report/src/isar/database.dart';
+import 'package:salary_report/src/pages/data_analysis/quarterly/quarterly_analysis_page_riverpod.dart';
+import 'package:salary_report/src/pages/data_analysis/yearly/multi_year_analysis_page.dart';
+import 'package:salary_report/src/pages/data_analysis/yearly/yearly_analysis_page_riverpod.dart';
 import 'package:salary_report/src/pages/main_layout.dart';
 import 'package:salary_report/src/pages/salary_management/upload/upload_page.dart';
-import 'package:salary_report/src/pages/salary_management/detail/salary_detail_page.dart';
 import 'package:salary_report/src/pages/data_analysis/dimension/analysis_dimension_page.dart';
 import 'package:salary_report/src/pages/data_analysis/monthly/monthly_analysis_page.dart';
 import 'package:salary_report/src/pages/data_analysis/monthly/multi_month_analysis_page.dart';
-import 'package:salary_report/src/pages/data_analysis/yearly/yearly_analysis_page.dart';
-import 'package:salary_report/src/pages/data_analysis/quarterly/quarterly_analysis_page.dart';
 import 'package:salary_report/src/pages/data_analysis/quarterly/multi_quarter_analysis_page.dart';
-import 'package:salary_report/src/pages/visualization/chart/chart_page.dart';
 import 'package:salary_report/src/pages/visualization/report/report_page.dart';
 import 'package:salary_report/src/pages/visualization/report/comprehensive_report_page.dart';
 import 'package:salary_report/src/pages/report_management_page.dart';
@@ -54,14 +53,6 @@ class MyApp extends StatelessWidget {
             GoRoute(
               path: '/salary',
               builder: (context, state) => const UploadPage(),
-              routes: [
-                GoRoute(
-                  path: 'detail/:id',
-                  builder: (context, state) => SalaryDetailPage(
-                    reportId: int.parse(state.pathParameters['id']!),
-                  ),
-                ),
-              ],
             ),
             GoRoute(
               path: '/analysis',
@@ -121,10 +112,13 @@ class MyApp extends StatelessWidget {
                     // 获取传递的额外数据
                     final extra = state.extra as Map<String, dynamic>?;
 
-                    return YearlyAnalysisPage(
+                    if (extra?['isMultiYear'] as bool? ?? false) {
+                      return YearlyAnalysisPageRiverpod(year: year);
+                    }
+
+                    return MultiYearAnalysisPage(
                       year: year,
-                      isMultiYear: extra?['isMultiYear'] as bool? ?? false,
-                      endYear: endYear,
+                      endYear: endYear ?? year,
                     );
                   },
                 ),
@@ -158,7 +152,10 @@ class MyApp extends StatelessWidget {
                       );
                     }
 
-                    return QuarterlyAnalysisPage(year: year, quarter: quarter);
+                    return QuarterlyAnalysisPageRiverpod(
+                      year: year,
+                      quarter: quarter,
+                    );
                   },
                 ),
               ],
@@ -170,10 +167,6 @@ class MyApp extends StatelessWidget {
                 GoRoute(
                   path: 'report',
                   builder: (context, state) => const ReportPage(),
-                ),
-                GoRoute(
-                  path: 'chart',
-                  builder: (context, state) => const ChartPage(),
                 ),
                 GoRoute(
                   path: 'comprehensive',

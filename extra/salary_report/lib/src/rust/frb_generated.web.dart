@@ -6,8 +6,10 @@
 // Static analysis wrongly picks the IO variant, thus ignore this
 // ignore_for_file: argument_type_not_assignable
 
+import 'api/auth_api.dart';
 import 'api/salary_api.dart';
 import 'api/simple.dart';
+import 'auth/auth_ai.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'frb_generated.dart';
@@ -29,7 +31,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   String dco_decode_String(dynamic raw);
 
   @protected
+  AiInfo dco_decode_ai_info(dynamic raw);
+
+  @protected
+  AiInfo dco_decode_box_autoadd_ai_info(dynamic raw);
+
+  @protected
   SalarySummary dco_decode_box_autoadd_salary_summary(dynamic raw);
+
+  @protected
+  PlatformInt64 dco_decode_i_64(dynamic raw);
 
   @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
@@ -39,6 +50,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<SalaryRecord> dco_decode_list_salary_record(dynamic raw);
+
+  @protected
+  AiInfo? dco_decode_opt_box_autoadd_ai_info(dynamic raw);
 
   @protected
   SalarySummary? dco_decode_opt_box_autoadd_salary_summary(dynamic raw);
@@ -74,9 +88,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   String sse_decode_String(SseDeserializer deserializer);
 
   @protected
+  AiInfo sse_decode_ai_info(SseDeserializer deserializer);
+
+  @protected
+  AiInfo sse_decode_box_autoadd_ai_info(SseDeserializer deserializer);
+
+  @protected
   SalarySummary sse_decode_box_autoadd_salary_summary(
     SseDeserializer deserializer,
   );
+
+  @protected
+  PlatformInt64 sse_decode_i_64(SseDeserializer deserializer);
 
   @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
@@ -90,6 +113,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<SalaryRecord> sse_decode_list_salary_record(
     SseDeserializer deserializer,
   );
+
+  @protected
+  AiInfo? sse_decode_opt_box_autoadd_ai_info(SseDeserializer deserializer);
 
   @protected
   SalarySummary? sse_decode_opt_box_autoadd_salary_summary(
@@ -138,10 +164,19 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_String(String self, SseSerializer serializer);
 
   @protected
+  void sse_encode_ai_info(AiInfo self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_ai_info(AiInfo self, SseSerializer serializer);
+
+  @protected
   void sse_encode_box_autoadd_salary_summary(
     SalarySummary self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_prim_u_8_strict(
@@ -158,6 +193,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_list_salary_record(
     List<SalaryRecord> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_ai_info(
+    AiInfo? self,
     SseSerializer serializer,
   );
 

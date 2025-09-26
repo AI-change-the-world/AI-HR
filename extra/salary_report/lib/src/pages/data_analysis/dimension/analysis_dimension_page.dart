@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:salary_report/src/common/toast.dart';
-import 'package:salary_report/src/isar/data_analysis_service.dart';
-import 'package:salary_report/src/isar/data_analysis_service.dart'; // 添加新的导入
+import 'package:salary_report/src/services/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart'; // 添加数据库导入
 import 'package:salary_report/src/common/logger.dart';
+import 'package:salary_report/src/services/global_analysis_models.dart';
 import '../../../components/smart_time_picker.dart';
 import '../../../providers/app_providers.dart';
 
@@ -674,7 +674,7 @@ class _AnalysisDimensionPageState extends ConsumerState<AnalysisDimensionPage>
     final endQuarter = ((timeRange.endDate.month - 1) ~/ 3) + 1;
 
     logger.info(
-      '时间范围: ${timeRange.startDate.year} 年第${startQuarter}季度 到 ${timeRange.endDate.year} 年第${endQuarter}季度',
+      '时间范围: ${timeRange.startDate.year} 年第$startQuarter季度 到 ${timeRange.endDate.year} 年第$endQuarter季度',
     );
 
     // 单个季度分析

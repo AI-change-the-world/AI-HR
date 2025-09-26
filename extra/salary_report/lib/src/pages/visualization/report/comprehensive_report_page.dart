@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
-import 'package:salary_report/src/isar/data_analysis_service.dart';
+import 'package:salary_report/src/services/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart';
 
 // ignore: depend_on_referenced_packages
@@ -106,7 +107,7 @@ class _ComprehensiveReportPageState
         totalSalary += stat.totalNetSalary;
       }
 
-      monthlyData.add({'month': '${month}月', 'salary': totalSalary});
+      monthlyData.add({'month': '$month月', 'salary': totalSalary});
     }
 
     return monthlyData;
@@ -157,7 +158,7 @@ class _ComprehensiveReportPageState
       }
 
       departmentMonthlyData.add({
-        'month': '${month}月',
+        'month': '$month月',
         'departments': departmentData,
       });
     }
@@ -290,12 +291,12 @@ class _ComprehensiveReportPageState
                                   ),
                                   _buildSummaryCard(
                                     '工资总额',
-                                    '¥${NumberFormat('#,##0').format(_calculateTotalSalary())}',
+                                    '${NumberFormat('#,##0').format(_calculateTotalSalary())}元',
                                     Icons.account_balance_wallet,
                                   ),
                                   _buildSummaryCard(
                                     '平均工资',
-                                    '¥${NumberFormat('#,##0').format(_calculateAverageSalary())}',
+                                    '${NumberFormat('#,##0').format(_calculateAverageSalary())}元',
                                     Icons.trending_up,
                                   ),
                                 ],
@@ -307,12 +308,12 @@ class _ComprehensiveReportPageState
                                 children: [
                                   _buildSummaryCard(
                                     '最高工资',
-                                    '¥${NumberFormat('#,##0').format(_calculateHighestSalary())}',
+                                    '${NumberFormat('#,##0').format(_calculateHighestSalary())}元',
                                     Icons.arrow_upward,
                                   ),
                                   _buildSummaryCard(
                                     '最低工资',
-                                    '¥${NumberFormat('#,##0').format(_calculateLowestSalary())}',
+                                    '${NumberFormat('#,##0').format(_calculateLowestSalary())}元',
                                     Icons.arrow_downward,
                                   ),
                                   _buildSummaryCard(

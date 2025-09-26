@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:salary_report/src/isar/data_analysis_service.dart';
+import 'package:salary_report/src/services/global_analysis_models.dart';
 
 class AttendancePagination extends StatefulWidget {
   final List<AttendanceStats> attendanceStats;
@@ -82,7 +82,19 @@ class _AttendancePaginationState extends State<AttendancePagination> {
             ),
             Expanded(
               child: Text(
-                '事假(天)',
+                '事假(小时)',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                '缺勤(次)',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                '旷工(天)',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
@@ -107,10 +119,12 @@ class _AttendancePaginationState extends State<AttendancePagination> {
                 ),
                 Expanded(child: Text(stat.sickLeaveDays.toStringAsFixed(1))),
                 Expanded(child: Text(stat.leaveDays.toStringAsFixed(1))),
+                Expanded(child: Text(stat.absenceCount.toString())),
+                Expanded(child: Text(stat.truancyDays.toString())),
               ],
             ),
           );
-        }).toList(),
+        }),
         // 分页控件
         if (_totalPages > 1) ...[
           const SizedBox(height: 16),

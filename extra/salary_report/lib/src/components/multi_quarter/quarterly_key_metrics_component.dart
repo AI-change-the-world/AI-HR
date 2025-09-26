@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/providers/multi_quarter_analysis_provider.dart';
-import 'package:salary_report/src/isar/data_analysis_service.dart';
 
 class QuarterlyKeyMetricsComponent extends ConsumerWidget {
   final QuarterRangeParams params;
@@ -67,28 +67,33 @@ class QuarterlyKeyMetricsComponent extends ConsumerWidget {
             Wrap(
               children: [
                 _buildStatCard(
-                  '总人数',
+                  '总人次',
                   quarterlyData.employeeCount.toString(),
                   Icons.people,
                 ),
                 _buildStatCard(
+                  '总人数',
+                  quarterlyData.totalEmployeeCount.toString(),
+                  Icons.group,
+                ),
+                _buildStatCard(
                   '工资总额',
-                  '¥${quarterlyData.totalSalary.toStringAsFixed(2)}',
+                  '${quarterlyData.totalSalary.toStringAsFixed(2)}元',
                   Icons.account_balance_wallet,
                 ),
                 _buildStatCard(
                   '平均工资',
-                  '¥${quarterlyData.averageSalary.toStringAsFixed(2)}',
+                  '${quarterlyData.averageSalary.toStringAsFixed(2)}元',
                   Icons.trending_up,
                 ),
                 _buildStatCard(
                   '最高工资',
-                  '¥${quarterlyData.highestSalary.toStringAsFixed(2)}',
+                  '${quarterlyData.highestSalary.toStringAsFixed(2)}元',
                   Icons.arrow_upward,
                 ),
                 _buildStatCard(
                   '最低工资',
-                  '¥${quarterlyData.lowestSalary.toStringAsFixed(2)}',
+                  '${quarterlyData.lowestSalary.toStringAsFixed(2)}元',
                   Icons.arrow_downward,
                 ),
               ],

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:salary_report/src/common/logger.dart';
+import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/providers/multi_month_analysis_provider.dart';
-import 'package:salary_report/src/isar/data_analysis_service.dart';
 
 class MonthlyKeyMetricsComponent extends ConsumerWidget {
   final DateRangeParams params;
@@ -10,11 +11,11 @@ class MonthlyKeyMetricsComponent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final paginationState = ref.watch(paginationProvider);
     final keyMetricsState = ref.watch(keyMetricsProvider(params));
 
     return keyMetricsState.when(
       data: (keyMetrics) {
+        logger.info('keyMetrics: ${keyMetrics.monthlyData?.length}');
         if (keyMetrics.monthlyData == null) {
           return const Center(child: Text('暂无数据'));
         }
@@ -30,17 +31,9 @@ class MonthlyKeyMetricsComponent extends ConsumerWidget {
               });
 
         // 计算当前页的月份范围
-        final start =
-            paginationState.currentPage * paginationState.itemsPerPage;
-        final end =
-            (start + paginationState.itemsPerPage < sortedMonthlyData.length)
-            ? start + paginationState.itemsPerPage
-            : sortedMonthlyData.length;
-
-        final pageEntries = sortedMonthlyData.sublist(start, end);
 
         return Column(
-          children: pageEntries.map((monthlyData) {
+          children: sortedMonthlyData.map((monthlyData) {
             return _buildMonthlyCard(monthlyData);
           }).toList(),
         );
@@ -67,28 +60,28 @@ class MonthlyKeyMetricsComponent extends ConsumerWidget {
             Wrap(
               children: [
                 _buildStatCard(
-                  '总人数',
+                  '总人次',
                   monthlyData.employeeCount.toString(),
                   Icons.people,
                 ),
                 _buildStatCard(
                   '工资总额',
-                  '¥${monthlyData.totalSalary.toStringAsFixed(2)}',
+                  '${monthlyData.totalSalary.toStringAsFixed(2)}元',
                   Icons.account_balance_wallet,
                 ),
                 _buildStatCard(
                   '平均工资',
-                  '¥${monthlyData.averageSalary.toStringAsFixed(2)}',
+                  '${monthlyData.averageSalary.toStringAsFixed(2)}元',
                   Icons.trending_up,
                 ),
                 _buildStatCard(
                   '最高工资',
-                  '¥${monthlyData.highestSalary.toStringAsFixed(2)}',
+                  '${monthlyData.highestSalary.toStringAsFixed(2)}元',
                   Icons.arrow_upward,
                 ),
                 _buildStatCard(
                   '最低工资',
-                  '¥${monthlyData.lowestSalary.toStringAsFixed(2)}',
+                  '${monthlyData.lowestSalary.toStringAsFixed(2)}元',
                   Icons.arrow_downward,
                 ),
               ],

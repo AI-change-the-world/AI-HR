@@ -2,7 +2,7 @@ name: salary_report
 description: "A new Flutter project."
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.0+1
+version: 0.0.1
 
 environment:
   sdk: ^3.9.0
@@ -35,6 +35,8 @@ dependencies:
   loading_indicator: ^3.1.1
   open_file: ^3.5.10
 
+  intl: any
+  package_info_plus: ^9.0.0
 dev_dependencies:
   build_runner: ^2.4.13
   flutter_test:
@@ -61,6 +63,8 @@ flutter:
     - assets/salary_report_template_multi_month.docx
     - assets/salary_report_template_quarterly.docx
     - assets/salary_report_template_annual.docx
+    - assets/salary_report_template_multi_year.docx
+    - assets/salary_report_template_multi_quarter.docx
 
 icons_launcher:
   image_path: "../../aihr-icon.png"

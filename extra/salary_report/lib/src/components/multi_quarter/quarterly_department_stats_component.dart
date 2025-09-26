@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/providers/multi_quarter_analysis_provider.dart';
-import 'package:salary_report/src/isar/data_analysis_service.dart';
 
 class QuarterlyDepartmentStatsComponent extends ConsumerWidget {
   final QuarterRangeParams params;
@@ -76,7 +76,7 @@ class QuarterlyDepartmentStatsComponent extends ConsumerWidget {
                 ),
                 Expanded(
                   child: Text(
-                    '人数',
+                    '发薪人次',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -105,16 +105,16 @@ class QuarterlyDepartmentStatsComponent extends ConsumerWidget {
                     Expanded(child: Text(stat.employeeCount.toString())),
                     Expanded(
                       child: Text(
-                        '¥${stat.averageNetSalary.toStringAsFixed(2)}',
+                        '${stat.averageNetSalary.toStringAsFixed(2)}元',
                       ),
                     ),
                     Expanded(
-                      child: Text('¥${stat.totalNetSalary.toStringAsFixed(2)}'),
+                      child: Text('${stat.totalNetSalary.toStringAsFixed(2)}元'),
                     ),
                   ],
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),

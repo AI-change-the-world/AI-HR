@@ -1,8 +1,7 @@
-import 'dart:async';
 import 'package:riverpod/riverpod.dart';
-import 'package:salary_report/src/common/logger.dart';
-import 'package:salary_report/src/isar/data_analysis_service.dart';
+import 'package:salary_report/src/services/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart';
+import 'package:salary_report/src/services/global_analysis_models.dart';
 
 // 季度范围参数
 class QuarterRangeParams {
@@ -237,12 +236,23 @@ final coreDataProvider =
       params,
     ) async {
       final dataService = DataAnalysisService(IsarDatabase());
-      return await dataService.getMultiQuarterComparisonData(
+      final result = await dataService.getMultiQuarterComparisonData(
         params.startYear,
         params.startQuarter,
         params.endYear,
         params.endQuarter,
       );
+
+      if (result != null) {
+        final map = await dataService.getMonthlySummaryMap(
+          params.startYear,
+          params.startQuarter,
+          params.endYear,
+          params.endQuarter,
+        );
+        result.monthlySummary = map;
+      }
+      return result;
     });
 
 // 考勤统计核心数据提供者 - 独立获取考勤数据
@@ -285,7 +295,7 @@ final coreAttendanceDataProvider =
           attendanceStats.addAll(monthAttendance);
         }
 
-        final quarterKey = '$year-Q${quarter}';
+        final quarterKey = '$year-Q$quarter';
         attendanceData[quarterKey] = attendanceStats;
       }
 

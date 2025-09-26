@@ -1,8 +1,9 @@
-import 'dart:async';
 import 'package:riverpod/riverpod.dart';
 import 'package:salary_report/src/common/logger.dart';
-import 'package:salary_report/src/isar/data_analysis_service.dart';
+
+import 'package:salary_report/src/services/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart';
+import 'package:salary_report/src/services/global_analysis_models.dart';
 
 // 多月分析数据模型 - 拆分成独立的状态
 class MultiMonthAnalysisState {
@@ -207,6 +208,20 @@ final coreDataProvider =
         params.endYear,
         params.endMonth,
       );
+
+      if (comparisonData != null) {
+        logger.info(
+          '获取多月对比数据成功, 总计 ${comparisonData.monthlyComparisons.length} 个月数据',
+        );
+        final monthlySummary = await dataService.getMonthlySummaryMap(
+          params.startYear,
+          params.startMonth,
+          params.endYear,
+          params.endMonth,
+        );
+        comparisonData.monthlySummary = monthlySummary;
+      }
+
       return comparisonData;
     });
 
@@ -352,6 +367,7 @@ final chartDataProvider =
     });
 
 // 分页状态模型
+@Deprecated("弃用")
 class PaginationState {
   final int currentPage;
   final int itemsPerPage;
@@ -366,12 +382,7 @@ class PaginationState {
   }
 }
 
-// 分页状态提供者
-final paginationProvider =
-    NotifierProvider<PaginationNotifier, PaginationState>(
-      PaginationNotifier.new,
-    );
-
+@Deprecated("弃用")
 class PaginationNotifier extends Notifier<PaginationState> {
   @override
   PaginationState build() {

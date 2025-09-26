@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/providers/multi_month_analysis_provider.dart';
-import 'package:salary_report/src/isar/data_analysis_service.dart';
 
 class MonthlyLeaveRatioStatsComponent extends ConsumerWidget {
   final DateRangeParams params;
@@ -10,7 +10,6 @@ class MonthlyLeaveRatioStatsComponent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final paginationState = ref.watch(paginationProvider);
     final leaveRatioStatsState = ref.watch(leaveRatioStatsProvider(params));
 
     return leaveRatioStatsState.when(
@@ -29,18 +28,8 @@ class MonthlyLeaveRatioStatsComponent extends ConsumerWidget {
                 return a.month.compareTo(b.month);
               });
 
-        // 计算当前页的月份范围
-        final start =
-            paginationState.currentPage * paginationState.itemsPerPage;
-        final end =
-            (start + paginationState.itemsPerPage < sortedMonthlyData.length)
-            ? start + paginationState.itemsPerPage
-            : sortedMonthlyData.length;
-
-        final pageEntries = sortedMonthlyData.sublist(start, end);
-
         return Column(
-          children: pageEntries.map((monthlyData) {
+          children: sortedMonthlyData.map((monthlyData) {
             return _buildLeaveRatioStatsCard(monthlyData);
           }).toList(),
         );

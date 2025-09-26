@@ -1,5 +1,5 @@
 import 'package:riverpod/riverpod.dart';
-import 'package:salary_report/src/isar/ai_salary_service.dart';
+import 'package:salary_report/src/services/ai_salary_service.dart';
 import 'package:salary_report/src/isar/database.dart';
 import '../components/smart_time_picker.dart';
 

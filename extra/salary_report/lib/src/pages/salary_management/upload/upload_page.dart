@@ -44,6 +44,7 @@ class _UploadPageState extends ConsumerState<UploadPage>
   late Animation<Offset> _chatSlideAnimation;
 
   bool _showAIChat = false;
+  bool _isAIProcessing = false; // 添加AI处理状态
   final TextEditingController _chatController = TextEditingController();
   final List<ChatMessage> _chatMessages = [];
   final ScrollController _chatScrollController = ScrollController();
@@ -133,6 +134,7 @@ class _UploadPageState extends ConsumerState<UploadPage>
           timestamp: DateTime.now(),
         ),
       );
+      _isAIProcessing = true; // 设置AI处理状态为true
     });
 
     // 使用AI薪资服务处理用户查询
@@ -150,6 +152,7 @@ class _UploadPageState extends ConsumerState<UploadPage>
               timestamp: DateTime.now(),
             ),
           );
+          _isAIProcessing = false; // 设置AI处理状态为false
         });
 
         _scrollToBottom();
@@ -995,14 +998,30 @@ class _UploadPageState extends ConsumerState<UploadPage>
                           ),
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: IconButton(
-                          onPressed: _sendMessage,
-                          icon: const Icon(
-                            Icons.send_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
+                        child: _isAIProcessing
+                            ? const Padding(
+                                padding: EdgeInsets.all(8.0),
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : IconButton(
+                                onPressed: _isAIProcessing
+                                    ? null
+                                    : _sendMessage,
+                                icon: const Icon(
+                                  Icons.send_rounded,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
                       ),
                     ],
                   ),

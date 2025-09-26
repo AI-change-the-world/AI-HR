@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/providers/multi_quarter_analysis_provider.dart';
-import 'package:salary_report/src/isar/data_analysis_service.dart';
 
 class QuarterlyLeaveRatioStatsComponent extends ConsumerWidget {
   final QuarterRangeParams params;

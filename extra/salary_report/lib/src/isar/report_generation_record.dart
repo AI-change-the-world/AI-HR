@@ -9,4 +9,9 @@ class ReportGenerationRecord {
   late String savePath;
   bool isDeleted = false;
   late DateTime createdAt = DateTime.now();
+
+  @enumerated
+  ReportSaveFormat reportSaveFormat = ReportSaveFormat.docx;
 }
+
+enum ReportSaveFormat { docx, image }

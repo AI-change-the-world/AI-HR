@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:salary_report/src/providers/multi_month_analysis_provider.dart';
-import 'package:salary_report/src/isar/data_analysis_service.dart';
 import 'package:salary_report/src/components/attendance_pagination.dart';
 
 class MonthlyAttendanceStatsComponent extends ConsumerWidget {
@@ -11,7 +10,6 @@ class MonthlyAttendanceStatsComponent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final paginationState = ref.watch(paginationProvider);
     final attendanceStatsState = ref.watch(attendanceStatsProvider(params));
 
     return attendanceStatsState.when(
@@ -38,18 +36,8 @@ class MonthlyAttendanceStatsComponent extends ConsumerWidget {
             return aMonth.compareTo(bMonth);
           });
 
-        // 计算当前页的月份范围
-        final start =
-            paginationState.currentPage * paginationState.itemsPerPage;
-        final end =
-            (start + paginationState.itemsPerPage < sortedMonthKeys.length)
-            ? start + paginationState.itemsPerPage
-            : sortedMonthKeys.length;
-
-        final pageMonthKeys = sortedMonthKeys.sublist(start, end);
-
         return Column(
-          children: pageMonthKeys.map((monthKey) {
+          children: sortedMonthKeys.map((monthKey) {
             final attendanceStatsList =
                 attendanceStats.attendanceData![monthKey] ?? [];
 
@@ -66,7 +54,7 @@ class MonthlyAttendanceStatsComponent extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${year}年${month}月考勤统计',
+                      '$year年$month月考勤统计',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

@@ -3,8 +3,10 @@
 
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
+import 'api/auth_api.dart';
 import 'api/salary_api.dart';
 import 'api/simple.dart';
+import 'auth/auth_ai.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'frb_generated.dart';
@@ -68,7 +70,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => -2102929849;
+  int get rustContentHash => -400437944;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -79,6 +81,10 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 }
 
 abstract class RustLibApi extends BaseApi {
+  void crateApiSimpleBeep();
+
+  AiInfo? crateApiAuthApiDecrypt({required String secretStr});
+
   Future<(String, SalarySummary?)> crateApiSalaryApiGetCaculateResult({
     required String filePath,
   });
@@ -97,6 +103,51 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   });
 
   @override
+  void crateApiSimpleBeep() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 1)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiSimpleBeepConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSimpleBeepConstMeta =>
+      const TaskConstMeta(debugName: "beep", argNames: []);
+
+  @override
+  AiInfo? crateApiAuthApiDecrypt({required String secretStr}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(secretStr, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 2)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_opt_box_autoadd_ai_info,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiAuthApiDecryptConstMeta,
+        argValues: [secretStr],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAuthApiDecryptConstMeta =>
+      const TaskConstMeta(debugName: "decrypt", argNames: ["secretStr"]);
+
+  @override
   Future<(String, SalarySummary?)> crateApiSalaryApiGetCaculateResult({
     required String filePath,
   }) {
@@ -108,7 +159,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 1,
+            funcId: 3,
             port: port_,
           );
         },
@@ -137,7 +188,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(name, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 2)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 4)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -162,7 +213,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 3,
+            funcId: 5,
             port: port_,
           );
         },
@@ -197,9 +248,35 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  AiInfo dco_decode_ai_info(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return AiInfo(
+      baseUrl: dco_decode_String(arr[0]),
+      apiKey: dco_decode_String(arr[1]),
+      modelName: dco_decode_String(arr[2]),
+      expiredTime: dco_decode_i_64(arr[3]),
+    );
+  }
+
+  @protected
+  AiInfo dco_decode_box_autoadd_ai_info(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_ai_info(raw);
+  }
+
+  @protected
   SalarySummary dco_decode_box_autoadd_salary_summary(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_salary_summary(raw);
+  }
+
+  @protected
+  PlatformInt64 dco_decode_i_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dcoDecodeI64(raw);
   }
 
   @protected
@@ -218,6 +295,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   List<SalaryRecord> dco_decode_list_salary_record(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_salary_record).toList();
+  }
+
+  @protected
+  AiInfo? dco_decode_opt_box_autoadd_ai_info(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_ai_info(raw);
   }
 
   @protected
@@ -359,11 +442,38 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  AiInfo sse_decode_ai_info(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_baseUrl = sse_decode_String(deserializer);
+    var var_apiKey = sse_decode_String(deserializer);
+    var var_modelName = sse_decode_String(deserializer);
+    var var_expiredTime = sse_decode_i_64(deserializer);
+    return AiInfo(
+      baseUrl: var_baseUrl,
+      apiKey: var_apiKey,
+      modelName: var_modelName,
+      expiredTime: var_expiredTime,
+    );
+  }
+
+  @protected
+  AiInfo sse_decode_box_autoadd_ai_info(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_ai_info(deserializer));
+  }
+
+  @protected
   SalarySummary sse_decode_box_autoadd_salary_summary(
     SseDeserializer deserializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_salary_summary(deserializer));
+  }
+
+  @protected
+  PlatformInt64 sse_decode_i_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getPlatformInt64();
   }
 
   @protected
@@ -399,6 +509,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       ans_.add(sse_decode_salary_record(deserializer));
     }
     return ans_;
+  }
+
+  @protected
+  AiInfo? sse_decode_opt_box_autoadd_ai_info(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_ai_info(deserializer));
+    } else {
+      return null;
+    }
   }
 
   @protected
@@ -608,12 +729,33 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_ai_info(AiInfo self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.baseUrl, serializer);
+    sse_encode_String(self.apiKey, serializer);
+    sse_encode_String(self.modelName, serializer);
+    sse_encode_i_64(self.expiredTime, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_ai_info(AiInfo self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_ai_info(self, serializer);
+  }
+
+  @protected
   void sse_encode_box_autoadd_salary_summary(
     SalarySummary self,
     SseSerializer serializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_salary_summary(self, serializer);
+  }
+
+  @protected
+  void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putPlatformInt64(self);
   }
 
   @protected
@@ -647,6 +789,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_i_32(self.length, serializer);
     for (final item in self) {
       sse_encode_salary_record(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_ai_info(
+    AiInfo? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_ai_info(self, serializer);
     }
   }
 

@@ -28,8 +28,14 @@ const ReportGenerationRecordSchema = CollectionSchema(
       name: r'isDeleted',
       type: IsarType.bool,
     ),
-    r'savePath': PropertySchema(
+    r'reportSaveFormat': PropertySchema(
       id: 2,
+      name: r'reportSaveFormat',
+      type: IsarType.byte,
+      enumMap: _ReportGenerationRecordreportSaveFormatEnumValueMap,
+    ),
+    r'savePath': PropertySchema(
+      id: 3,
       name: r'savePath',
       type: IsarType.string,
     ),
@@ -68,7 +74,8 @@ void _reportGenerationRecordSerialize(
 ) {
   writer.writeDateTime(offsets[0], object.createdAt);
   writer.writeBool(offsets[1], object.isDeleted);
-  writer.writeString(offsets[2], object.savePath);
+  writer.writeByte(offsets[2], object.reportSaveFormat.index);
+  writer.writeString(offsets[3], object.savePath);
 }
 
 ReportGenerationRecord _reportGenerationRecordDeserialize(
@@ -81,7 +88,12 @@ ReportGenerationRecord _reportGenerationRecordDeserialize(
   object.createdAt = reader.readDateTime(offsets[0]);
   object.id = id;
   object.isDeleted = reader.readBool(offsets[1]);
-  object.savePath = reader.readString(offsets[2]);
+  object.reportSaveFormat =
+      _ReportGenerationRecordreportSaveFormatValueEnumMap[reader.readByteOrNull(
+        offsets[2],
+      )] ??
+      ReportSaveFormat.docx;
+  object.savePath = reader.readString(offsets[3]);
   return object;
 }
 
@@ -97,11 +109,25 @@ P _reportGenerationRecordDeserializeProp<P>(
     case 1:
       return (reader.readBool(offset)) as P;
     case 2:
+      return (_ReportGenerationRecordreportSaveFormatValueEnumMap[reader
+                  .readByteOrNull(offset)] ??
+              ReportSaveFormat.docx)
+          as P;
+    case 3:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
 }
+
+const _ReportGenerationRecordreportSaveFormatEnumValueMap = {
+  'docx': 0,
+  'image': 1,
+};
+const _ReportGenerationRecordreportSaveFormatValueEnumMap = {
+  0: ReportSaveFormat.docx,
+  1: ReportSaveFormat.image,
+};
 
 Id _reportGenerationRecordGetId(ReportGenerationRecord object) {
   return object.id;
@@ -393,6 +419,77 @@ extension ReportGenerationRecordQueryFilter
     ReportGenerationRecord,
     QAfterFilterCondition
   >
+  reportSaveFormatEqualTo(ReportSaveFormat value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'reportSaveFormat', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<
+    ReportGenerationRecord,
+    ReportGenerationRecord,
+    QAfterFilterCondition
+  >
+  reportSaveFormatGreaterThan(ReportSaveFormat value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'reportSaveFormat',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    ReportGenerationRecord,
+    ReportGenerationRecord,
+    QAfterFilterCondition
+  >
+  reportSaveFormatLessThan(ReportSaveFormat value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'reportSaveFormat',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    ReportGenerationRecord,
+    ReportGenerationRecord,
+    QAfterFilterCondition
+  >
+  reportSaveFormatBetween(
+    ReportSaveFormat lower,
+    ReportSaveFormat upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'reportSaveFormat',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    ReportGenerationRecord,
+    ReportGenerationRecord,
+    QAfterFilterCondition
+  >
   savePathEqualTo(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -617,6 +714,20 @@ extension ReportGenerationRecordQuerySortBy
   }
 
   QueryBuilder<ReportGenerationRecord, ReportGenerationRecord, QAfterSortBy>
+  sortByReportSaveFormat() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reportSaveFormat', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ReportGenerationRecord, ReportGenerationRecord, QAfterSortBy>
+  sortByReportSaveFormatDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reportSaveFormat', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ReportGenerationRecord, ReportGenerationRecord, QAfterSortBy>
   sortBySavePath() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'savePath', Sort.asc);
@@ -681,6 +792,20 @@ extension ReportGenerationRecordQuerySortThenBy
   }
 
   QueryBuilder<ReportGenerationRecord, ReportGenerationRecord, QAfterSortBy>
+  thenByReportSaveFormat() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reportSaveFormat', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ReportGenerationRecord, ReportGenerationRecord, QAfterSortBy>
+  thenByReportSaveFormatDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reportSaveFormat', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ReportGenerationRecord, ReportGenerationRecord, QAfterSortBy>
   thenBySavePath() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'savePath', Sort.asc);
@@ -708,6 +833,13 @@ extension ReportGenerationRecordQueryWhereDistinct
   distinctByIsDeleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<ReportGenerationRecord, ReportGenerationRecord, QDistinct>
+  distinctByReportSaveFormat() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'reportSaveFormat');
     });
   }
 
@@ -743,6 +875,13 @@ extension ReportGenerationRecordQueryProperty
   isDeletedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<ReportGenerationRecord, ReportSaveFormat, QQueryOperations>
+  reportSaveFormatProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'reportSaveFormat');
     });
   }
 

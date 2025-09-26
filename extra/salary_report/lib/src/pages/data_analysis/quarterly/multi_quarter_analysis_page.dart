@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:salary_report/src/common/logger.dart';
-import 'package:salary_report/src/isar/data_analysis_service.dart';
-import 'package:salary_report/src/pages/visualization/report/salary_report_generator.dart';
-import 'package:salary_report/src/pages/visualization/report/report_types.dart';
-import 'package:toastification/toastification.dart';
-import 'package:salary_report/src/components/salary_charts.dart';
+import 'package:salary_report/src/isar/report_generation_record.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:salary_report/src/providers/multi_quarter_analysis_provider.dart';
 import 'package:salary_report/src/components/multi_quarter/quarterly_key_metrics_component.dart';
 import 'package:salary_report/src/components/multi_quarter/quarterly_department_stats_component.dart';
 import 'package:salary_report/src/components/multi_quarter/quarterly_attendance_stats_component.dart';
-import 'package:salary_report/src/components/multi_quarter/quarterly_leave_ratio_stats_component.dart';
 import 'package:salary_report/src/components/multi_quarter/department_changes_component.dart';
+import 'package:salary_report/src/common/scroll_screenshot.dart'; // 添加截图导入
+import 'package:salary_report/src/common/toast.dart'; // 添加Toast导入
+import 'package:salary_report/src/rust/api/simple.dart';
+import 'package:toastification/toastification.dart';
+import 'package:salary_report/src/services/report_service.dart';
+import 'package:salary_report/src/components/salary_charts.dart';
+import 'package:salary_report/src/services/enhanced_report_generator_factory.dart';
+import 'package:salary_report/src/services/report_types.dart';
+import 'package:salary_report/src/services/global_analysis_models.dart';
 
 // 多季度分析页面
 class MultiQuarterAnalysisPage extends ConsumerStatefulWidget {
@@ -40,6 +44,11 @@ class _MultiQuarterAnalysisPageState
   bool _isGeneratingReport = false;
   late QuarterRangeParams _quarterRangeParams;
 
+  // 添加截图相关变量
+  final GlobalKey repaintKey = GlobalKey();
+  final ScrollController controller = ScrollController();
+  late ScrollableStitcher screenshotUtil;
+
   @override
   void initState() {
     super.initState();
@@ -49,6 +58,22 @@ class _MultiQuarterAnalysisPageState
       endYear: widget.endYear,
       endQuarter: widget.endQuarter,
     );
+    // 初始化截图工具
+    screenshotUtil = ScrollableStitcher(
+      repaintBoundaryKey: repaintKey,
+      scrollController: controller,
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // 截图并保存
+      ToastUtils.info(context, title: "当前，多季度报告模块正在开发中，部分功能尚不稳定，请见谅。");
+    });
+  }
+
+  @override
+  void dispose() {
+    controller.dispose(); // 释放滚动控制器
+    super.dispose();
   }
 
   /// 生成工资报告
@@ -64,7 +89,9 @@ class _MultiQuarterAnalysisPageState
       final startTime = DateTime(widget.year, startMonth);
       final endTime = DateTime(widget.endYear, endMonth);
 
-      final generator = SalaryReportGenerator();
+      final generator = EnhancedReportGeneratorFactory.createGenerator(
+        ReportType.multiQuarter,
+      );
 
       // 获取分析数据
       final keyMetricsState = ref.read(keyMetricsProvider(_quarterRangeParams));
@@ -82,6 +109,53 @@ class _MultiQuarterAnalysisPageState
       );
       final chartDataState = ref.read(chartDataProvider(_quarterRangeParams));
 
+      // 获取部门统计数据
+      List<DepartmentSalaryStats> departmentStats = [];
+      if (departmentStatsState is AsyncData &&
+          departmentStatsState.value?.quarterlyData != null) {
+        // 合并所有季度的部门统计数据
+        final departmentStatsMap = <String, DepartmentSalaryStats>{};
+
+        for (var quarterlyData in departmentStatsState.value!.quarterlyData!) {
+          quarterlyData.departmentStats.forEach((deptName, stat) {
+            if (departmentStatsMap.containsKey(deptName)) {
+              final existingStat = departmentStatsMap[deptName]!;
+              departmentStatsMap[deptName] = DepartmentSalaryStats(
+                department: deptName,
+                employeeCount: existingStat.employeeCount + stat.employeeCount,
+                totalNetSalary:
+                    existingStat.totalNetSalary + stat.totalNetSalary,
+                averageNetSalary:
+                    (existingStat.totalNetSalary + stat.totalNetSalary) /
+                    (existingStat.employeeCount + stat.employeeCount),
+                year: stat.year,
+                month: stat.month,
+                maxSalary: stat.maxSalary > existingStat.maxSalary
+                    ? stat.maxSalary
+                    : existingStat.maxSalary,
+                minSalary: stat.minSalary < existingStat.minSalary
+                    ? stat.minSalary
+                    : existingStat.minSalary,
+              );
+            } else {
+              departmentStatsMap[deptName] = stat;
+            }
+          });
+        }
+
+        departmentStats = departmentStatsMap.values.toList();
+      }
+
+      // 获取考勤统计数据
+      List<AttendanceStats> attendanceStats = [];
+      if (attendanceStatsState is AsyncData &&
+          attendanceStatsState.value?.attendanceData != null) {
+        // 合并所有季度的考勤统计数据
+        attendanceStatsState.value!.attendanceData!.forEach((quarter, stats) {
+          attendanceStats.addAll(stats);
+        });
+      }
+
       final analysisData = _prepareAnalysisData(
         keyMetricsState,
         departmentStatsState,
@@ -91,16 +165,22 @@ class _MultiQuarterAnalysisPageState
         chartDataState,
       );
 
-      final reportPath = await generator.generateReport(
+      analysisData['salarySummary'] = ref
+          .read(coreDataProvider(_quarterRangeParams))
+          .value!
+          .monthlySummary;
+
+      final reportPath = await generator.generateEnhancedReport(
         previewContainerKey: _chartContainerKey,
-        departmentStats: [],
+        departmentStats: departmentStats,
         analysisData: analysisData,
-        endTime: endTime,
+        attendanceStats: attendanceStats,
+        previousMonthData: null, // 多季度报告不需要上期数据
         year: widget.year,
         month: widget.quarter,
         isMultiMonth: true,
         startTime: startTime,
-        reportType: ReportType.multiQuarter, // 明确指定报告类型
+        endTime: endTime,
       );
 
       if (mounted) {
@@ -130,6 +210,7 @@ class _MultiQuarterAnalysisPageState
           _isGeneratingReport = false;
         });
       }
+      beep();
     }
   }
 
@@ -143,10 +224,12 @@ class _MultiQuarterAnalysisPageState
     AsyncValue<ChartDataState> chartDataState,
   ) {
     // 计算整体统计数据
-    int totalEmployees = 0;
+    int totalEmployees = 0; // 总人次（不去重）
+    int totalUniqueEmployees = 0; // 总人数（去重）
     double totalSalary = 0;
     double highestSalary = 0;
     double lowestSalary = double.infinity;
+    final Set<String> uniqueEmployeeIds = <String>{}; // 用于去重统计员工数
 
     // 从关键指标状态中获取数据
     if (keyMetricsState is AsyncData &&
@@ -155,17 +238,25 @@ class _MultiQuarterAnalysisPageState
         totalEmployees += quarterlyData.employeeCount;
         totalSalary += quarterlyData.totalSalary;
 
-        quarterlyData.departmentStats.forEach((dept, stat) {
-          if (stat.averageNetSalary > highestSalary) {
-            highestSalary = stat.averageNetSalary;
-          }
+        // 累加去重后的员工数
+        for (var worker in quarterlyData.workers) {
+          final employeeId = '${worker.name}_${worker.department}';
+          uniqueEmployeeIds.add(employeeId);
+        }
 
-          if (stat.averageNetSalary < lowestSalary) {
-            lowestSalary = stat.averageNetSalary;
-          }
-        });
+        // 使用季度数据中的最高最低工资字段
+        if (quarterlyData.highestSalary > highestSalary) {
+          highestSalary = quarterlyData.highestSalary;
+        }
+
+        if (quarterlyData.lowestSalary < lowestSalary) {
+          lowestSalary = quarterlyData.lowestSalary;
+        }
       }
     }
+
+    // 设置去重员工总数
+    totalUniqueEmployees = uniqueEmployeeIds.length;
 
     if (lowestSalary == double.infinity) {
       lowestSalary = 0;
@@ -173,14 +264,46 @@ class _MultiQuarterAnalysisPageState
 
     final averageSalary = totalEmployees > 0 ? totalSalary / totalEmployees : 0;
 
+    // 合并所有季度的薪资区间统计数据
+    final salaryRangeStatsMap = <String, SalaryRangeStats>{};
+    if (keyMetricsState is AsyncData &&
+        keyMetricsState.value?.quarterlyData != null) {
+      for (var quarterlyData in keyMetricsState.value!.quarterlyData!) {
+        quarterlyData.salaryRangeStats.forEach((rangeName, stat) {
+          if (salaryRangeStatsMap.containsKey(rangeName)) {
+            final existingStat = salaryRangeStatsMap[rangeName]!;
+            salaryRangeStatsMap[rangeName] = SalaryRangeStats(
+              range: rangeName,
+              employeeCount: existingStat.employeeCount + stat.employeeCount,
+              totalSalary: existingStat.totalSalary + stat.totalSalary,
+              averageSalary:
+                  (existingStat.totalSalary + stat.totalSalary) /
+                  (existingStat.employeeCount + stat.employeeCount),
+              year: stat.year,
+              month: stat.month,
+            );
+          } else {
+            salaryRangeStatsMap[rangeName] = stat;
+          }
+        });
+      }
+    }
+
+    // 将薪资区间统计数据转换为列表
+    final salaryRanges = salaryRangeStatsMap.values.toList();
+
     return {
-      'totalEmployees': totalEmployees,
+      'totalEmployees': totalEmployees, // 总人次
+      'totalUniqueEmployees': totalUniqueEmployees, // 总人数（去重）
       'totalSalary': totalSalary,
       'averageSalary': averageSalary,
       'highestSalary': highestSalary,
       'lowestSalary': lowestSalary,
+      'salaryRanges': salaryRanges, // 添加薪资区间数据
     };
   }
+
+  late ReportService reportService = ReportService();
 
   @override
   Widget build(BuildContext context) {
@@ -193,155 +316,203 @@ class _MultiQuarterAnalysisPageState
         title: Text(title),
         actions: [
           IconButton(
+            icon: const Icon(Icons.screenshot_monitor),
+            onPressed: () async {
+              final file = await screenshotUtil.captureAndSave(
+                filename: '${DateTime.now().millisecondsSinceEpoch}.png',
+                fromTop: true, // 若希望从顶部开始截，true；否则从当前滚动开始
+                overlap: 80.0, // dp 单位的重叠量
+                waitForPaint: 300, // 每次滚动等待渲染时间（毫秒）
+                cropLeft: 10,
+                cropRight: 10,
+                background: const Color.fromARGB(255, 147, 212, 243),
+              );
+              if (file != null) {
+                ToastUtils.success(null, title: "长截图保存到: ${file.path}");
+                reportService.addReportRecord(
+                  file.path,
+                  reportSaveFormat: ReportSaveFormat.image,
+                );
+                return;
+              }
+              ToastUtils.error(null, title: "长截图失败");
+            },
+            tooltip: '截图报告',
+          ),
+          IconButton(
             icon: const Icon(Icons.picture_as_pdf),
-            onPressed: _isGeneratingReport ? null : _generateSalaryReport,
-            tooltip: '生成报告',
+            // onPressed: _isGeneratingReport ? null : _generateSalaryReport,
+            onPressed: null,
+            tooltip: '多季度报告开发中',
           ),
           SizedBox(width: 8),
         ],
       ),
       body: Stack(
         children: [
-          SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 分页控制
-                  _buildPaginationControls(),
-
-                  const SizedBox(height: 24),
-
-                  // 每季度关键指标（分页显示）
-                  const Text(
-                    '每季度关键指标',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  QuarterlyKeyMetricsComponent(params: _quarterRangeParams),
-
-                  const SizedBox(height: 24),
-
-                  // 每季度部门统计（分页显示）
-                  const Text(
-                    '每季度部门统计',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  QuarterlyDepartmentStatsComponent(
-                    params: _quarterRangeParams,
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // 部门人数变化说明
-                  const Text(
-                    '部门人数变化说明',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  DepartmentChangesComponent(params: _quarterRangeParams),
-
-                  const SizedBox(height: 24),
-
-                  // 每季度考勤统计（分页显示）
-                  const Text(
-                    '每季度考勤统计',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  QuarterlyAttendanceStatsComponent(
-                    params: _quarterRangeParams,
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // 每季度请假比例统计（分页显示）
-                  const Text(
-                    '每季度请假比例统计',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  QuarterlyLeaveRatioStatsComponent(
-                    params: _quarterRangeParams,
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // 每季度人数变化趋势图
-                  const Text(
-                    '每季度人数变化趋势',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  Card(
-                    child: Container(
-                      height: 300,
-                      padding: const EdgeInsets.all(16.0),
-                      child: QuarterlyEmployeeCountChartComponent(
-                        params: _quarterRangeParams,
+          RepaintBoundary(
+            key: repaintKey,
+            child: SingleChildScrollView(
+              controller: controller,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 每季度关键指标（分页显示）
+                    const Text(
+                      '每季度关键指标',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 12),
+                    QuarterlyKeyMetricsComponent(params: _quarterRangeParams),
 
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                  // 每季度平均薪资变化趋势图
-                  const Text(
-                    '每季度平均薪资变化趋势',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  Card(
-                    child: Container(
-                      height: 300,
-                      padding: const EdgeInsets.all(16.0),
-                      child: QuarterlyAverageSalaryChartComponent(
-                        params: _quarterRangeParams,
+                    // 每季度部门统计（分页显示）
+                    const Text(
+                      '每季度部门统计',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 12),
+                    QuarterlyDepartmentStatsComponent(
+                      params: _quarterRangeParams,
+                    ),
 
-                  // 每季度总工资变化趋势图
-                  const Text(
-                    '每季度总工资变化趋势',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  Card(
-                    child: Container(
-                      height: 300,
-                      padding: const EdgeInsets.all(16.0),
-                      child: QuarterlyTotalSalaryChartComponent(
-                        params: _quarterRangeParams,
+                    const SizedBox(height: 24),
+
+                    // 部门人数变化说明
+                    const Text(
+                      '部门人数变化说明',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 12),
+                    DepartmentChangesComponent(params: _quarterRangeParams),
 
-                  // 各部门平均薪资趋势图
-                  const Text(
-                    '各部门平均薪资趋势',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
+                    const SizedBox(height: 24),
 
-                  Card(
-                    child: Container(
-                      height: 300,
-                      padding: const EdgeInsets.all(16.0),
-                      child: MultiQuarterDepartmentSalaryChartComponent(
-                        params: _quarterRangeParams,
+                    // 每季度考勤统计（分页显示）
+                    const Text(
+                      '每季度考勤统计',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 12),
+                    QuarterlyAttendanceStatsComponent(
+                      params: _quarterRangeParams,
+                    ),
 
-                  // 分页控制
-                  _buildPaginationControls(),
-                ],
+                    const SizedBox(height: 24),
+
+                    // // 每季度请假比例统计（分页显示）
+                    // const Text(
+                    //   '每季度请假比例统计',
+                    //   style: TextStyle(
+                    //     fontSize: 18,
+                    //     fontWeight: FontWeight.bold,
+                    //   ),
+                    // ),
+                    // const SizedBox(height: 12),
+                    // QuarterlyLeaveRatioStatsComponent(
+                    //   params: _quarterRangeParams,
+                    // ),
+
+                    // const SizedBox(height: 24),
+
+                    // 每季度人数变化趋势图
+                    const Text(
+                      '每季度人数变化趋势',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Card(
+                      child: Container(
+                        height: 300,
+                        padding: const EdgeInsets.all(16.0),
+                        child: QuarterlyEmployeeCountChartComponent(
+                          params: _quarterRangeParams,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // 每季度平均薪资变化趋势图
+                    const Text(
+                      '每季度平均薪资变化趋势',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Card(
+                      child: Container(
+                        height: 300,
+                        padding: const EdgeInsets.all(16.0),
+                        child: QuarterlyAverageSalaryChartComponent(
+                          params: _quarterRangeParams,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // 每季度总工资变化趋势图
+                    const Text(
+                      '每季度总工资变化趋势',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Card(
+                      child: Container(
+                        height: 300,
+                        padding: const EdgeInsets.all(16.0),
+                        child: QuarterlyTotalSalaryChartComponent(
+                          params: _quarterRangeParams,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // 各部门平均薪资趋势图
+                    const Text(
+                      '各部门平均薪资趋势',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    Card(
+                      child: Container(
+                        height: 300,
+                        padding: const EdgeInsets.all(16.0),
+                        child: MultiQuarterDepartmentSalaryChartComponent(
+                          params: _quarterRangeParams,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                ),
               ),
             ),
           ),
@@ -386,51 +557,6 @@ class _MultiQuarterAnalysisPageState
       ),
     );
   }
-
-  /// 构建分页控制组件
-  Widget _buildPaginationControls() {
-    final keyMetricsState = ref.watch(keyMetricsProvider(_quarterRangeParams));
-    final paginationState = ref.watch(paginationProvider);
-
-    return keyMetricsState.when(
-      data: (keyMetrics) {
-        if (keyMetrics.quarterlyData == null) {
-          return const SizedBox.shrink();
-        }
-
-        final totalQuarters = keyMetrics.quarterlyData!.length;
-        final totalPages = (totalQuarters / paginationState.itemsPerPage)
-            .ceil();
-
-        if (totalPages <= 1) {
-          return const SizedBox.shrink();
-        }
-
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.chevron_left),
-              onPressed: paginationState.currentPage > 0
-                  ? () => ref.read(paginationProvider.notifier).previousPage()
-                  : null,
-            ),
-            Text('${paginationState.currentPage + 1} / $totalPages'),
-            IconButton(
-              icon: const Icon(Icons.chevron_right),
-              onPressed: paginationState.currentPage < totalPages - 1
-                  ? () => ref
-                        .read(paginationProvider.notifier)
-                        .nextPage(totalPages)
-                  : null,
-            ),
-          ],
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (error, stackTrace) => const SizedBox.shrink(),
-    );
-  }
 }
 
 // 每季度人数变化趋势图组件
@@ -463,7 +589,8 @@ class QuarterlyEmployeeCountChartComponent extends ConsumerWidget {
             });
 
         for (var quarterlyComparison in sortedQuarterlyData) {
-          int totalEmployees = quarterlyComparison.employeeCount;
+          // 使用去重后的员工数量，而不是直接使用employeeCount
+          int totalEmployees = quarterlyComparison.totalEmployeeCount;
 
           employeeCountPerQuarter.add({
             'quarter':
