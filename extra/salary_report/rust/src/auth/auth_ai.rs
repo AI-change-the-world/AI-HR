@@ -14,6 +14,17 @@ pub struct AiInfo {
     pub base_url: String,
     pub api_key: String,
     pub model_name: String,
+    pub expired_time: i64,
+}
+
+impl AiInfo {
+    pub fn is_valid(&self) -> bool {
+        self.expired_time
+            > std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs() as i64
+    }
 }
 
 /// 将 AiInfo 实例加密成一个 Hex 字符串
@@ -93,6 +104,10 @@ pub fn decrypt_ai_info(encrypted_hex: &str) -> anyhow::Result<AiInfo> {
     // 6. 将 JSON 字符串反序列化为 AiInfo 结构体
     let info: AiInfo = serde_json::from_str(&decrypted_json)?;
 
+    if !info.is_valid() {
+        anyhow::bail!("Invalid AI info.");
+    }
+
     Ok(info)
 }
 
@@ -102,10 +117,19 @@ mod tests {
 
     #[test]
     fn test_encrypt_and_decrypt() -> anyhow::Result<()> {
+        let current_time = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64;
+
+        let thirty_days = 60 * 60 * 24 * 30;
+        let expired_time = current_time + thirty_days;
+
         let info = AiInfo {
             base_url: "https://api.openai.com/v1/chat/completions".to_string(),
             api_key: "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx".to_string(),
             model_name: "gpt-3.5-turbo".to_string(),
+            expired_time,
         };
 
         let encrypted = encrypt_ai_info(&info)?;
@@ -119,8 +143,17 @@ mod tests {
         anyhow::Ok(())
     }
 
+    // cargo test test_encrypt_and_decrypt_env -- --nocapture
     #[test]
     fn test_encrypt_and_decrypt_env() -> anyhow::Result<()> {
+        let current_time = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64;
+
+        let thirty_days = 60 * 60 * 24 * 30;
+        let expired_time = current_time + thirty_days;
+
         use std::env;
         let mut _api_key = String::new();
         if let Ok(temp) = env::var("OPENAI_API_KEY") {
@@ -133,6 +166,7 @@ mod tests {
             base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1".to_string(),
             api_key: _api_key,
             model_name: "qwen-max".to_string(),
+            expired_time,
         };
 
         let encrypted = encrypt_ai_info(&info)?;

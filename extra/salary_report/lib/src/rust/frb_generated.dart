@@ -251,12 +251,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   AiInfo dco_decode_ai_info(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 3)
-      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
     return AiInfo(
       baseUrl: dco_decode_String(arr[0]),
       apiKey: dco_decode_String(arr[1]),
       modelName: dco_decode_String(arr[2]),
+      expiredTime: dco_decode_i_64(arr[3]),
     );
   }
 
@@ -270,6 +271,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   SalarySummary dco_decode_box_autoadd_salary_summary(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_salary_summary(raw);
+  }
+
+  @protected
+  PlatformInt64 dco_decode_i_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dcoDecodeI64(raw);
   }
 
   @protected
@@ -440,10 +447,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_baseUrl = sse_decode_String(deserializer);
     var var_apiKey = sse_decode_String(deserializer);
     var var_modelName = sse_decode_String(deserializer);
+    var var_expiredTime = sse_decode_i_64(deserializer);
     return AiInfo(
       baseUrl: var_baseUrl,
       apiKey: var_apiKey,
       modelName: var_modelName,
+      expiredTime: var_expiredTime,
     );
   }
 
@@ -459,6 +468,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_salary_summary(deserializer));
+  }
+
+  @protected
+  PlatformInt64 sse_decode_i_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getPlatformInt64();
   }
 
   @protected
@@ -719,6 +734,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.baseUrl, serializer);
     sse_encode_String(self.apiKey, serializer);
     sse_encode_String(self.modelName, serializer);
+    sse_encode_i_64(self.expiredTime, serializer);
   }
 
   @protected
@@ -734,6 +750,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_salary_summary(self, serializer);
+  }
+
+  @protected
+  void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putPlatformInt64(self);
   }
 
   @protected

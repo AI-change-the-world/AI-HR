@@ -10,15 +10,21 @@ class AiInfo {
   final String baseUrl;
   final String apiKey;
   final String modelName;
+  final PlatformInt64 expiredTime;
 
   const AiInfo({
     required this.baseUrl,
     required this.apiKey,
     required this.modelName,
+    required this.expiredTime,
   });
 
   @override
-  int get hashCode => baseUrl.hashCode ^ apiKey.hashCode ^ modelName.hashCode;
+  int get hashCode =>
+      baseUrl.hashCode ^
+      apiKey.hashCode ^
+      modelName.hashCode ^
+      expiredTime.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -27,5 +33,6 @@ class AiInfo {
           runtimeType == other.runtimeType &&
           baseUrl == other.baseUrl &&
           apiKey == other.apiKey &&
-          modelName == other.modelName;
+          modelName == other.modelName &&
+          expiredTime == other.expiredTime;
 }

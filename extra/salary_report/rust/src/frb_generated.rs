@@ -230,11 +230,20 @@ impl SseDecode for crate::auth::auth_ai::AiInfo {
         let mut var_baseUrl = <String>::sse_decode(deserializer);
         let mut var_apiKey = <String>::sse_decode(deserializer);
         let mut var_modelName = <String>::sse_decode(deserializer);
+        let mut var_expiredTime = <i64>::sse_decode(deserializer);
         return crate::auth::auth_ai::AiInfo {
             base_url: var_baseUrl,
             api_key: var_apiKey,
             model_name: var_modelName,
+            expired_time: var_expiredTime,
         };
+    }
+}
+
+impl SseDecode for i64 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        deserializer.cursor.read_i64::<NativeEndian>().unwrap()
     }
 }
 
@@ -527,6 +536,7 @@ impl flutter_rust_bridge::IntoDart for crate::auth::auth_ai::AiInfo {
             self.base_url.into_into_dart().into_dart(),
             self.api_key.into_into_dart().into_dart(),
             self.model_name.into_into_dart().into_dart(),
+            self.expired_time.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -662,6 +672,14 @@ impl SseEncode for crate::auth::auth_ai::AiInfo {
         <String>::sse_encode(self.base_url, serializer);
         <String>::sse_encode(self.api_key, serializer);
         <String>::sse_encode(self.model_name, serializer);
+        <i64>::sse_encode(self.expired_time, serializer);
+    }
+}
+
+impl SseEncode for i64 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        serializer.cursor.write_i64::<NativeEndian>(self).unwrap();
     }
 }
 
