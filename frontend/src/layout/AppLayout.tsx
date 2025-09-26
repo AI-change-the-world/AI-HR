@@ -2,7 +2,7 @@ import { Layout, Menu, Button, Typography } from 'antd';
 import { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import defaultThumbnail from "../assets/aihr-icon.svg";
-import { AppstoreOutlined, ToolOutlined, TagOutlined, DashboardOutlined, GroupOutlined, PaperClipOutlined, MessageOutlined, BarChartOutlined } from '@ant-design/icons';
+import { AppstoreOutlined, ToolOutlined, TagOutlined, DashboardOutlined, GroupOutlined, PaperClipOutlined, MessageOutlined, BarChartOutlined, ProjectOutlined, TrophyOutlined, TeamOutlined } from '@ant-design/icons';
 import AIChatPanel from '../modules/common/components/AIChatPanel';
 
 const { Header, Sider, Content } = Layout;
@@ -25,8 +25,9 @@ export default function AppLayout() {
         if (path.includes('/resume-management')) return 'resume-management';
         if (path.includes('/jd-management')) return 'jd-management';
         if (path.includes('/okr')) return 'okr';
-        if (path.includes('/chart-test')) return 'chart-test';
-        if (path.includes('/chart-api-test')) return 'chart-api-test';
+        if (path.includes('/task-management')) return 'task-management';
+        if (path.includes('/capability-management')) return 'capability-management';
+ 
         return 'dashboard'; // 默认选中项
     };
 
@@ -127,21 +128,23 @@ export default function AppLayout() {
                                 className: 'mx-2 mb-1 rounded-lg hover:bg-primary-50 transition-all duration-200'
                             },
                             {
-                                key: 'chart-test',
-                                label: <span className="font-medium">图表测试</span>,
-                                onClick: () => navigate('/chart-test'),
-                                icon: <BarChartOutlined className="text-primary-600" />,
+                                key: 'task-management',
+                                label: <span className="font-medium">任务管理</span>,
+                                onClick: () => navigate('/task-management'),
+                                icon: <ProjectOutlined className="text-primary-600" />,
                                 className: 'mx-2 mb-1 rounded-lg hover:bg-primary-50 transition-all duration-200'
-                            },
-                            {
-                                key: 'chart-api-test',
-                                label: <span className="font-medium">图表API测试</span>,
-                                onClick: () => navigate('/chart-api-test'),
-                                icon: <BarChartOutlined className="text-primary-600" />,
+                             },
+                             {
+                                key: 'capability-management',
+                                label: <span className="font-medium">能力管理</span>,
+                                onClick: () => navigate('/capability-management'),
+                                icon: <TrophyOutlined className="text-primary-600" />,
                                 className: 'mx-2 mb-1 rounded-lg hover:bg-primary-50 transition-all duration-200'
-                            },
-                        ]}
-                    />
+                             },
+
+ 
+                         ]}
+                     />
                 </Sider>
 
                 <Content

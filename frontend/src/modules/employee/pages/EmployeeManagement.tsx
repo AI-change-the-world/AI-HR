@@ -1,62 +1,175 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Table, Space, Typography } from 'antd';
-import { PlusOutlined, UploadOutlined } from '@ant-design/icons';
+import { Button, Table, Space, Typography, Tag, Drawer, Form, Input, Select, Rate } from 'antd';
+import { PlusOutlined, UploadOutlined, TrophyOutlined } from '@ant-design/icons';
 import { Employee } from '../types';
 import { getEmployees } from '../api';
 
 const { Title } = Typography;
+const { Option } = Select;
+
+interface EmployeeSkill {
+    id: number;
+    employee_id: number;
+    skill_name: string;
+    skill_category: string;
+    level: string;
+    assessment_date?: string;
+    assessor_name?: string;
+    source?: 'jd' | 'manual';
+    jd_id?: number;
+}
 
 const EmployeeManagement: React.FC = () => {
     const [employees, setEmployees] = useState<Employee[]>([]);
+    const [employeeSkills, setEmployeeSkills] = useState<EmployeeSkill[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [showSkillDrawer, setShowSkillDrawer] = useState(false);
+    const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+
+    // Mock数据
+    const mockEmployees: Employee[] = [
+        {
+            id: 1,
+            name: '张三',
+            department: '技术部',
+            position: '前端工程师',
+            email: 'zhangsan@example.com',
+            phone: '13800138001'
+        },
+        {
+            id: 2,
+            name: '李四',
+            department: '技术部',
+            position: '后端工程师',
+            email: 'lisi@example.com',
+            phone: '13800138002'
+        },
+        {
+            id: 3,
+            name: '王五',
+            department: '人事部',
+            position: 'HR专员',
+            email: 'wangwu@example.com',
+            phone: '13800138003'
+        }
+    ];
+
+    const mockEmployeeSkills: EmployeeSkill[] = [
+        {
+            id: 1,
+            employee_id: 1,
+            skill_name: "React",
+            skill_category: "technical",
+            level: "A",
+            assessment_date: "2025-01-15",
+            assessor_name: "李经理",
+            source: "jd",
+            jd_id: 1
+        },
+        {
+            id: 2,
+            employee_id: 1,
+            skill_name: "Python",
+            skill_category: "technical",
+            level: "B",
+            assessment_date: "2025-01-10",
+            assessor_name: "王总监",
+            source: "jd",
+            jd_id: 2
+        },
+        {
+            id: 3,
+            employee_id: 2,
+            skill_name: "UI设计",
+            skill_category: "design",
+            level: "S",
+            assessment_date: "2025-01-12",
+            assessor_name: "设计总监",
+            source: "jd",
+            jd_id: 3
+        },
+        {
+            id: 4,
+            employee_id: 3,
+            skill_name: "项目管理",
+            skill_category: "management",
+            level: "A",
+            assessment_date: "2025-01-08",
+            assessor_name: "HR经理",
+            source: "manual"
+        }
+    ];
 
     useEffect(() => {
-        // 模拟从后端获取员工数据
-        const fetchEmployees = async () => {
+        // 模拟从后端获取数据
+        const fetchData = async () => {
             try {
-                // 这里应该是实际的API调用
-                // const response = await fetch('/api/employees');
-                // const data = await response.json();
-
-                // 模拟数据
-                const mockData: Employee[] = [
-                    {
-                        id: 1,
-                        name: '张三',
-                        department: '技术部',
-                        position: '前端工程师',
-                        email: 'zhangsan@example.com',
-                        phone: '13800138001'
-                    },
-                    {
-                        id: 2,
-                        name: '李四',
-                        department: '技术部',
-                        position: '后端工程师',
-                        email: 'lisi@example.com',
-                        phone: '13800138002'
-                    },
-                    {
-                        id: 3,
-                        name: '王五',
-                        department: '人事部',
-                        position: 'HR专员',
-                        email: 'wangwu@example.com',
-                        phone: '13800138003'
-                    }
-                ];
-
-                setEmployees(mockData);
-                setLoading(false);
+                setTimeout(() => {
+                    setEmployees(mockEmployees);
+                    setEmployeeSkills(mockEmployeeSkills);
+                    setLoading(false);
+                }, 1000);
             } catch (err) {
-                setError('获取员工数据失败');
+                setError('获取数据失败');
                 setLoading(false);
             }
         };
 
-        fetchEmployees();
+        fetchData();
     }, []);
+
+    const getCategoryText = (category: string) => {
+        const texts = {
+            technical: '技术技能',
+            management: '管理技能',
+            communication: '沟通技能',
+            design: '设计技能',
+            business: '业务技能',
+            language: '语言技能',
+            other: '其他技能'
+        };
+        return texts[category as keyof typeof texts] || category;
+    };
+
+    const getCategoryColor = (category: string) => {
+        const colors = {
+            technical: 'blue',
+            management: 'purple',
+            communication: 'green',
+            design: 'pink',
+            business: 'orange',
+            language: 'cyan',
+            other: 'default'
+        };
+        return colors[category as keyof typeof colors] || 'default';
+    };
+
+    const getLevelColor = (level: string) => {
+        const colors = {
+            S: 'red',
+            A: 'orange',
+            B: 'gold',
+            C: 'blue',
+            D: 'default'
+        };
+        return colors[level as keyof typeof colors] || 'default';
+    };
+
+    const getLevelText = (level: string) => {
+        const texts = {
+            S: 'S级 - 专家级',
+            A: 'A级 - 高级',
+            B: 'B级 - 熟练级',
+            C: 'C级 - 入门级',
+            D: 'D级 - 初学者'
+        };
+        return texts[level as keyof typeof texts] || level;
+    };
+
+    const getEmployeeSkills = (employeeId: number) => {
+        return employeeSkills.filter(skill => skill.employee_id === employeeId);
+    };
 
     const columns = [
         {
@@ -90,16 +203,32 @@ const EmployeeManagement: React.FC = () => {
             key: 'phone',
         },
         {
+            title: '技能数量',
+            key: 'skillCount',
+            render: (record: Employee) => {
+                const skillCount = getEmployeeSkills(record.id).length;
+                return (
+                    <Tag color={skillCount > 3 ? 'green' : skillCount > 1 ? 'orange' : 'default'}>
+                        {skillCount} 个技能
+                    </Tag>
+                );
+            },
+        },
+        {
             title: '操作',
             key: 'action',
             render: (_: any, record: Employee) => (
                 <Space size="small">
                     <Button
                         type="link"
-                        style={{ color: '#64748b' }} // Tailwind gray-500
-                        className="hover:!text-gray-700 p-0 h-auto font-medium"
+                        icon={<TrophyOutlined />}
+                        onClick={() => {
+                            setSelectedEmployee(record);
+                            setShowSkillDrawer(true);
+                        }}
+                        className="text-primary-600 hover:text-primary-700 p-0 h-auto font-medium"
                     >
-                        汇报管理
+                        技能管理
                     </Button>
                     <Button
                         type="link"
@@ -110,7 +239,7 @@ const EmployeeManagement: React.FC = () => {
                     <Button
                         type="link"
                         danger
-                        className="text-danger-500 hover:text-danger-600 p-0 h-auto font-medium"
+                        className="p-0 h-auto font-medium"
                     >
                         删除
                     </Button>
@@ -134,8 +263,8 @@ const EmployeeManagement: React.FC = () => {
         return (
             <div className="flex items-center justify-center h-64">
                 <div className="text-center">
-                    <div className="text-danger-500 text-xl mb-2">⚠️</div>
-                    <p className="text-danger-600">错误: {error}</p>
+                    <div className="text-red-500 text-xl mb-2">⚠️</div>
+                    <p className="text-red-600">错误: {error}</p>
                 </div>
             </div>
         );
@@ -150,7 +279,7 @@ const EmployeeManagement: React.FC = () => {
                 <div className="w-24 h-1 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full mb-4"></div>
             </div>
 
-            <div className="mb-6">
+            <div className="flex justify-end mb-6">
                 <Space size="middle">
                     <Button
                         type="primary"
@@ -168,20 +297,89 @@ const EmployeeManagement: React.FC = () => {
                 </Space>
             </div>
 
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-soft border border-white/50 overflow-hidden hover:shadow-medium transition-all duration-300">
-                <Table
-                    dataSource={employees}
-                    columns={columns}
-                    pagination={{
-                        pageSize: 10,
-                        showSizeChanger: true,
-                        showQuickJumper: true,
-                        showTotal: (total, range) => `第 ${range[0]}-${range[1]} 条，共 ${total} 条数据`,
-                        className: 'px-4 py-2'
-                    }}
-                    className="[&_.ant-table-thead>tr>th]:bg-gray-50/80 [&_.ant-table-thead>tr>th]:border-gray-200/50 [&_.ant-table-tbody>tr:hover>td]:bg-primary-50/30 [&_.ant-table-tbody>tr>td]:border-gray-200/30"
-                />
-            </div>
+            <Table
+                dataSource={employees}
+                columns={columns}
+                loading={loading}
+                rowKey="id"
+                className="shadow-soft rounded-lg overflow-hidden"
+                pagination={{
+                    pageSize: 10,
+                    showSizeChanger: true,
+                    showQuickJumper: true,
+                    showTotal: (total, range) => `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
+                }}
+            />
+
+            {/* 员工技能管理抽屉 */}
+            <Drawer
+                title={`${selectedEmployee?.name} - 技能管理`}
+                placement="right"
+                onClose={() => setShowSkillDrawer(false)}
+                open={showSkillDrawer}
+                width={600}
+            >
+                {selectedEmployee && (
+                    <div>
+                        <div className="mb-6">
+                            <Button
+                                type="primary"
+                                icon={<PlusOutlined />}
+                                className="bg-gradient-to-r from-primary-500 to-primary-600 border-none"
+                            >
+                                评估技能
+                            </Button>
+                        </div>
+
+                        <div className="space-y-4">
+                            {getEmployeeSkills(selectedEmployee.id).map((skill) => (
+                                <div key={skill.id} className="bg-gray-50 p-4 rounded-lg">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h4 className="font-medium text-gray-900">{skill.skill_name}</h4>
+                                        <Tag color={getLevelColor(skill.level)}>
+                                            {getLevelText(skill.level)}
+                                        </Tag>
+                                    </div>
+                                    <div className="flex items-center justify-between text-sm text-gray-500">
+                                        <Tag color={getCategoryColor(skill.skill_category)}>
+                                            {getCategoryText(skill.skill_category)}
+                                        </Tag>
+                                        <span>评估人: {skill.assessor_name}</span>
+                                    </div>
+                                    {skill.assessment_date && (
+                                        <div className="text-xs text-gray-400 mt-1">
+                                            评估时间: {new Date(skill.assessment_date).toLocaleDateString('zh-CN')}
+                                        </div>
+                                    )}
+                                    {skill.source && (
+                                        <div className="mt-2">
+                                            <Tag color={skill.source === 'jd' ? 'blue' : 'green'} >
+                                                {skill.source === 'jd' ? `来源: JD (ID: ${skill.jd_id})` : '来源: 手动创建'}
+                                            </Tag>
+                                        </div>
+                                    )}
+                                    <div className="mt-2 flex justify-end">
+                                        <Space size="small">
+                                            <Button type="link" size="small" className="text-primary-600">
+                                                重新评估
+                                            </Button>
+                                            <Button type="link" size="small" danger>
+                                                删除
+                                            </Button>
+                                        </Space>
+                                    </div>
+                                </div>
+                            ))}
+
+                            {getEmployeeSkills(selectedEmployee.id).length === 0 && (
+                                <div className="text-center py-8 text-gray-500">
+                                    该员工暂无技能记录
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </Drawer>
         </div>
     );
 };

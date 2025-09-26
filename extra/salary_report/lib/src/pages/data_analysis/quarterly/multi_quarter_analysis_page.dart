@@ -16,6 +16,7 @@ import 'package:salary_report/src/services/report_service.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
 import 'package:salary_report/src/services/enhanced_report_generator_factory.dart';
 import 'package:salary_report/src/services/report_types.dart';
+import 'package:salary_report/src/services/multi_quarter/enhanced_multi_quarter_report_generator.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 
 // 多季度分析页面
@@ -76,7 +77,7 @@ class _MultiQuarterAnalysisPageState
     super.dispose();
   }
 
-  /// 生成工资报告
+  /// 生成工资报告 - 使用统一的多期间报告生成器
   Future<void> _generateSalaryReport() async {
     try {
       setState(() {
@@ -89,93 +90,26 @@ class _MultiQuarterAnalysisPageState
       final startTime = DateTime(widget.year, startMonth);
       final endTime = DateTime(widget.endYear, endMonth);
 
-      final generator = EnhancedReportGeneratorFactory.createGenerator(
-        ReportType.multiQuarter,
-      );
+      // 使用统一的多季度报告生成器
+      final generator = EnhancedMultiQuarterReportGenerator();
 
-      // 获取分析数据
-      final keyMetricsState = ref.read(keyMetricsProvider(_quarterRangeParams));
-      final departmentStatsState = ref.read(
-        departmentStatsProvider(_quarterRangeParams),
-      );
-      final attendanceStatsState = ref.read(
-        attendanceStatsProvider(_quarterRangeParams),
-      );
-      final leaveRatioStatsState = ref.read(
-        leaveRatioStatsProvider(_quarterRangeParams),
-      );
-      final departmentChangesState = ref.read(
-        departmentChangesProvider(_quarterRangeParams),
-      );
-      final chartDataState = ref.read(chartDataProvider(_quarterRangeParams));
-
-      // 获取部门统计数据
-      List<DepartmentSalaryStats> departmentStats = [];
-      if (departmentStatsState is AsyncData &&
-          departmentStatsState.value?.quarterlyData != null) {
-        // 合并所有季度的部门统计数据
-        final departmentStatsMap = <String, DepartmentSalaryStats>{};
-
-        for (var quarterlyData in departmentStatsState.value!.quarterlyData!) {
-          quarterlyData.departmentStats.forEach((deptName, stat) {
-            if (departmentStatsMap.containsKey(deptName)) {
-              final existingStat = departmentStatsMap[deptName]!;
-              departmentStatsMap[deptName] = DepartmentSalaryStats(
-                department: deptName,
-                employeeCount: existingStat.employeeCount + stat.employeeCount,
-                totalNetSalary:
-                    existingStat.totalNetSalary + stat.totalNetSalary,
-                averageNetSalary:
-                    (existingStat.totalNetSalary + stat.totalNetSalary) /
-                    (existingStat.employeeCount + stat.employeeCount),
-                year: stat.year,
-                month: stat.month,
-                maxSalary: stat.maxSalary > existingStat.maxSalary
-                    ? stat.maxSalary
-                    : existingStat.maxSalary,
-                minSalary: stat.minSalary < existingStat.minSalary
-                    ? stat.minSalary
-                    : existingStat.minSalary,
-              );
-            } else {
-              departmentStatsMap[deptName] = stat;
-            }
-          });
-        }
-
-        departmentStats = departmentStatsMap.values.toList();
-      }
-
-      // 获取考勤统计数据
-      List<AttendanceStats> attendanceStats = [];
-      if (attendanceStatsState is AsyncData &&
-          attendanceStatsState.value?.attendanceData != null) {
-        // 合并所有季度的考勤统计数据
-        attendanceStatsState.value!.attendanceData!.forEach((quarter, stats) {
-          attendanceStats.addAll(stats);
-        });
-      }
-
-      final analysisData = _prepareAnalysisData(
-        keyMetricsState,
-        departmentStatsState,
-        attendanceStatsState,
-        leaveRatioStatsState,
-        departmentChangesState,
-        chartDataState,
-      );
-
-      analysisData['salarySummary'] = ref
-          .read(coreDataProvider(_quarterRangeParams))
-          .value!
-          .monthlySummary;
+      // 基础分析数据，让生成器自己处理数据聚合
+      final analysisData = <String, dynamic>{
+        'reportType': 'multiQuarter',
+        'periodInfo': {
+          'startYear': widget.year,
+          'startQuarter': widget.quarter,
+          'endYear': widget.endYear,
+          'endQuarter': widget.endQuarter,
+        },
+      };
 
       final reportPath = await generator.generateEnhancedReport(
         previewContainerKey: _chartContainerKey,
-        departmentStats: departmentStats,
+        departmentStats: [],
         analysisData: analysisData,
-        attendanceStats: attendanceStats,
-        previousMonthData: null, // 多季度报告不需要上期数据
+        attendanceStats: [],
+        previousMonthData: null,
         year: widget.year,
         month: widget.quarter,
         isMultiMonth: true,
@@ -212,95 +146,6 @@ class _MultiQuarterAnalysisPageState
       }
       beep();
     }
-  }
-
-  /// 准备分析数据用于报告生成
-  Map<String, dynamic> _prepareAnalysisData(
-    AsyncValue<KeyMetricsState> keyMetricsState,
-    AsyncValue<DepartmentStatsState> departmentStatsState,
-    AsyncValue<AttendanceStatsState> attendanceStatsState,
-    AsyncValue<LeaveRatioStatsState> leaveRatioStatsState,
-    AsyncValue<DepartmentChangesState> departmentChangesState,
-    AsyncValue<ChartDataState> chartDataState,
-  ) {
-    // 计算整体统计数据
-    int totalEmployees = 0; // 总人次（不去重）
-    int totalUniqueEmployees = 0; // 总人数（去重）
-    double totalSalary = 0;
-    double highestSalary = 0;
-    double lowestSalary = double.infinity;
-    final Set<String> uniqueEmployeeIds = <String>{}; // 用于去重统计员工数
-
-    // 从关键指标状态中获取数据
-    if (keyMetricsState is AsyncData &&
-        keyMetricsState.value?.quarterlyData != null) {
-      for (var quarterlyData in keyMetricsState.value!.quarterlyData!) {
-        totalEmployees += quarterlyData.employeeCount;
-        totalSalary += quarterlyData.totalSalary;
-
-        // 累加去重后的员工数
-        for (var worker in quarterlyData.workers) {
-          final employeeId = '${worker.name}_${worker.department}';
-          uniqueEmployeeIds.add(employeeId);
-        }
-
-        // 使用季度数据中的最高最低工资字段
-        if (quarterlyData.highestSalary > highestSalary) {
-          highestSalary = quarterlyData.highestSalary;
-        }
-
-        if (quarterlyData.lowestSalary < lowestSalary) {
-          lowestSalary = quarterlyData.lowestSalary;
-        }
-      }
-    }
-
-    // 设置去重员工总数
-    totalUniqueEmployees = uniqueEmployeeIds.length;
-
-    if (lowestSalary == double.infinity) {
-      lowestSalary = 0;
-    }
-
-    final averageSalary = totalEmployees > 0 ? totalSalary / totalEmployees : 0;
-
-    // 合并所有季度的薪资区间统计数据
-    final salaryRangeStatsMap = <String, SalaryRangeStats>{};
-    if (keyMetricsState is AsyncData &&
-        keyMetricsState.value?.quarterlyData != null) {
-      for (var quarterlyData in keyMetricsState.value!.quarterlyData!) {
-        quarterlyData.salaryRangeStats.forEach((rangeName, stat) {
-          if (salaryRangeStatsMap.containsKey(rangeName)) {
-            final existingStat = salaryRangeStatsMap[rangeName]!;
-            salaryRangeStatsMap[rangeName] = SalaryRangeStats(
-              range: rangeName,
-              employeeCount: existingStat.employeeCount + stat.employeeCount,
-              totalSalary: existingStat.totalSalary + stat.totalSalary,
-              averageSalary:
-                  (existingStat.totalSalary + stat.totalSalary) /
-                  (existingStat.employeeCount + stat.employeeCount),
-              year: stat.year,
-              month: stat.month,
-            );
-          } else {
-            salaryRangeStatsMap[rangeName] = stat;
-          }
-        });
-      }
-    }
-
-    // 将薪资区间统计数据转换为列表
-    final salaryRanges = salaryRangeStatsMap.values.toList();
-
-    return {
-      'totalEmployees': totalEmployees, // 总人次
-      'totalUniqueEmployees': totalUniqueEmployees, // 总人数（去重）
-      'totalSalary': totalSalary,
-      'averageSalary': averageSalary,
-      'highestSalary': highestSalary,
-      'lowestSalary': lowestSalary,
-      'salaryRanges': salaryRanges, // 添加薪资区间数据
-    };
   }
 
   late ReportService reportService = ReportService();

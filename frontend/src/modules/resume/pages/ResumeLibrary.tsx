@@ -103,7 +103,7 @@ const ResumeLibrary: React.FC = () => {
                 <div className="w-24 h-1 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full mb-4"></div>
             </div>
 
-            <div className="mb-6">
+            <div className="mb-6 flex justify-end">
                 <Space>
                     <Upload beforeUpload={handleFileUpload}>
                         <Button

@@ -6,6 +6,8 @@ import DepartmentManagement from '../modules/department/pages/DepartmentManageme
 import ResumeLibrary from '../modules/resume/pages/ResumeLibrary';
 import JDManagement from '../modules/jd/pages/JDManagement';
 import OKRManagement from '../modules/okr/pages/OKRManagement';
+import TaskManagement from '../modules/task/pages/TaskManagement';
+import CapabilityManagement from '../modules/capability/pages/CapabilityManagement';
 import Error from '../modules/common/pages/Error';
 
 
@@ -20,6 +22,8 @@ export const router = createBrowserRouter([
             { path: '/resume-management', element: <ResumeLibrary /> },
             { path: '/jd-management', element: <JDManagement /> },
             { path: '/okr', element: <OKRManagement /> },
+            { path: '/task-management', element: <TaskManagement /> },
+            { path: '/capability-management', element: <CapabilityManagement /> },
         ],
     },
     { path: '*', element: <Error /> },

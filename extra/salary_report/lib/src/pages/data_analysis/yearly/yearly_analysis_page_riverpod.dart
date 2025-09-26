@@ -11,6 +11,7 @@ import 'package:salary_report/src/rust/api/simple.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 import 'package:salary_report/src/services/enhanced_report_generator_factory.dart';
 import 'package:salary_report/src/services/report_types.dart';
+import 'package:salary_report/src/services/yearly/enhanced_yearly_report_generator.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:toastification/toastification.dart';
 import 'package:salary_report/src/components/monthly_detail_components.dart';
@@ -68,7 +69,7 @@ class _YearlyAnalysisPageRiverpodState
     super.dispose();
   }
 
-  /// 生成工资报告
+  /// 生成工资报告 - 使用统一的多期间报告生成器
   Future<void> _generateSalaryReport() async {
     try {
       setState(() {
@@ -81,51 +82,30 @@ class _YearlyAnalysisPageRiverpodState
           ? DateTime(widget.endYear!, 12)
           : DateTime(widget.year, 12);
 
-      final generator = EnhancedReportGeneratorFactory.createGenerator(
-        ReportType.singleYear,
-      );
+      // 使用统一的年度报告生成器
+      final generator = EnhancedYearlyReportGenerator();
 
-      // 获取分析数据
-      final coreData = await ref.read(
-        multi_month.coreDataProvider(_yearParams).future,
-      );
-      final departmentStats = await ref.read(
-        departmentStatsProvider(_yearParams).future,
-      );
-      final attendanceStats = await ref.read(
-        attendanceStatsProvider(_yearParams).future,
-      );
-      final previousYearState = await ref.read(
-        previousYearStateProvider(_yearParams).future,
-      );
-
-      // 准备年度分析数据，包含每月详细数据
-      final analysisData = await _prepareYearlyAnalysisData(
-        coreData,
-        departmentStats,
-        attendanceStats,
-        previousYearState,
-      );
+      // 基础分析数据，让生成器自己处理数据聚合
+      final analysisData = <String, dynamic>{
+        'reportType': widget.isMultiYear ? 'multiYear' : 'yearly',
+        'periodInfo': {
+          'year': widget.year,
+          'endYear': widget.endYear,
+          'isMultiYear': widget.isMultiYear,
+        },
+      };
 
       final reportPath = await generator.generateEnhancedReport(
         previewContainerKey: _chartContainerKey,
-        departmentStats:
-            departmentStats.monthlyData
-                ?.expand((month) => month.departmentStats.values)
-                .toList() ??
-            [],
+        departmentStats: [],
         analysisData: analysisData,
-        endTime: endTime,
+        attendanceStats: [],
+        previousMonthData: null,
         year: widget.year,
         month: 0, // 年度报告没有月份
         isMultiMonth: widget.isMultiYear,
         startTime: startTime,
-        attendanceStats:
-            attendanceStats.attendanceData?.values
-                .expand((list) => list)
-                .toList() ??
-            [],
-        previousMonthData: previousYearState.previousYearData,
+        endTime: endTime,
       );
 
       if (mounted) {
@@ -161,208 +141,6 @@ class _YearlyAnalysisPageRiverpodState
   }
 
   late ReportService reportService = ReportService();
-
-  /// 生成JSON格式的分析报告
-  Future<String> _generateJsonReport() async {
-    final coreData = await ref.read(
-      multi_month.coreDataProvider(_yearParams).future,
-    );
-    final departmentStats = await ref.read(
-      departmentStatsProvider(_yearParams).future,
-    );
-    final attendanceStats = await ref.read(
-      attendanceStatsProvider(_yearParams).future,
-    );
-    final previousYearState = await ref.read(
-      previousYearStateProvider(_yearParams).future,
-    );
-
-    return YearlyAnalysisJsonConverter.convertAnalysisDataToJson(
-      analysisData: <String, dynamic>{
-        'monthlyComparisons': coreData?.monthlyComparisons ?? [],
-        'startDate': coreData?.startDate,
-        'endDate': coreData?.endDate,
-        'monthlySummary': coreData?.monthlySummary ?? {},
-      },
-      departmentStats:
-          departmentStats.monthlyData
-              ?.expand((month) => month.departmentStats.values)
-              .toList() ??
-          [],
-      attendanceStats:
-          attendanceStats.attendanceData?.values
-              .expand((list) => list)
-              .toList() ??
-          [],
-      previousYearData: previousYearState.previousYearData,
-      year: widget.year,
-    );
-  }
-
-  /// 准备年度分析数据
-  Future<Map<String, dynamic>> _prepareYearlyAnalysisData(
-    MultiMonthComparisonData? coreData,
-    multi_month.DepartmentStatsState departmentStats,
-    multi_month.AttendanceStatsState attendanceStats,
-    PreviousYearState previousYearState,
-  ) async {
-    final analysisData = <String, dynamic>{
-      'monthlyComparisons': coreData?.monthlyComparisons ?? [],
-      'startDate': coreData?.startDate,
-      'endDate': coreData?.endDate,
-      'monthlySummary': coreData?.monthlySummary ?? {},
-    };
-
-    // 添加部门统计数据（如果有的话）
-    if (coreData?.monthlyComparisons != null) {
-      final departmentStatsPerMonth = <Map<String, dynamic>>[];
-      final aggregatedDepartmentStats = <String, Map<String, dynamic>>{};
-
-      for (var monthData in coreData!.monthlyComparisons) {
-        // 添加每月部门统计数据
-        departmentStatsPerMonth.add({
-          'year': monthData.year,
-          'month': monthData.month,
-          'departmentStats': monthData.departmentStats.values
-              .map(
-                (dept) => {
-                  'department': dept.department,
-                  'employeeCount': dept.employeeCount,
-                  'totalNetSalary': dept.totalNetSalary,
-                  'averageNetSalary': dept.averageNetSalary,
-                  'maxSalary': dept.maxSalary,
-                  'minSalary': dept.minSalary,
-                  'year': dept.year,
-                  'month': dept.month,
-                },
-              )
-              .toList(),
-        });
-
-        // 聚合部门统计数据
-        for (var dept in monthData.departmentStats.values) {
-          if (aggregatedDepartmentStats.containsKey(dept.department)) {
-            final existing = aggregatedDepartmentStats[dept.department]!;
-            existing['employeeCount'] =
-                (existing['employeeCount'] as int) + dept.employeeCount;
-            existing['totalNetSalary'] =
-                (existing['totalNetSalary'] as double) + dept.totalNetSalary;
-            existing['averageNetSalary'] =
-                (existing['totalNetSalary'] as double) /
-                (existing['employeeCount'] as int);
-            existing['maxSalary'] = math.max(
-              existing['maxSalary'] as double,
-              dept.maxSalary,
-            );
-            existing['minSalary'] = math.min(
-              existing['minSalary'] as double,
-              dept.minSalary,
-            );
-          } else {
-            aggregatedDepartmentStats[dept.department] = {
-              'department': dept.department,
-              'employeeCount': dept.employeeCount,
-              'totalNetSalary': dept.totalNetSalary,
-              'averageNetSalary': dept.averageNetSalary,
-              'maxSalary': dept.maxSalary,
-              'minSalary': dept.minSalary,
-              'year': dept.year,
-              'month': dept.month,
-            };
-          }
-        }
-      }
-
-      analysisData['departmentStatsPerMonth'] = departmentStatsPerMonth;
-      analysisData['departmentStats'] = aggregatedDepartmentStats.values
-          .toList();
-    }
-
-    // 添加每月员工数量、平均工资、总工资数据
-    if (coreData?.monthlyComparisons != null) {
-      final employeeCountPerMonth = <Map<String, dynamic>>[];
-      final averageSalaryPerMonth = <Map<String, dynamic>>[];
-      final totalSalaryPerMonth = <Map<String, dynamic>>[];
-
-      for (var monthData in coreData!.monthlyComparisons) {
-        employeeCountPerMonth.add({
-          'month': '${monthData.year}年${monthData.month}月',
-          'year': monthData.year,
-          'monthNum': monthData.month,
-          'employeeCount': monthData.employeeCount,
-        });
-
-        averageSalaryPerMonth.add({
-          'month': '${monthData.year}年${monthData.month}月',
-          'year': monthData.year,
-          'monthNum': monthData.month,
-          'averageSalary': monthData.averageSalary,
-        });
-
-        totalSalaryPerMonth.add({
-          'month': '${monthData.year}年${monthData.month}月',
-          'year': monthData.year,
-          'monthNum': monthData.month,
-          'totalSalary': monthData.totalSalary,
-        });
-      }
-
-      analysisData['employeeCountPerMonth'] = employeeCountPerMonth;
-      analysisData['averageSalaryPerMonth'] = averageSalaryPerMonth;
-      analysisData['totalSalaryPerMonth'] = totalSalaryPerMonth;
-    }
-
-    // 添加薪资结构数据（如果有的话）
-    if (coreData?.monthlySummary != null) {
-      analysisData['salarySummary'] = coreData!.monthlySummary;
-    }
-
-    // 添加上年度对比数据
-    if (previousYearState.previousYearData != null) {
-      analysisData['departmentYearOverYearData'] = [];
-      analysisData['positionYearOverYearData'] = [];
-    }
-
-    return analysisData;
-  }
-
-  /// 显示JSON报告
-  Future<void> _showJsonReport() async {
-    try {
-      final jsonReport = await _generateJsonReport();
-
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('JSON分析报告'),
-              content: SingleChildScrollView(child: Text(jsonReport)),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('关闭'),
-                ),
-              ],
-            );
-          },
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        toastification.show(
-          context: context,
-          title: const Text('生成JSON报告失败'),
-          description: Text('错误信息: $e'),
-          type: ToastificationType.error,
-          style: ToastificationStyle.flat,
-          autoCloseDuration: const Duration(seconds: 5),
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -442,12 +220,7 @@ class _YearlyAnalysisPageRiverpodState
             },
             tooltip: '截图报告',
           ),
-          if (kDebugMode)
-            IconButton(
-              icon: const Icon(Icons.code),
-              onPressed: _showJsonReport,
-              tooltip: '查看JSON报告',
-            ),
+
           SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),

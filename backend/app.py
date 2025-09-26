@@ -8,6 +8,10 @@ from modules.okr.router import router as okr_router
 from modules.resume.router import router as resume_router
 # 新增AI问答路由
 from modules.ai_qa.router import router as ai_qa_router
+# 新增任务管理路由
+from modules.task.router import router as task_router
+# 新增能力管理路由
+from modules.capability.router import router as capability_router
 
 app = FastAPI(
     title="AI HR 后端服务", description="AI HR 简历管理系统后端API", version="1.0.0"
@@ -30,6 +34,10 @@ app.include_router(jd_router)
 app.include_router(okr_router)
 # 包含AI问答路由
 app.include_router(ai_qa_router)
+# 包含任务管理路由
+app.include_router(task_router)
+# 包含能力管理路由
+app.include_router(capability_router)
 
 
 @app.get("/")
