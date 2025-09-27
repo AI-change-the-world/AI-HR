@@ -129,7 +129,7 @@ class DataAnalysisService {
   }
 
   // 季度分析委托给 QuarterlyAnalysisService
-  Future<MultiQuarterComparisonData?> getMultiQuarterComparisonData(
+  Future<MultiMonthComparisonData?> getMultiQuarterComparisonData(
     int startYear,
     int startQuarter,
     int endYear,
@@ -144,7 +144,7 @@ class DataAnalysisService {
   }
 
   // 年度分析委托给 YearlyAnalysisService
-  Future<MultiYearComparisonData?> getMultiYearComparisonData(
+  Future<MultiMonthComparisonData?> getMultiYearComparisonData(
     int startYear,
     int endYear,
   ) async {

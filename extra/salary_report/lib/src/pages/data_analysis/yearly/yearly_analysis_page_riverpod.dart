@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:loading_indicator/loading_indicator.dart';
@@ -9,17 +7,14 @@ import 'package:salary_report/src/isar/report_generation_record.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
 import 'package:salary_report/src/rust/api/simple.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
-import 'package:salary_report/src/services/enhanced_report_generator_factory.dart';
-import 'package:salary_report/src/services/report_types.dart';
 import 'package:salary_report/src/services/yearly/enhanced_yearly_report_generator.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:toastification/toastification.dart';
 import 'package:salary_report/src/components/monthly_detail_components.dart';
 import 'package:salary_report/src/common/scroll_screenshot.dart';
 import 'package:salary_report/src/common/toast.dart';
-import 'package:salary_report/src/components/time_unit_employee_changes_component.dart';
+import 'package:salary_report/src/components/monthly_employee_changes_component.dart';
 import 'package:salary_report/src/components/department_stats_component.dart';
-import 'package:salary_report/src/services/yearly/yearly_analysis_json_converter.dart';
 import 'package:salary_report/src/providers/yearly_analysis_provider.dart';
 import 'package:salary_report/src/providers/multi_month_analysis_provider.dart'
     as multi_month;
@@ -259,11 +254,6 @@ class _YearlyAnalysisPageRiverpodState
 
                     const SizedBox(height: 24),
 
-                    // 年度部门工资对比
-                    _buildDepartmentStatsSection(departmentStatsState),
-
-                    const SizedBox(height: 24),
-
                     // 按月部门工资对比
                     _buildMonthlyDepartmentStatsSection(departmentStatsState),
 
@@ -464,6 +454,7 @@ class _YearlyAnalysisPageRiverpodState
             .map(
               (month) => {
                 'month': month.month,
+                'year': month.year,
                 'employeeCount': month.employeeCount,
                 'newEmployees': <MinimalEmployeeInfo>[],
                 'resignedEmployees': <MinimalEmployeeInfo>[],
@@ -480,9 +471,7 @@ class _YearlyAnalysisPageRiverpodState
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            YearlyTimeUnitEmployeeChangesComponent(
-              yearlyChanges: monthlyChanges,
-            ),
+            MonthlyEmployeeChangesComponent(monthlyChanges: monthlyChanges),
           ],
         );
       },
@@ -535,31 +524,6 @@ class _YearlyAnalysisPageRiverpodState
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, _) => Center(child: Text('加载月度趋势数据失败: $error')),
-    );
-  }
-
-  // 构建部门统计部分
-  Widget _buildDepartmentStatsSection(
-    AsyncValue<multi_month.DepartmentStatsState> departmentStatsState,
-  ) {
-    return departmentStatsState.when(
-      data: (state) {
-        if (state.monthlyData == null || state.monthlyData!.isEmpty) {
-          return const Center(child: Text('暂无部门统计数据'));
-        }
-
-        // 从月度数据中提取部门统计
-        final departmentStats = state.monthlyData!
-            .expand((month) => month.departmentStats.values)
-            .toList();
-
-        return DepartmentStatsComponent(
-          departmentStats: departmentStats,
-          title: '年度部门工资对比',
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(child: Text('加载部门统计数据失败: $error')),
     );
   }
 

@@ -2,7 +2,6 @@
 // 提供统一的数据聚合和分析框架，供季度、多季度、年度、多年度报告继承
 
 import 'package:flutter/material.dart';
-import 'package:salary_report/src/common/ai_config.dart';
 import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/services/data_analysis_service.dart';
 import 'package:salary_report/src/isar/database.dart';
@@ -613,7 +612,7 @@ abstract class BaseMultiPeriodReportGenerator
 
     final structureFields = ['基本工资', '岗位工资', '绩效工资', '补贴工资', '饭补'];
 
-    structureFields.forEach((key) {
+    for (var key in structureFields) {
       if (salarySummary.containsKey(key)) {
         final fieldValue = salarySummary[key];
         double numValue = 0.0;
@@ -626,7 +625,7 @@ abstract class BaseMultiPeriodReportGenerator
 
         salaryStructureData.add({'category': key, 'value': numValue});
       }
-    });
+    }
 
     return salaryStructureData;
   }

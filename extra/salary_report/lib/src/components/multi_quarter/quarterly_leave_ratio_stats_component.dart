@@ -19,25 +19,36 @@ class QuarterlyLeaveRatioStatsComponent extends ConsumerWidget {
           return const Center(child: Text('暂无数据'));
         }
 
-        // 按时间排序季度数据
-        final sortedQuarterlyData =
-            List<QuarterlyComparisonData>.from(leaveRatioStats.quarterlyData!)
+        // 按时间排序月度数据，然后聚合为季度数据
+        final sortedMonthlyData =
+            List<MonthlyComparisonData>.from(leaveRatioStats.quarterlyData!)
               ..sort((a, b) {
                 if (a.year != b.year) {
                   return a.year.compareTo(b.year);
                 }
-                return a.quarter.compareTo(b.quarter);
+                return a.month.compareTo(b.month);
               });
+
+        // 将月度数据聚合为季度数据
+        final quarterlyAggregatedData = _aggregateMonthlyToQuarterly(
+          sortedMonthlyData,
+        );
 
         // 计算当前页的季度范围
         final start =
             paginationState.currentPage * paginationState.itemsPerPage;
         final end =
-            (start + paginationState.itemsPerPage < sortedQuarterlyData.length)
+            (start + paginationState.itemsPerPage <
+                quarterlyAggregatedData.length)
             ? start + paginationState.itemsPerPage
-            : sortedQuarterlyData.length;
+            : quarterlyAggregatedData.length;
 
-        final pageEntries = sortedQuarterlyData.sublist(start, end);
+        final pageEntries = quarterlyAggregatedData.sublist(
+          start,
+          quarterlyAggregatedData.length < end
+              ? quarterlyAggregatedData.length
+              : end,
+        );
 
         return Column(
           children: pageEntries.map((quarterlyData) {
@@ -50,19 +61,22 @@ class QuarterlyLeaveRatioStatsComponent extends ConsumerWidget {
     );
   }
 
-  Widget _buildLeaveRatioStatsCard(QuarterlyComparisonData quarterlyData) {
+  Widget _buildLeaveRatioStatsCard(Map<String, dynamic> quarterlyData) {
+    // 从聚合的季度数据中获取统计信息
+    final year = quarterlyData['year'] as int;
+    final quarter = quarterlyData['quarter'] as int;
+    final employeeCount = quarterlyData['employeeCount'] as int;
+    final departmentStats =
+        quarterlyData['departmentStats'] as Map<String, DepartmentSalaryStats>;
+
     // 计算总的病假和事假天数
     double totalSickLeave = 0;
     double totalLeave = 0;
-    int employeeCount = 0;
 
     // 遍历部门统计计算总的请假天数
-    quarterlyData.departmentStats.forEach((deptName, stat) {
-      // 这里需要从考勤数据中获取请假信息，暂时使用估算值
-      // 在实际应用中，应该从考勤统计数据中获取
+    departmentStats.forEach((deptName, stat) {
       totalSickLeave += stat.employeeCount * 0.5; // 估算每人0.5天病假
       totalLeave += stat.employeeCount * 0.3; // 估算每人0.3天事假
-      employeeCount += stat.employeeCount;
     });
 
     final averageSickLeave = employeeCount > 0
@@ -78,7 +92,7 @@ class QuarterlyLeaveRatioStatsComponent extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${quarterlyData.year}年第${quarterlyData.quarter}季度请假比例统计',
+              '$year年第$quarter季度请假比例统计',
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
@@ -130,5 +144,114 @@ class QuarterlyLeaveRatioStatsComponent extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// 将月度数据聚合为季度数据
+  List<Map<String, dynamic>> _aggregateMonthlyToQuarterly(
+    List<MonthlyComparisonData> monthlyData,
+  ) {
+    final Map<String, List<MonthlyComparisonData>> quarterlyGroups = {};
+
+    // 按季度分组月度数据
+    for (var monthData in monthlyData) {
+      final quarter = _getQuarter(monthData.month);
+      final quarterKey = '${monthData.year}-Q$quarter';
+
+      if (!quarterlyGroups.containsKey(quarterKey)) {
+        quarterlyGroups[quarterKey] = [];
+      }
+      quarterlyGroups[quarterKey]!.add(monthData);
+    }
+
+    // 将分组后的数据聚合为季度数据
+    return quarterlyGroups.entries
+        .map((entry) {
+          final quarterKey = entry.key;
+          final months = entry.value;
+
+          if (months.isEmpty) return null;
+
+          final year = months.first.year;
+          final quarter = _getQuarter(months.first.month);
+
+          // 聚合部门统计数据
+          final Map<String, DepartmentSalaryStats> aggregatedDepartmentStats =
+              {};
+          final Map<String, List<DepartmentSalaryStats>> deptMonthlyData = {};
+
+          // 收集所有月份的部门数据
+          for (var monthData in months) {
+            monthData.departmentStats.forEach((deptName, stat) {
+              if (!deptMonthlyData.containsKey(deptName)) {
+                deptMonthlyData[deptName] = [];
+              }
+              deptMonthlyData[deptName]!.add(stat);
+            });
+          }
+
+          // 聚合每个部门的季度数据
+          int totalEmployeeCount = 0;
+          deptMonthlyData.forEach((deptName, monthlyStats) {
+            double totalNetSalary = 0.0;
+            int maxEmployeeCount = 0;
+            double maxSalary = 0;
+            double minSalary = double.infinity;
+
+            for (var stat in monthlyStats) {
+              totalNetSalary += stat.totalNetSalary;
+              if (stat.employeeCount > maxEmployeeCount) {
+                maxEmployeeCount = stat.employeeCount;
+              }
+              if (stat.maxSalary > maxSalary) {
+                maxSalary = stat.maxSalary;
+              }
+              if (stat.minSalary < minSalary && stat.minSalary > 0) {
+                minSalary = stat.minSalary;
+              }
+            }
+
+            if (minSalary == double.infinity) {
+              minSalary = 0;
+            }
+
+            final averageNetSalary = maxEmployeeCount > 0
+                ? totalNetSalary / maxEmployeeCount
+                : 0.0;
+
+            aggregatedDepartmentStats[deptName] = DepartmentSalaryStats(
+              department: deptName,
+              totalNetSalary: totalNetSalary,
+              averageNetSalary: averageNetSalary,
+              employeeCount: maxEmployeeCount,
+              year: year,
+              month: months.first.month,
+              maxSalary: maxSalary,
+              minSalary: minSalary,
+            );
+
+            totalEmployeeCount += maxEmployeeCount;
+          });
+
+          return {
+            'year': year,
+            'quarter': quarter,
+            'employeeCount': totalEmployeeCount,
+            'departmentStats': aggregatedDepartmentStats,
+          };
+        })
+        .where((item) => item != null)
+        .cast<Map<String, dynamic>>()
+        .toList()
+      ..sort((a, b) {
+        if (a['year'] != b['year']) {
+          return (a['year'] as int).compareTo(b['year'] as int);
+        }
+        return (a['quarter'] as int).compareTo(b['quarter'] as int);
+      });
+  }
+
+  /// 根据月份计算季度
+  int _getQuarter(int month) {
+    return ((month - 1) ~/ 3) + 1;
   }
 }

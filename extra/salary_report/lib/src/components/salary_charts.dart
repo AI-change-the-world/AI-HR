@@ -547,6 +547,8 @@ class MultiYearDepartmentSalaryChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    logger.info('MultiYearDepartmentSalaryChart $departmentYearlyData');
+
     return SfCartesianChart(
       title: ChartTitle(text: '各部门年度工资趋势'),
       primaryXAxis: CategoryAxis(),

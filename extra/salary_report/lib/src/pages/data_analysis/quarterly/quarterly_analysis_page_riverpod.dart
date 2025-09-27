@@ -6,8 +6,6 @@ import 'package:salary_report/src/components/monthly_employee_changes_component.
 import 'package:salary_report/src/isar/report_generation_record.dart';
 
 import 'package:salary_report/src/components/attendance_pagination.dart';
-import 'package:salary_report/src/services/enhanced_report_generator_factory.dart';
-import 'package:salary_report/src/services/report_types.dart';
 import 'package:salary_report/src/services/quarterly/enhanced_quarterly_report_generator.dart';
 import 'package:salary_report/src/rust/api/simple.dart';
 import 'package:salary_report/src/services/report_service.dart';
@@ -19,7 +17,6 @@ import 'package:salary_report/src/components/single_quarter/quarterly_department
 import 'package:salary_report/src/providers/quarterly_analysis_provider.dart';
 import 'package:salary_report/src/providers/multi_month_analysis_provider.dart'
     as multi_month;
-import 'package:salary_report/src/services/global_analysis_models.dart';
 
 class QuarterlyAnalysisPageRiverpod extends ConsumerStatefulWidget {
   const QuarterlyAnalysisPageRiverpod({

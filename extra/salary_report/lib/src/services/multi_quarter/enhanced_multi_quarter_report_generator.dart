@@ -2,10 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:salary_report/src/common/ai_config.dart';
-import 'package:salary_report/src/services/data_analysis_service.dart';
-import 'package:salary_report/src/services/report_service.dart';
 import 'package:salary_report/src/services/multi_quarter/multi_quarter.dart';
-import 'package:salary_report/src/services/ai_summary_service.dart';
 import 'package:salary_report/src/services/base_multi_period_report_generator.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 
@@ -18,16 +15,11 @@ class EnhancedMultiQuarterReportGenerator
   EnhancedMultiQuarterReportGenerator({
     MultiQuarterChartGenerationService? chartService,
     MultiQuarterDocxWriterService? docxService,
-    DataAnalysisService? analysisService,
-    ReportService? reportService,
-    AISummaryService? aiSummaryService,
+    super.analysisService,
+    super.reportService,
+    super.aiSummaryService,
   }) : _chartService = chartService ?? MultiQuarterChartGenerationService(),
-       _docxService = docxService ?? MultiQuarterDocxWriterService(),
-       super(
-         analysisService: analysisService,
-         reportService: reportService,
-         aiSummaryService: aiSummaryService,
-       );
+       _docxService = docxService ?? MultiQuarterDocxWriterService();
 
   @override
   PeriodType get periodType => PeriodType.multiQuarter;
@@ -239,7 +231,7 @@ class EnhancedMultiQuarterReportGenerator
 
     final structureFields = ['基本工资', '岗位工资', '绩效工资', '补贴工资', '饭补'];
 
-    structureFields.forEach((key) {
+    for (var key in structureFields) {
       if (salarySummary.containsKey(key)) {
         final fieldValue = salarySummary[key];
         double numValue = 0.0;
@@ -252,7 +244,7 @@ class EnhancedMultiQuarterReportGenerator
 
         salaryStructureData.add({'category': key, 'value': numValue});
       }
-    });
+    }
 
     return salaryStructureData;
   }

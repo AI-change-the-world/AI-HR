@@ -19,27 +19,39 @@ class YearlyDepartmentChangesComponent extends ConsumerWidget {
         }
 
         final yearlyComparisons =
-            departmentChanges.comparisonData!.yearlyComparisons;
+            departmentChanges.comparisonData!.monthlyComparisons;
 
         if (yearlyComparisons.isEmpty) {
           return const Center(child: Text('暂无数据'));
         }
 
-        // 按年份排序
-        final sortedYearlyData =
-            List<YearlyComparisonData>.from(yearlyComparisons)..sort((a, b) {
-              return a.year.compareTo(b.year);
+        // 按时间排序月度数据
+        final sortedMonthlyData =
+            List<MonthlyComparisonData>.from(yearlyComparisons)..sort((a, b) {
+              if (a.year != b.year) {
+                return a.year.compareTo(b.year);
+              }
+              return a.month.compareTo(b.month);
             });
+
+        // 将月度数据聚合为年度数据
+        final yearlyAggregatedData = _aggregateMonthlyToYearly(
+          sortedMonthlyData,
+        );
 
         // 计算部门变化情况
         final departmentChangesMap = <String, List<int>>{};
 
-        // 初始化部门变化映射
-        for (var yearlyData in sortedYearlyData) {
-          yearlyData.departmentStats.forEach((deptName, stat) {
+        // 初始化部门变化映射（使用聚合后的年度数据）
+        for (var yearlyData in yearlyAggregatedData) {
+          final departmentStats =
+              yearlyData['departmentStats']
+                  as Map<String, DepartmentSalaryStats>;
+          departmentStats.forEach((deptName, stat) {
             if (!departmentChangesMap.containsKey(deptName)) {
               departmentChangesMap[deptName] = [];
             }
+            // 现在employeeCount已经是去重后的真实人数
             departmentChangesMap[deptName]!.add(stat.employeeCount);
           });
         }
@@ -422,22 +434,30 @@ class YearlyDepartmentChangesComponent extends ConsumerWidget {
 
   /// 计算员工入职和离职情况（总体）
   Map<String, Map<String, List<MinimalEmployeeInfo>>> _calculateEmployeeChanges(
-    MultiYearComparisonData comparisonData,
+    MultiMonthComparisonData comparisonData,
   ) {
     final Map<String, Map<String, List<MinimalEmployeeInfo>>> employeeChanges =
         {};
 
-    // 按时间顺序排列年份数据
-    final sortedYears =
-        List<YearlyComparisonData>.from(comparisonData.yearlyComparisons)
+    // 按时间排序月度数据
+    final sortedMonthly =
+        List<MonthlyComparisonData>.from(comparisonData.monthlyComparisons)
           ..sort((a, b) {
-            return a.year.compareTo(b.year);
+            if (a.year != b.year) {
+              return a.year.compareTo(b.year);
+            }
+            return a.month.compareTo(b.month);
           });
 
+    // 将月度数据聚合为年度数据，包含员工信息
+    final yearlyAggregatedData = _aggregateMonthlyToYearlyWithWorkers(
+      sortedMonthly,
+    );
+
     // 遍历每个年份，比较与前一个年份的员工变化
-    for (int i = 0; i < sortedYears.length; i++) {
-      final currentYear = sortedYears[i];
-      final yearKey = '${currentYear.year}';
+    for (int i = 0; i < yearlyAggregatedData.length; i++) {
+      final currentYear = yearlyAggregatedData[i];
+      final yearKey = '${currentYear['year']}';
 
       if (!employeeChanges.containsKey(yearKey)) {
         employeeChanges[yearKey] = {
@@ -448,9 +468,11 @@ class YearlyDepartmentChangesComponent extends ConsumerWidget {
 
       // 如果不是第一个年份，比较与前一个年份的员工变化
       if (i > 0) {
-        final previousYear = sortedYears[i - 1];
-        final currentWorkers = currentYear.workers;
-        final previousWorkers = previousYear.workers;
+        final previousYear = yearlyAggregatedData[i - 1];
+        final currentWorkers =
+            currentYear['workers'] as List<MinimalEmployeeInfo>;
+        final previousWorkers =
+            previousYear['workers'] as List<MinimalEmployeeInfo>;
 
         // 将员工列表转换为Set以提高查找效率
         final currentWorkerSet = currentWorkers.toSet();
@@ -476,21 +498,29 @@ class YearlyDepartmentChangesComponent extends ConsumerWidget {
 
   /// 计算按部门分组的员工变化情况（精细化到部门）
   Map<String, Map<String, Map<String, List<MinimalEmployeeInfo>>>>
-  _calculateDepartmentEmployeeChanges(MultiYearComparisonData comparisonData) {
+  _calculateDepartmentEmployeeChanges(MultiMonthComparisonData comparisonData) {
     final Map<String, Map<String, Map<String, List<MinimalEmployeeInfo>>>>
     departmentEmployeeChanges = {};
 
-    // 按时间顺序排列年份数据
-    final sortedYears =
-        List<YearlyComparisonData>.from(comparisonData.yearlyComparisons)
+    // 按时间排序月度数据
+    final sortedMonthly =
+        List<MonthlyComparisonData>.from(comparisonData.monthlyComparisons)
           ..sort((a, b) {
-            return a.year.compareTo(b.year);
+            if (a.year != b.year) {
+              return a.year.compareTo(b.year);
+            }
+            return a.month.compareTo(b.month);
           });
 
+    // 将月度数据聚合为年度数据，包含员工信息
+    final yearlyAggregatedData = _aggregateMonthlyToYearlyWithWorkers(
+      sortedMonthly,
+    );
+
     // 遍历每个年份，比较与前一个年份的员工变化（按部门分组）
-    for (int i = 0; i < sortedYears.length; i++) {
-      final currentYear = sortedYears[i];
-      final yearKey = '${currentYear.year}';
+    for (int i = 0; i < yearlyAggregatedData.length; i++) {
+      final currentYear = yearlyAggregatedData[i];
+      final yearKey = '${currentYear['year']}';
 
       if (!departmentEmployeeChanges.containsKey(yearKey)) {
         departmentEmployeeChanges[yearKey] = {};
@@ -498,14 +528,16 @@ class YearlyDepartmentChangesComponent extends ConsumerWidget {
 
       // 如果不是第一个年份，比较与前一个年份的员工变化
       if (i > 0) {
-        final previousYear = sortedYears[i - 1];
+        final previousYear = yearlyAggregatedData[i - 1];
 
         // 按部门分组当前年份和前一个年份的员工
         final currentWorkersByDept = <String, Set<MinimalEmployeeInfo>>{};
         final previousWorkersByDept = <String, Set<MinimalEmployeeInfo>>{};
 
         // 分组当前年份员工
-        for (var worker in currentYear.workers) {
+        final currentWorkers =
+            currentYear['workers'] as List<MinimalEmployeeInfo>;
+        for (var worker in currentWorkers) {
           if (!currentWorkersByDept.containsKey(worker.department)) {
             currentWorkersByDept[worker.department] = <MinimalEmployeeInfo>{};
           }
@@ -513,7 +545,9 @@ class YearlyDepartmentChangesComponent extends ConsumerWidget {
         }
 
         // 分组前一个年份员工
-        for (var worker in previousYear.workers) {
+        final previousWorkers =
+            previousYear['workers'] as List<MinimalEmployeeInfo>;
+        for (var worker in previousWorkers) {
           if (!previousWorkersByDept.containsKey(worker.department)) {
             previousWorkersByDept[worker.department] = <MinimalEmployeeInfo>{};
           }
@@ -558,5 +592,189 @@ class YearlyDepartmentChangesComponent extends ConsumerWidget {
     }
 
     return departmentEmployeeChanges;
+  }
+
+  /// 将月度数据聚合为年度数据
+  List<Map<String, dynamic>> _aggregateMonthlyToYearly(
+    List<MonthlyComparisonData> monthlyData,
+  ) {
+    final Map<int, List<MonthlyComparisonData>> yearlyGroups = {};
+
+    // 按年份分组月度数据
+    for (var monthData in monthlyData) {
+      final year = monthData.year;
+
+      if (!yearlyGroups.containsKey(year)) {
+        yearlyGroups[year] = [];
+      }
+      yearlyGroups[year]!.add(monthData);
+    }
+
+    // 将分组后的数据聚合为年度数据
+    return yearlyGroups.entries
+        .map((entry) {
+          final year = entry.key;
+          final months = entry.value;
+
+          if (months.isEmpty) return null;
+
+          // 聚合部门统计数据
+          final Map<String, DepartmentSalaryStats> aggregatedDepartmentStats =
+              {};
+          final Map<String, List<DepartmentSalaryStats>> deptMonthlyData = {};
+
+          // 收集所有月份的部门数据
+          for (var monthData in months) {
+            monthData.departmentStats.forEach((deptName, stat) {
+              if (!deptMonthlyData.containsKey(deptName)) {
+                deptMonthlyData[deptName] = [];
+              }
+              deptMonthlyData[deptName]!.add(stat);
+            });
+          }
+
+          // 聚合每个部门的年度数据
+          deptMonthlyData.forEach((deptName, monthlyStats) {
+            double totalNetSalary = 0.0;
+            int maxEmployeeCount = 0;
+            double maxSalary = 0;
+            double minSalary = double.infinity;
+
+            for (var stat in monthlyStats) {
+              totalNetSalary += stat.totalNetSalary;
+              if (stat.employeeCount > maxEmployeeCount) {
+                maxEmployeeCount = stat.employeeCount;
+              }
+              if (stat.maxSalary > maxSalary) {
+                maxSalary = stat.maxSalary;
+              }
+              if (stat.minSalary < minSalary && stat.minSalary > 0) {
+                minSalary = stat.minSalary;
+              }
+            }
+
+            if (minSalary == double.infinity) {
+              minSalary = 0;
+            }
+
+            final averageNetSalary = maxEmployeeCount > 0
+                ? totalNetSalary / maxEmployeeCount
+                : 0.0;
+
+            aggregatedDepartmentStats[deptName] = DepartmentSalaryStats(
+              department: deptName,
+              totalNetSalary: totalNetSalary,
+              averageNetSalary: averageNetSalary,
+              employeeCount: maxEmployeeCount,
+              year: year,
+              month: months.first.month,
+              maxSalary: maxSalary,
+              minSalary: minSalary,
+            );
+          });
+
+          return {'year': year, 'departmentStats': aggregatedDepartmentStats};
+        })
+        .where((item) => item != null)
+        .cast<Map<String, dynamic>>()
+        .toList()
+      ..sort((a, b) => (a['year'] as int).compareTo(b['year'] as int));
+  }
+
+  /// 将月度数据聚合为年度数据（包含员工信息）
+  List<Map<String, dynamic>> _aggregateMonthlyToYearlyWithWorkers(
+    List<MonthlyComparisonData> monthlyData,
+  ) {
+    final Map<int, List<MonthlyComparisonData>> yearlyGroups = {};
+
+    // 按年份分组月度数据
+    for (var monthData in monthlyData) {
+      final year = monthData.year;
+
+      if (!yearlyGroups.containsKey(year)) {
+        yearlyGroups[year] = [];
+      }
+      yearlyGroups[year]!.add(monthData);
+    }
+
+    // 将分组后的数据聚合为年度数据
+    return yearlyGroups.entries
+        .map((entry) {
+          final year = entry.key;
+          final months = entry.value;
+
+          if (months.isEmpty) return null;
+
+          // 聚合员工信息（去重）
+          final Set<MinimalEmployeeInfo> allWorkers = {};
+          for (var monthData in months) {
+            allWorkers.addAll(monthData.workers);
+          }
+
+          // 聚合部门统计数据
+          final Map<String, DepartmentSalaryStats> aggregatedDepartmentStats =
+              {};
+          final Map<String, List<DepartmentSalaryStats>> deptMonthlyData = {};
+
+          // 收集所有月份的部门数据
+          for (var monthData in months) {
+            monthData.departmentStats.forEach((deptName, stat) {
+              if (!deptMonthlyData.containsKey(deptName)) {
+                deptMonthlyData[deptName] = [];
+              }
+              deptMonthlyData[deptName]!.add(stat);
+            });
+          }
+
+          // 聚合每个部门的年度数据
+          deptMonthlyData.forEach((deptName, monthlyStats) {
+            double totalNetSalary = 0.0;
+            int maxEmployeeCount = 0;
+            double maxSalary = 0;
+            double minSalary = double.infinity;
+
+            for (var stat in monthlyStats) {
+              totalNetSalary += stat.totalNetSalary;
+              if (stat.employeeCount > maxEmployeeCount) {
+                maxEmployeeCount = stat.employeeCount;
+              }
+              if (stat.maxSalary > maxSalary) {
+                maxSalary = stat.maxSalary;
+              }
+              if (stat.minSalary < minSalary && stat.minSalary > 0) {
+                minSalary = stat.minSalary;
+              }
+            }
+
+            if (minSalary == double.infinity) {
+              minSalary = 0;
+            }
+
+            final averageNetSalary = maxEmployeeCount > 0
+                ? totalNetSalary / maxEmployeeCount
+                : 0.0;
+
+            aggregatedDepartmentStats[deptName] = DepartmentSalaryStats(
+              department: deptName,
+              totalNetSalary: totalNetSalary,
+              averageNetSalary: averageNetSalary,
+              employeeCount: maxEmployeeCount,
+              year: year,
+              month: months.first.month,
+              maxSalary: maxSalary,
+              minSalary: minSalary,
+            );
+          });
+
+          return {
+            'year': year,
+            'departmentStats': aggregatedDepartmentStats,
+            'workers': allWorkers.toList(),
+          };
+        })
+        .where((item) => item != null)
+        .cast<Map<String, dynamic>>()
+        .toList()
+      ..sort((a, b) => (a['year'] as int).compareTo(b['year'] as int));
   }
 }

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/common/toast.dart';
-import 'package:salary_report/src/providers/app_providers.dart';
 import 'package:salary_report/src/components/ai_chat_widget.dart';
 import 'year_detail_page.dart';
 import '../../../providers/year_provider.dart';

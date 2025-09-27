@@ -37,7 +37,7 @@ class QuarterRangeParams {
 // 多季度分析数据模型 - 拆分成独立的状态
 class MultiQuarterAnalysisState {
   final bool isLoading;
-  final MultiQuarterComparisonData? comparisonData;
+  final MultiMonthComparisonData? comparisonData;
   final String? error;
 
   MultiQuarterAnalysisState({
@@ -48,7 +48,7 @@ class MultiQuarterAnalysisState {
 
   MultiQuarterAnalysisState copyWith({
     bool? isLoading,
-    MultiQuarterComparisonData? comparisonData,
+    MultiMonthComparisonData? comparisonData,
     String? error,
   }) {
     return MultiQuarterAnalysisState(
@@ -62,14 +62,14 @@ class MultiQuarterAnalysisState {
 // 关键指标状态
 class KeyMetricsState {
   final bool isLoading;
-  final List<QuarterlyComparisonData>? quarterlyData;
+  final List<MonthlyComparisonData>? quarterlyData;
   final String? error;
 
   KeyMetricsState({required this.isLoading, this.quarterlyData, this.error});
 
   KeyMetricsState copyWith({
     bool? isLoading,
-    List<QuarterlyComparisonData>? quarterlyData,
+    List<MonthlyComparisonData>? quarterlyData,
     String? error,
   }) {
     return KeyMetricsState(
@@ -83,7 +83,7 @@ class KeyMetricsState {
 // 部门统计状态
 class DepartmentStatsState {
   final bool isLoading;
-  final List<QuarterlyComparisonData>? quarterlyData;
+  final List<MonthlyComparisonData>? quarterlyData;
   final String? error;
 
   DepartmentStatsState({
@@ -94,7 +94,7 @@ class DepartmentStatsState {
 
   DepartmentStatsState copyWith({
     bool? isLoading,
-    List<QuarterlyComparisonData>? quarterlyData,
+    List<MonthlyComparisonData>? quarterlyData,
     String? error,
   }) {
     return DepartmentStatsState(
@@ -133,7 +133,7 @@ class AttendanceStatsState {
 // 请假比例统计状态
 class LeaveRatioStatsState {
   final bool isLoading;
-  final List<QuarterlyComparisonData>? quarterlyData;
+  final List<MonthlyComparisonData>? quarterlyData;
   final String? error;
 
   LeaveRatioStatsState({
@@ -144,7 +144,7 @@ class LeaveRatioStatsState {
 
   LeaveRatioStatsState copyWith({
     bool? isLoading,
-    List<QuarterlyComparisonData>? quarterlyData,
+    List<MonthlyComparisonData>? quarterlyData,
     String? error,
   }) {
     return LeaveRatioStatsState(
@@ -158,7 +158,7 @@ class LeaveRatioStatsState {
 // 部门变化状态
 class DepartmentChangesState {
   final bool isLoading;
-  final MultiQuarterComparisonData? comparisonData;
+  final MultiMonthComparisonData? comparisonData;
   final String? error;
 
   DepartmentChangesState({
@@ -169,7 +169,7 @@ class DepartmentChangesState {
 
   DepartmentChangesState copyWith({
     bool? isLoading,
-    MultiQuarterComparisonData? comparisonData,
+    MultiMonthComparisonData? comparisonData,
     String? error,
   }) {
     return DepartmentChangesState(
@@ -183,14 +183,14 @@ class DepartmentChangesState {
 // 图表数据状态
 class ChartDataState {
   final bool isLoading;
-  final MultiQuarterComparisonData? comparisonData;
+  final MultiMonthComparisonData? comparisonData;
   final String? error;
 
   ChartDataState({required this.isLoading, this.comparisonData, this.error});
 
   ChartDataState copyWith({
     bool? isLoading,
-    MultiQuarterComparisonData? comparisonData,
+    MultiMonthComparisonData? comparisonData,
     String? error,
   }) {
     return ChartDataState(
@@ -231,7 +231,7 @@ List<Map<String, int>> _generateQuarterList(
 
 // 核心数据提供者 - 只调用一次 getMultiQuarterComparisonData
 final coreDataProvider =
-    FutureProvider.family<MultiQuarterComparisonData?, QuarterRangeParams>((
+    FutureProvider.family<MultiMonthComparisonData?, QuarterRangeParams>((
       ref,
       params,
     ) async {
@@ -312,7 +312,7 @@ final keyMetricsProvider =
 
       return KeyMetricsState(
         isLoading: false,
-        quarterlyData: coreData?.quarterlyComparisons,
+        quarterlyData: coreData?.monthlyComparisons,
       );
     });
 
@@ -326,7 +326,7 @@ final departmentStatsProvider =
 
       return DepartmentStatsState(
         isLoading: false,
-        quarterlyData: coreData?.quarterlyComparisons,
+        quarterlyData: coreData?.monthlyComparisons,
       );
     });
 
@@ -356,7 +356,7 @@ final leaveRatioStatsProvider =
 
       return LeaveRatioStatsState(
         isLoading: false,
-        quarterlyData: coreData?.quarterlyComparisons,
+        quarterlyData: coreData?.monthlyComparisons,
       );
     });
 

@@ -28,14 +28,14 @@ class YearRangeParams {
 // 关键指标状态
 class KeyMetricsState {
   final bool isLoading;
-  final List<YearlyComparisonData>? yearlyData;
+  final List<MonthlyComparisonData>? yearlyData;
   final String? error;
 
   KeyMetricsState({required this.isLoading, this.yearlyData, this.error});
 
   KeyMetricsState copyWith({
     bool? isLoading,
-    List<YearlyComparisonData>? yearlyData,
+    List<MonthlyComparisonData>? yearlyData,
     String? error,
   }) {
     return KeyMetricsState(
@@ -49,14 +49,14 @@ class KeyMetricsState {
 // 部门统计状态
 class DepartmentStatsState {
   final bool isLoading;
-  final List<YearlyComparisonData>? yearlyData;
+  final List<MonthlyComparisonData>? yearlyData;
   final String? error;
 
   DepartmentStatsState({required this.isLoading, this.yearlyData, this.error});
 
   DepartmentStatsState copyWith({
     bool? isLoading,
-    List<YearlyComparisonData>? yearlyData,
+    List<MonthlyComparisonData>? yearlyData,
     String? error,
   }) {
     return DepartmentStatsState(
@@ -95,14 +95,14 @@ class AttendanceStatsState {
 // 请假比例统计状态
 class LeaveRatioStatsState {
   final bool isLoading;
-  final List<YearlyComparisonData>? yearlyData;
+  final List<MonthlyComparisonData>? yearlyData;
   final String? error;
 
   LeaveRatioStatsState({required this.isLoading, this.yearlyData, this.error});
 
   LeaveRatioStatsState copyWith({
     bool? isLoading,
-    List<YearlyComparisonData>? yearlyData,
+    List<MonthlyComparisonData>? yearlyData,
     String? error,
   }) {
     return LeaveRatioStatsState(
@@ -116,7 +116,7 @@ class LeaveRatioStatsState {
 // 部门变化状态
 class DepartmentChangesState {
   final bool isLoading;
-  final MultiYearComparisonData? comparisonData;
+  final MultiMonthComparisonData? comparisonData;
   final String? error;
 
   DepartmentChangesState({
@@ -127,7 +127,7 @@ class DepartmentChangesState {
 
   DepartmentChangesState copyWith({
     bool? isLoading,
-    MultiYearComparisonData? comparisonData,
+    MultiMonthComparisonData? comparisonData,
     String? error,
   }) {
     return DepartmentChangesState(
@@ -141,14 +141,14 @@ class DepartmentChangesState {
 // 图表数据状态
 class ChartDataState {
   final bool isLoading;
-  final MultiYearComparisonData? comparisonData;
+  final MultiMonthComparisonData? comparisonData;
   final String? error;
 
   ChartDataState({required this.isLoading, this.comparisonData, this.error});
 
   ChartDataState copyWith({
     bool? isLoading,
-    MultiYearComparisonData? comparisonData,
+    MultiMonthComparisonData? comparisonData,
     String? error,
   }) {
     return ChartDataState(
@@ -161,7 +161,7 @@ class ChartDataState {
 
 // 核心数据提供者 - 只调用一次 getMultiYearComparisonData
 final coreDataProvider =
-    FutureProvider.family<MultiYearComparisonData?, YearRangeParams>((
+    FutureProvider.family<MultiMonthComparisonData?, YearRangeParams>((
       ref,
       params,
     ) async {
@@ -215,7 +215,7 @@ final keyMetricsProvider =
 
       return KeyMetricsState(
         isLoading: false,
-        yearlyData: coreData?.yearlyComparisons,
+        yearlyData: coreData?.monthlyComparisons,
       );
     });
 
@@ -229,7 +229,7 @@ final departmentStatsProvider =
 
       return DepartmentStatsState(
         isLoading: false,
-        yearlyData: coreData?.yearlyComparisons,
+        yearlyData: coreData?.monthlyComparisons,
       );
     });
 
@@ -259,7 +259,7 @@ final leaveRatioStatsProvider =
 
       return LeaveRatioStatsState(
         isLoading: false,
-        yearlyData: coreData?.yearlyComparisons,
+        yearlyData: coreData?.monthlyComparisons,
       );
     });
 

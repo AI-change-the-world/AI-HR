@@ -269,14 +269,14 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
   String getMonthlySalaryChangeText() {
     List<MonthlySalaryChange> changes = getMonthlySalaryChange();
     StringBuffer buffer = StringBuffer();
-    
+
     if (changes.isEmpty) {
       return "暂无月度薪资变化数据。";
     }
-    
+
     buffer.writeln("月度薪资变化分析报告\n");
     buffer.writeln("=" * 50);
-    
+
     for (int i = 0; i < changes.length; i++) {
       final change = changes[i];
       buffer.writeln("\n${change.year}年${change.month}月薪资分析：");
@@ -285,49 +285,64 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
       buffer.writeln("  最高薪资：${change.highestSalary.toStringAsFixed(2)}元");
       buffer.writeln("  最低薪资：${change.lowestSalary.toStringAsFixed(2)}元");
       buffer.writeln("  员工人数：${change.employeeCount}人");
-      
+
       // 如果有变化数据，显示与上月的对比
       if (change.totalSalaryChange != null) {
         final changeText = change.totalSalaryChange! >= 0 ? "增长" : "下降";
-        buffer.writeln("  与上月相比总薪资$changeText${change.totalSalaryChange!.abs().toStringAsFixed(2)}元（${change.totalSalaryChangePercent!.toStringAsFixed(2)}%）");
-        
+        buffer.writeln(
+          "  与上月相比总薪资$changeText${change.totalSalaryChange!.abs().toStringAsFixed(2)}元（${change.totalSalaryChangePercent!.toStringAsFixed(2)}%）",
+        );
+
         final avgChangeText = change.averageSalaryChange! >= 0 ? "增长" : "下降";
-        buffer.writeln("  与上月相比平均薪资$avgChangeText${change.averageSalaryChange!.abs().toStringAsFixed(2)}元（${change.averageSalaryChangePercent!.toStringAsFixed(2)}%）");
-        
+        buffer.writeln(
+          "  与上月相比平均薪资$avgChangeText${change.averageSalaryChange!.abs().toStringAsFixed(2)}元（${change.averageSalaryChangePercent!.toStringAsFixed(2)}%）",
+        );
+
         final empChangeText = change.employeeCountChange! >= 0 ? "增加" : "减少";
-        buffer.writeln("  与上月相比员工人数$empChangeText${change.employeeCountChange!.abs()}人");
+        buffer.writeln(
+          "  与上月相比员工人数$empChangeText${change.employeeCountChange!.abs()}人",
+        );
       }
-      
+
       if (i < changes.length - 1) {
         buffer.writeln("\n${"-" * 30}");
       }
     }
-    
+
     // 添加总体趋势分析
     if (changes.length > 1) {
       buffer.writeln("\n\n总体趋势分析：");
       buffer.writeln("=" * 30);
-      
+
       final firstMonth = changes.first;
       final lastMonth = changes.last;
-      
+
       final totalSalaryGrowth = lastMonth.totalSalary - firstMonth.totalSalary;
-      final avgSalaryGrowth = lastMonth.averageSalary - firstMonth.averageSalary;
+      final avgSalaryGrowth =
+          lastMonth.averageSalary - firstMonth.averageSalary;
       final employeeGrowth = lastMonth.employeeCount - firstMonth.employeeCount;
-      
-      final totalGrowthPercent = firstMonth.totalSalary > 0 
-          ? (totalSalaryGrowth / firstMonth.totalSalary) * 100 
+
+      final totalGrowthPercent = firstMonth.totalSalary > 0
+          ? (totalSalaryGrowth / firstMonth.totalSalary) * 100
           : 0.0;
-      final avgGrowthPercent = firstMonth.averageSalary > 0 
-          ? (avgSalaryGrowth / firstMonth.averageSalary) * 100 
+      final avgGrowthPercent = firstMonth.averageSalary > 0
+          ? (avgSalaryGrowth / firstMonth.averageSalary) * 100
           : 0.0;
-      
-      buffer.writeln("从${firstMonth.year}年${firstMonth.month}月到${lastMonth.year}年${lastMonth.month}月：");
-      buffer.writeln("  总薪资变化：${totalSalaryGrowth >= 0 ? '+' : ''}${totalSalaryGrowth.toStringAsFixed(2)}元（${totalGrowthPercent >= 0 ? '+' : ''}${totalGrowthPercent.toStringAsFixed(2)}%）");
-      buffer.writeln("  平均薪资变化：${avgSalaryGrowth >= 0 ? '+' : ''}${avgSalaryGrowth.toStringAsFixed(2)}元（${avgGrowthPercent >= 0 ? '+' : ''}${avgGrowthPercent.toStringAsFixed(2)}%）");
-      buffer.writeln("  员工人数变化：${employeeGrowth >= 0 ? '+' : ''}$employeeGrowth人");
+
+      buffer.writeln(
+        "从${firstMonth.year}年${firstMonth.month}月到${lastMonth.year}年${lastMonth.month}月：",
+      );
+      buffer.writeln(
+        "  总薪资变化：${totalSalaryGrowth >= 0 ? '+' : ''}${totalSalaryGrowth.toStringAsFixed(2)}元（${totalGrowthPercent >= 0 ? '+' : ''}${totalGrowthPercent.toStringAsFixed(2)}%）",
+      );
+      buffer.writeln(
+        "  平均薪资变化：${avgSalaryGrowth >= 0 ? '+' : ''}${avgSalaryGrowth.toStringAsFixed(2)}元（${avgGrowthPercent >= 0 ? '+' : ''}${avgGrowthPercent.toStringAsFixed(2)}%）",
+      );
+      buffer.writeln(
+        "  员工人数变化：${employeeGrowth >= 0 ? '+' : ''}$employeeGrowth人",
+      );
     }
-    
+
     return buffer.toString();
   }
 
@@ -424,14 +439,14 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
   String getMonthlyEmployeeChangeText() {
     List<EmployeeChange> employeeChanges = getMonthlyEmployeeChange();
     StringBuffer buffer = StringBuffer();
-    
+
     if (employeeChanges.isEmpty) {
       return "暂无月度员工变化数据。";
     }
-    
+
     buffer.writeln("月度员工变化分析报告\n");
     buffer.writeln("=" * 50);
-    
+
     for (int i = 0; i < employeeChanges.length; i++) {
       final change = employeeChanges[i];
       buffer.writeln("\n${change.year}年${change.month}月员工变化情况：");
@@ -440,7 +455,7 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
       buffer.writeln("  离职员工：${change.leftEmployeeCount}人");
       buffer.writeln("  持续在职员工：${change.continuousEmployees.length}人");
       buffer.writeln("  离职率：${change.turnoverRate.toStringAsFixed(2)}%");
-      
+
       // 显示新增员工详情
       if (change.newEmployees.isNotEmpty) {
         buffer.writeln("  新增员工详情：");
@@ -448,7 +463,7 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
           buffer.writeln("    - ${employee.name}（${employee.department}）");
         }
       }
-      
+
       // 显示离职员工详情
       if (change.leftEmployees.isNotEmpty) {
         buffer.writeln("  离职员工详情：");
@@ -456,7 +471,7 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
           buffer.writeln("    - ${employee.name}（${employee.department}）");
         }
       }
-      
+
       // 人员变动分析
       final netChange = change.newEmployeeCount - change.leftEmployeeCount;
       if (netChange > 0) {
@@ -466,31 +481,42 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
       } else {
         buffer.writeln("  人员变动分析：本月人员进出平衡，团队规模保持稳定");
       }
-      
+
       if (i < employeeChanges.length - 1) {
         buffer.writeln("\n${"-" * 30}");
       }
     }
-    
+
     // 添加总体趋势分析
     if (employeeChanges.length > 1) {
       buffer.writeln("\n\n总体趋势分析：");
       buffer.writeln("=" * 30);
-      
+
       final firstMonth = employeeChanges.first;
       final lastMonth = employeeChanges.last;
-      
-      final totalEmployeeGrowth = lastMonth.totalEmployeeCount - firstMonth.totalEmployeeCount;
-      final totalNewEmployees = employeeChanges.map((e) => e.newEmployeeCount).reduce((a, b) => a + b);
-      final totalLeftEmployees = employeeChanges.map((e) => e.leftEmployeeCount).reduce((a, b) => a + b);
-      final avgTurnoverRate = employeeChanges.map((e) => e.turnoverRate).reduce((a, b) => a + b) / employeeChanges.length;
-      
-      buffer.writeln("从${firstMonth.year}年${firstMonth.month}月到${lastMonth.year}年${lastMonth.month}月：");
-      buffer.writeln("  员工总数变化：${totalEmployeeGrowth >= 0 ? '+' : ''}$totalEmployeeGrowth人");
+
+      final totalEmployeeGrowth =
+          lastMonth.totalEmployeeCount - firstMonth.totalEmployeeCount;
+      final totalNewEmployees = employeeChanges
+          .map((e) => e.newEmployeeCount)
+          .reduce((a, b) => a + b);
+      final totalLeftEmployees = employeeChanges
+          .map((e) => e.leftEmployeeCount)
+          .reduce((a, b) => a + b);
+      final avgTurnoverRate =
+          employeeChanges.map((e) => e.turnoverRate).reduce((a, b) => a + b) /
+          employeeChanges.length;
+
+      buffer.writeln(
+        "从${firstMonth.year}年${firstMonth.month}月到${lastMonth.year}年${lastMonth.month}月：",
+      );
+      buffer.writeln(
+        "  员工总数变化：${totalEmployeeGrowth >= 0 ? '+' : ''}$totalEmployeeGrowth人",
+      );
       buffer.writeln("  累计新增员工：$totalNewEmployees人");
       buffer.writeln("  累计离职员工：$totalLeftEmployees人");
       buffer.writeln("  平均离职率：${avgTurnoverRate.toStringAsFixed(2)}%");
-      
+
       // 人员稳定性分析
       if (avgTurnoverRate < 5.0) {
         buffer.writeln("  人员稳定性：优秀，员工流失率较低，团队稳定性良好");
@@ -502,7 +528,7 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
         buffer.writeln("  人员稳定性：需要改善，员工流失率较高，建议加强人才保留措施");
       }
     }
-    
+
     return buffer.toString();
   }
 
@@ -520,7 +546,7 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
 
     // 获取月度变化数据
     final monthlyChanges = getMonthlySalaryChange();
-    
+
     // 按季度分组
     final Map<String, List<MonthlySalaryChange>> quarterlyGroups = {};
     for (final change in monthlyChanges) {
@@ -541,11 +567,21 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
       final quarterData = quarterlyGroups[key]!;
 
       // 计算季度汇总数据
-      final totalSalary = quarterData.map((e) => e.totalSalary).reduce((a, b) => a + b) / quarterData.length;
-      final averageSalary = quarterData.map((e) => e.averageSalary).reduce((a, b) => a + b) / quarterData.length;
-      final highestSalary = quarterData.map((e) => e.highestSalary).reduce((a, b) => a > b ? a : b);
-      final lowestSalary = quarterData.map((e) => e.lowestSalary).reduce((a, b) => a < b ? a : b);
-      final employeeCount = quarterData.map((e) => e.employeeCount).reduce((a, b) => a + b) ~/ quarterData.length;
+      final totalSalary =
+          quarterData.map((e) => e.totalSalary).reduce((a, b) => a + b) /
+          quarterData.length;
+      final averageSalary =
+          quarterData.map((e) => e.averageSalary).reduce((a, b) => a + b) /
+          quarterData.length;
+      final highestSalary = quarterData
+          .map((e) => e.highestSalary)
+          .reduce((a, b) => a > b ? a : b);
+      final lowestSalary = quarterData
+          .map((e) => e.lowestSalary)
+          .reduce((a, b) => a < b ? a : b);
+      final employeeCount =
+          quarterData.map((e) => e.employeeCount).reduce((a, b) => a + b) ~/
+          quarterData.length;
 
       // 计算与上季度的变化
       double? totalSalaryChange;
@@ -556,16 +592,30 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
 
       if (i > 0) {
         final prevQuarterData = quarterlyGroups[sortedKeys[i - 1]]!;
-        final prevTotalSalary = prevQuarterData.map((e) => e.totalSalary).reduce((a, b) => a + b) / prevQuarterData.length;
-        final prevAverageSalary = prevQuarterData.map((e) => e.averageSalary).reduce((a, b) => a + b) / prevQuarterData.length;
-        final prevEmployeeCount = prevQuarterData.map((e) => e.employeeCount).reduce((a, b) => a + b) ~/ prevQuarterData.length;
+        final prevTotalSalary =
+            prevQuarterData.map((e) => e.totalSalary).reduce((a, b) => a + b) /
+            prevQuarterData.length;
+        final prevAverageSalary =
+            prevQuarterData
+                .map((e) => e.averageSalary)
+                .reduce((a, b) => a + b) /
+            prevQuarterData.length;
+        final prevEmployeeCount =
+            prevQuarterData
+                .map((e) => e.employeeCount)
+                .reduce((a, b) => a + b) ~/
+            prevQuarterData.length;
 
         totalSalaryChange = totalSalary - prevTotalSalary;
         averageSalaryChange = averageSalary - prevAverageSalary;
         employeeCountChange = employeeCount - prevEmployeeCount;
 
-        totalSalaryChangePercent = prevTotalSalary > 0 ? (totalSalaryChange / prevTotalSalary) * 100 : 0.0;
-        averageSalaryChangePercent = prevAverageSalary > 0 ? (averageSalaryChange / prevAverageSalary) * 100 : 0.0;
+        totalSalaryChangePercent = prevTotalSalary > 0
+            ? (totalSalaryChange / prevTotalSalary) * 100
+            : 0.0;
+        averageSalaryChangePercent = prevAverageSalary > 0
+            ? (averageSalaryChange / prevAverageSalary) * 100
+            : 0.0;
       }
 
       quarterlyChanges.add(
@@ -594,33 +644,43 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
   String getQuarterlySalaryChangeText() {
     List<QuarterlySalaryChange> quarterlyChanges = getQuarterlySalaryChange();
     StringBuffer buffer = StringBuffer();
-    
+
     if (quarterlyChanges.isEmpty) {
       return "暂无季度薪资变化数据。";
     }
-    
+
     buffer.writeln("季度薪资变化分析报告\n");
     buffer.writeln("=" * 50);
-    
+
     for (int i = 0; i < quarterlyChanges.length; i++) {
       final change = quarterlyChanges[i];
       final quarterName = _getQuarterName(change.quarter);
-      
+
       buffer.writeln("\n${change.year}年$quarterName薪资分析报告：");
-      
+
       // 季度内部月度变化详情
       buffer.writeln("  季度内部月度变化详情：");
       for (final monthlyChange in change.monthlyChanges) {
-        buffer.writeln("    ${monthlyChange.month}月：总薪资${monthlyChange.totalSalary.toStringAsFixed(2)}元，平均薪资${monthlyChange.averageSalary.toStringAsFixed(2)}元，员工${monthlyChange.employeeCount}人");
+        buffer.writeln(
+          "    ${monthlyChange.month}月：总薪资${monthlyChange.totalSalary.toStringAsFixed(2)}元，平均薪资${monthlyChange.averageSalary.toStringAsFixed(2)}元，员工${monthlyChange.employeeCount}人",
+        );
         if (monthlyChange.totalSalaryChange != null) {
-          final changeText = monthlyChange.totalSalaryChange! >= 0 ? "增长" : "下降";
-          buffer.writeln("    较上月总薪资$changeText${monthlyChange.totalSalaryChange!.abs().toStringAsFixed(2)}元（${monthlyChange.totalSalaryChangePercent!.toStringAsFixed(2)}%）");
-          
-          final avgChangeText = monthlyChange.averageSalaryChange! >= 0 ? "增长" : "下降";
-          buffer.writeln("    较上月平均薪资$avgChangeText${monthlyChange.averageSalaryChange!.abs().toStringAsFixed(2)}元（${monthlyChange.averageSalaryChangePercent!.toStringAsFixed(2)}%）");
+          final changeText = monthlyChange.totalSalaryChange! >= 0
+              ? "增长"
+              : "下降";
+          buffer.writeln(
+            "    较上月总薪资$changeText${monthlyChange.totalSalaryChange!.abs().toStringAsFixed(2)}元（${monthlyChange.totalSalaryChangePercent!.toStringAsFixed(2)}%）",
+          );
+
+          final avgChangeText = monthlyChange.averageSalaryChange! >= 0
+              ? "增长"
+              : "下降";
+          buffer.writeln(
+            "    较上月平均薪资$avgChangeText${monthlyChange.averageSalaryChange!.abs().toStringAsFixed(2)}元（${monthlyChange.averageSalaryChangePercent!.toStringAsFixed(2)}%）",
+          );
         }
       }
-      
+
       // 季度汇总情况
       buffer.writeln("  季度汇总情况：");
       buffer.writeln("    平均总薪资：${change.totalSalary.toStringAsFixed(2)}元");
@@ -628,29 +688,35 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
       buffer.writeln("    最高薪资：${change.highestSalary.toStringAsFixed(2)}元");
       buffer.writeln("    最低薪资：${change.lowestSalary.toStringAsFixed(2)}元");
       buffer.writeln("    平均员工数：${change.employeeCount}人");
-      
+
       // 与上季度对比分析
       if (change.totalSalaryChange != null && i > 0) {
         final prevChange = quarterlyChanges[i - 1];
         final prevQuarterName = _getQuarterName(prevChange.quarter);
-        
+
         buffer.writeln("  与${prevChange.year}年$prevQuarterName相比：");
-        
+
         final totalChangeText = change.totalSalaryChange! >= 0 ? "增长" : "下降";
-        buffer.writeln("    总薪资$totalChangeText${change.totalSalaryChange!.abs().toStringAsFixed(2)}元（${change.totalSalaryChangePercent!.toStringAsFixed(2)}%）");
-        
+        buffer.writeln(
+          "    总薪资$totalChangeText${change.totalSalaryChange!.abs().toStringAsFixed(2)}元（${change.totalSalaryChangePercent!.toStringAsFixed(2)}%）",
+        );
+
         final avgChangeText = change.averageSalaryChange! >= 0 ? "增长" : "下降";
-        buffer.writeln("    平均薪资$avgChangeText${change.averageSalaryChange!.abs().toStringAsFixed(2)}元（${change.averageSalaryChangePercent!.toStringAsFixed(2)}%）");
-        
+        buffer.writeln(
+          "    平均薪资$avgChangeText${change.averageSalaryChange!.abs().toStringAsFixed(2)}元（${change.averageSalaryChangePercent!.toStringAsFixed(2)}%）",
+        );
+
         final empChangeText = change.employeeCountChange! >= 0 ? "增加" : "减少";
-        buffer.writeln("    员工人数$empChangeText${change.employeeCountChange!.abs()}人");
+        buffer.writeln(
+          "    员工人数$empChangeText${change.employeeCountChange!.abs()}人",
+        );
       }
-      
+
       if (i < quarterlyChanges.length - 1) {
         buffer.writeln("\n${"-" * 40}");
       }
     }
-    
+
     return buffer.toString();
   }
 
@@ -660,7 +726,7 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
 
     // 获取月度员工变化数据
     final monthlyChanges = getMonthlyEmployeeChange();
-    
+
     // 按季度分组
     final Map<String, List<EmployeeChange>> quarterlyGroups = {};
     for (final change in monthlyChanges) {
@@ -681,7 +747,8 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
       final quarterData = quarterlyGroups[key]!;
 
       // 计算季度员工变化汇总
-      final quarterStartEmployees = quarterData.first.continuousEmployees.toSet();
+      final quarterStartEmployees = quarterData.first.continuousEmployees
+          .toSet();
       final quarterEndEmployees = quarterData.last.continuousEmployees.toSet()
         ..addAll(quarterData.last.newEmployees);
 
@@ -698,12 +765,16 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
       }
 
       // 季度持续在职员工：整个季度都在职的员工
-      final continuousEmployees = quarterStartEmployees.intersection(quarterEndEmployees);
+      final continuousEmployees = quarterStartEmployees.intersection(
+        quarterEndEmployees,
+      );
 
       final totalEmployeeCount = quarterData.last.totalEmployeeCount;
       final newEmployeeCount = newEmployees.length;
       final leftEmployeeCount = leftEmployees.length;
-      final turnoverRate = totalEmployeeCount > 0 ? (leftEmployeeCount / totalEmployeeCount) * 100 : 0.0;
+      final turnoverRate = totalEmployeeCount > 0
+          ? (leftEmployeeCount / totalEmployeeCount) * 100
+          : 0.0;
 
       quarterlyChanges.add(
         QuarterlyEmployeeChange(
@@ -726,35 +797,42 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
 
   /// 获取季度员工变化描述文本
   String getQuarterlyEmployeeChangeText() {
-    List<QuarterlyEmployeeChange> quarterlyChanges = getQuarterlyEmployeeChange();
+    List<QuarterlyEmployeeChange> quarterlyChanges =
+        getQuarterlyEmployeeChange();
     StringBuffer buffer = StringBuffer();
-    
+
     if (quarterlyChanges.isEmpty) {
       return "暂无季度员工变化数据。";
     }
-    
+
     buffer.writeln("季度员工变化分析报告\n");
     buffer.writeln("=" * 50);
-    
+
     for (int i = 0; i < quarterlyChanges.length; i++) {
       final change = quarterlyChanges[i];
       final quarterName = _getQuarterName(change.quarter);
-      
+
       buffer.writeln("\n${change.year}年$quarterName员工变化情况：");
-      
+
       // 季度内部月度变化详情
       buffer.writeln("  季度内部月度变化详情：");
       for (final monthlyChange in change.monthlyChanges) {
-        buffer.writeln("    ${monthlyChange.month}月：总员工${monthlyChange.totalEmployeeCount}人，新增${monthlyChange.newEmployeeCount}人，离职${monthlyChange.leftEmployeeCount}人，离职率${monthlyChange.turnoverRate.toStringAsFixed(2)}%");
-        
+        buffer.writeln(
+          "    ${monthlyChange.month}月：总员工${monthlyChange.totalEmployeeCount}人，新增${monthlyChange.newEmployeeCount}人，离职${monthlyChange.leftEmployeeCount}人，离职率${monthlyChange.turnoverRate.toStringAsFixed(2)}%",
+        );
+
         if (monthlyChange.newEmployees.isNotEmpty) {
-          buffer.writeln("      新增员工：${monthlyChange.newEmployees.map((e) => '${e.name}(${e.department})').join('、')}");
+          buffer.writeln(
+            "      新增员工：${monthlyChange.newEmployees.map((e) => '${e.name}(${e.department})').join('、')}",
+          );
         }
         if (monthlyChange.leftEmployees.isNotEmpty) {
-          buffer.writeln("      离职员工：${monthlyChange.leftEmployees.map((e) => '${e.name}(${e.department})').join('、')}");
+          buffer.writeln(
+            "      离职员工：${monthlyChange.leftEmployees.map((e) => '${e.name}(${e.department})').join('、')}",
+          );
         }
       }
-      
+
       // 季度汇总情况
       buffer.writeln("  季度汇总情况：");
       buffer.writeln("    期末总员工数：${change.totalEmployeeCount}人");
@@ -762,7 +840,7 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
       buffer.writeln("    季度离职员工：${change.leftEmployeeCount}人");
       buffer.writeln("    季度持续在职员工：${change.continuousEmployees.length}人");
       buffer.writeln("    季度离职率：${change.turnoverRate.toStringAsFixed(2)}%");
-      
+
       // 人员变动分析
       final netChange = change.newEmployeeCount - change.leftEmployeeCount;
       if (netChange > 0) {
@@ -772,12 +850,12 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
       } else {
         buffer.writeln("    人员变动分析：本季度人员进出平衡，团队规模保持稳定");
       }
-      
+
       if (i < quarterlyChanges.length - 1) {
         buffer.writeln("\n${"-" * 40}");
       }
     }
-    
+
     return buffer.toString();
   }
 
@@ -795,7 +873,7 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
 
     // 获取月度变化数据
     final monthlyChanges = getMonthlySalaryChange();
-    
+
     // 按年分组
     final Map<int, List<MonthlySalaryChange>> yearlyGroups = {};
     for (final change in monthlyChanges) {
@@ -811,12 +889,22 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
       final yearData = yearlyGroups[year]!;
 
       // 计算年度汇总数据
-      final totalSalary = yearData.map((e) => e.totalSalary).reduce((a, b) => a + b) / yearData.length;
-      final averageSalary = yearData.map((e) => e.averageSalary).reduce((a, b) => a + b) / yearData.length;
-      final highestSalary = yearData.map((e) => e.highestSalary).reduce((a, b) => a > b ? a : b);
-      final lowestSalary = yearData.map((e) => e.lowestSalary).reduce((a, b) => a < b ? a : b);
+      final totalSalary =
+          yearData.map((e) => e.totalSalary).reduce((a, b) => a + b) /
+          yearData.length;
+      final averageSalary =
+          yearData.map((e) => e.averageSalary).reduce((a, b) => a + b) /
+          yearData.length;
+      final highestSalary = yearData
+          .map((e) => e.highestSalary)
+          .reduce((a, b) => a > b ? a : b);
+      final lowestSalary = yearData
+          .map((e) => e.lowestSalary)
+          .reduce((a, b) => a < b ? a : b);
       final employeeCount = yearData.last.employeeCount;
-      final averageEmployeeCount = yearData.map((e) => e.employeeCount).reduce((a, b) => a + b) / yearData.length;
+      final averageEmployeeCount =
+          yearData.map((e) => e.employeeCount).reduce((a, b) => a + b) /
+          yearData.length;
 
       // 计算与上年的变化
       double? totalSalaryChange;
@@ -827,16 +915,27 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
 
       if (i > 0) {
         final prevYearData = yearlyGroups[sortedYears[i - 1]]!;
-        final prevTotalSalary = prevYearData.map((e) => e.totalSalary).reduce((a, b) => a + b) / prevYearData.length;
-        final prevAverageSalary = prevYearData.map((e) => e.averageSalary).reduce((a, b) => a + b) / prevYearData.length;
-        final prevAverageEmployeeCount = prevYearData.map((e) => e.employeeCount).reduce((a, b) => a + b) / prevYearData.length;
+        final prevTotalSalary =
+            prevYearData.map((e) => e.totalSalary).reduce((a, b) => a + b) /
+            prevYearData.length;
+        final prevAverageSalary =
+            prevYearData.map((e) => e.averageSalary).reduce((a, b) => a + b) /
+            prevYearData.length;
+        final prevAverageEmployeeCount =
+            prevYearData.map((e) => e.employeeCount).reduce((a, b) => a + b) /
+            prevYearData.length;
 
         totalSalaryChange = totalSalary - prevTotalSalary;
         averageSalaryChange = averageSalary - prevAverageSalary;
-        employeeCountChange = (averageEmployeeCount - prevAverageEmployeeCount).round();
+        employeeCountChange = (averageEmployeeCount - prevAverageEmployeeCount)
+            .round();
 
-        totalSalaryChangePercent = prevTotalSalary > 0 ? (totalSalaryChange / prevTotalSalary) * 100 : 0.0;
-        averageSalaryChangePercent = prevAverageSalary > 0 ? (averageSalaryChange / prevAverageSalary) * 100 : 0.0;
+        totalSalaryChangePercent = prevTotalSalary > 0
+            ? (totalSalaryChange / prevTotalSalary) * 100
+            : 0.0;
+        averageSalaryChangePercent = prevAverageSalary > 0
+            ? (averageSalaryChange / prevAverageSalary) * 100
+            : 0.0;
       }
 
       yearlyChanges.add(
@@ -865,59 +964,73 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
   String getYearlySalaryChangeText() {
     List<YearlySalaryChange> yearlyChanges = getYearlySalaryChange();
     StringBuffer buffer = StringBuffer();
-    
+
     if (yearlyChanges.isEmpty) {
       return "暂无年度薪资变化数据。";
     }
-    
+
     buffer.writeln("年度薪资变化分析报告\n");
     buffer.writeln("=" * 50);
-    
+
     for (int i = 0; i < yearlyChanges.length; i++) {
       final change = yearlyChanges[i];
-      
+
       buffer.writeln("\n${change.year}年度薪资分析报告：");
-      
+
       // 年度内部月度变化详情
       buffer.writeln("  年度内部月度变化详情：");
       for (final monthlyChange in change.monthlyChanges) {
-        buffer.writeln("    ${monthlyChange.month}月：总薪资${monthlyChange.totalSalary.toStringAsFixed(2)}元，平均薪资${monthlyChange.averageSalary.toStringAsFixed(2)}元，员工${monthlyChange.employeeCount}人");
+        buffer.writeln(
+          "    ${monthlyChange.month}月：总薪资${monthlyChange.totalSalary.toStringAsFixed(2)}元，平均薪资${monthlyChange.averageSalary.toStringAsFixed(2)}元，员工${monthlyChange.employeeCount}人",
+        );
       }
-      
+
       // 年度汇总情况
       buffer.writeln("  年度汇总情况：");
       buffer.writeln("    年度平均总薪资：${change.totalSalary.toStringAsFixed(2)}元");
-      buffer.writeln("    年度平均薪资水平：${change.averageSalary.toStringAsFixed(2)}元");
+      buffer.writeln(
+        "    年度平均薪资水平：${change.averageSalary.toStringAsFixed(2)}元",
+      );
       buffer.writeln("    年度最高薪资：${change.highestSalary.toStringAsFixed(2)}元");
       buffer.writeln("    年度最低薪资：${change.lowestSalary.toStringAsFixed(2)}元");
       buffer.writeln("    年末员工数：${change.employeeCount}人");
-      buffer.writeln("    年度平均员工数：${change.averageEmployeeCount.toStringAsFixed(1)}人");
-      
+      buffer.writeln(
+        "    年度平均员工数：${change.averageEmployeeCount.toStringAsFixed(1)}人",
+      );
+
       // 薪资结构分析
       final salaryRange = change.highestSalary - change.lowestSalary;
-      buffer.writeln("    薪资结构分析：薪资差距${salaryRange.toStringAsFixed(2)}元，薪资分布${change.lowestSalary.toStringAsFixed(2)}-${change.highestSalary.toStringAsFixed(2)}元");
-      
+      buffer.writeln(
+        "    薪资结构分析：薪资差距${salaryRange.toStringAsFixed(2)}元，薪资分布${change.lowestSalary.toStringAsFixed(2)}-${change.highestSalary.toStringAsFixed(2)}元",
+      );
+
       // 与上年对比分析
       if (change.totalSalaryChange != null && i > 0) {
         final prevChange = yearlyChanges[i - 1];
-        
+
         buffer.writeln("  与${prevChange.year}年对比分析：");
-        
+
         final totalChangeText = change.totalSalaryChange! >= 0 ? "增长" : "下降";
-        buffer.writeln("    总薪资$totalChangeText${change.totalSalaryChange!.abs().toStringAsFixed(2)}元（${change.totalSalaryChangePercent!.toStringAsFixed(2)}%）");
-        
+        buffer.writeln(
+          "    总薪资$totalChangeText${change.totalSalaryChange!.abs().toStringAsFixed(2)}元（${change.totalSalaryChangePercent!.toStringAsFixed(2)}%）",
+        );
+
         final avgChangeText = change.averageSalaryChange! >= 0 ? "增长" : "下降";
-        buffer.writeln("    平均薪资$avgChangeText${change.averageSalaryChange!.abs().toStringAsFixed(2)}元（${change.averageSalaryChangePercent!.toStringAsFixed(2)}%）");
-        
+        buffer.writeln(
+          "    平均薪资$avgChangeText${change.averageSalaryChange!.abs().toStringAsFixed(2)}元（${change.averageSalaryChangePercent!.toStringAsFixed(2)}%）",
+        );
+
         final empChangeText = change.employeeCountChange! >= 0 ? "增加" : "减少";
-        buffer.writeln("    员工人数$empChangeText${change.employeeCountChange!.abs()}人");
+        buffer.writeln(
+          "    员工人数$empChangeText${change.employeeCountChange!.abs()}人",
+        );
       }
-      
+
       if (i < yearlyChanges.length - 1) {
         buffer.writeln("\n${"-" * 50}");
       }
     }
-    
+
     return buffer.toString();
   }
 
@@ -927,7 +1040,7 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
 
     // 获取月度员工变化数据
     final monthlyChanges = getMonthlyEmployeeChange();
-    
+
     // 按年分组
     final Map<int, List<EmployeeChange>> yearlyGroups = {};
     for (final change in monthlyChanges) {
@@ -959,13 +1072,19 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
       }
 
       // 年度持续在职员工：整个年度都在职的员工
-      final continuousEmployees = yearStartEmployees.intersection(yearEndEmployees);
+      final continuousEmployees = yearStartEmployees.intersection(
+        yearEndEmployees,
+      );
 
       final totalEmployeeCount = yearData.last.totalEmployeeCount;
       final newEmployeeCount = newEmployees.length;
       final leftEmployeeCount = leftEmployees.length;
-      final averageEmployeeCount = yearData.map((e) => e.totalEmployeeCount).reduce((a, b) => a + b) / yearData.length;
-      final turnoverRate = averageEmployeeCount > 0 ? (leftEmployeeCount / averageEmployeeCount) * 100 : 0.0;
+      final averageEmployeeCount =
+          yearData.map((e) => e.totalEmployeeCount).reduce((a, b) => a + b) /
+          yearData.length;
+      final turnoverRate = averageEmployeeCount > 0
+          ? (leftEmployeeCount / averageEmployeeCount) * 100
+          : 0.0;
 
       yearlyChanges.add(
         YearlyEmployeeChange(
@@ -990,34 +1109,38 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
   String getYearlyEmployeeChangeText() {
     List<YearlyEmployeeChange> yearlyChanges = getYearlyEmployeeChange();
     StringBuffer buffer = StringBuffer();
-    
+
     if (yearlyChanges.isEmpty) {
       return "暂无年度员工变化数据。";
     }
-    
+
     buffer.writeln("年度员工变化分析报告\n");
     buffer.writeln("=" * 50);
-    
+
     for (int i = 0; i < yearlyChanges.length; i++) {
       final change = yearlyChanges[i];
-      
+
       buffer.writeln("\n${change.year}年度员工变化情况：");
-      
+
       // 年度内部月度变化详情
       buffer.writeln("  年度内部月度变化详情：");
       for (final monthlyChange in change.monthlyChanges) {
-        buffer.writeln("    ${monthlyChange.month}月：总员工${monthlyChange.totalEmployeeCount}人，新增${monthlyChange.newEmployeeCount}人，离职${monthlyChange.leftEmployeeCount}人，离职率${monthlyChange.turnoverRate.toStringAsFixed(2)}%");
+        buffer.writeln(
+          "    ${monthlyChange.month}月：总员工${monthlyChange.totalEmployeeCount}人，新增${monthlyChange.newEmployeeCount}人，离职${monthlyChange.leftEmployeeCount}人，离职率${monthlyChange.turnoverRate.toStringAsFixed(2)}%",
+        );
       }
-      
+
       // 年度汇总情况
       buffer.writeln("  年度汇总情况：");
       buffer.writeln("    年末总员工数：${change.totalEmployeeCount}人");
       buffer.writeln("    年度新增员工：${change.newEmployeeCount}人");
       buffer.writeln("    年度离职员工：${change.leftEmployeeCount}人");
       buffer.writeln("    年度持续在职员工：${change.continuousEmployees.length}人");
-      buffer.writeln("    年度平均员工数：${change.averageEmployeeCount.toStringAsFixed(1)}人");
+      buffer.writeln(
+        "    年度平均员工数：${change.averageEmployeeCount.toStringAsFixed(1)}人",
+      );
       buffer.writeln("    年度离职率：${change.turnoverRate.toStringAsFixed(2)}%");
-      
+
       // 人员变动效率分析
       final netChange = change.newEmployeeCount - change.leftEmployeeCount;
       if (netChange > 0) {
@@ -1027,12 +1150,12 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
       } else {
         buffer.writeln("    人员变动分析：本年度人员进出平衡，团队规模保持稳定");
       }
-      
+
       if (i < yearlyChanges.length - 1) {
         buffer.writeln("\n${"-" * 50}");
       }
     }
-    
+
     return buffer.toString();
   }
 
@@ -1057,14 +1180,18 @@ extension ALotOfUsefulExtension on List<MonthlyComparisonData> {
   Future<Uint8List?> generateMonthlyEmployeeTrendChart() async {
     final chartService = TrendAnalysisChartService();
     final employeeChanges = getMonthlyEmployeeChange();
-    return await chartService.generateMonthlyEmployeeTrendChart(employeeChanges);
+    return await chartService.generateMonthlyEmployeeTrendChart(
+      employeeChanges,
+    );
   }
 
   /// 生成季度薪资变化趋势图表
   Future<Uint8List?> generateQuarterlySalaryTrendChart() async {
     final chartService = TrendAnalysisChartService();
     final quarterlyChanges = getQuarterlySalaryChange();
-    return await chartService.generateQuarterlySalaryTrendChart(quarterlyChanges);
+    return await chartService.generateQuarterlySalaryTrendChart(
+      quarterlyChanges,
+    );
   }
 
   /// 生成年度薪资变化趋势图表
@@ -1135,106 +1262,6 @@ class MultiMonthComparisonData {
 
   MultiMonthComparisonData({
     required this.monthlyComparisons,
-    required this.startDate,
-    required this.endDate,
-    this.monthlySummary = const {},
-  });
-}
-
-/*=============================================================================*/
-
-// 季度对比数据模型
-@Deprecated("use `MultiMonthComparisonData` instead")
-class QuarterlyComparisonData {
-  final List<MonthlyComparisonData> monthlyComparisons;
-  final int year;
-  final int quarter;
-  final int employeeCount;
-  final double totalSalary;
-  final double averageSalary;
-  final double highestSalary;
-  final double lowestSalary;
-  final Map<String, DepartmentSalaryStats> departmentStats;
-  final Map<String, SalaryRangeStats> salaryRangeStats;
-  final Map<String, List<MinimalEmployeeInfo>> uniqueEmployees; // 每个月的员工姓名
-  final int totalEmployeeCount; // 季度去重后的员工总数
-  final List<MinimalEmployeeInfo> workers; // 添加员工列表字段
-
-  QuarterlyComparisonData({
-    required this.year,
-    required this.quarter,
-    required this.employeeCount,
-    required this.totalSalary,
-    required this.averageSalary,
-    required this.highestSalary,
-    required this.lowestSalary,
-    required this.departmentStats,
-    required this.salaryRangeStats,
-    required this.uniqueEmployees,
-    required this.totalEmployeeCount,
-    required this.workers,
-    required this.monthlyComparisons,
-  });
-}
-
-// 多季度对比数据模型
-@Deprecated("use `MultiMonthComparisonData` instead")
-class MultiQuarterComparisonData {
-  final List<QuarterlyComparisonData> quarterlyComparisons;
-  final DateTime startDate;
-  final DateTime endDate;
-  Map<String, String?> monthlySummary;
-
-  MultiQuarterComparisonData({
-    required this.quarterlyComparisons,
-    required this.startDate,
-    required this.endDate,
-    this.monthlySummary = const {},
-  });
-}
-
-/*=============================================================================*/
-
-// 年度对比数据模型
-@Deprecated("use `MultiMonthComparisonData` instead")
-class YearlyComparisonData {
-  final int year;
-  final int employeeCount;
-  final double totalSalary;
-  final double averageSalary;
-  final double highestSalary;
-  final double lowestSalary;
-  final Map<String, DepartmentSalaryStats> departmentStats;
-  final Map<String, SalaryRangeStats> salaryRangeStats;
-  final Map<String, List<MinimalEmployeeInfo>> uniqueEmployees; // 每个月的员工姓名
-  final int totalEmployeeCount; // 全年去重后的员工总数
-  final List<MinimalEmployeeInfo> workers; // 添加员工列表字段
-
-  YearlyComparisonData({
-    required this.year,
-    required this.employeeCount,
-    required this.totalSalary,
-    required this.averageSalary,
-    required this.highestSalary,
-    required this.lowestSalary,
-    required this.departmentStats,
-    required this.salaryRangeStats,
-    required this.uniqueEmployees,
-    required this.totalEmployeeCount,
-    required this.workers,
-  });
-}
-
-// 多年对比数据模型
-@Deprecated("use `MultiMonthComparisonData` instead")
-class MultiYearComparisonData {
-  final List<YearlyComparisonData> yearlyComparisons;
-  final DateTime startDate;
-  final DateTime endDate;
-  Map<String, String?> monthlySummary;
-
-  MultiYearComparisonData({
-    required this.yearlyComparisons,
     required this.startDate,
     required this.endDate,
     this.monthlySummary = const {},

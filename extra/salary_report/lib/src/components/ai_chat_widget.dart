@@ -589,7 +589,7 @@ class _AIChatWidgetState extends ConsumerState<AIChatWidget>
                   child: Row(
                     children: [
                       Icon(
-                        isExpanded ? Icons.expand_less : Icons.expand_more,
+                        Icons.expand_more,
                         color: Colors.purple.shade700,
                         size: 16,
                       ),

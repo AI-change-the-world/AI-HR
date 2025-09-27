@@ -670,25 +670,24 @@ $salaryComposition
 
   /// 生成季度趋势分析
   Future<String> generateQuarterlyTrendAnalysis(
-    List<QuarterlyComparisonData> quarterlyComparisons,
+    List<MonthlyComparisonData> quarterlyComparisons,
   ) async {
     if (!AIConfig.aiEnabled) return "";
 
     try {
       // 按时间排序
-      final sortedData =
-          List<QuarterlyComparisonData>.from(quarterlyComparisons)
-            ..sort((a, b) {
-              if (a.year != b.year) {
-                return a.year.compareTo(b.year);
-              }
-              return a.quarter.compareTo(b.quarter);
-            });
+      final sortedData = List<MonthlyComparisonData>.from(quarterlyComparisons)
+        ..sort((a, b) {
+          if (a.year != b.year) {
+            return a.year.compareTo(b.year);
+          }
+          return a.month.compareTo(b.month);
+        });
 
       final trendData = sortedData
           .map(
             (q) =>
-                '${q.year}年第${q.quarter}季度: 员工数${q.employeeCount}人, '
+                '${q.year}年${q.month}月: 员工数${q.employeeCount}人, '
                 '工资总额${q.totalSalary.toStringAsFixed(2)}元, '
                 '平均工资${q.averageSalary.toStringAsFixed(2)}元',
           )
@@ -742,20 +741,19 @@ $departmentData
 
   /// 生成季度环比分析
   Future<String> generateQuarterOverQuarterAnalysis(
-    List<QuarterlyComparisonData> quarterlyComparisons,
+    List<MonthlyComparisonData> quarterlyComparisons,
   ) async {
     if (!AIConfig.aiEnabled || quarterlyComparisons.length < 2) return "";
 
     try {
       // 按时间排序
-      final sortedData =
-          List<QuarterlyComparisonData>.from(quarterlyComparisons)
-            ..sort((a, b) {
-              if (a.year != b.year) {
-                return a.year.compareTo(b.year);
-              }
-              return a.quarter.compareTo(b.quarter);
-            });
+      final sortedData = List<MonthlyComparisonData>.from(quarterlyComparisons)
+        ..sort((a, b) {
+          if (a.year != b.year) {
+            return a.year.compareTo(b.year);
+          }
+          return a.month.compareTo(b.month);
+        });
 
       final qoqData = <String>[];
       for (int i = 1; i < sortedData.length; i++) {
@@ -784,7 +782,7 @@ $departmentData
             : "N/A";
 
         qoqData.add(
-          '${current.year}年第${current.quarter}季度 vs ${previous.year}年第${previous.quarter}季度: '
+          '${current.year}年${current.month}月 vs ${previous.year}年${previous.month}月: '
           '员工数变化$employeeCountChange人($employeeCountChangeRate%), '
           '工资总额变化${totalSalaryChange.toStringAsFixed(2)}元($totalSalaryChangeRate%), '
           '平均工资变化${averageSalaryChange.toStringAsFixed(2)}元($averageSalaryChangeRate%)',
@@ -809,7 +807,7 @@ ${qoqData.join('\n')}
   /// 生成年度同比分析
   Future<String> generateYearOverYearAnalysis(
     List<dynamic>
-    comparisons, // 可以是 QuarterlyComparisonData 或 YearlyComparisonData
+    comparisons, // 可以是 MonthlyComparisonData 或 MonthlyComparisonData
   ) async {
     if (!AIConfig.aiEnabled || comparisons.length < 2) return "";
 
@@ -817,27 +815,27 @@ ${qoqData.join('\n')}
       final yoyData = <String>[];
 
       if (comparisons.isNotEmpty &&
-          comparisons.first is QuarterlyComparisonData) {
+          comparisons.first is MonthlyComparisonData) {
         // 处理季度数据
-        final quarterlyData = comparisons.cast<QuarterlyComparisonData>();
+        final quarterlyData = comparisons.cast<MonthlyComparisonData>();
 
         // 按时间排序
-        final sortedData = List<QuarterlyComparisonData>.from(quarterlyData)
+        final sortedData = List<MonthlyComparisonData>.from(quarterlyData)
           ..sort((a, b) {
             if (a.year != b.year) {
               return a.year.compareTo(b.year);
             }
-            return a.quarter.compareTo(b.quarter);
+            return a.month.compareTo(b.month);
           });
 
         // 查找同比数据（去年同季度）
         for (var currentQuarter in sortedData) {
-          QuarterlyComparisonData? lastYearQuarter;
+          MonthlyComparisonData? lastYearQuarter;
           try {
             lastYearQuarter = sortedData.firstWhere(
               (q) =>
                   q.year == currentQuarter.year - 1 &&
-                  q.quarter == currentQuarter.quarter,
+                  q.month == currentQuarter.month,
             );
           } catch (e) {
             lastYearQuarter = null;
@@ -866,7 +864,7 @@ ${qoqData.join('\n')}
                 : "N/A";
 
             yoyData.add(
-              '${currentQuarter.year}年第${currentQuarter.quarter}季度 vs ${lastYearQuarter.year}年第${lastYearQuarter.quarter}季度: '
+              '${currentQuarter.year}年${currentQuarter.month}月 vs ${lastYearQuarter.year}年${lastYearQuarter.month}月: '
               '员工数变化$employeeCountChange人($employeeCountChangeRate%), '
               '工资总额变化${totalSalaryChange.toStringAsFixed(2)}元($totalSalaryChangeRate%), '
               '平均工资变化${averageSalaryChange.toStringAsFixed(2)}元($averageSalaryChangeRate%)',
@@ -874,12 +872,12 @@ ${qoqData.join('\n')}
           }
         }
       } else if (comparisons.isNotEmpty &&
-          comparisons.first is YearlyComparisonData) {
+          comparisons.first is MonthlyComparisonData) {
         // 处理年度数据
-        final yearlyData = comparisons.cast<YearlyComparisonData>();
+        final yearlyData = comparisons.cast<MonthlyComparisonData>();
 
         // 按年份排序
-        final sortedData = List<YearlyComparisonData>.from(yearlyData)
+        final sortedData = List<MonthlyComparisonData>.from(yearlyData)
           ..sort((a, b) => a.year.compareTo(b.year));
 
         // 计算同比变化
@@ -969,15 +967,15 @@ $rangeData
 
   /// 生成多季度结论
   Future<String> generateMultiQuarterConclusions(
-    MultiQuarterComparisonData comparisonData,
+    MultiMonthComparisonData comparisonData,
   ) async {
     if (!AIConfig.aiEnabled) return "";
 
     try {
       // 提取关键数据
-      final quarterCount = comparisonData.quarterlyComparisons.length;
-      final startQuarter = comparisonData.quarterlyComparisons.first;
-      final endQuarter = comparisonData.quarterlyComparisons.last;
+      final quarterCount = comparisonData.monthlyComparisons.length;
+      final startQuarter = comparisonData.monthlyComparisons.first;
+      final endQuarter = comparisonData.monthlyComparisons.last;
 
       final totalSalaryChange =
           endQuarter.totalSalary - startQuarter.totalSalary;
@@ -997,7 +995,7 @@ $rangeData
           '''
 请基于以下多季度工资数据，提供综合结论和优化建议：
 
-分析周期：${startQuarter.year}年第${startQuarter.quarter}季度至${endQuarter.year}年第${endQuarter.quarter}季度，共$quarterCount个季度
+分析周期：${startQuarter.year}年${startQuarter.month}月至${endQuarter.year}年${endQuarter.month}月，共$quarterCount个月
 总体变化：工资总额变化${totalSalaryChange.toStringAsFixed(2)}元($totalSalaryChangeRate%)，平均工资变化${averageSalaryChange.toStringAsFixed(2)}元($averageSalaryChangeRate%)
 
 请提供一段关于多季度薪资数据的综合结论，以及针对性的优化建议。要求语言严谨、简洁，体现报告风格。
@@ -1012,15 +1010,15 @@ $rangeData
 
   /// 生成多年度结论
   Future<String> generateMultiYearConclusions(
-    MultiYearComparisonData comparisonData,
+    MultiMonthComparisonData comparisonData,
   ) async {
     if (!AIConfig.aiEnabled) return "";
 
     try {
       // 提取关键数据
-      final yearCount = comparisonData.yearlyComparisons.length;
-      final startYear = comparisonData.yearlyComparisons.first;
-      final endYear = comparisonData.yearlyComparisons.last;
+      final yearCount = comparisonData.monthlyComparisons.length;
+      final startYear = comparisonData.monthlyComparisons.first;
+      final endYear = comparisonData.monthlyComparisons.last;
 
       final totalSalaryChange = endYear.totalSalary - startYear.totalSalary;
       final totalSalaryChangeRate = startYear.totalSalary > 0
@@ -1038,7 +1036,7 @@ $rangeData
           '''
 请基于以下多年度工资数据，提供综合结论和优化建议：
 
-分析周期：${startYear.year}年至${endYear.year}年，共$yearCount年
+分析周期：${startYear.year}年${startYear.month}月至${endYear.year}年${endYear.month}月，共$yearCount个月
 总体变化：工资总额变化${totalSalaryChange.toStringAsFixed(2)}元($totalSalaryChangeRate%)，平均工资变化${averageSalaryChange.toStringAsFixed(2)}元($averageSalaryChangeRate%)
 
 请提供一段关于多年度薪资数据的综合结论，以及针对性的优化建议。要求语言严谨、简洁，体现报告风格。
@@ -1212,13 +1210,13 @@ $anomalyStr
 
   /// 生成年度趋势分析
   Future<String> generateYearlyTrendAnalysis(
-    List<YearlyComparisonData> yearlyComparisons,
+    List<MonthlyComparisonData> yearlyComparisons,
   ) async {
     if (!AIConfig.aiEnabled) return "";
 
     try {
       // 按年份排序
-      final sortedData = List<YearlyComparisonData>.from(yearlyComparisons)
+      final sortedData = List<MonthlyComparisonData>.from(yearlyComparisons)
         ..sort((a, b) => a.year.compareTo(b.year));
 
       final trendData = sortedData

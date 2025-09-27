@@ -5,7 +5,7 @@ import 'package:salary_report/src/services/enhanced_report_generator_interface.d
 import 'package:salary_report/src/services/monthly/enhanced_monthly_report_generator.dart';
 import 'package:salary_report/src/services/multi_month/enhanced_multi_month_report_generator.dart';
 import 'package:salary_report/src/services/quarterly/enhanced_quarterly_report_generator.dart';
-import 'package:salary_report/src/services/yearly/enhanced_annual_report_generator.dart';
+import 'package:salary_report/src/services/yearly/enhanced_yearly_report_generator.dart';
 
 /// 增强版报告生成器工厂
 class EnhancedReportGeneratorFactory {
@@ -21,7 +21,7 @@ class EnhancedReportGeneratorFactory {
       case ReportType.multiQuarter:
         return EnhancedMultiMonthReportGenerator(); // 多季度报告使用多月报告生成器
       case ReportType.singleYear:
-        return EnhancedAnnualReportGenerator();
+        return EnhancedYearlyReportGenerator();
       case ReportType.multiYear:
         return EnhancedMultiMonthReportGenerator(); // 多年报告使用多月报告生成器
     }

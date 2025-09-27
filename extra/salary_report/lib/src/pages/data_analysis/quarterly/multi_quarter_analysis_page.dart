@@ -14,8 +14,6 @@ import 'package:salary_report/src/rust/api/simple.dart';
 import 'package:toastification/toastification.dart';
 import 'package:salary_report/src/services/report_service.dart';
 import 'package:salary_report/src/components/salary_charts.dart';
-import 'package:salary_report/src/services/enhanced_report_generator_factory.dart';
-import 'package:salary_report/src/services/report_types.dart';
 import 'package:salary_report/src/services/multi_quarter/enhanced_multi_quarter_report_generator.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 
@@ -186,9 +184,8 @@ class _MultiQuarterAnalysisPageState
           ),
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
-            // onPressed: _isGeneratingReport ? null : _generateSalaryReport,
-            onPressed: null,
-            tooltip: '多季度报告开发中',
+            onPressed: _isGeneratingReport ? null : _generateSalaryReport,
+            tooltip: '生成多季度报告',
           ),
           SizedBox(width: 8),
         ],
@@ -420,39 +417,35 @@ class QuarterlyEmployeeCountChartComponent extends ConsumerWidget {
           return const Center(child: Text('暂无数据'));
         }
 
-        final List<Map<String, dynamic>> employeeCountPerQuarter = [];
-
-        // 按时间排序季度数据
-        final sortedQuarterlyData =
-            List<QuarterlyComparisonData>.from(
-              chartData.comparisonData!.quarterlyComparisons,
+        // 将月度数据聚合为季度数据
+        final sortedMonthlyData =
+            List<MonthlyComparisonData>.from(
+              chartData.comparisonData!.monthlyComparisons,
             )..sort((a, b) {
               if (a.year != b.year) {
                 return a.year.compareTo(b.year);
               }
-              return a.quarter.compareTo(b.quarter);
+              return a.month.compareTo(b.month);
             });
 
-        for (var quarterlyComparison in sortedQuarterlyData) {
-          // 使用去重后的员工数量，而不是直接使用employeeCount
-          int totalEmployees = quarterlyComparison.totalEmployeeCount;
+        final quarterlyAggregatedData = _aggregateMonthlyToQuarterly(
+          sortedMonthlyData,
+        );
+
+        final List<Map<String, dynamic>> employeeCountPerQuarter = [];
+
+        for (var quarterlyData in quarterlyAggregatedData) {
+          final year = quarterlyData['year'] as int;
+          final quarter = quarterlyData['quarter'] as int;
+          final totalEmployeeCount = quarterlyData['totalEmployeeCount'] as int;
 
           employeeCountPerQuarter.add({
-            'quarter':
-                '${quarterlyComparison.year}年第${quarterlyComparison.quarter}季度',
-            'year': quarterlyComparison.year,
-            'quarterNum': quarterlyComparison.quarter,
-            'employeeCount': totalEmployees,
+            'quarter': '$year年第$quarter季度',
+            'year': year,
+            'quarterNum': quarter,
+            'employeeCount': totalEmployeeCount,
           });
         }
-
-        // 按时间排序
-        employeeCountPerQuarter.sort((a, b) {
-          if (a['year'] != b['year']) {
-            return (a['year'] as int).compareTo(b['year'] as int);
-          }
-          return (a['quarterNum'] as int).compareTo(b['quarterNum'] as int);
-        });
 
         return QuarterlyEmployeeCountChart(
           quarterlyData: employeeCountPerQuarter,
@@ -461,6 +454,70 @@ class QuarterlyEmployeeCountChartComponent extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => Center(child: Text('加载数据失败: $error')),
     );
+  }
+
+  /// 将月度数据聚合为季度数据
+  List<Map<String, dynamic>> _aggregateMonthlyToQuarterly(
+    List<MonthlyComparisonData> monthlyData,
+  ) {
+    final Map<String, List<MonthlyComparisonData>> quarterlyGroups = {};
+
+    for (var monthData in monthlyData) {
+      final quarter = _getQuarter(monthData.month);
+      final quarterKey = '${monthData.year}-Q$quarter';
+
+      if (!quarterlyGroups.containsKey(quarterKey)) {
+        quarterlyGroups[quarterKey] = [];
+      }
+      quarterlyGroups[quarterKey]!.add(monthData);
+    }
+
+    return quarterlyGroups.entries
+        .map((entry) {
+          final quarterKey = entry.key;
+          final months = entry.value;
+          if (months.isEmpty) return null;
+
+          final year = months.first.year;
+          final quarter = _getQuarter(months.first.month);
+
+          final Set<MinimalEmployeeInfo> allWorkers = {};
+          double totalSalary = 0.0;
+
+          for (var monthData in months) {
+            allWorkers.addAll(monthData.workers);
+            monthData.departmentStats.forEach((deptName, stat) {
+              totalSalary += stat.totalNetSalary;
+            });
+          }
+
+          final totalemployeecountActual = allWorkers.length;
+          final averageSalary = totalemployeecountActual > 0
+              ? totalSalary / totalemployeecountActual
+              : 0.0;
+
+          return {
+            'year': year,
+            'quarter': quarter,
+            'totalEmployeeCount': totalemployeecountActual,
+            'totalSalary': totalSalary,
+            'averageSalary': averageSalary,
+          };
+        })
+        .where((item) => item != null)
+        .cast<Map<String, dynamic>>()
+        .toList()
+      ..sort((a, b) {
+        if (a['year'] != b['year']) {
+          return (a['year'] as int).compareTo(b['year'] as int);
+        }
+        return (a['quarter'] as int).compareTo(b['quarter'] as int);
+      });
+  }
+
+  /// 根据月份计算季度
+  int _getQuarter(int month) {
+    return ((month - 1) ~/ 3) + 1;
   }
 }
 
@@ -480,38 +537,35 @@ class QuarterlyAverageSalaryChartComponent extends ConsumerWidget {
           return const Center(child: Text('暂无数据'));
         }
 
-        List<Map<String, dynamic>> averageSalaryPerQuarter = [];
-
-        // 按时间排序季度数据
-        final sortedQuarterlyData =
-            List<QuarterlyComparisonData>.from(
-              chartData.comparisonData!.quarterlyComparisons,
+        // 将月度数据聚合为季度数据
+        final sortedMonthlyData =
+            List<MonthlyComparisonData>.from(
+              chartData.comparisonData!.monthlyComparisons,
             )..sort((a, b) {
               if (a.year != b.year) {
                 return a.year.compareTo(b.year);
               }
-              return a.quarter.compareTo(b.quarter);
+              return a.month.compareTo(b.month);
             });
 
-        for (var quarterlyComparison in sortedQuarterlyData) {
-          final averageSalary = quarterlyComparison.averageSalary;
+        final quarterlyAggregatedData = _aggregateMonthlyToQuarterly(
+          sortedMonthlyData,
+        );
+
+        List<Map<String, dynamic>> averageSalaryPerQuarter = [];
+
+        for (var quarterlyData in quarterlyAggregatedData) {
+          final year = quarterlyData['year'] as int;
+          final quarter = quarterlyData['quarter'] as int;
+          final averageSalary = quarterlyData['averageSalary'] as double;
 
           averageSalaryPerQuarter.add({
-            'quarter':
-                '${quarterlyComparison.year}年第${quarterlyComparison.quarter}季度',
-            'year': quarterlyComparison.year,
-            'quarterNum': quarterlyComparison.quarter,
+            'quarter': '$year年第$quarter季度',
+            'year': year,
+            'quarterNum': quarter,
             'averageSalary': averageSalary,
           });
         }
-
-        // 按时间排序
-        averageSalaryPerQuarter.sort((a, b) {
-          if (a['year'] != b['year']) {
-            return (a['year'] as int).compareTo(b['year'] as int);
-          }
-          return (a['quarterNum'] as int).compareTo(b['quarterNum'] as int);
-        });
 
         logger.info('averageSalaryPerQuarter: $averageSalaryPerQuarter');
 
@@ -522,6 +576,70 @@ class QuarterlyAverageSalaryChartComponent extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => Center(child: Text('加载数据失败: $error')),
     );
+  }
+
+  /// 将月度数据聚合为季度数据
+  List<Map<String, dynamic>> _aggregateMonthlyToQuarterly(
+    List<MonthlyComparisonData> monthlyData,
+  ) {
+    final Map<String, List<MonthlyComparisonData>> quarterlyGroups = {};
+
+    for (var monthData in monthlyData) {
+      final quarter = _getQuarter(monthData.month);
+      final quarterKey = '${monthData.year}-Q$quarter';
+
+      if (!quarterlyGroups.containsKey(quarterKey)) {
+        quarterlyGroups[quarterKey] = [];
+      }
+      quarterlyGroups[quarterKey]!.add(monthData);
+    }
+
+    return quarterlyGroups.entries
+        .map((entry) {
+          final quarterKey = entry.key;
+          final months = entry.value;
+          if (months.isEmpty) return null;
+
+          final year = months.first.year;
+          final quarter = _getQuarter(months.first.month);
+
+          final Set<MinimalEmployeeInfo> allWorkers = {};
+          double totalSalary = 0.0;
+
+          for (var monthData in months) {
+            allWorkers.addAll(monthData.workers);
+            monthData.departmentStats.forEach((deptName, stat) {
+              totalSalary += stat.totalNetSalary;
+            });
+          }
+
+          final totalemployeecountActual = allWorkers.length;
+          final averageSalary = totalemployeecountActual > 0
+              ? totalSalary / totalemployeecountActual
+              : 0.0;
+
+          return {
+            'year': year,
+            'quarter': quarter,
+            'totalEmployeeCount': totalemployeecountActual,
+            'totalSalary': totalSalary,
+            'averageSalary': averageSalary,
+          };
+        })
+        .where((item) => item != null)
+        .cast<Map<String, dynamic>>()
+        .toList()
+      ..sort((a, b) {
+        if (a['year'] != b['year']) {
+          return (a['year'] as int).compareTo(b['year'] as int);
+        }
+        return (a['quarter'] as int).compareTo(b['quarter'] as int);
+      });
+  }
+
+  /// 根据月份计算季度
+  int _getQuarter(int month) {
+    return ((month - 1) ~/ 3) + 1;
   }
 }
 
@@ -541,44 +659,105 @@ class QuarterlyTotalSalaryChartComponent extends ConsumerWidget {
           return const Center(child: Text('暂无数据'));
         }
 
-        final List<Map<String, dynamic>> totalSalaryPerQuarter = [];
-
-        // 按时间排序季度数据
-        final sortedQuarterlyData =
-            List<QuarterlyComparisonData>.from(
-              chartData.comparisonData!.quarterlyComparisons,
+        // 将月度数据聚合为季度数据
+        final sortedMonthlyData =
+            List<MonthlyComparisonData>.from(
+              chartData.comparisonData!.monthlyComparisons,
             )..sort((a, b) {
               if (a.year != b.year) {
                 return a.year.compareTo(b.year);
               }
-              return a.quarter.compareTo(b.quarter);
+              return a.month.compareTo(b.month);
             });
 
-        for (var quarterlyComparison in sortedQuarterlyData) {
-          final totalSalary = quarterlyComparison.totalSalary;
+        final quarterlyAggregatedData = _aggregateMonthlyToQuarterly(
+          sortedMonthlyData,
+        );
+
+        final List<Map<String, dynamic>> totalSalaryPerQuarter = [];
+
+        for (var quarterlyData in quarterlyAggregatedData) {
+          final year = quarterlyData['year'] as int;
+          final quarter = quarterlyData['quarter'] as int;
+          final totalSalary = quarterlyData['totalSalary'] as double;
 
           totalSalaryPerQuarter.add({
-            'quarter':
-                '${quarterlyComparison.year}年第${quarterlyComparison.quarter}季度',
-            'year': quarterlyComparison.year,
-            'quarterNum': quarterlyComparison.quarter,
+            'quarter': '$year年第$quarter季度',
+            'year': year,
+            'quarterNum': quarter,
             'totalSalary': totalSalary,
           });
         }
-
-        // 按时间排序
-        totalSalaryPerQuarter.sort((a, b) {
-          if (a['year'] != b['year']) {
-            return (a['year'] as int).compareTo(b['year'] as int);
-          }
-          return (a['quarterNum'] as int).compareTo(b['quarterNum'] as int);
-        });
 
         return QuarterlyTotalSalaryChart(quarterlyData: totalSalaryPerQuarter);
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => Center(child: Text('加载数据失败: $error')),
     );
+  }
+
+  /// 将月度数据聚合为季度数据
+  List<Map<String, dynamic>> _aggregateMonthlyToQuarterly(
+    List<MonthlyComparisonData> monthlyData,
+  ) {
+    final Map<String, List<MonthlyComparisonData>> quarterlyGroups = {};
+
+    for (var monthData in monthlyData) {
+      final quarter = _getQuarter(monthData.month);
+      final quarterKey = '${monthData.year}-Q$quarter';
+
+      if (!quarterlyGroups.containsKey(quarterKey)) {
+        quarterlyGroups[quarterKey] = [];
+      }
+      quarterlyGroups[quarterKey]!.add(monthData);
+    }
+
+    return quarterlyGroups.entries
+        .map((entry) {
+          final quarterKey = entry.key;
+          final months = entry.value;
+          if (months.isEmpty) return null;
+
+          final year = months.first.year;
+          final quarter = _getQuarter(months.first.month);
+
+          final Set<MinimalEmployeeInfo> allWorkers = {};
+          double totalSalary = 0.0;
+
+          for (var monthData in months) {
+            allWorkers.addAll(monthData.workers);
+            monthData.departmentStats.forEach((deptName, stat) {
+              totalSalary += stat.totalNetSalary;
+            });
+          }
+
+          final totalemployeecountActual = allWorkers.length;
+          final averageSalary = totalemployeecountActual > 0
+              ? totalSalary / totalemployeecountActual
+              : 0.0;
+
+          return {
+            'year': year,
+            'quarter': quarter,
+            'totalEmployeeCount': totalemployeecountActual,
+            'totalSalary': totalSalary,
+            'averageSalary': averageSalary,
+          };
+        })
+        .where((item) => item != null)
+        .cast<Map<String, dynamic>>()
+        .toList()
+      ..sort((a, b) {
+        if (a['year'] != b['year']) {
+          return (a['year'] as int).compareTo(b['year'] as int);
+        }
+        return (a['quarter'] as int).compareTo(b['quarter'] as int);
+      });
+  }
+
+  /// 根据月份计算季度
+  int _getQuarter(int month) {
+    return ((month - 1) ~/ 3) + 1;
   }
 }
 
@@ -601,34 +780,37 @@ class MultiQuarterDepartmentSalaryChartComponent extends ConsumerWidget {
           return const Center(child: Text('暂无数据'));
         }
 
-        final List<Map<String, dynamic>> result = [];
-
-        // 按时间排序季度数据
-        final sortedQuarterlyData =
-            List<QuarterlyComparisonData>.from(
-              chartData.comparisonData!.quarterlyComparisons,
+        // 将月度数据聚合为季度数据
+        final sortedMonthlyData =
+            List<MonthlyComparisonData>.from(
+              chartData.comparisonData!.monthlyComparisons,
             )..sort((a, b) {
               if (a.year != b.year) {
                 return a.year.compareTo(b.year);
               }
-              return a.quarter.compareTo(b.quarter);
+              return a.month.compareTo(b.month);
             });
 
-        for (var quarterlyData in sortedQuarterlyData) {
-          final quarterLabel =
-              '${quarterlyData.year}年第${quarterlyData.quarter}季度';
+        final quarterlyAggregatedData =
+            _aggregateMonthlyToQuarterlyWithDepartments(sortedMonthlyData);
 
-          // 构建部门数据映射
+        final List<Map<String, dynamic>> result = [];
+
+        for (var quarterlyData in quarterlyAggregatedData) {
+          final year = quarterlyData['year'] as int;
+          final quarter = quarterlyData['quarter'] as int;
+          final departmentStats =
+              quarterlyData['departmentStats']
+                  as Map<String, DepartmentSalaryStats>;
+          final quarterLabel = '$year年第$quarter季度';
+
           final departmentData = <String, double>{};
-          quarterlyData.departmentStats.forEach((deptName, stat) {
-            // 确保使用正确的部门统计数据
+          departmentStats.forEach((deptName, stat) {
             departmentData[deptName] = stat.averageNetSalary;
           });
 
           result.add({'quarter': quarterLabel, 'departments': departmentData});
         }
-
-        logger.info('MultiQuarterDepartmentSalaryChartComponent: $result');
 
         return MultiQuarterDepartmentSalaryChart(
           departmentQuarterlyData: result,
@@ -637,5 +819,93 @@ class MultiQuarterDepartmentSalaryChartComponent extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => Center(child: Text('加载数据失败: $error')),
     );
+  }
+
+  /// 将月度数据聚合为季度数据（包含部门统计）
+  List<Map<String, dynamic>> _aggregateMonthlyToQuarterlyWithDepartments(
+    List<MonthlyComparisonData> monthlyData,
+  ) {
+    final Map<String, List<MonthlyComparisonData>> quarterlyGroups = {};
+
+    for (var monthData in monthlyData) {
+      final quarter = _getQuarter(monthData.month);
+      final quarterKey = '${monthData.year}-Q$quarter';
+
+      if (!quarterlyGroups.containsKey(quarterKey)) {
+        quarterlyGroups[quarterKey] = [];
+      }
+      quarterlyGroups[quarterKey]!.add(monthData);
+    }
+
+    return quarterlyGroups.entries
+        .map((entry) {
+          final quarterKey = entry.key;
+          final months = entry.value;
+          if (months.isEmpty) return null;
+
+          final year = months.first.year;
+          final quarter = _getQuarter(months.first.month);
+
+          // 聚合部门统计数据
+          final Map<String, DepartmentSalaryStats> aggregatedDepartmentStats =
+              {};
+          final Map<String, List<DepartmentSalaryStats>> deptMonthlyData = {};
+
+          for (var monthData in months) {
+            monthData.departmentStats.forEach((deptName, stat) {
+              if (!deptMonthlyData.containsKey(deptName)) {
+                deptMonthlyData[deptName] = [];
+              }
+              deptMonthlyData[deptName]!.add(stat);
+            });
+          }
+
+          deptMonthlyData.forEach((deptName, monthlyStats) {
+            double totalNetSalary = 0.0;
+            int maxEmployeeCount = 0;
+
+            for (var stat in monthlyStats) {
+              totalNetSalary += stat.totalNetSalary;
+              if (stat.employeeCount > maxEmployeeCount) {
+                maxEmployeeCount = stat.employeeCount;
+              }
+            }
+
+            final averageNetSalary = maxEmployeeCount > 0
+                ? totalNetSalary / maxEmployeeCount
+                : 0.0;
+
+            aggregatedDepartmentStats[deptName] = DepartmentSalaryStats(
+              department: deptName,
+              totalNetSalary: totalNetSalary,
+              averageNetSalary: averageNetSalary,
+              employeeCount: maxEmployeeCount,
+              year: year,
+              month: months.first.month,
+              maxSalary: 0,
+              minSalary: 0,
+            );
+          });
+
+          return {
+            'year': year,
+            'quarter': quarter,
+            'departmentStats': aggregatedDepartmentStats,
+          };
+        })
+        .where((item) => item != null)
+        .cast<Map<String, dynamic>>()
+        .toList()
+      ..sort((a, b) {
+        if (a['year'] != b['year']) {
+          return (a['year'] as int).compareTo(b['year'] as int);
+        }
+        return (a['quarter'] as int).compareTo(b['quarter'] as int);
+      });
+  }
+
+  /// 根据月份计算季度
+  int _getQuarter(int month) {
+    return ((month - 1) ~/ 3) + 1;
   }
 }

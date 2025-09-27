@@ -19,24 +19,35 @@ class YearlyDepartmentChangesComponent extends ConsumerWidget {
         }
 
         final yearlyComparisons =
-            departmentChanges.comparisonData!.yearlyComparisons;
+            departmentChanges.comparisonData!.monthlyComparisons;
 
         if (yearlyComparisons.isEmpty) {
           return const Center(child: Text('暂无数据'));
         }
 
-        // 按年份排序
-        final sortedYearlyData =
-            List<YearlyComparisonData>.from(yearlyComparisons)..sort((a, b) {
-              return a.year.compareTo(b.year);
+        // 按时间排序月度数据
+        final sortedMonthlyData =
+            List<MonthlyComparisonData>.from(yearlyComparisons)..sort((a, b) {
+              if (a.year != b.year) {
+                return a.year.compareTo(b.year);
+              }
+              return a.month.compareTo(b.month);
             });
+
+        // 将月度数据聚合为年度数据
+        final yearlyAggregatedData = _aggregateMonthlyToYearly(
+          sortedMonthlyData,
+        );
 
         // 计算部门变化情况
         final departmentChangesMap = <String, List<int>>{};
 
         // 初始化部门变化映射
-        for (var yearlyData in sortedYearlyData) {
-          yearlyData.departmentStats.forEach((deptName, stat) {
+        for (var yearlyData in yearlyAggregatedData) {
+          final departmentStats =
+              yearlyData['departmentStats']
+                  as Map<String, DepartmentSalaryStats>;
+          departmentStats.forEach((deptName, stat) {
             if (!departmentChangesMap.containsKey(deptName)) {
               departmentChangesMap[deptName] = [];
             }
@@ -117,5 +128,92 @@ class YearlyDepartmentChangesComponent extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => Center(child: Text('加载数据失败: $error')),
     );
+  }
+
+  /// 将月度数据聚合为年度数据
+  List<Map<String, dynamic>> _aggregateMonthlyToYearly(
+    List<MonthlyComparisonData> monthlyData,
+  ) {
+    final Map<int, List<MonthlyComparisonData>> yearlyGroups = {};
+
+    // 按年份分组月度数据
+    for (var monthData in monthlyData) {
+      final year = monthData.year;
+
+      if (!yearlyGroups.containsKey(year)) {
+        yearlyGroups[year] = [];
+      }
+      yearlyGroups[year]!.add(monthData);
+    }
+
+    // 将分组后的数据聚合为年度数据
+    return yearlyGroups.entries
+        .map((entry) {
+          final year = entry.key;
+          final months = entry.value;
+
+          if (months.isEmpty) return null;
+
+          // 聚合部门统计数据
+          final Map<String, DepartmentSalaryStats> aggregatedDepartmentStats =
+              {};
+          final Map<String, List<DepartmentSalaryStats>> deptMonthlyData = {};
+
+          // 收集所有月份的部门数据
+          for (var monthData in months) {
+            monthData.departmentStats.forEach((deptName, stat) {
+              if (!deptMonthlyData.containsKey(deptName)) {
+                deptMonthlyData[deptName] = [];
+              }
+              deptMonthlyData[deptName]!.add(stat);
+            });
+          }
+
+          // 聚合每个部门的年度数据
+          deptMonthlyData.forEach((deptName, monthlyStats) {
+            double totalNetSalary = 0.0;
+            int maxEmployeeCount = 0;
+            double maxSalary = 0;
+            double minSalary = double.infinity;
+
+            for (var stat in monthlyStats) {
+              totalNetSalary += stat.totalNetSalary;
+              if (stat.employeeCount > maxEmployeeCount) {
+                maxEmployeeCount = stat.employeeCount;
+              }
+              if (stat.maxSalary > maxSalary) {
+                maxSalary = stat.maxSalary;
+              }
+              if (stat.minSalary < minSalary && stat.minSalary > 0) {
+                minSalary = stat.minSalary;
+              }
+            }
+
+            if (minSalary == double.infinity) {
+              minSalary = 0;
+            }
+
+            final averageNetSalary = maxEmployeeCount > 0
+                ? totalNetSalary / maxEmployeeCount
+                : 0.0;
+
+            aggregatedDepartmentStats[deptName] = DepartmentSalaryStats(
+              department: deptName,
+              totalNetSalary: totalNetSalary,
+              averageNetSalary: averageNetSalary,
+              employeeCount: maxEmployeeCount,
+              year: year,
+              month: months.first.month,
+              maxSalary: maxSalary,
+              minSalary: minSalary,
+            );
+          });
+
+          return {'year': year, 'departmentStats': aggregatedDepartmentStats};
+        })
+        .where((item) => item != null)
+        .cast<Map<String, dynamic>>()
+        .toList()
+      ..sort((a, b) => (a['year'] as int).compareTo(b['year'] as int));
   }
 }

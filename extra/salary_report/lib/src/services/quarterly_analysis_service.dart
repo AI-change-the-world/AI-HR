@@ -13,7 +13,7 @@ class QuarterlyAnalysisService {
     : _monthlyService = MonthlyAnalysisService(_database);
 
   /// 多季度数据对比功能
-  Future<MultiQuarterComparisonData?> getMultiQuarterComparisonData(
+  Future<MultiMonthComparisonData?> getMultiQuarterComparisonData(
     int startYear,
     int startQuarter,
     int endYear,
@@ -42,7 +42,7 @@ class QuarterlyAnalysisService {
       );
 
       logger.info('Generated quarter list: $quarterList');
-      final quarterlyComparisons = <QuarterlyComparisonData>[];
+      final monthlyComparisons = <MonthlyComparisonData>[];
 
       // 遍历季度列表获取数据
       for (var quarterInfo in quarterList) {
@@ -53,173 +53,28 @@ class QuarterlyAnalysisService {
         final quarterStartMonth = (quarter - 1) * 3 + 1;
         final quarterEndMonth = quarter * 3;
 
-        // 获取该季度所有月份的部门统计数据
-        final departmentStatsList = <DepartmentSalaryStats>[];
-
-        // 遍历季度内的每个月份
+        // 获取季度内每个月份的数据
         for (int month = quarterStartMonth; month <= quarterEndMonth; month++) {
-          final monthStats = await _monthlyService.getDepartmentAggregation(
+          final monthlyData = await _monthlyService.getMultiMonthComparisonData(
+            year,
+            month,
             year,
             month,
           );
-          departmentStatsList.addAll(monthStats);
-        }
 
-        // 合并季度内的部门统计数据
-        final departmentStatsMap = <String, DepartmentSalaryStats>{};
-        final departmentMonthlyData = <String, List<DepartmentSalaryStats>>{};
-
-        // 按部门分组月度数据
-        for (var stat in departmentStatsList) {
-          if (!departmentMonthlyData.containsKey(stat.department)) {
-            departmentMonthlyData[stat.department] = [];
-          }
-          departmentMonthlyData[stat.department]!.add(stat);
-        }
-
-        // 计算每个部门的季度统计数据
-        departmentMonthlyData.forEach((deptName, monthlyStats) {
-          int totalEmployeeCount = 0;
-          double totalNetSalary = 0.0;
-
-          for (var stat in monthlyStats) {
-            totalEmployeeCount += stat.employeeCount;
-            totalNetSalary += stat.totalNetSalary;
-          }
-
-          final averageNetSalary = monthlyStats.isNotEmpty
-              ? totalNetSalary / totalEmployeeCount
-              : 0.0;
-
-          departmentStatsMap[deptName] = DepartmentSalaryStats(
-            department: deptName,
-            totalNetSalary: totalNetSalary,
-            averageNetSalary: averageNetSalary,
-            employeeCount: totalEmployeeCount,
-            year: year,
-            month: quarterStartMonth, // 使用季度起始月份作为代表
-          );
-        });
-
-        // 获取薪资范围统计数据（使用季度中间月份）
-        final middleMonth = (quarterStartMonth + quarterEndMonth) ~/ 2;
-        final salaryRangeStatsList = await _monthlyService
-            .getSalaryRangeAggregation(year, middleMonth);
-        final salaryRangeStatsMap = <String, SalaryRangeStats>{};
-        for (var stat in salaryRangeStatsList) {
-          salaryRangeStatsMap[stat.range] = stat;
-        }
-
-        // 收集季度内每个月的员工姓名用于去重统计
-        final uniqueEmployees = <String, List<MinimalEmployeeInfo>>{};
-        int totalEmployeeCount = 0;
-        final workers = <MinimalEmployeeInfo>[]; // 收集所有员工信息
-
-        // 获取该季度所有月份的数据
-        for (int month = quarterStartMonth; month <= quarterEndMonth; month++) {
-          final monthlyData = await _monthlyService.getMonthlySalaryData(
-            year,
-            month,
-          );
-          if (monthlyData != null) {
-            final employeeInfos = <MinimalEmployeeInfo>[];
-            for (var record in monthlyData.records) {
-              if (record.name != null && record.department != null) {
-                final employeeInfo = MinimalEmployeeInfo(
-                  name: record.name!,
-                  department: record.department!,
-                );
-                employeeInfos.add(employeeInfo);
-                workers.add(employeeInfo); // 添加到总员工列表
-              }
-            }
-            uniqueEmployees['$month月'] = employeeInfos;
+          if (monthlyData != null &&
+              monthlyData.monthlyComparisons.isNotEmpty) {
+            monthlyComparisons.addAll(monthlyData.monthlyComparisons);
           }
         }
-
-        // 计算季度去重员工数
-        final allEmployeeNames = <String>{};
-        for (var names in uniqueEmployees.values) {
-          for (var employee in names) {
-            allEmployeeNames.add(employee.name);
-          }
-        }
-        totalEmployeeCount = allEmployeeNames.length;
-
-        // 计算总体统计数据
-        int employeeCount = 0;
-        double totalSalary = 0.0;
-        double averageSalary = 0.0;
-        double highestSalary = 0.0; // 初始化最高工资
-        double lowestSalary = double.infinity; // 初始化最低工资
-
-        // 重新计算季度总工资和员工数（正确的方式）
-        double quarterlyTotalSalary = 0.0;
-        int quarterlyTotalEmployeeCount = 0;
-
-        // 遍历季度内每个月的数据来计算季度总工资
-        for (int month = quarterStartMonth; month <= quarterEndMonth; month++) {
-          final monthlyData = await _monthlyService.getMonthlySalaryData(
-            year,
-            month,
-          );
-          if (monthlyData != null) {
-            for (var record in monthlyData.records) {
-              if (record.netSalary != null) {
-                final salaryStr = record.netSalary!.replaceAll(
-                  RegExp(r'[^\d.-]'),
-                  '',
-                );
-                final salary = double.tryParse(salaryStr) ?? 0;
-                quarterlyTotalSalary += salary;
-                quarterlyTotalEmployeeCount++;
-
-                // 更新最高和最低工资
-                if (salary > highestSalary) {
-                  highestSalary = salary;
-                }
-                if (salary < lowestSalary && salary > 0) {
-                  // 忽略0工资
-                  lowestSalary = salary;
-                }
-              }
-            }
-          }
-        }
-
-        // 使用正确的季度统计数据
-        employeeCount = quarterlyTotalEmployeeCount;
-        totalSalary = quarterlyTotalSalary;
-        averageSalary = employeeCount > 0 ? totalSalary / employeeCount : 0.0;
-
-        // 确保最低工资有合理的默认值
-        if (lowestSalary == double.infinity) {
-          lowestSalary = 0.0;
-        }
-
-        quarterlyComparisons.add(
-          QuarterlyComparisonData(
-            year: year,
-            quarter: quarter,
-            employeeCount: employeeCount,
-            totalSalary: totalSalary,
-            averageSalary: averageSalary,
-            highestSalary: highestSalary,
-            lowestSalary: lowestSalary,
-            departmentStats: departmentStatsMap,
-            salaryRangeStats: salaryRangeStatsMap,
-            uniqueEmployees: uniqueEmployees, // 添加去重员工信息
-            totalEmployeeCount: totalEmployeeCount, // 添加去重后的员工总数
-            workers: workers, // 添加员工列表字段
-            monthlyComparisons: [],
-          ),
-        );
       }
 
-      logger.info('Returning quarterly comparison data');
+      logger.info(
+        'Returning quarterly comparison data as MultiMonthComparisonData',
+      );
 
-      return MultiQuarterComparisonData(
-        quarterlyComparisons: quarterlyComparisons,
+      return MultiMonthComparisonData(
+        monthlyComparisons: monthlyComparisons,
         startDate: startDateTime,
         endDate: endDateTime,
       );

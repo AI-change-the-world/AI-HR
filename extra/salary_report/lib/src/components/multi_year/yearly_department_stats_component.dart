@@ -21,9 +21,12 @@ class YearlyDepartmentStatsComponent extends ConsumerWidget {
 
         // 按时间排序年度数据
         final sortedYearlyData =
-            List<YearlyComparisonData>.from(departmentStats.yearlyData!)
+            List<MonthlyComparisonData>.from(departmentStats.yearlyData!)
               ..sort((a, b) {
-                return a.year.compareTo(b.year);
+                if (a.year != b.year) {
+                  return a.year.compareTo(b.year);
+                }
+                return a.month.compareTo(b.month);
               });
 
         // 计算当前页的年份范围
@@ -47,7 +50,7 @@ class YearlyDepartmentStatsComponent extends ConsumerWidget {
     );
   }
 
-  Widget _buildYearlyDepartmentCard(YearlyComparisonData yearlyData) {
+  Widget _buildYearlyDepartmentCard(MonthlyComparisonData yearlyData) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Container(
@@ -57,7 +60,7 @@ class YearlyDepartmentStatsComponent extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${yearlyData.year}年部门统计',
+              '${yearlyData.year}年${yearlyData.month}月部门统计',
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),

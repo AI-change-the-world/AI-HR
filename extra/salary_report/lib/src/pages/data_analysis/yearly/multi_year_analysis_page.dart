@@ -18,8 +18,6 @@ import 'package:salary_report/src/components/salary_charts.dart';
 import 'package:salary_report/src/components/monthly_employee_changes_component.dart'; // 导入月度员工变化组件
 import 'package:salary_report/src/services/monthly_analysis_service.dart'; // 导入月度分析服务
 import 'package:salary_report/src/isar/database.dart'; // 导入数据库
-import 'package:salary_report/src/services/enhanced_report_generator_factory.dart';
-import 'package:salary_report/src/services/report_types.dart';
 import 'package:salary_report/src/services/multi_year/enhanced_multi_year_report_generator.dart';
 import 'package:salary_report/src/services/global_analysis_models.dart';
 
@@ -187,9 +185,8 @@ class _MultiYearAnalysisPageState extends ConsumerState<MultiYearAnalysisPage> {
           ),
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
-            // onPressed: _isGeneratingReport ? null : _generateSalaryReport,
-            onPressed: null,
-            tooltip: '多年报告开发中',
+            onPressed: _isGeneratingReport ? null : _generateSalaryReport,
+            tooltip: '生成多年度报告',
           ),
           SizedBox(width: 8),
         ],
@@ -417,6 +414,138 @@ class _MultiYearAnalysisPageState extends ConsumerState<MultiYearAnalysisPage> {
     }
   }
 
+  /// 将月度数据聚合为年度数据（用于图表显示）
+  List<Map<String, dynamic>> _aggregateMonthlyToYearlyForCharts(
+    List<MonthlyComparisonData> monthlyData,
+  ) {
+    final Map<int, List<MonthlyComparisonData>> yearlyGroups = {};
+
+    // 按年份分组月度数据
+    for (var monthData in monthlyData) {
+      final year = monthData.year;
+
+      if (!yearlyGroups.containsKey(year)) {
+        yearlyGroups[year] = [];
+      }
+      yearlyGroups[year]!.add(monthData);
+    }
+
+    // 将分组后的数据聚合为年度数据
+    return yearlyGroups.entries
+        .map((entry) {
+          final year = entry.key;
+          final months = entry.value;
+
+          if (months.isEmpty) return null;
+
+          // 聚合年度数据
+          int totalEmployeeCount = 0; // 总人次（所有月份的人数累加）
+          double totalSalary = 0.0; // 总工资
+          double highestSalary = 0.0; // 最高工资
+          double lowestSalary = double.infinity; // 最低工资
+
+          // 收集所有月份的员工（去重）
+          final Set<MinimalEmployeeInfo> allWorkers = {};
+
+          // 聚合部门统计数据
+          final Map<String, DepartmentSalaryStats> aggregatedDepartmentStats =
+              {};
+          final Map<String, List<DepartmentSalaryStats>> deptMonthlyData = {};
+
+          for (var monthData in months) {
+            // 累加人次
+            totalEmployeeCount += monthData.employeeCount;
+
+            // 收集部门数据
+            monthData.departmentStats.forEach((deptName, stat) {
+              if (!deptMonthlyData.containsKey(deptName)) {
+                deptMonthlyData[deptName] = [];
+              }
+              deptMonthlyData[deptName]!.add(stat);
+
+              totalSalary += stat.totalNetSalary;
+
+              if (stat.maxSalary > highestSalary) {
+                highestSalary = stat.maxSalary;
+              }
+              if (stat.minSalary < lowestSalary && stat.minSalary > 0) {
+                lowestSalary = stat.minSalary;
+              }
+            });
+
+            // 收集所有员工（去重）
+            allWorkers.addAll(monthData.workers);
+          }
+
+          if (lowestSalary == double.infinity) {
+            lowestSalary = 0;
+          }
+
+          // 真实人数（去重后）
+          final totalemployeecountActual = allWorkers.length;
+
+          // 平均工资
+          final averageSalary = totalemployeecountActual > 0
+              ? totalSalary / totalemployeecountActual
+              : 0.0;
+
+          // 聚合每个部门的年度数据
+          deptMonthlyData.forEach((deptName, monthlyStats) {
+            double deptTotalNetSalary = 0.0;
+            int maxEmployeeCount = 0;
+            double maxSalary = 0;
+            double minSalary = double.infinity;
+
+            for (var stat in monthlyStats) {
+              deptTotalNetSalary += stat.totalNetSalary;
+              if (stat.employeeCount > maxEmployeeCount) {
+                maxEmployeeCount = stat.employeeCount;
+              }
+              if (stat.maxSalary > maxSalary) {
+                maxSalary = stat.maxSalary;
+              }
+              if (stat.minSalary < minSalary && stat.minSalary > 0) {
+                minSalary = stat.minSalary;
+              }
+            }
+
+            if (minSalary == double.infinity) {
+              minSalary = 0;
+            }
+
+            final averageNetSalary = maxEmployeeCount > 0
+                ? deptTotalNetSalary / maxEmployeeCount
+                : 0.0;
+
+            aggregatedDepartmentStats[deptName] = DepartmentSalaryStats(
+              department: deptName,
+              totalNetSalary: deptTotalNetSalary,
+              averageNetSalary: averageNetSalary,
+              employeeCount: maxEmployeeCount,
+              year: year,
+              month: months.first.month,
+              maxSalary: maxSalary,
+              minSalary: minSalary,
+            );
+          });
+
+          return {
+            'year': year,
+            'employeeCount': totalEmployeeCount, // 总人次
+            'totalEmployeeCount': totalemployeecountActual, // 总人数（去重）
+            'totalSalary': totalSalary,
+            'averageSalary': averageSalary,
+            'highestSalary': highestSalary,
+            'lowestSalary': lowestSalary,
+            'departmentStats': aggregatedDepartmentStats,
+          };
+        })
+        .where((item) => item != null)
+        .cast<Map<String, dynamic>>()
+        .toList()
+      ..sort((a, b) => (a['year'] as int).compareTo(b['year'] as int));
+  }
+
   /// 构建图表部分
   Widget _buildChartSection(AsyncValue<ChartDataState> chartDataState) {
     return chartDataState.when(
@@ -425,69 +554,65 @@ class _MultiYearAnalysisPageState extends ConsumerState<MultiYearAnalysisPage> {
           return const Center(child: Text('暂无数据'));
         }
 
+        // 将月度数据聚合为年度数据
+        final sortedMonthlyData =
+            List<MonthlyComparisonData>.from(
+              chartData.comparisonData!.monthlyComparisons,
+            )..sort((a, b) {
+              if (a.year != b.year) {
+                return a.year.compareTo(b.year);
+              }
+              return a.month.compareTo(b.month);
+            });
+
+        final yearlyAggregatedData = _aggregateMonthlyToYearlyForCharts(
+          sortedMonthlyData,
+        );
+
         final List<Map<String, dynamic>> employeeCountPerYear = [];
         final List<Map<String, dynamic>> averageSalaryPerYear = [];
         final List<Map<String, dynamic>> totalSalaryPerYear = [];
         final List<Map<String, dynamic>> result = [];
 
-        // 按时间排序年度数据
-        final sortedYearlyData =
-            List<YearlyComparisonData>.from(
-              chartData.comparisonData!.yearlyComparisons,
-            )..sort((a, b) {
-              return a.year.compareTo(b.year);
-            });
-
-        for (var yearlyComparison in sortedYearlyData) {
-          // 使用去重后的员工数量，而不是直接使用employeeCount
-          int totalEmployees = yearlyComparison.totalEmployeeCount;
+        for (var yearlyData in yearlyAggregatedData) {
+          final year = yearlyData['year'] as int;
+          final employeeCount = yearlyData['employeeCount'] as int;
+          final totalEmployeeCount = yearlyData['totalEmployeeCount'] as int;
+          final totalSalary = yearlyData['totalSalary'] as double;
+          final averageSalary = yearlyData['averageSalary'] as double;
+          final departmentStats =
+              yearlyData['departmentStats']
+                  as Map<String, DepartmentSalaryStats>;
 
           employeeCountPerYear.add({
-            'year': '${yearlyComparison.year}年',
-            'yearNum': yearlyComparison.year,
-            'employeeCount': totalEmployees,
+            'year': '$year年',
+            'yearNum': year,
+            'employeeCount': totalEmployeeCount, // 使用去重后的真实人数
           });
 
-          final averageSalary = yearlyComparison.averageSalary;
-
           averageSalaryPerYear.add({
-            'year': '${yearlyComparison.year}年',
-            'yearNum': yearlyComparison.year,
+            'year': '$year年',
+            'yearNum': year,
             'averageSalary': averageSalary,
           });
 
-          final totalSalary = yearlyComparison.totalSalary;
-
           totalSalaryPerYear.add({
-            'year': '${yearlyComparison.year}年',
-            'yearNum': yearlyComparison.year,
+            'year': '$year年',
+            'yearNum': year,
             'totalSalary': totalSalary,
           });
 
-          final yearLabel = '${yearlyComparison.year}年';
+          final yearLabel = '$year年';
 
           // 构建部门数据映射
           final departmentData = <String, double>{};
-          yearlyComparison.departmentStats.forEach((deptName, stat) {
-            // 确保使用正确的部门统计数据
+          departmentStats.forEach((deptName, stat) {
             departmentData[deptName] = stat.averageNetSalary;
+            logger.info('====> $deptName: ${stat.averageNetSalary}');
           });
 
           result.add({'year': yearLabel, 'departments': departmentData});
         }
-
-        // 按时间排序
-        employeeCountPerYear.sort((a, b) {
-          return (a['yearNum'] as int).compareTo(b['yearNum'] as int);
-        });
-
-        averageSalaryPerYear.sort((a, b) {
-          return (a['yearNum'] as int).compareTo(b['yearNum'] as int);
-        });
-
-        totalSalaryPerYear.sort((a, b) {
-          return (a['yearNum'] as int).compareTo(b['yearNum'] as int);
-        });
 
         logger.info('averageSalaryPerYear: $averageSalaryPerYear');
 
@@ -581,37 +706,87 @@ class YearlyEmployeeCountChartComponent extends ConsumerWidget {
           return const Center(child: Text('暂无数据'));
         }
 
-        final List<Map<String, dynamic>> employeeCountPerYear = [];
-
-        // 按时间排序年度数据
-        final sortedYearlyData =
-            List<YearlyComparisonData>.from(
-              chartData.comparisonData!.yearlyComparisons,
+        // 将月度数据聚合为年度数据
+        final sortedMonthlyData =
+            List<MonthlyComparisonData>.from(
+              chartData.comparisonData!.monthlyComparisons,
             )..sort((a, b) {
-              return a.year.compareTo(b.year);
+              if (a.year != b.year) {
+                return a.year.compareTo(b.year);
+              }
+              return a.month.compareTo(b.month);
             });
 
-        for (var yearlyComparison in sortedYearlyData) {
-          // 使用去重后的员工数量，而不是直接使用employeeCount
-          int totalEmployees = yearlyComparison.totalEmployeeCount;
+        final yearlyAggregatedData = _aggregateMonthlyToYearlyForCharts(
+          sortedMonthlyData,
+        );
+
+        final List<Map<String, dynamic>> employeeCountPerYear = [];
+
+        for (var yearlyData in yearlyAggregatedData) {
+          final year = yearlyData['year'] as int;
+          final totalEmployeeCount = yearlyData['totalEmployeeCount'] as int;
 
           employeeCountPerYear.add({
-            'year': '${yearlyComparison.year}年',
-            'yearNum': yearlyComparison.year,
-            'employeeCount': totalEmployees,
+            'year': '$year年',
+            'yearNum': year,
+            'employeeCount': totalEmployeeCount,
           });
         }
-
-        // 按时间排序
-        employeeCountPerYear.sort((a, b) {
-          return (a['yearNum'] as int).compareTo(b['yearNum'] as int);
-        });
 
         return YearlyEmployeeCountChart(yearlyData: employeeCountPerYear);
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => Center(child: Text('加载数据失败: $error')),
     );
+  }
+
+  // 添加聚合方法（与主页面相同）
+  List<Map<String, dynamic>> _aggregateMonthlyToYearlyForCharts(
+    List<MonthlyComparisonData> monthlyData,
+  ) {
+    final Map<int, List<MonthlyComparisonData>> yearlyGroups = {};
+
+    for (var monthData in monthlyData) {
+      final year = monthData.year;
+      if (!yearlyGroups.containsKey(year)) {
+        yearlyGroups[year] = [];
+      }
+      yearlyGroups[year]!.add(monthData);
+    }
+
+    return yearlyGroups.entries
+        .map((entry) {
+          final year = entry.key;
+          final months = entry.value;
+          if (months.isEmpty) return null;
+
+          final Set<MinimalEmployeeInfo> allWorkers = {};
+          double totalSalary = 0.0;
+
+          for (var monthData in months) {
+            allWorkers.addAll(monthData.workers);
+            monthData.departmentStats.forEach((deptName, stat) {
+              totalSalary += stat.totalNetSalary;
+            });
+          }
+
+          final totalemployeecountActual = allWorkers.length;
+          final averageSalary = totalemployeecountActual > 0
+              ? totalSalary / totalemployeecountActual
+              : 0.0;
+
+          return {
+            'year': year,
+            'totalEmployeeCount': totalemployeecountActual,
+            'totalSalary': totalSalary,
+            'averageSalary': averageSalary,
+          };
+        })
+        .where((item) => item != null)
+        .cast<Map<String, dynamic>>()
+        .toList()
+      ..sort((a, b) => (a['year'] as int).compareTo(b['year'] as int));
   }
 }
 
@@ -631,30 +806,33 @@ class YearlyAverageSalaryChartComponent extends ConsumerWidget {
           return const Center(child: Text('暂无数据'));
         }
 
-        List<Map<String, dynamic>> averageSalaryPerYear = [];
-
-        // 按时间排序年度数据
-        final sortedYearlyData =
-            List<YearlyComparisonData>.from(
-              chartData.comparisonData!.yearlyComparisons,
+        // 将月度数据聚合为年度数据
+        final sortedMonthlyData =
+            List<MonthlyComparisonData>.from(
+              chartData.comparisonData!.monthlyComparisons,
             )..sort((a, b) {
-              return a.year.compareTo(b.year);
+              if (a.year != b.year) {
+                return a.year.compareTo(b.year);
+              }
+              return a.month.compareTo(b.month);
             });
 
-        for (var yearlyComparison in sortedYearlyData) {
-          final averageSalary = yearlyComparison.averageSalary;
+        final yearlyAggregatedData = _aggregateMonthlyToYearlyForCharts(
+          sortedMonthlyData,
+        );
+
+        List<Map<String, dynamic>> averageSalaryPerYear = [];
+
+        for (var yearlyData in yearlyAggregatedData) {
+          final year = yearlyData['year'] as int;
+          final averageSalary = yearlyData['averageSalary'] as double;
 
           averageSalaryPerYear.add({
-            'year': '${yearlyComparison.year}年',
-            'yearNum': yearlyComparison.year,
+            'year': '$year年',
+            'yearNum': year,
             'averageSalary': averageSalary,
           });
         }
-
-        // 按时间排序
-        averageSalaryPerYear.sort((a, b) {
-          return (a['yearNum'] as int).compareTo(b['yearNum'] as int);
-        });
 
         logger.info('averageSalaryPerYear: $averageSalaryPerYear');
 
@@ -663,6 +841,54 @@ class YearlyAverageSalaryChartComponent extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => Center(child: Text('加载数据失败: $error')),
     );
+  }
+
+  // 添加聚合方法（与主页面相同）
+  List<Map<String, dynamic>> _aggregateMonthlyToYearlyForCharts(
+    List<MonthlyComparisonData> monthlyData,
+  ) {
+    final Map<int, List<MonthlyComparisonData>> yearlyGroups = {};
+
+    for (var monthData in monthlyData) {
+      final year = monthData.year;
+      if (!yearlyGroups.containsKey(year)) {
+        yearlyGroups[year] = [];
+      }
+      yearlyGroups[year]!.add(monthData);
+    }
+
+    return yearlyGroups.entries
+        .map((entry) {
+          final year = entry.key;
+          final months = entry.value;
+          if (months.isEmpty) return null;
+
+          final Set<MinimalEmployeeInfo> allWorkers = {};
+          double totalSalary = 0.0;
+
+          for (var monthData in months) {
+            allWorkers.addAll(monthData.workers);
+            monthData.departmentStats.forEach((deptName, stat) {
+              totalSalary += stat.totalNetSalary;
+            });
+          }
+
+          final totalemployeecountActual = allWorkers.length;
+          final averageSalary = totalemployeecountActual > 0
+              ? totalSalary / totalemployeecountActual
+              : 0.0;
+
+          return {
+            'year': year,
+            'totalEmployeeCount': totalemployeecountActual,
+            'totalSalary': totalSalary,
+            'averageSalary': averageSalary,
+          };
+        })
+        .where((item) => item != null)
+        .cast<Map<String, dynamic>>()
+        .toList()
+      ..sort((a, b) => (a['year'] as int).compareTo(b['year'] as int));
   }
 }
 
@@ -682,36 +908,87 @@ class YearlyTotalSalaryChartComponent extends ConsumerWidget {
           return const Center(child: Text('暂无数据'));
         }
 
-        final List<Map<String, dynamic>> totalSalaryPerYear = [];
-
-        // 按时间排序年度数据
-        final sortedYearlyData =
-            List<YearlyComparisonData>.from(
-              chartData.comparisonData!.yearlyComparisons,
+        // 将月度数据聚合为年度数据
+        final sortedMonthlyData =
+            List<MonthlyComparisonData>.from(
+              chartData.comparisonData!.monthlyComparisons,
             )..sort((a, b) {
-              return a.year.compareTo(b.year);
+              if (a.year != b.year) {
+                return a.year.compareTo(b.year);
+              }
+              return a.month.compareTo(b.month);
             });
 
-        for (var yearlyComparison in sortedYearlyData) {
-          final totalSalary = yearlyComparison.totalSalary;
+        final yearlyAggregatedData = _aggregateMonthlyToYearlyForCharts(
+          sortedMonthlyData,
+        );
+
+        final List<Map<String, dynamic>> totalSalaryPerYear = [];
+
+        for (var yearlyData in yearlyAggregatedData) {
+          final year = yearlyData['year'] as int;
+          final totalSalary = yearlyData['totalSalary'] as double;
 
           totalSalaryPerYear.add({
-            'year': '${yearlyComparison.year}年',
-            'yearNum': yearlyComparison.year,
+            'year': '$year年',
+            'yearNum': year,
             'totalSalary': totalSalary,
           });
         }
-
-        // 按时间排序
-        totalSalaryPerYear.sort((a, b) {
-          return (a['yearNum'] as int).compareTo(b['yearNum'] as int);
-        });
 
         return YearlyTotalSalaryChart(yearlyData: totalSalaryPerYear);
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => Center(child: Text('加载数据失败: $error')),
     );
+  }
+
+  // 添加聚合方法（与主页面相同）
+  List<Map<String, dynamic>> _aggregateMonthlyToYearlyForCharts(
+    List<MonthlyComparisonData> monthlyData,
+  ) {
+    final Map<int, List<MonthlyComparisonData>> yearlyGroups = {};
+
+    for (var monthData in monthlyData) {
+      final year = monthData.year;
+      if (!yearlyGroups.containsKey(year)) {
+        yearlyGroups[year] = [];
+      }
+      yearlyGroups[year]!.add(monthData);
+    }
+
+    return yearlyGroups.entries
+        .map((entry) {
+          final year = entry.key;
+          final months = entry.value;
+          if (months.isEmpty) return null;
+
+          final Set<MinimalEmployeeInfo> allWorkers = {};
+          double totalSalary = 0.0;
+
+          for (var monthData in months) {
+            allWorkers.addAll(monthData.workers);
+            monthData.departmentStats.forEach((deptName, stat) {
+              totalSalary += stat.totalNetSalary;
+            });
+          }
+
+          final totalemployeecountActual = allWorkers.length;
+          final averageSalary = totalemployeecountActual > 0
+              ? totalSalary / totalemployeecountActual
+              : 0.0;
+
+          return {
+            'year': year,
+            'totalEmployeeCount': totalemployeecountActual,
+            'totalSalary': totalSalary,
+            'averageSalary': averageSalary,
+          };
+        })
+        .where((item) => item != null)
+        .cast<Map<String, dynamic>>()
+        .toList()
+      ..sort((a, b) => (a['year'] as int).compareTo(b['year'] as int));
   }
 }
 
@@ -734,23 +1011,33 @@ class MultiYearDepartmentSalaryChartComponent extends ConsumerWidget {
           return const Center(child: Text('暂无数据'));
         }
 
-        final List<Map<String, dynamic>> result = [];
-
-        // 按时间排序年度数据
-        final sortedYearlyData =
-            List<YearlyComparisonData>.from(
-              chartData.comparisonData!.yearlyComparisons,
+        // 将月度数据聚合为年度数据
+        final sortedMonthlyData =
+            List<MonthlyComparisonData>.from(
+              chartData.comparisonData!.monthlyComparisons,
             )..sort((a, b) {
-              return a.year.compareTo(b.year);
+              if (a.year != b.year) {
+                return a.year.compareTo(b.year);
+              }
+              return a.month.compareTo(b.month);
             });
 
-        for (var yearlyData in sortedYearlyData) {
-          final yearLabel = '${yearlyData.year}年';
+        final yearlyAggregatedData = _aggregateMonthlyToYearlyForCharts(
+          sortedMonthlyData,
+        );
+
+        final List<Map<String, dynamic>> result = [];
+
+        for (var yearlyData in yearlyAggregatedData) {
+          final year = yearlyData['year'] as int;
+          final departmentStats =
+              yearlyData['departmentStats']
+                  as Map<String, DepartmentSalaryStats>;
+          final yearLabel = '$year年';
 
           // 构建部门数据映射
           final departmentData = <String, double>{};
-          yearlyData.departmentStats.forEach((deptName, stat) {
-            // 确保使用正确的部门统计数据
+          departmentStats.forEach((deptName, stat) {
             departmentData[deptName] = stat.averageNetSalary;
           });
 
@@ -764,5 +1051,86 @@ class MultiYearDepartmentSalaryChartComponent extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => Center(child: Text('加载数据失败: $error')),
     );
+  }
+
+  // 添加聚合方法（包含部门统计）
+  List<Map<String, dynamic>> _aggregateMonthlyToYearlyForCharts(
+    List<MonthlyComparisonData> monthlyData,
+  ) {
+    final Map<int, List<MonthlyComparisonData>> yearlyGroups = {};
+
+    for (var monthData in monthlyData) {
+      final year = monthData.year;
+      if (!yearlyGroups.containsKey(year)) {
+        yearlyGroups[year] = [];
+      }
+      yearlyGroups[year]!.add(monthData);
+    }
+
+    return yearlyGroups.entries
+        .map((entry) {
+          final year = entry.key;
+          final months = entry.value;
+          if (months.isEmpty) return null;
+
+          // 聚合部门统计数据
+          final Map<String, DepartmentSalaryStats> aggregatedDepartmentStats =
+              {};
+          final Map<String, List<DepartmentSalaryStats>> deptMonthlyData = {};
+
+          for (var monthData in months) {
+            monthData.departmentStats.forEach((deptName, stat) {
+              if (!deptMonthlyData.containsKey(deptName)) {
+                deptMonthlyData[deptName] = [];
+              }
+              deptMonthlyData[deptName]!.add(stat);
+            });
+          }
+
+          deptMonthlyData.forEach((deptName, monthlyStats) {
+            double totalNetSalary = 0.0;
+            int maxEmployeeCount = 0;
+            double maxSalary = 0;
+            double minSalary = double.infinity;
+
+            for (var stat in monthlyStats) {
+              totalNetSalary += stat.totalNetSalary;
+              if (stat.employeeCount > maxEmployeeCount) {
+                maxEmployeeCount = stat.employeeCount;
+              }
+              if (stat.maxSalary > maxSalary) {
+                maxSalary = stat.maxSalary;
+              }
+              if (stat.minSalary < minSalary && stat.minSalary > 0) {
+                minSalary = stat.minSalary;
+              }
+            }
+
+            if (minSalary == double.infinity) {
+              minSalary = 0;
+            }
+
+            final averageNetSalary = maxEmployeeCount > 0
+                ? totalNetSalary / maxEmployeeCount
+                : 0.0;
+
+            aggregatedDepartmentStats[deptName] = DepartmentSalaryStats(
+              department: deptName,
+              totalNetSalary: totalNetSalary,
+              averageNetSalary: averageNetSalary,
+              employeeCount: maxEmployeeCount,
+              year: year,
+              month: months.first.month,
+              maxSalary: maxSalary,
+              minSalary: minSalary,
+            );
+          });
+
+          return {'year': year, 'departmentStats': aggregatedDepartmentStats};
+        })
+        .where((item) => item != null)
+        .cast<Map<String, dynamic>>()
+        .toList()
+      ..sort((a, b) => (a['year'] as int).compareTo(b['year'] as int));
   }
 }

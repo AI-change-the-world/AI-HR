@@ -21,12 +21,12 @@ class QuarterlyDepartmentStatsComponent extends ConsumerWidget {
 
         // 按时间排序季度数据
         final sortedQuarterlyData =
-            List<QuarterlyComparisonData>.from(departmentStats.quarterlyData!)
+            List<MonthlyComparisonData>.from(departmentStats.quarterlyData!)
               ..sort((a, b) {
                 if (a.year != b.year) {
                   return a.year.compareTo(b.year);
                 }
-                return a.quarter.compareTo(b.quarter);
+                return a.month.compareTo(b.month);
               });
 
         // 计算当前页的季度范围
@@ -50,7 +50,7 @@ class QuarterlyDepartmentStatsComponent extends ConsumerWidget {
     );
   }
 
-  Widget _buildDepartmentStatsCard(QuarterlyComparisonData quarterlyData) {
+  Widget _buildDepartmentStatsCard(MonthlyComparisonData quarterlyData) {
     final departmentStats = quarterlyData.departmentStats.values.toList();
 
     return Card(
@@ -61,7 +61,7 @@ class QuarterlyDepartmentStatsComponent extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${quarterlyData.year}年第${quarterlyData.quarter}季度部门统计',
+              '${quarterlyData.year}年${quarterlyData.month}月部门统计',
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),

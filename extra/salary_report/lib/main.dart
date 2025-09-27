@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/isar/database.dart';
 import 'package:salary_report/src/pages/data_analysis/quarterly/quarterly_analysis_page_riverpod.dart';
 import 'package:salary_report/src/pages/data_analysis/yearly/multi_year_analysis_page.dart';
@@ -124,7 +125,11 @@ class MyApp extends StatelessWidget {
                     // 获取传递的额外数据
                     final extra = state.extra as Map<String, dynamic>?;
 
-                    if (extra?['isMultiYear'] as bool? ?? false) {
+                    logger.info('extra: $extra');
+
+                    if ((extra?['isMultiYear'] as bool?) == null ||
+                        (extra?['isMultiYear'] as bool?) == false) {
+                      logger.info('isSingleYear');
                       return YearlyAnalysisPageRiverpod(year: year);
                     }
 
