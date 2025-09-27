@@ -62,6 +62,7 @@ class AISalaryService {
           onProgress,
         );
 
+      case 'general_chat':
       default:
         onProgress?.call('💬 使用通用对话模式回答...');
         return await _handleGeneralQuery(userQuery);
@@ -74,19 +75,29 @@ class AISalaryService {
         '''
 你是一个智能查询分析器，需要分析用户问题的复杂度和类型。
 
+首先提取查询中的关键维度：
+- 人员维度：具体员工姓名（如"张三1"、"李四2"等）
+- 部门维度：部门名称（如"技术部"、"销售部"等）
+- 时间维度：年份、月份、时间范围等
+- 分析维度：绩效、薪资趋势、考勤等
+
 根据用户问题，判断查询类型：
 
 1. "simple_intent": 简单直接的数据查询
-   - 例如："张三的工资", "技术部平均工资", "工资最高的员工"
-   - 特点：问题明确，可以直接通过现有意图处理
+   - 例如："张三1的工资"、"技术部平均工资"、"2024年10月工资最高的员工"
+   - 特点：涉及明确的人员/部门/时间维度，可以直接查询数据
 
 2. "complex_analysis": 需要深度分析的查询
-   - 例如："张三的绩效水平怎么样", "哪个部门员工流动性大", "工资增长趋势分析"
-   - 特点：需要多维度数据分析，需要AI理解和解释
+   - 例如："张三1的绩效水平怎么样"、"技术部员工薪资趋势分析"
+   - 特点：涉及具体的人员/部门维度，需要收集相关数据进行AI分析
 
 3. "multi_step": 多步骤复杂查询
-   - 例如："对比各部门平均工资，并分析工资差异原因", "找出绩效最好的员工，分析他们的共同特点"
-   - 特点：需要多个查询步骤，需要综合分析
+   - 例如："对比各部门平均工资，并分析工资差异原因"、"找出绩效最好的员工，分析他们的共同特点"
+   - 特点：需要多个查询步骤，涉及多个维度的数据收集和综合分析
+
+4. "general_chat": 开放性问题
+   - 例如："如何提高员工满意度"、"薪资管理的最佳实践"
+   - 特点：不涉及具体的人员/部门/时间维度，属于通用咨询问题
 
 用户问题: "$userQuery"
 
@@ -95,8 +106,13 @@ class AISalaryService {
   "type": "查询类型",
   "complexity_level": "low/medium/high",
   "requires_ai_analysis": true/false,
-  "key_entities": ["提取的关键实体"],
-  "analysis_dimensions": ["需要分析的维度"]
+  "key_entities": {
+    "employees": ["提取的员工姓名"],
+    "departments": ["提取的部门名称"],
+    "time_periods": ["提取的时间信息"],
+    "analysis_types": ["需要分析的类型"]
+  },
+  "data_dimensions": ["需要收集的数据维度"]
 }
 ''';
 
@@ -121,8 +137,13 @@ class AISalaryService {
       'type': 'simple_intent',
       'complexity_level': 'low',
       'requires_ai_analysis': false,
-      'key_entities': [],
-      'analysis_dimensions': [],
+      'key_entities': {
+        'employees': [],
+        'departments': [],
+        'time_periods': [],
+        'analysis_types': [],
+      },
+      'data_dimensions': [],
     };
   }
 
@@ -166,44 +187,102 @@ class AISalaryService {
     Map<String, dynamic> analysis, [
     Function(String)? onProgress,
   ]) async {
-    final entities = analysis['key_entities'] as List<dynamic>? ?? [];
-    final dimensions = analysis['analysis_dimensions'] as List<dynamic>? ?? [];
+    final keyEntities = analysis['key_entities'] as Map<String, dynamic>? ?? {};
+    final dataDimensions = analysis['data_dimensions'] as List<dynamic>? ?? [];
+
+    final employees = (keyEntities['employees'] as List<dynamic>? ?? [])
+        .cast<String>();
+    final departments = (keyEntities['departments'] as List<dynamic>? ?? [])
+        .cast<String>();
+    final timePeriods = (keyEntities['time_periods'] as List<dynamic>? ?? [])
+        .cast<String>();
+    final analysisTypes =
+        (keyEntities['analysis_types'] as List<dynamic>? ?? []).cast<String>();
 
     logger.info(
-      'Complex analysis for entities: $entities, dimensions: $dimensions',
+      'Complex analysis - Employees: $employees, Departments: $departments, Analysis: $analysisTypes',
     );
 
-    onProgress?.call('📈 正在收集相关数据...');
+    onProgress?.call('📦 正在收集相关数据...');
 
-    // 先收集相关数据
+    // 根据提取的维度全面收集数据
     final Map<String, dynamic> collectedData = {};
 
-    // 根据分析维度收集数据
-    for (String dimension in dimensions.cast<String>()) {
-      switch (dimension) {
+    // 1. 收集员工数据
+    if (employees.isNotEmpty) {
+      onProgress?.call('👥 正在收集员工 ${employees.join(", ")} 的数据...');
+      collectedData['employee_data'] = await _collectEmployeeAllData(employees);
+    }
+
+    // 2. 收集部门数据
+    if (departments.isNotEmpty) {
+      onProgress?.call('🏢 正在收集部门 ${departments.join(", ")} 的数据...');
+      collectedData['department_data'] = await _collectDepartmentAllData(
+        departments,
+      );
+    }
+
+    // 3. 根据分析类型收集特定数据
+    for (String analysisType in analysisTypes) {
+      switch (analysisType) {
         case 'performance':
+        case '绩效':
           onProgress?.call('🏆 正在收集绩效数据...');
-          collectedData['performance'] = await _collectPerformanceData(
-            entities.cast<String>(),
-          );
+          if (employees.isNotEmpty) {
+            collectedData['performance_data'] = await _collectPerformanceData(
+              employees,
+            );
+          }
+          if (departments.isNotEmpty) {
+            collectedData['dept_performance_data'] =
+                await _collectDepartmentPerformanceData(departments);
+          }
           break;
         case 'salary_trend':
+        case '薪资趋势':
           onProgress?.call('📈 正在分析薪资趋势...');
-          collectedData['salary_trend'] = await _collectSalaryTrendData(
-            entities.cast<String>(),
-          );
+          if (employees.isNotEmpty) {
+            collectedData['salary_trend_data'] = await _collectSalaryTrendData(
+              employees,
+            );
+          }
+          if (departments.isNotEmpty) {
+            collectedData['dept_salary_trend_data'] =
+                await _collectDepartmentSalaryTrendData(departments);
+          }
           break;
         case 'attendance':
+        case '考勤':
           onProgress?.call('📊 正在收集考勤数据...');
-          collectedData['attendance'] = await _collectAttendanceData(
-            entities.cast<String>(),
-          );
+          if (employees.isNotEmpty) {
+            collectedData['attendance_data'] = await _collectAttendanceData(
+              employees,
+            );
+          }
           break;
-        case 'department_comparison':
-          onProgress?.call('🏢 正在分析部门数据...');
-          collectedData['department_comparison'] =
-              await _collectDepartmentData();
-          break;
+      }
+    }
+
+    // 4. 如果没有具体的分析类型，则收集所有相关数据
+    if (analysisTypes.isEmpty &&
+        (employees.isNotEmpty || departments.isNotEmpty)) {
+      onProgress?.call('📄 正在收集全面数据...');
+      if (employees.isNotEmpty) {
+        collectedData['performance_data'] = await _collectPerformanceData(
+          employees,
+        );
+        collectedData['salary_trend_data'] = await _collectSalaryTrendData(
+          employees,
+        );
+        collectedData['attendance_data'] = await _collectAttendanceData(
+          employees,
+        );
+      }
+      if (departments.isNotEmpty) {
+        collectedData['dept_performance_data'] =
+            await _collectDepartmentPerformanceData(departments);
+        collectedData['dept_salary_trend_data'] =
+            await _collectDepartmentSalaryTrendData(departments);
       }
     }
 
@@ -220,30 +299,78 @@ class AISalaryService {
   ]) async {
     logger.info('Multi-step query processing');
 
-    onProgress?.call('📋 正在规划执行步骤...');
+    onProgress?.call('🧠 智能体正在规划任务步骤...');
     // 让AI规划执行步骤
     final executionPlan = await _planExecution(userQuery, analysis);
 
     logger.info('Execution plan: $executionPlan');
 
-    final List<String> stepResults = [];
+    final totalSteps = executionPlan['total_steps'] as int? ?? 0;
     final List<dynamic> steps = executionPlan['steps'] as List<dynamic>? ?? [];
+
+    if (steps.isEmpty) {
+      return '无法规划执行步骤，请尝试重新表述您的问题。';
+    }
+
+    // 展示任务规划
+    onProgress?.call('📋 任务规划完成！共 $totalSteps 个步骤：');
+
+    // 展示所有步骤概览
+    for (int i = 0; i < steps.length; i++) {
+      final step = steps[i] as Map<String, dynamic>;
+      final stepDescription = step['description'] as String? ?? '步骤 ${i + 1}';
+      onProgress?.call('• 步骤 ${i + 1}: $stepDescription');
+    }
+
+    // 给用户一些时间查看规划
+    await Future.delayed(const Duration(milliseconds: 1500));
+
+    onProgress?.call('🚀 开始执行任务...');
+
+    final List<Map<String, dynamic>> stepResults = [];
 
     // 执行每个步骤
     for (int i = 0; i < steps.length; i++) {
       final step = steps[i] as Map<String, dynamic>;
       final stepDescription = step['description'] as String? ?? '执行步骤 ${i + 1}';
+      final operation = step['operation'] as String? ?? 'unknown';
 
-      onProgress?.call('🔄 步骤 ${i + 1}/${steps.length}: $stepDescription');
+      onProgress?.call('🔄 正在执行步骤 ${i + 1}/$totalSteps: $stepDescription');
 
-      final stepResult = await _executeStep(step);
-      stepResults.add(stepResult);
+      try {
+        final stepResult = await _executeStep(step, onProgress);
 
-      // 缓存步骤结果供后续步骤使用
-      _queryCache['step_${i}_result'] = stepResult;
+        stepResults.add({
+          'step_id': i + 1,
+          'description': stepDescription,
+          'operation': operation,
+          'result': stepResult,
+          'success': true,
+        });
+
+        // 缓存步骤结果供后续步骤使用
+        _queryCache['step_${i}_result'] = stepResult;
+
+        onProgress?.call('✅ 步骤 ${i + 1} 完成！');
+
+        // 给用户一些时间查看结果
+        if (i < steps.length - 1) {
+          await Future.delayed(const Duration(milliseconds: 800));
+        }
+      } catch (e) {
+        logger.warning('Step ${i + 1} failed: $e');
+        stepResults.add({
+          'step_id': i + 1,
+          'description': stepDescription,
+          'operation': operation,
+          'result': {'type': 'error', 'data': '步骤执行失败：$e'},
+          'success': false,
+        });
+        onProgress?.call('❌ 步骤 ${i + 1} 执行失败，继续后续步骤...');
+      }
     }
 
-    onProgress?.call('🤖 正在综合分析结果...');
+    onProgress?.call('🧠 正在综合分析所有步骤结果...');
     // 综合所有步骤结果，生成最终回答
     return await _synthesizeResults(userQuery, stepResults, executionPlan);
   }
@@ -389,7 +516,297 @@ $dataStr
     }
   }
 
-  /// 收集绩效数据
+  /// 收集员工全部数据
+  Future<Map<String, dynamic>> _collectEmployeeAllData(
+    List<String> employees,
+  ) async {
+    final Map<String, dynamic> data = {};
+
+    for (String employee in employees) {
+      final employeeData = <String, dynamic>{};
+
+      // 收集员工基本薪资数据
+      final salaryData = await _getEmployeeAllSalaryData(employee);
+      if (salaryData.isNotEmpty) {
+        employeeData['salary_records'] = salaryData;
+      }
+
+      // 收集员工绩效数据
+      final performanceData = await _getEmployeePerformanceData(
+        employee,
+        null,
+        null,
+      );
+      if (performanceData.isNotEmpty) {
+        employeeData['performance_records'] = performanceData;
+      }
+
+      // 收集员工考勤数据
+      final attendanceData = await _getEmployeeAttendanceData(employee);
+      if (attendanceData.isNotEmpty) {
+        employeeData['attendance_records'] = attendanceData;
+      }
+
+      if (employeeData.isNotEmpty) {
+        data[employee] = employeeData;
+      }
+    }
+
+    return data;
+  }
+
+  /// 收集部门全部数据
+  Future<Map<String, dynamic>> _collectDepartmentAllData(
+    List<String> departments,
+  ) async {
+    final Map<String, dynamic> data = {};
+
+    for (String department in departments) {
+      final deptData = <String, dynamic>{};
+
+      // 收集部门员工列表和薪资数据
+      final deptSalaryData = await _getDepartmentAllSalaryData(department);
+      if (deptSalaryData.isNotEmpty) {
+        deptData['salary_data'] = deptSalaryData;
+      }
+
+      // 收集部门绩效统计
+      final deptPerformanceData = await _getDepartmentPerformanceStats(
+        department,
+      );
+      if (deptPerformanceData.isNotEmpty) {
+        deptData['performance_stats'] = deptPerformanceData;
+      }
+
+      if (deptData.isNotEmpty) {
+        data[department] = deptData;
+      }
+    }
+
+    return data;
+  }
+
+  /// 收集部门绩效数据
+  Future<Map<String, dynamic>> _collectDepartmentPerformanceData(
+    List<String> departments,
+  ) async {
+    final Map<String, dynamic> data = {};
+
+    for (String department in departments) {
+      final performanceStats = await _getDepartmentPerformanceStats(department);
+      if (performanceStats.isNotEmpty) {
+        data[department] = performanceStats;
+      }
+    }
+
+    return data;
+  }
+
+  /// 收集部门薪资趋势数据
+  Future<Map<String, dynamic>> _collectDepartmentSalaryTrendData(
+    List<String> departments,
+  ) async {
+    final Map<String, dynamic> data = {};
+
+    for (String department in departments) {
+      final trendData = await _getDepartmentSalaryTrend(department);
+      if (trendData.isNotEmpty) {
+        data[department] = trendData;
+      }
+    }
+
+    return data;
+  }
+
+  /// 获取员工全部薪资数据
+  Future<List<Map<String, dynamic>>> _getEmployeeAllSalaryData(
+    String employeeName,
+  ) async {
+    final isar = _database.isar!;
+    final salaryLists = await isar.salaryLists.where().findAll();
+
+    final List<Map<String, dynamic>> salaryData = [];
+
+    for (var salaryList in salaryLists) {
+      for (var record in salaryList.records) {
+        if (record.name == employeeName) {
+          salaryData.add({
+            'year': salaryList.year,
+            'month': salaryList.month,
+            'netSalary': record.netSalary,
+            'department': record.department,
+            'position': record.position,
+            'attendance': record.attendance,
+            'performanceScore': record.performanceScore,
+          });
+        }
+      }
+    }
+
+    return salaryData;
+  }
+
+  /// 获取员工考勤数据
+  Future<List<Map<String, dynamic>>> _getEmployeeAttendanceData(
+    String employeeName,
+  ) async {
+    final isar = _database.isar!;
+    final salaryLists = await isar.salaryLists.where().findAll();
+
+    final List<Map<String, dynamic>> attendanceData = [];
+
+    for (var salaryList in salaryLists) {
+      for (var record in salaryList.records) {
+        if (record.name == employeeName) {
+          attendanceData.add({
+            'year': salaryList.year,
+            'month': salaryList.month,
+            'attendance': record.attendance,
+            'sickLeave': record.sickLeave,
+            'personalLeave': record.personalLeave,
+            'absence': record.absence,
+            'truancy': record.truancy,
+            'payDays': record.payDays,
+            'actualPayDays': record.actualPayDays,
+          });
+        }
+      }
+    }
+
+    return attendanceData;
+  }
+
+  /// 获取部门全部薪资数据
+  Future<Map<String, dynamic>> _getDepartmentAllSalaryData(
+    String department,
+  ) async {
+    final isar = _database.isar!;
+    final salaryLists = await isar.salaryLists.where().findAll();
+
+    final Map<String, List<Map<String, dynamic>>> monthlyData = {};
+    final Set<String> employees = {};
+
+    for (var salaryList in salaryLists) {
+      final monthKey = '${salaryList.year}-${salaryList.month}';
+      monthlyData[monthKey] = [];
+
+      for (var record in salaryList.records) {
+        if (record.department == department) {
+          employees.add(record.name ?? '');
+          monthlyData[monthKey]!.add({
+            'name': record.name,
+            'netSalary': record.netSalary,
+            'position': record.position,
+            'performanceScore': record.performanceScore,
+          });
+        }
+      }
+    }
+
+    return {
+      'monthly_data': monthlyData,
+      'employee_list': employees.toList(),
+      'employee_count': employees.length,
+    };
+  }
+
+  /// 获取部门绩效统计
+  Future<Map<String, dynamic>> _getDepartmentPerformanceStats(
+    String department,
+  ) async {
+    final isar = _database.isar!;
+    final salaryLists = await isar.salaryLists.where().findAll();
+
+    final List<double> allScores = [];
+    final Map<String, List<double>> monthlyScores = {};
+
+    for (var salaryList in salaryLists) {
+      final monthKey = '${salaryList.year}-${salaryList.month}';
+      monthlyScores[monthKey] = [];
+
+      for (var record in salaryList.records) {
+        if (record.department == department &&
+            record.performanceScore != null) {
+          final score = double.tryParse(record.performanceScore!) ?? 0;
+          allScores.add(score);
+          monthlyScores[monthKey]!.add(score);
+        }
+      }
+    }
+
+    if (allScores.isEmpty) {
+      return {};
+    }
+
+    allScores.sort();
+    final avgScore = allScores.reduce((a, b) => a + b) / allScores.length;
+    final maxScore = allScores.last;
+    final minScore = allScores.first;
+
+    return {
+      'average_score': avgScore,
+      'max_score': maxScore,
+      'min_score': minScore,
+      'total_records': allScores.length,
+      'monthly_scores': monthlyScores,
+    };
+  }
+
+  /// 获取部门薪资趋势
+  Future<List<Map<String, dynamic>>> _getDepartmentSalaryTrend(
+    String department,
+  ) async {
+    final isar = _database.isar!;
+    final salaryLists = await isar.salaryLists.where().findAll();
+
+    final Map<String, List<double>> monthlyAverage = {};
+
+    for (var salaryList in salaryLists) {
+      final monthKey = '${salaryList.year}-${salaryList.month}';
+      final List<double> salaries = [];
+
+      for (var record in salaryList.records) {
+        if (record.department == department && record.netSalary != null) {
+          final salary =
+              double.tryParse(
+                record.netSalary!.replaceAll(RegExp(r'[^\d.-]'), ''),
+              ) ??
+              0;
+          if (salary > 0) {
+            salaries.add(salary);
+          }
+        }
+      }
+
+      if (salaries.isNotEmpty) {
+        final average = salaries.reduce((a, b) => a + b) / salaries.length;
+        monthlyAverage[monthKey] = salaries;
+      }
+    }
+
+    final List<Map<String, dynamic>> trendData = [];
+    monthlyAverage.forEach((monthKey, salaries) {
+      final parts = monthKey.split('-');
+      final average = salaries.reduce((a, b) => a + b) / salaries.length;
+      trendData.add({
+        'year': int.parse(parts[0]),
+        'month': int.parse(parts[1]),
+        'average_salary': average,
+        'employee_count': salaries.length,
+        'total_salary': salaries.reduce((a, b) => a + b),
+      });
+    });
+
+    // 按时间排序
+    trendData.sort((a, b) {
+      final aDate = DateTime(a['year'], a['month']);
+      final bDate = DateTime(b['year'], b['month']);
+      return aDate.compareTo(bDate);
+    });
+
+    return trendData;
+  }
+
   Future<Map<String, dynamic>> _collectPerformanceData(
     List<String> entities,
   ) async {
@@ -561,24 +978,68 @@ $dataStr
     String userQuery,
     Map<String, dynamic> analysis,
   ) async {
+    final keyEntities = analysis['key_entities'] as Map<String, dynamic>? ?? {};
+    final employees = (keyEntities['employees'] as List<dynamic>? ?? [])
+        .cast<String>();
+    final departments = (keyEntities['departments'] as List<dynamic>? ?? [])
+        .cast<String>();
+    final analysisTypes =
+        (keyEntities['analysis_types'] as List<dynamic>? ?? []).cast<String>();
+
     final prompt =
         '''
-用户查询："$userQuery"
-查询分析：$analysis
+你是一个智能任务规划器，需要为复杂的薪资查询任务规划执行步骤。
 
-请为这个复杂查询规划执行步骤。每个步骤应该是一个具体的数据查询操作。
+用户查询："$userQuery"
+关键实体信息：
+- 员工：$employees
+- 部门：$departments  
+- 分析类型：$analysisTypes
 
 可用的查询操作包括：
-1. employee_salary - 查询员工薪资
-2. department_salary - 查询部门薪资
-3. performance_analysis - 绩效分析
-4. salary_trend - 薪资趋势
-5. attendance_analysis - 考勤分析
-6. department_comparison - 部门对比
+1. **employee_salary** - 查询员工薪资数据
+   - 参数：employeeName, year?, month?
+   - 示例：查询张三1的工资情况
+
+2. **department_salary** - 查询部门薪资数据  
+   - 参数：department, year?, month?
+   - 示例：查询技术部的薪资情况
+
+3. **performance_analysis** - 绩效分析
+   - 参数：employeeName?, department?, year?, month?
+   - 示例：分析员工或部门绩效表现
+
+4. **salary_trend** - 薪资趋势分析
+   - 参数：employeeName?, department?
+   - 示例：分析薪资变化趋势
+
+5. **attendance_analysis** - 考勤分析
+   - 参数：employeeName?, department?, year?, month?
+   - 示例：分析考勤情况
+
+6. **department_comparison** - 部门对比分析
+   - 参数：year?, month?
+   - 示例：对比各部门数据
+
+7. **top_salary** - 查询最高薪资
+   - 参数：limit?, year?, month?
+   - 示例：找出薪资最高的员工
+
+8. **data_collection** - 综合数据收集
+   - 参数：employees?, departments?, data_types?
+   - 示例：收集特定实体的全面数据
+
+**规划原则：**
+1. 如果问题涉及具体员工或部门，必须先收集相关数据
+2. 复杂对比分析需要先收集数据，再进行分析
+3. 每个步骤都应该有明确的目标和描述
+4. 步骤之间应该有逻辑关系，从简单到复杂
 
 请返回JSON格式的执行计划：
 {
   "total_steps": 步骤数量,
+  "complexity": "low/medium/high",
+  "estimated_time": "预计时间",
   "steps": [
     {
       "step_id": 1,
@@ -586,7 +1047,8 @@ $dataStr
       "parameters": {
         "具体参数": "参数值"
       },
-      "description": "步骤描述"
+      "description": "步骤的详细描述",
+      "purpose": "步骤的目标"
     }
   ]
 }
@@ -609,43 +1071,311 @@ $dataStr
       logger.warning('Execution planning failed: $e');
     }
 
+    // 默认返回简单的执行计划
     return {
-      'total_steps': 1,
+      'total_steps': 2,
+      'complexity': 'medium',
+      'estimated_time': '30秒',
       'steps': [
         {
           'step_id': 1,
-          'operation': 'general_query',
+          'operation': 'data_collection',
+          'parameters': {
+            'employees': employees,
+            'departments': departments,
+            'data_types': analysisTypes,
+          },
+          'description': '收集相关数据',
+          'purpose': '为后续分析准备数据',
+        },
+        {
+          'step_id': 2,
+          'operation': 'general_analysis',
           'parameters': {'query': userQuery},
-          'description': '执行通用查询',
+          'description': '进行综合分析',
+          'purpose': '生成最终分析报告',
         },
       ],
     };
   }
 
+  /// 从描述中提取参数
+  Map<String, dynamic> _extractParametersFromDescription(String description) {
+    final Map<String, dynamic> params = {};
+
+    // 提取员工姓名 - 支持多种格式
+    final employeePatterns = [
+      RegExp(
+        r'员工["'
+        '](.*?)["'
+        ']',
+      ),
+      RegExp(r'(张三\d*|李四\d*|王五\d*|[\u4e00-\u9fa5]+\d*)(?=的|薪资|绩效|考勤)'),
+      RegExp(r'查询(.*?)的'),
+    ];
+
+    for (final pattern in employeePatterns) {
+      final match = pattern.firstMatch(description);
+      if (match != null && match.group(1)?.isNotEmpty == true) {
+        params['employee'] = match.group(1)!.trim();
+        break;
+      }
+    }
+
+    // 提取部门 - 支持多种格式
+    final departmentPatterns = [
+      RegExp(
+        r'部门["'
+        '](.*?)["'
+        ']',
+      ),
+      RegExp(r'(技术部|人事部|财务部|销售部|市场部|运营部|[\u4e00-\u9fa5]+部)'),
+      RegExp(r'所有部门'),
+    ];
+
+    for (final pattern in departmentPatterns) {
+      final match = pattern.firstMatch(description);
+      if (match != null) {
+        if (match.group(0)?.contains('所有部门') == true) {
+          params['allDepartments'] = true;
+        } else {
+          params['department'] =
+              match.group(1)?.trim() ?? match.group(0)?.trim();
+        }
+        break;
+      }
+    }
+
+    // 如果是部门相关的步骤，默认查询所有部门
+    if (description.contains('部门') &&
+        !params.containsKey('department') &&
+        !params.containsKey('allDepartments')) {
+      params['allDepartments'] = true;
+    }
+
+    // 提取年份
+    final yearRegex = RegExp(r'(\d{4})年');
+    final yearMatch = yearRegex.firstMatch(description);
+    if (yearMatch != null) {
+      params['year'] = int.tryParse(yearMatch.group(1)!);
+    }
+
+    // 提取月份
+    final monthRegex = RegExp(r'(\d{1,2})月');
+    final monthMatch = monthRegex.firstMatch(description);
+    if (monthMatch != null) {
+      params['month'] = int.tryParse(monthMatch.group(1)!);
+    }
+
+    // 如果没有指定时间，添加默认参数
+    if (!params.containsKey('year') && !params.containsKey('month')) {
+      params['latest'] = true; // 标记获取最新数据
+    }
+
+    return params;
+  }
+
   /// 执行单个步骤
-  Future<String> _executeStep(Map<String, dynamic> step) async {
+  Future<Map<String, dynamic>> _executeStep(
+    Map<String, dynamic> step,
+    void Function(String)? onProgress,
+  ) async {
     final operation = step['operation'] as String;
     final parameters = step['parameters'] as Map<String, dynamic>? ?? {};
     final description = step['description'] as String? ?? '';
+    final purpose = step['purpose'] as String? ?? '';
 
-    logger.info('Executing step: $operation - $description');
+    logger.info(
+      'Executing step: $operation - $description ($purpose); Parameters: $parameters',
+    );
+    onProgress?.call('执行任务: $description');
 
-    switch (operation) {
-      case 'employee_salary':
-        return await _handleEmployeeSalaryQuery(parameters);
-      case 'department_salary':
-        return await _handleDepartmentSalaryQuery(parameters);
-      case 'performance_analysis':
-        return await _handlePerformanceAnalysisQuery(parameters);
-      case 'salary_trend':
-        return await _handleSalaryTrendAnalysis(parameters);
-      case 'attendance_analysis':
-        return await _handleEmployeeAttendanceQuery(parameters);
-      case 'department_comparison':
-        return await _handleDepartmentAverageQuery(parameters);
-      default:
-        return '执行步骤失败：未知的操作类型 $operation';
+    // 如果参数为空，尝试从描述中提取参数
+    if (parameters.isEmpty) {
+      final extractedParams = _extractParametersFromDescription(description);
+      parameters.addAll(extractedParams);
+      logger.info('Extracted parameters: $extractedParams');
     }
+
+    try {
+      switch (operation) {
+        case 'employee_salary':
+          final result = await _handleEmployeeSalaryQuery(parameters);
+          return {'type': 'text_result', 'data': result};
+        case 'department_salary':
+          final result = await _handleDepartmentSalaryQuery(parameters);
+          return {'type': 'text_result', 'data': result};
+        case 'performance_analysis':
+          final result = await _handlePerformanceAnalysisQuery(parameters);
+          return {'type': 'text_result', 'data': result};
+        case 'salary_trend':
+          final result = await _handleSalaryTrendAnalysis(parameters);
+          return {'type': 'text_result', 'data': result};
+        case 'attendance_analysis':
+          final result = await _handleEmployeeAttendanceQuery(parameters);
+          return {'type': 'text_result', 'data': result};
+        case 'department_comparison':
+          final result = await _handleDepartmentAverageQuery(parameters);
+          return {'type': 'text_result', 'data': result};
+        case 'top_salary':
+          final result = await _handleTopSalaryQuery(parameters);
+          return {'type': 'text_result', 'data': result};
+        case 'data_collection':
+          final result = await _handleDataCollection(parameters, onProgress);
+          return {'type': 'data_collection', 'data': result};
+        case 'general_analysis':
+          final result = await _handleGeneralAnalysis(parameters, onProgress);
+          return {'type': 'analysis_result', 'data': result};
+        default:
+          return {'type': 'error', 'data': '执行步骤失败：未知的操作类型 $operation'};
+      }
+    } catch (e) {
+      logger.warning('Step execution failed: $e');
+      return {'type': 'error', 'data': '步骤执行失败：$e'};
+    }
+  }
+
+  /// 处理数据收集
+  Future<Map<String, dynamic>> _handleDataCollection(
+    Map<String, dynamic> parameters,
+    Function(String)? onProgress,
+  ) async {
+    final employees = (parameters['employees'] as List<dynamic>? ?? [])
+        .cast<String>();
+    final departments = (parameters['departments'] as List<dynamic>? ?? [])
+        .cast<String>();
+    final dataTypes = (parameters['data_types'] as List<dynamic>? ?? [])
+        .cast<String>();
+
+    // 如果参数为空，尝试检查 allDepartments 标志
+    if (departments.isEmpty && parameters.containsKey('allDepartments')) {
+      onProgress?.call('📊 收集所有部门数据...');
+    }
+
+    final Map<String, dynamic> collectedData = {};
+    final List<String> collectionSummary = [];
+
+    onProgress?.call('📦 正在收集相关数据...');
+
+    // 收集员工数据
+    if (employees.isNotEmpty) {
+      onProgress?.call('👥 收集员工数据：${employees.join(", ")}');
+      final employeeData = await _collectEmployeeAllData(employees);
+      collectedData['employee_data'] = employeeData;
+      collectionSummary.add(
+        '已收集 ${employees.length} 名员工数据：${employees.join(", ")}',
+      );
+    }
+
+    // 收集部门数据
+    if (departments.isNotEmpty || parameters.containsKey('allDepartments')) {
+      if (departments.isNotEmpty) {
+        onProgress?.call('🏢 收集部门数据：${departments.join(", ")}');
+        final departmentData = await _collectDepartmentAllData(departments);
+        collectedData['department_data'] = departmentData;
+        collectionSummary.add(
+          '已收集 ${departments.length} 个部门数据：${departments.join(", ")}',
+        );
+      } else {
+        onProgress?.call('🏢 收集所有部门数据...');
+        final departmentData = await _collectDepartmentAllData([]);
+        collectedData['department_data'] = departmentData;
+        collectionSummary.add('已收集所有部门数据');
+      }
+    }
+
+    // 根据数据类型收集特定数据
+    if (dataTypes.isNotEmpty) {
+      for (String dataType in dataTypes) {
+        switch (dataType) {
+          case 'performance':
+          case '绩效':
+            onProgress?.call('🏆 收集绩效数据...');
+            if (employees.isNotEmpty) {
+              collectedData['performance_data'] = await _collectPerformanceData(
+                employees,
+              );
+            }
+            if (departments.isNotEmpty) {
+              collectedData['dept_performance_data'] =
+                  await _collectDepartmentPerformanceData(departments);
+            }
+            collectionSummary.add('已收集绩效数据');
+            break;
+          case 'salary_trend':
+          case '薪资趋势':
+            onProgress?.call('📈 收集薪资趋势数据...');
+            if (employees.isNotEmpty) {
+              collectedData['salary_trend_data'] =
+                  await _collectSalaryTrendData(employees);
+            }
+            if (departments.isNotEmpty) {
+              collectedData['dept_salary_trend_data'] =
+                  await _collectDepartmentSalaryTrendData(departments);
+            }
+            collectionSummary.add('已收集薪资趋势数据');
+            break;
+          case 'attendance':
+          case '考勤':
+            onProgress?.call('📊 收集考勤数据...');
+            if (employees.isNotEmpty) {
+              collectedData['attendance_data'] = await _collectAttendanceData(
+                employees,
+              );
+            }
+            collectionSummary.add('已收集考勤数据');
+            break;
+        }
+      }
+    }
+
+    // 将数据存储到缓存中供后续步骤使用
+    _queryCache['collected_data'] = collectedData;
+
+    onProgress?.call('✅ 数据收集完成');
+
+    return {
+      'collection_summary': collectionSummary,
+      'data': collectedData,
+      'employee_count': employees.length,
+      'department_count': departments.isNotEmpty
+          ? departments.length
+          : (parameters.containsKey('allDepartments') ? -1 : 0), // -1 表示所有部门
+      'data_types': dataTypes,
+    };
+  }
+
+  /// 处理通用分析
+  Future<Map<String, dynamic>> _handleGeneralAnalysis(
+    Map<String, dynamic> parameters,
+    Function(String)? onProgress,
+  ) async {
+    final query = parameters['query'] as String? ?? '';
+    final collectedData =
+        _queryCache['collected_data'] as Map<String, dynamic>? ?? {};
+
+    onProgress?.call('🧠 正在进行数据分析...');
+
+    if (collectedData.isEmpty) {
+      onProgress?.call('📄 使用通用分析模式...');
+      // 如果没有收集到数据，尝试直接回答
+      final result = await _handleGeneralQuery(query);
+      return {
+        'analysis_type': 'general_query',
+        'result': result,
+        'has_data': false,
+      };
+    }
+
+    onProgress?.call('📊 基于收集数据进行AI分析...');
+    // 使用收集到的数据进行AI分析
+    final result = await _generateAIAnalysis(query, collectedData);
+    return {
+      'analysis_type': 'data_based_analysis',
+      'result': result,
+      'has_data': true,
+      'data_summary': collectedData.keys.toList(),
+    };
   }
 
   /// 处理薪资趋势分析
@@ -717,13 +1447,56 @@ $dataStr
   /// 综合结果
   Future<String> _synthesizeResults(
     String userQuery,
-    List<String> stepResults,
+    List<Map<String, dynamic>> stepResults,
     Map<String, dynamic> executionPlan,
   ) async {
     final resultsStr = stepResults
-        .asMap()
-        .entries
-        .map((entry) => '步骤${entry.key + 1}结果：\n${entry.value}')
+        .map((stepResult) {
+          final stepId = stepResult['step_id'] ?? '';
+          final description = stepResult['description'] ?? '';
+          final result = stepResult['result'] ?? {};
+          final success = stepResult['success'] ?? false;
+
+          final status = success ? '✅' : '❌';
+
+          // 处理不同类型的结果
+          String resultText = '';
+          if (result is Map<String, dynamic>) {
+            final resultType = result['type'] as String? ?? 'unknown';
+            final resultData = result['data'];
+
+            switch (resultType) {
+              case 'text_result':
+                resultText = resultData.toString();
+                break;
+              case 'data_collection':
+                if (resultData is Map<String, dynamic>) {
+                  final summary =
+                      resultData['collection_summary'] as List<dynamic>? ?? [];
+                  resultText = '数据收集：\n${summary.join('\n')}';
+                } else {
+                  resultText = '数据收集完成';
+                }
+                break;
+              case 'analysis_result':
+                if (resultData is Map<String, dynamic>) {
+                  resultText = resultData['result']?.toString() ?? '分析完成';
+                } else {
+                  resultText = resultData.toString();
+                }
+                break;
+              case 'error':
+                resultText = resultData.toString();
+                break;
+              default:
+                resultText = result.toString();
+            }
+          } else {
+            resultText = result.toString();
+          }
+
+          return '步骤$stepId ($status): $description\n$resultText';
+        })
         .join('\n\n');
 
     final prompt =
@@ -739,7 +1512,7 @@ $resultsStr
 ## 🎯 问题回答
 直接回答用户的问题
 
-## 📉 数据整合
+## 📊 数据整合
 整合所有相关信息
 
 ## 📋 结论摘要
@@ -757,7 +1530,7 @@ $resultsStr
     } catch (e) {
       logger.warning('Result synthesis failed: $e');
       // 如果AI综合失败，返回简单的markdown格式结果
-      return '## 📉 查询结果\n\n$resultsStr';
+      return '## 📊 查询结果\n\n$resultsStr';
     }
   }
 
