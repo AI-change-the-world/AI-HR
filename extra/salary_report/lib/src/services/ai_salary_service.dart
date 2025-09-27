@@ -15,20 +15,127 @@ class AISalaryService {
   AISalaryService(IsarDatabase database)
     : _queryService = DataAnalysisService(database),
       _database = database,
-      _llmClient = LLMClient();
+      _llmClient = LLMClient() {
+    logger.info('AISalaryService initialized');
+  }
+
+  // 缓存基础查询方法的结果
+  final Map<String, dynamic> _queryCache = {};
 
   /// 处理用户查询请求
-  Future<String> processUserQuery(String userQuery) async {
-    // 1. 使用LLM识别用户意图
+  Future<String> processUserQuery(
+    String userQuery, {
+    Function(String)? onProgress,
+  }) async {
+    logger.info('Processing user query: $userQuery');
+
+    onProgress?.call('🤔 正在分析您的问题...');
+
+    // 1. 首先判断查询的复杂度和类型
+    final queryAnalysis = await _analyzeQueryComplexity(userQuery);
+
+    logger.info('Query analysis: $queryAnalysis');
+
+    final queryType = queryAnalysis['type'] as String;
+
+    switch (queryType) {
+      case 'simple_intent':
+        onProgress?.call('📊 执行简单数据查询...');
+        // 简单意图查询，直接处理
+        return await _handleSimpleQuery(userQuery);
+
+      case 'complex_analysis':
+        onProgress?.call('🔍 执行复杂数据分析...');
+        // 复杂分析查询，需要大模型参与分析
+        return await _handleComplexAnalysisQuery(
+          userQuery,
+          queryAnalysis,
+          onProgress,
+        );
+
+      case 'multi_step':
+        onProgress?.call('📋 规划多步骤执行方案...');
+        // 多步骤查询，需要规划执行步骤
+        return await _handleMultiStepQuery(
+          userQuery,
+          queryAnalysis,
+          onProgress,
+        );
+
+      default:
+        onProgress?.call('💬 使用通用对话模式回答...');
+        return await _handleGeneralQuery(userQuery);
+    }
+  }
+
+  /// 分析查询复杂度和类型
+  Future<Map<String, dynamic>> _analyzeQueryComplexity(String userQuery) async {
+    final prompt =
+        '''
+你是一个智能查询分析器，需要分析用户问题的复杂度和类型。
+
+根据用户问题，判断查询类型：
+
+1. "simple_intent": 简单直接的数据查询
+   - 例如："张三的工资", "技术部平均工资", "工资最高的员工"
+   - 特点：问题明确，可以直接通过现有意图处理
+
+2. "complex_analysis": 需要深度分析的查询
+   - 例如："张三的绩效水平怎么样", "哪个部门员工流动性大", "工资增长趋势分析"
+   - 特点：需要多维度数据分析，需要AI理解和解释
+
+3. "multi_step": 多步骤复杂查询
+   - 例如："对比各部门平均工资，并分析工资差异原因", "找出绩效最好的员工，分析他们的共同特点"
+   - 特点：需要多个查询步骤，需要综合分析
+
+用户问题: "$userQuery"
+
+请分析并返回JSON格式：
+{
+  "type": "查询类型",
+  "complexity_level": "low/medium/high",
+  "requires_ai_analysis": true/false,
+  "key_entities": ["提取的关键实体"],
+  "analysis_dimensions": ["需要分析的维度"]
+}
+''';
+
+    try {
+      final result = await _llmClient.getAnswer(
+        prompt,
+        format: ResponseFormat.jsonObject(),
+      );
+
+      final jsonStart = result.indexOf('{');
+      final jsonEnd = result.lastIndexOf('}');
+
+      if (jsonStart != -1 && jsonEnd != -1 && jsonEnd > jsonStart) {
+        final jsonString = result.substring(jsonStart, jsonEnd + 1);
+        return jsonDecode(jsonString) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      logger.warning('Query analysis failed: $e');
+    }
+
+    return {
+      'type': 'simple_intent',
+      'complexity_level': 'low',
+      'requires_ai_analysis': false,
+      'key_entities': [],
+      'analysis_dimensions': [],
+    };
+  }
+
+  /// 处理简单查询
+  Future<String> _handleSimpleQuery(String userQuery) async {
+    // 使用原有的意图识别逻辑
     final intentResult = await _recognizeIntent(userQuery);
+    logger.info('Simple intent: $intentResult');
 
-    logger.info('Intent: $intentResult');
-
-    // 2. 解析意图识别结果
     final intent = intentResult['intent'] as String;
     final parameters = Map<String, dynamic>.from(intentResult['parameters']);
 
-    // 3. 根据意图执行相应的查询
+    // 调用原有的处理方法
     switch (intent) {
       case 'employee_salary':
         return await _handleEmployeeSalaryQuery(parameters);
@@ -46,12 +153,614 @@ class AISalaryService {
         return await _handleTotalSalaryQuery(parameters);
       case 'department_average':
         return await _handleDepartmentAverageQuery(parameters);
+      case 'performance_analysis':
+        return await _handlePerformanceAnalysisQuery(parameters);
       default:
         return '抱歉，我无法理解您的查询请求。请尝试重新表述您的问题。';
     }
   }
 
-  // 构建提示词
+  /// 处理复杂分析查询
+  Future<String> _handleComplexAnalysisQuery(
+    String userQuery,
+    Map<String, dynamic> analysis, [
+    Function(String)? onProgress,
+  ]) async {
+    final entities = analysis['key_entities'] as List<dynamic>? ?? [];
+    final dimensions = analysis['analysis_dimensions'] as List<dynamic>? ?? [];
+
+    logger.info(
+      'Complex analysis for entities: $entities, dimensions: $dimensions',
+    );
+
+    onProgress?.call('📈 正在收集相关数据...');
+
+    // 先收集相关数据
+    final Map<String, dynamic> collectedData = {};
+
+    // 根据分析维度收集数据
+    for (String dimension in dimensions.cast<String>()) {
+      switch (dimension) {
+        case 'performance':
+          onProgress?.call('🏆 正在收集绩效数据...');
+          collectedData['performance'] = await _collectPerformanceData(
+            entities.cast<String>(),
+          );
+          break;
+        case 'salary_trend':
+          onProgress?.call('📈 正在分析薪资趋势...');
+          collectedData['salary_trend'] = await _collectSalaryTrendData(
+            entities.cast<String>(),
+          );
+          break;
+        case 'attendance':
+          onProgress?.call('📊 正在收集考勤数据...');
+          collectedData['attendance'] = await _collectAttendanceData(
+            entities.cast<String>(),
+          );
+          break;
+        case 'department_comparison':
+          onProgress?.call('🏢 正在分析部门数据...');
+          collectedData['department_comparison'] =
+              await _collectDepartmentData();
+          break;
+      }
+    }
+
+    onProgress?.call('🤖 AI正在分析数据并生成报告...');
+    // 让AI分析数据并生成回答
+    return await _generateAIAnalysis(userQuery, collectedData);
+  }
+
+  /// 处理多步骤查询
+  Future<String> _handleMultiStepQuery(
+    String userQuery,
+    Map<String, dynamic> analysis, [
+    Function(String)? onProgress,
+  ]) async {
+    logger.info('Multi-step query processing');
+
+    onProgress?.call('📋 正在规划执行步骤...');
+    // 让AI规划执行步骤
+    final executionPlan = await _planExecution(userQuery, analysis);
+
+    logger.info('Execution plan: $executionPlan');
+
+    final List<String> stepResults = [];
+    final List<dynamic> steps = executionPlan['steps'] as List<dynamic>? ?? [];
+
+    // 执行每个步骤
+    for (int i = 0; i < steps.length; i++) {
+      final step = steps[i] as Map<String, dynamic>;
+      final stepDescription = step['description'] as String? ?? '执行步骤 ${i + 1}';
+
+      onProgress?.call('🔄 步骤 ${i + 1}/${steps.length}: $stepDescription');
+
+      final stepResult = await _executeStep(step);
+      stepResults.add(stepResult);
+
+      // 缓存步骤结果供后续步骤使用
+      _queryCache['step_${i}_result'] = stepResult;
+    }
+
+    onProgress?.call('🤖 正在综合分析结果...');
+    // 综合所有步骤结果，生成最终回答
+    return await _synthesizeResults(userQuery, stepResults, executionPlan);
+  }
+
+  /// 处理一般查询
+  Future<String> _handleGeneralQuery(String userQuery) async {
+    // 对于无法分类的查询，尝试使用AI直接理解和回答
+    final prompt =
+        '''
+用户询问："$userQuery"
+
+请基于薪资管理系统的上下文，尝试理解用户的问题。如果这是一个关于员工薪资、绩效、考勤等方面的问题，
+请说明需要什么样的数据来回答这个问题。如果不是相关问题，请礼貌地说明系统的功能范围。
+
+可用的数据包括：
+- 员工基本信息（姓名、部门、职位）
+- 薪资数据（实发工资、各种津贴扣除）
+- 考勤数据（出勤天数、请假情况、旷工等）
+- 绩效数据（绩效得分）
+
+请使用Markdown格式给出简洁明确的回答。确保回答使用markdown语法，包含适当的标题、列表等元素。
+''';
+
+    try {
+      final result = await _llmClient.getAnswer(prompt);
+      // 确保返回内容是markdown格式的
+      String markdownResult = result.trim();
+      if (!markdownResult.contains('#') && !markdownResult.contains('**')) {
+        // 如果内容不包含markdown语法，则包装为markdown
+        markdownResult = '## 🤖 AI回答\n\n$markdownResult';
+      }
+      return markdownResult;
+    } catch (e) {
+      logger.warning('General query failed: $e');
+      return '**抱歉**\n\n我无法处理您的查询。请尝试询问关于员工薪资、绩效或考勤的具体问题。';
+    }
+  }
+
+  /// 处理绩效分析查询
+  Future<String> _handlePerformanceAnalysisQuery(
+    Map<String, dynamic> parameters,
+  ) async {
+    final employeeName = parameters['employeeName'] as String?;
+    final year = parameters['year'] as int?;
+    final month = parameters['month'] as int?;
+
+    if (employeeName == null) {
+      return '请提供员工姓名进行绩效分析。';
+    }
+
+    // 收集该员工的绩效数据
+    final performanceData = await _getEmployeePerformanceData(
+      employeeName,
+      year,
+      month,
+    );
+
+    if (performanceData.isEmpty) {
+      return '未找到员工 $employeeName 的绩效记录。';
+    }
+
+    // 使用AI分析绩效数据
+    return await _analyzeEmployeePerformance(employeeName, performanceData);
+  }
+
+  /// 获取员工绩效数据
+  Future<List<Map<String, dynamic>>> _getEmployeePerformanceData(
+    String employeeName,
+    int? year,
+    int? month,
+  ) async {
+    final isar = _database.isar!;
+    List<SalaryList> salaryLists;
+
+    if (year != null && month != null) {
+      salaryLists = await isar.salaryLists
+          .filter()
+          .yearEqualTo(year)
+          .and()
+          .monthEqualTo(month)
+          .findAll();
+    } else if (year != null) {
+      salaryLists = await isar.salaryLists.filter().yearEqualTo(year).findAll();
+    } else {
+      salaryLists = await isar.salaryLists.where().findAll();
+    }
+
+    final List<Map<String, dynamic>> performanceData = [];
+
+    for (var salaryList in salaryLists) {
+      for (var record in salaryList.records) {
+        if (record.name == employeeName && record.performanceScore != null) {
+          performanceData.add({
+            'year': salaryList.year,
+            'month': salaryList.month,
+            'performanceScore': record.performanceScore,
+            'netSalary': record.netSalary,
+            'department': record.department,
+            'position': record.position,
+          });
+        }
+      }
+    }
+
+    return performanceData;
+  }
+
+  /// 分析员工绩效
+  Future<String> _analyzeEmployeePerformance(
+    String employeeName,
+    List<Map<String, dynamic>> performanceData,
+  ) async {
+    // 准备数据摘要
+    final dataStr = performanceData
+        .map(
+          (data) =>
+              '${data['year']}年${data['month']}月: 绩效${data['performanceScore']}, 工资${data['netSalary']}',
+        )
+        .join('\n');
+
+    final prompt =
+        '''
+请分析员工 $employeeName 的绩效表现：
+
+绩效数据：
+$dataStr
+
+请从以下方面进行分析，并用Markdown格式输出：
+1. 绩效水平评价（高/中/低）
+2. 绩效变化趋势（上升/下降/稳定）
+3. 绩效与薪资的关联性
+4. 给出改进建议（如果需要）
+
+请使用Markdown格式，包含标题、列表等元素，给出简洁专业的分析报告。
+''';
+
+    try {
+      final result = await _llmClient.getAnswer(prompt);
+      return result.trim();
+    } catch (e) {
+      logger.warning('Performance analysis failed: $e');
+      return '**绩效分析失败**\n\n请稍后重试。';
+    }
+  }
+
+  /// 收集绩效数据
+  Future<Map<String, dynamic>> _collectPerformanceData(
+    List<String> entities,
+  ) async {
+    final Map<String, dynamic> data = {};
+
+    for (String entity in entities) {
+      final performanceData = await _getEmployeePerformanceData(
+        entity,
+        null,
+        null,
+      );
+      if (performanceData.isNotEmpty) {
+        data[entity] = performanceData;
+      }
+    }
+
+    return data;
+  }
+
+  /// 收集薪资趋势数据
+  Future<Map<String, dynamic>> _collectSalaryTrendData(
+    List<String> entities,
+  ) async {
+    final Map<String, dynamic> data = {};
+    final isar = _database.isar!;
+
+    for (String entity in entities) {
+      final salaryLists = await isar.salaryLists.where().findAll();
+      final List<Map<String, dynamic>> salaryTrend = [];
+
+      for (var salaryList in salaryLists) {
+        for (var record in salaryList.records) {
+          if (record.name == entity && record.netSalary != null) {
+            salaryTrend.add({
+              'year': salaryList.year,
+              'month': salaryList.month,
+              'salary': record.netSalary,
+            });
+          }
+        }
+      }
+
+      if (salaryTrend.isNotEmpty) {
+        salaryTrend.sort((a, b) {
+          final aDate = DateTime(a['year'], a['month']);
+          final bDate = DateTime(b['year'], b['month']);
+          return aDate.compareTo(bDate);
+        });
+        data[entity] = salaryTrend;
+      }
+    }
+
+    return data;
+  }
+
+  /// 收集考勤数据
+  Future<Map<String, dynamic>> _collectAttendanceData(
+    List<String> entities,
+  ) async {
+    final Map<String, dynamic> data = {};
+    final isar = _database.isar!;
+
+    for (String entity in entities) {
+      final salaryLists = await isar.salaryLists.where().findAll();
+      final List<Map<String, dynamic>> attendanceData = [];
+
+      for (var salaryList in salaryLists) {
+        for (var record in salaryList.records) {
+          if (record.name == entity) {
+            attendanceData.add({
+              'year': salaryList.year,
+              'month': salaryList.month,
+              'attendance': record.attendance,
+              'sickLeave': record.sickLeave,
+              'personalLeave': record.personalLeave,
+              'absence': record.absence,
+              'truancy': record.truancy,
+            });
+          }
+        }
+      }
+
+      if (attendanceData.isNotEmpty) {
+        data[entity] = attendanceData;
+      }
+    }
+
+    return data;
+  }
+
+  /// 收集部门数据
+  Future<Map<String, dynamic>> _collectDepartmentData() async {
+    final isar = _database.isar!;
+    final salaryLists = await isar.salaryLists.where().findAll();
+
+    final Map<String, Map<String, List<double>>> deptData = {};
+
+    for (var salaryList in salaryLists) {
+      for (var record in salaryList.records) {
+        if (record.department != null && record.netSalary != null) {
+          final dept = record.department!;
+          final period = '${salaryList.year}-${salaryList.month}';
+
+          if (!deptData.containsKey(dept)) {
+            deptData[dept] = {};
+          }
+
+          if (!deptData[dept]!.containsKey(period)) {
+            deptData[dept]![period] = [];
+          }
+
+          final salary =
+              double.tryParse(
+                record.netSalary!.replaceAll(RegExp(r'[^\d.-]'), ''),
+              ) ??
+              0;
+
+          deptData[dept]![period]!.add(salary);
+        }
+      }
+    }
+
+    return deptData;
+  }
+
+  /// 生成AI分析
+  Future<String> _generateAIAnalysis(
+    String userQuery,
+    Map<String, dynamic> collectedData,
+  ) async {
+    final dataStr = collectedData.entries
+        .map((entry) {
+          return '${entry.key}: ${entry.value.toString()}';
+        })
+        .join('\n');
+
+    final prompt =
+        '''
+用户问题："$userQuery"
+
+相关数据：
+$dataStr
+
+请基于以上数据，对用户的问题进行深度分析并给出专业的回答。
+请使用Markdown格式输出，分析应该包括：
+
+## 📈 数据概况
+
+## 🔍 关键发现
+
+## 📈 趋势分析
+
+## 💡 建议和结论
+
+请给出结构化、专业的分析报告。
+''';
+
+    try {
+      final result = await _llmClient.getAnswer(prompt);
+      return result.trim();
+    } catch (e) {
+      logger.warning('AI analysis failed: $e');
+      return '**数据分析失败**\n\n请稍后重试。';
+    }
+  }
+
+  /// 规划执行步骤
+  Future<Map<String, dynamic>> _planExecution(
+    String userQuery,
+    Map<String, dynamic> analysis,
+  ) async {
+    final prompt =
+        '''
+用户查询："$userQuery"
+查询分析：$analysis
+
+请为这个复杂查询规划执行步骤。每个步骤应该是一个具体的数据查询操作。
+
+可用的查询操作包括：
+1. employee_salary - 查询员工薪资
+2. department_salary - 查询部门薪资
+3. performance_analysis - 绩效分析
+4. salary_trend - 薪资趋势
+5. attendance_analysis - 考勤分析
+6. department_comparison - 部门对比
+
+请返回JSON格式的执行计划：
+{
+  "total_steps": 步骤数量,
+  "steps": [
+    {
+      "step_id": 1,
+      "operation": "操作类型",
+      "parameters": {
+        "具体参数": "参数值"
+      },
+      "description": "步骤描述"
+    }
+  ]
+}
+''';
+
+    try {
+      final result = await _llmClient.getAnswer(
+        prompt,
+        format: ResponseFormat.jsonObject(),
+      );
+
+      final jsonStart = result.indexOf('{');
+      final jsonEnd = result.lastIndexOf('}');
+
+      if (jsonStart != -1 && jsonEnd != -1 && jsonEnd > jsonStart) {
+        final jsonString = result.substring(jsonStart, jsonEnd + 1);
+        return jsonDecode(jsonString) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      logger.warning('Execution planning failed: $e');
+    }
+
+    return {
+      'total_steps': 1,
+      'steps': [
+        {
+          'step_id': 1,
+          'operation': 'general_query',
+          'parameters': {'query': userQuery},
+          'description': '执行通用查询',
+        },
+      ],
+    };
+  }
+
+  /// 执行单个步骤
+  Future<String> _executeStep(Map<String, dynamic> step) async {
+    final operation = step['operation'] as String;
+    final parameters = step['parameters'] as Map<String, dynamic>? ?? {};
+    final description = step['description'] as String? ?? '';
+
+    logger.info('Executing step: $operation - $description');
+
+    switch (operation) {
+      case 'employee_salary':
+        return await _handleEmployeeSalaryQuery(parameters);
+      case 'department_salary':
+        return await _handleDepartmentSalaryQuery(parameters);
+      case 'performance_analysis':
+        return await _handlePerformanceAnalysisQuery(parameters);
+      case 'salary_trend':
+        return await _handleSalaryTrendAnalysis(parameters);
+      case 'attendance_analysis':
+        return await _handleEmployeeAttendanceQuery(parameters);
+      case 'department_comparison':
+        return await _handleDepartmentAverageQuery(parameters);
+      default:
+        return '执行步骤失败：未知的操作类型 $operation';
+    }
+  }
+
+  /// 处理薪资趋势分析
+  Future<String> _handleSalaryTrendAnalysis(
+    Map<String, dynamic> parameters,
+  ) async {
+    final employeeName = parameters['employeeName'] as String?;
+    final department = parameters['department'] as String?;
+
+    if (employeeName != null) {
+      final trendData = await _collectSalaryTrendData([employeeName]);
+      if (trendData.isEmpty) {
+        return '未找到员工 $employeeName 的薪资趋势数据。';
+      }
+
+      return await _analyzeSalaryTrend(employeeName, trendData[employeeName]);
+    } else if (department != null) {
+      // 部门薪资趋势分析
+      return await _analyzeDepartmentSalaryTrend(department);
+    }
+
+    return '请提供员工姓名或部门名称进行薪资趋势分析。';
+  }
+
+  /// 分析个人薪资趋势
+  Future<String> _analyzeSalaryTrend(
+    String employeeName,
+    List<Map<String, dynamic>> trendData,
+  ) async {
+    final dataStr = trendData
+        .map((data) => '${data['year']}年${data['month']}月: ${data['salary']}')
+        .join('\n');
+
+    final prompt =
+        '''
+请分析员工 $employeeName 的薪资变化趋势：
+
+薪资数据：
+$dataStr
+
+请使用Markdown格式进行分析：
+
+## 📈 整体趋势分析
+
+## 📊 变化幅度和规律
+
+## 🤔 可能的影响因素
+
+## 💮 预测和建议
+
+请给出专业的趋势分析报告。
+''';
+
+    try {
+      final result = await _llmClient.getAnswer(prompt);
+      return result.trim();
+    } catch (e) {
+      logger.warning('Salary trend analysis failed: $e');
+      return '**薪资趋勿分析失败**\n\n请稍后重试。';
+    }
+  }
+
+  /// 分析部门薪资趋势
+  Future<String> _analyzeDepartmentSalaryTrend(String department) async {
+    // 实现部门薪资趋势分析逻辑
+    return '部门 $department 的薪资趋势分析功能正在开发中。';
+  }
+
+  /// 综合结果
+  Future<String> _synthesizeResults(
+    String userQuery,
+    List<String> stepResults,
+    Map<String, dynamic> executionPlan,
+  ) async {
+    final resultsStr = stepResults
+        .asMap()
+        .entries
+        .map((entry) => '步骤${entry.key + 1}结果：\n${entry.value}')
+        .join('\n\n');
+
+    final prompt =
+        '''
+用户原始问题："$userQuery"
+
+执行步骤结果：
+$resultsStr
+
+请基于以上所有步骤的结果，综合分析并给出最终的完整回答。
+请使用Markdown格式，回答应该：
+
+## 🎯 问题回答
+直接回答用户的问题
+
+## 📉 数据整合
+整合所有相关信息
+
+## 📋 结论摘要
+给出清晰的结论
+
+## 💡 价值洞察
+提供有价值的洞察
+
+请给出结构化、完整的最终答案。
+''';
+
+    try {
+      final result = await _llmClient.getAnswer(prompt);
+      return result.trim();
+    } catch (e) {
+      logger.warning('Result synthesis failed: $e');
+      // 如果AI综合失败，返回简单的markdown格式结果
+      return '## 📉 查询结果\n\n$resultsStr';
+    }
+  }
+
   final prompt = '''
 你是一个薪资报表查询助手，你的任务是理解用户的问题并将其分类到相应的查询意图中。
 
@@ -76,11 +785,18 @@ class AISalaryService {
    - truancy: 旷工天数
    - performanceScore: 绩效得分
 
+**重要提醒：**
+- 员工姓名可能包含数字或特殊标识，如"张三1"、"张三2"、"李四_A"、"王五-01"等
+- 请完整保留用户提到的员工姓名，包括所有数字、下划线、连字符等标识符
+- 如果用户说"张三1的工资"，参数中employeeName应该是"张三1"，而不是"张三"
+- 如果用户说"李四2绩效如何"，参数中employeeName应该是"李四2"，而不是"李四"
+- 员工姓名的匹配必须完全精确，不允许任何截取或模糊匹配
+
 可用的查询意图包括：
 
 1. "employee_salary": 查询某年某月某员工的工资详情
    - 关键词: 工资, 薪资, 员工, 姓名
-   - 示例: "查询2023年10月张三的工资", "2023年10月李四薪资多少"
+   - 示例: "查询2023年10月张三1的工资", "2023年10月李四2薪资多少"
 
 2. "department_salary": 查询某年某月某部门的工资详情
    - 关键词: 部门, 工资, 薪资
@@ -96,7 +812,7 @@ class AISalaryService {
 
 5. "employee_attendance": 查询某年某月某员工的考勤情况
    - 关键词: 考勤, 出勤, 病假, 事假, 旷工, 缺勤
-   - 示例: "查询2023年10月张三的考勤情况", "李四的出勤记录"
+   - 示例: "查询2023年10月张三1的考勤情况", "李四2的出勤记录"
 
 6. "average_salary": 查询某年某月所有员工的平均工资
    - 关键词: 平均, 平均工资, 人均薪资
@@ -110,10 +826,14 @@ class AISalaryService {
    - 关键词: 部门, 平均, 工资对比
    - 示例: "各部门平均工资对比", "2023年10月各部门薪资情况"
 
+9. "performance_analysis": 分析某员工的绩效表现
+   - 关键词: 绩效, 表现, 绩效分析, 绩效水平, 绩效评价
+   - 示例: "张三1的绩效水平怎么样", "分析李四2的绩效表现", "王五_A绩效如何"
+
 请根据用户的问题，识别出对应的查询意图，并提取相关的参数：
 - 年份(year): 四位数字年份
 - 月份(month): 1-12的数字
-- 员工姓名(employeeName): 员工的姓名
+- 员工姓名(employeeName): 员工的完整姓名（包括数字、下划线等标识）
 - 部门(department): 部门名称
 - 数量(limit): 前N名中的N值，默认为10
 
@@ -125,7 +845,7 @@ class AISalaryService {
   "parameters": {
     "year": 年份,
     "month": 月份,
-    "employeeName": "员工姓名",
+    "employeeName": "完整的员工姓名",
     "department": "部门名称",
     "limit": 数量
   }
@@ -198,21 +918,35 @@ class AISalaryService {
     );
 
     if (record == null) {
-      return '未找到 $year 年 $month 月员工 $employeeName 的工资记录。';
+      return '## 📄 查询结果\n\n未找到 $year 年 $month 月员工 **$employeeName** 的工资记录。';
     }
 
-    return '员工 $employeeName 在 $year 年 $month 月的工资详情：\n'
-        '部门: ${record.department ?? "未知"}\n'
-        '职位: ${record.position ?? "未知"}\n'
-        '实发工资: ${record.netSalary ?? "未知"}\n'
-        '出勤情况: ${record.attendance ?? "未知"}\n'
-        '计薪日天数: ${record.payDays ?? "未知"}\n'
-        '实际出勤折算天数: ${record.actualPayDays ?? "未知"}\n'
-        '病假天数: ${record.sickLeave ?? "未知"}\n'
-        '事假小时数: ${record.personalLeave ?? "未知"}\n'
-        '缺勤次数: ${record.absence ?? "未知"}\n'
-        '旷工天数: ${record.truancy ?? "未知"}\n'
-        '绩效得分: ${record.performanceScore ?? "未知"}';
+    // 返回Markdown格式的结果
+    return '''
+## 💰 员工薪资详情
+
+**员工姓名:** $employeeName  
+**查询时间:** $year 年 $month 月
+
+### 💼 基本信息
+- **部门:** ${record.department ?? "未知"}
+- **职位:** ${record.position ?? "未知"}
+- **实发工资:** ${record.netSalary ?? "未知"}
+
+### 📅 考勤情况
+- **出勤情况:** ${record.attendance ?? "未知"}
+- **计薪日天数:** ${record.payDays ?? "未知"}
+- **实际出勤折算天数:** ${record.actualPayDays ?? "未知"}
+
+### 😷 请假统计
+- **病假天数:** ${record.sickLeave ?? "未知"}
+- **事假小时数:** ${record.personalLeave ?? "未知"}
+- **缺勤次数:** ${record.absence ?? "未知"}
+- **旷工天数:** ${record.truancy ?? "未知"}
+
+### 🏆 绩效评价
+- **绩效得分:** ${record.performanceScore ?? "未知"}
+''';
   }
 
   /// 查询某年所有月份中某员工的工资记录
@@ -245,10 +979,18 @@ class AISalaryService {
     }
 
     if (results.isEmpty) {
-      return '未找到 $year 年员工 $employeeName 的工资记录。';
+      return '## 📄 查询结果\n\n未找到 $year 年员工 **$employeeName** 的工资记录。';
     }
 
-    return '员工 $employeeName 在 $year 年的工资记录：\n${results.join('\n')}';
+    return '''
+## 📈 员工年度工资记录
+
+**员工姓名:** $employeeName  
+**查询年份:** $year 年
+
+### 📊 月度工资详情
+${results.join('\n')}
+''';
   }
 
   /// 查询所有年份中某月份某员工的工资记录
@@ -281,10 +1023,18 @@ class AISalaryService {
     }
 
     if (results.isEmpty) {
-      return '未找到 $month 月员工 $employeeName 的工资记录。';
+      return '## 📄 查询结果\n\n未找到 $month 月员工 **$employeeName** 的工资记录。';
     }
 
-    return '员工 $employeeName 在所有年份 $month 月的工资记录：\n${results.join('\n')}';
+    return '''
+## 📈 员工月度工资记录
+
+**员工姓名:** $employeeName  
+**查询月份:** 所有年份 $month 月
+
+### 📊 历年工资详情
+${results.join('\n')}
+''';
   }
 
   /// 查询所有记录中某员工的工资信息
@@ -311,10 +1061,18 @@ class AISalaryService {
     }
 
     if (results.isEmpty) {
-      return '未找到员工 $employeeName 的任何工资记录。';
+      return '## 📄 查询结果\n\n未找到员工 **$employeeName** 的任何工资记录。';
     }
 
-    return '员工 $employeeName 在所有时间的工资记录：\n${results.join('\n')}';
+    return '''
+## 📈 员工全部工资记录
+
+**员工姓名:** $employeeName  
+**查询范围:** 所有年月
+
+### 📊 历史工资详情
+${results.join('\n')}
+''';
   }
 
   /// 处理部门工资查询

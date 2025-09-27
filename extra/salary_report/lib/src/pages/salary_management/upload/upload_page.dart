@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:salary_report/src/common/logger.dart';
 import 'package:salary_report/src/common/toast.dart';
 import 'package:salary_report/src/providers/app_providers.dart';
+import 'package:salary_report/src/components/ai_chat_widget.dart';
 import 'year_detail_page.dart';
 import '../../../providers/year_provider.dart';
 
@@ -37,17 +38,10 @@ class UploadPage extends ConsumerStatefulWidget {
 class _UploadPageState extends ConsumerState<UploadPage>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
-  late AnimationController _chatAnimationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  late Animation<double> _chatScaleAnimation;
-  late Animation<Offset> _chatSlideAnimation;
 
   bool _showAIChat = false;
-  bool _isAIProcessing = false; // 添加AI处理状态
-  final TextEditingController _chatController = TextEditingController();
-  final List<ChatMessage> _chatMessages = [];
-  final ScrollController _chatScrollController = ScrollController();
 
   @override
   void initState() {
@@ -67,11 +61,6 @@ class _UploadPageState extends ConsumerState<UploadPage>
       vsync: this,
     );
 
-    _chatAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
@@ -83,95 +72,17 @@ class _UploadPageState extends ConsumerState<UploadPage>
             curve: Curves.easeOutBack,
           ),
         );
-
-    _chatScaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _chatAnimationController,
-        curve: Curves.elasticOut,
-      ),
-    );
-
-    _chatSlideAnimation =
-        Tween<Offset>(begin: const Offset(1.2, 0), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _chatAnimationController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
   }
 
   @override
   void dispose() {
     _animationController.dispose();
-    _chatAnimationController.dispose();
-    _chatController.dispose();
-    _chatScrollController.dispose();
     super.dispose();
   }
 
   void _toggleAIChat() {
     setState(() {
       _showAIChat = !_showAIChat;
-    });
-
-    if (_showAIChat) {
-      _chatAnimationController.forward();
-    } else {
-      _chatAnimationController.reverse();
-    }
-  }
-
-  void _sendMessage() {
-    if (_chatController.text.trim().isEmpty) return;
-
-    final String userQuery = _chatController.text.trim();
-
-    setState(() {
-      _chatMessages.add(
-        ChatMessage(
-          text: _chatController.text,
-          isUser: true,
-          timestamp: DateTime.now(),
-        ),
-      );
-      _isAIProcessing = true; // 设置AI处理状态为true
-    });
-
-    // 使用AI薪资服务处理用户查询
-    Future.delayed(const Duration(milliseconds: 200), () async {
-      logger.info('User Query: $userQuery');
-      if (mounted) {
-        final aiSalaryService = ref.read(aiSalaryServiceProvider);
-        final response = await aiSalaryService.processUserQuery(userQuery);
-
-        setState(() {
-          _chatMessages.add(
-            ChatMessage(
-              text: response,
-              isUser: false,
-              timestamp: DateTime.now(),
-            ),
-          );
-          _isAIProcessing = false; // 设置AI处理状态为false
-        });
-
-        _scrollToBottom();
-      }
-    });
-
-    _chatController.clear();
-    _scrollToBottom();
-  }
-
-  void _scrollToBottom() {
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (_chatScrollController.hasClients) {
-        _chatScrollController.animateTo(
-          _chatScrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
     });
   }
 
@@ -694,8 +605,17 @@ class _UploadPageState extends ConsumerState<UploadPage>
             ),
           ),
 
-          // AI聊天界面
-          if (_showAIChat) _buildAIChatInterface(),
+          // AI聊天界面 - 使用新的组件
+          if (_showAIChat)
+            Positioned(
+              right: 24,
+              bottom: 100,
+              child: AIChatWidget(
+                onClose: _toggleAIChat,
+                width: 380,
+                height: 500,
+              ),
+            ),
         ],
       ),
     );
@@ -881,269 +801,4 @@ class _UploadPageState extends ConsumerState<UploadPage>
       ),
     );
   }
-
-  Widget _buildAIChatInterface() {
-    return Positioned(
-      right: 24,
-      bottom: 100,
-      child: SlideTransition(
-        position: _chatSlideAnimation,
-        child: ScaleTransition(
-          scale: _chatScaleAnimation,
-          child: Container(
-            width: 320,
-            height: 400,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF6C63FF), Color(0xFF26D0CE)],
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      topRight: Radius.circular(16),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.smart_toy_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'AI薪资分析助手',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: _chatMessages.isEmpty
-                      ? _buildWelcomeMessage()
-                      : ListView.builder(
-                          controller: _chatScrollController,
-                          padding: const EdgeInsets.all(12),
-                          itemCount: _chatMessages.length,
-                          itemBuilder: (context, index) {
-                            return _buildChatMessage(_chatMessages[index]);
-                          },
-                        ),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      top: BorderSide(color: Colors.grey.shade200),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _chatController,
-                          decoration: InputDecoration(
-                            hintText: '请输入您的问题...',
-                            hintStyle: TextStyle(color: Colors.grey[400]),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(20),
-                              borderSide: BorderSide(
-                                color: Colors.grey.shade300,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(20),
-                              borderSide: BorderSide(
-                                color: Colors.grey.shade300,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(20),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF6C63FF),
-                              ),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            isDense: true,
-                          ),
-                          onSubmitted: (value) => _sendMessage(),
-                          textInputAction: TextInputAction.send,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF6C63FF), Color(0xFF26D0CE)],
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: _isAIProcessing
-                            ? const Padding(
-                                padding: EdgeInsets.all(8.0),
-                                child: SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              )
-                            : IconButton(
-                                onPressed: _isAIProcessing
-                                    ? null
-                                    : _sendMessage,
-                                icon: const Icon(
-                                  Icons.send_rounded,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWelcomeMessage() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF6C63FF).withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.smart_toy_rounded,
-              color: Color(0xFF6C63FF),
-              size: 32,
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            '您好！我是AI薪资分析助手',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2D3748),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '我可以帮您分析薪资数据，回答相关问题。请告诉我您想了解什么？',
-            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildChatMessage(ChatMessage message) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        mainAxisAlignment: message.isUser
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
-        children: [
-          if (!message.isUser) ...[
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: const Color(0xFF6C63FF),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.smart_toy_rounded,
-                color: Colors.white,
-                size: 12,
-              ),
-            ),
-            const SizedBox(width: 8),
-          ],
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: message.isUser
-                    ? const Color(0xFF6C63FF)
-                    : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                message.text,
-                style: TextStyle(
-                  color: message.isUser
-                      ? Colors.white
-                      : const Color(0xFF2D3748),
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ),
-          if (message.isUser) ...[
-            const SizedBox(width: 8),
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: const Color(0xFF26D0CE),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.person, color: Colors.white, size: 12),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-// 聊天消息模型
-class ChatMessage {
-  final String text;
-  final bool isUser;
-  final DateTime timestamp;
-
-  ChatMessage({
-    required this.text,
-    required this.isUser,
-    required this.timestamp,
-  });
 }

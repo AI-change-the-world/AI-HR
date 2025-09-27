@@ -53,7 +53,7 @@ const ReportGenerationRecordSchema = CollectionSchema(
   getId: _reportGenerationRecordGetId,
   getLinks: _reportGenerationRecordGetLinks,
   attach: _reportGenerationRecordAttach,
-  version: '3.3.0-dev.2',
+  version: '3.3.0-dev.3',
 );
 
 int _reportGenerationRecordEstimateSize(

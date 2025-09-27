@@ -9,7 +9,7 @@ final sidebarStateProvider = NotifierProvider<SidebarNotifier, SidebarState>(
 );
 
 // AI薪资服务提供者
-final aiSalaryServiceProvider = Provider<AISalaryService>((ref) {
+final aiSalaryServiceProvider = Provider.autoDispose<AISalaryService>((ref) {
   final database = IsarDatabase();
   return AISalaryService(database);
 });

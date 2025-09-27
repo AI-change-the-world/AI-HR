@@ -46,7 +46,7 @@ const SalaryListSchema = CollectionSchema(
   getId: _salaryListGetId,
   getLinks: _salaryListGetLinks,
   attach: _salaryListAttach,
-  version: '3.3.0-dev.2',
+  version: '3.3.0-dev.3',
 );
 
 int _salaryListEstimateSize(

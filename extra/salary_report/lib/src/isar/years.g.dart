@@ -46,7 +46,7 @@ const ActivatedYearSchema = CollectionSchema(
   getId: _activatedYearGetId,
   getLinks: _activatedYearGetLinks,
   attach: _activatedYearAttach,
-  version: '3.3.0-dev.2',
+  version: '3.3.0-dev.3',
 );
 
 int _activatedYearEstimateSize(
